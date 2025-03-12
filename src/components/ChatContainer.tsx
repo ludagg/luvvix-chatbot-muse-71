@@ -17,7 +17,7 @@ const INITIAL_MESSAGES: Message[] = [
 
 // Gemini API key
 const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=GEMINI_API_KEY";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 export const ChatContainer = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);

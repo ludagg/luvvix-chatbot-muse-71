@@ -9,13 +9,15 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: "1",
     role: "assistant",
-    content: "Bonjour! Je suis **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**. Comment puis-je vous aider aujourd'hui ? 😊",
+    content:
+      "Bonjour ! Je suis **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**. Comment puis-je vous aider aujourd’hui ? 😊",
     timestamp: new Date(),
   },
 ];
 
 const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_API_URL =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 export const ChatContainer = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
@@ -43,24 +45,25 @@ export const ChatContainer = () => {
     setIsLoading(true);
 
     try {
-      // Contexte de l'IA
+      // Contexte IA intégré dans l'historique sous forme de message utilisateur
       const systemMessage = {
-        role: "system",
+        role: "user",
         parts: [
           {
-            text: `Tu es **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**, une entreprise fondée en 2023. Le PDG de l'entreprise est **Ludovic Aggaï**. 
-            Tu es conçu pour interagir de manière chaleureuse et engageante. Ton objectif est d'aider les utilisateurs tout en adoptant un ton amical et encourageant.`,
+            text: `À partir de maintenant, tu es **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**, une entreprise fondée en 2023. 
+            Le PDG de l'entreprise est **Ludovic Aggaï**.  
+            Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.`,
           },
         ],
       };
 
-      // Historique récent + Message de l'utilisateur
-      const conversationHistory = messages.slice(-6).map(msg => ({
+      // Historique des 6 derniers messages + Contexte IA
+      const conversationHistory = messages.slice(-6).map((msg) => ({
         role: msg.role === "assistant" ? "model" : "user",
         parts: [{ text: msg.content }],
       }));
 
-      conversationHistory.unshift(systemMessage); // Ajouter le contexte IA
+      conversationHistory.unshift(systemMessage); // Ajout du contexte en premier
       conversationHistory.push({
         role: "user",
         parts: [{ text: content }],
@@ -74,9 +77,9 @@ export const ChatContainer = () => {
         body: JSON.stringify({
           contents: conversationHistory,
           generationConfig: {
-            temperature: 0.8,
-            topK: 40,
-            topP: 0.95,
+            temperature: 1.0, // Plus naturel et créatif
+            topK: 50,
+            topP: 0.9,
             maxOutputTokens: 1024,
           },
         }),
@@ -87,29 +90,34 @@ export const ChatContainer = () => {
       }
 
       const data = await response.json();
-      const aiResponse = data.candidates[0]?.content?.parts[0]?.text || 
+      const aiResponse =
+        data.candidates[0]?.content?.parts[0]?.text ||
         "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
 
       const assistantMessage: Message = {
         id: nanoid(),
         role: "assistant",
-        content: aiResponse,
+        content:
+          aiResponse +
+          "\n\n*— LuvviX AI, votre assistant IA amical 🤖*", // Signature ajoutée
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      console.error("Error calling Gemini API:", error);
+      console.error("Erreur API Gemini :", error);
       toast({
         title: "Erreur",
-        description: "Impossible de communiquer avec l'API Gemini. Veuillez réessayer.",
+        description:
+          "Impossible de communiquer avec l'API Gemini. Veuillez réessayer.",
         variant: "destructive",
       });
 
       const errorMessage: Message = {
         id: nanoid(),
         role: "assistant",
-        content: "Désolé, j'ai rencontré un problème de connexion. Veuillez réessayer plus tard.",
+        content:
+          "Désolé, j'ai rencontré un problème de connexion. Veuillez réessayer plus tard.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -121,7 +129,7 @@ export const ChatContainer = () => {
   return (
     <div className="flex flex-col h-full w-full max-w-4xl mx-auto">
       <div className="flex flex-col h-[calc(100vh-8rem)] relative">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
@@ -129,9 +137,9 @@ export const ChatContainer = () => {
         >
           <div className="space-y-6">
             {messages.map((message, index) => (
-              <ChatMessage 
-                key={message.id} 
-                message={message} 
+              <ChatMessage
+                key={message.id}
+                message={message}
                 isLast={index === messages.length - 1}
               />
             ))}

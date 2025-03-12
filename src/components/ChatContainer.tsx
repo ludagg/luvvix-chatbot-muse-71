@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ChatMessage, Message } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { nanoid } from "nanoid";
+import { useToast } from "@/hooks/use-toast";
 
 const INITIAL_MESSAGES: Message[] = [
   {
@@ -14,10 +15,15 @@ const INITIAL_MESSAGES: Message[] = [
   },
 ];
 
+// Gemini API key
+const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+
 export const ChatContainer = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -38,19 +44,72 @@ export const ChatContainer = () => {
     
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
-    
-    // Simulate AI response (will be replaced with real API call)
-    setTimeout(() => {
+
+    try {
+      // Prepare conversation history for Gemini
+      const conversationHistory = messages.slice(-6).map(msg => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }]
+      }));
+      
+      // Add the new user message
+      conversationHistory.push({
+        role: "user",
+        parts: [{ text: content }]
+      });
+
+      // Call Gemini API
+      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: conversationHistory,
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1024,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse = data.candidates[0]?.content?.parts[0]?.text || 
+        "Désolé, je n'ai pas pu générer une réponse. Veuillez réessayer.";
+
       const assistantMessage: Message = {
         id: nanoid(),
         role: "assistant",
-        content: getSimulatedResponse(content),
+        content: aiResponse,
         timestamp: new Date(),
       };
       
       setMessages((prev) => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error("Error calling Gemini API:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de communiquer avec l'API Gemini. Veuillez réessayer.",
+        variant: "destructive",
+      });
+      
+      // Add error message from assistant
+      const errorMessage: Message = {
+        id: nanoid(),
+        role: "assistant",
+        content: "Désolé, j'ai rencontré un problème de connexion. Veuillez réessayer dans quelques instants.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1000 + Math.random() * 2000); // Random delay between 1-3 seconds
+    }
   };
 
   return (
@@ -81,19 +140,3 @@ export const ChatContainer = () => {
     </div>
   );
 };
-
-// Simulated responses - will be replaced with actual AI
-function getSimulatedResponse(input: string): string {
-  const responses = [
-    "Je comprends ce que vous voulez dire. Pouvez-vous me donner plus de détails?",
-    "C'est une question intéressante. Laissez-moi réfléchir...",
-    "Je suis là pour vous aider avec cela.",
-    "Voici ce que je peux vous dire à ce sujet...",
-    "J'apprécie votre question. Voici ma réponse.",
-    "D'après mon analyse, voici ce que je peux vous dire.",
-    "Je suis heureux de pouvoir vous aider avec cela.",
-    "C'est un sujet fascinant. Voici ce que je sais.",
-  ];
-  
-  return responses[Math.floor(Math.random() * responses.length)];
-}

@@ -51,7 +51,7 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
             }
           }}
           placeholder="Message LuvviX..."
-          className="w-full py-3 pl-4 pr-14 bg-muted/50 border border-border/80 rounded-full resize-none max-h-[150px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+          className="w-full py-3 pl-4 pr-14 bg-secondary/50 border border-primary/20 rounded-full resize-none max-h-[150px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
           rows={1}
           disabled={isLoading}
         />
@@ -89,7 +89,7 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
                 size="icon"
                 disabled={message.trim() === "" || isLoading}
                 className={cn(
-                  "h-8 w-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all",
+                  "h-8 w-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md shadow-primary/25",
                   message.trim() === "" && "opacity-70"
                 )}
               >

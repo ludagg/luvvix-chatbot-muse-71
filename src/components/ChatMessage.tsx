@@ -33,8 +33,8 @@ export const ChatMessage = ({ message, isLast }: ChatMessageProps) => {
         className={cn(
           "max-w-[80%] md:max-w-[70%] px-4 py-3 rounded-2xl",
           isUser
-            ? "bg-primary text-primary-foreground rounded-tr-none"
-            : "glass-panel rounded-tl-none"
+            ? "bg-primary text-primary-foreground rounded-tr-none shadow-lg shadow-primary/20"
+            : "bg-secondary/80 backdrop-blur-md border border-primary/10 rounded-tl-none shadow-md"
         )}
       >
         <p className="text-sm md:text-base leading-relaxed whitespace-pre-wrap break-words">

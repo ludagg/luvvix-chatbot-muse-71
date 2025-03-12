@@ -8,7 +8,7 @@ export const Header = () => {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-10 border-b border-border/50 bg-background/80 backdrop-blur-md"
+      className="fixed top-0 left-0 right-0 z-10 border-b border-primary/20 neo-blur"
     >
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
@@ -20,13 +20,13 @@ export const Header = () => {
             <div className={cn(
               "flex items-center justify-center w-10 h-10 rounded-xl",
               "bg-gradient-to-br from-primary/90 to-primary/50",
-              "text-primary-foreground font-semibold text-lg"
+              "text-primary-foreground font-semibold text-lg shadow-lg shadow-primary/25"
             )}>
               L
             </div>
           </motion.div>
           <div>
-            <h1 className="text-xl font-medium">LuvviX AI</h1>
+            <h1 className="text-xl font-medium text-gradient">LuvviX AI</h1>
             <p className="text-xs text-muted-foreground">Votre assistant personnel</p>
           </div>
         </div>

@@ -73,7 +73,7 @@ export const ChatContainer = () => {
         </div>
       </motion.div>
       
-      <div className="mt-auto border-t border-border/50 bg-background/80 backdrop-blur-md px-4 py-4">
+      <div className="mt-auto border-t border-primary/10 neo-blur px-4 py-4">
         <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
       </div>
     </div>

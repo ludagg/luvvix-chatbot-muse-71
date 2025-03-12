@@ -104,6 +104,20 @@ export default {
 				'pulse': {
 					'0%, 100%': { opacity: '1' },
 					'50%': { opacity: '0.5' }
+				},
+				blob: {
+					'0%': {
+						transform: 'translate(0px, 0px) scale(1)'
+					},
+					'33%': {
+						transform: 'translate(30px, -50px) scale(1.1)'
+					},
+					'66%': {
+						transform: 'translate(-20px, 20px) scale(0.9)'
+					},
+					'100%': {
+						transform: 'translate(0px, 0px) scale(1)'
+					}
 				}
 			},
 			animation: {
@@ -114,7 +128,12 @@ export default {
 				'slide-up': 'slide-up 0.4s ease-out',
 				'slide-down': 'slide-down 0.4s ease-out',
 				'shimmer': 'shimmer 2s linear infinite',
-				'pulse': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+				'pulse': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'blob': 'blob 7s infinite'
+			},
+			transitionDelay: {
+				'2000': '2000ms',
+				'4000': '4000ms'
 			}
 		}
 	},

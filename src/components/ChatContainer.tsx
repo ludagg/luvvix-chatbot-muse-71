@@ -55,26 +55,28 @@ export const ChatContainer = () => {
 
   return (
     <div className="flex flex-col h-full w-full max-w-4xl mx-auto">
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-        className="flex-1 overflow-y-auto px-4 py-6"
-      >
-        <div className="space-y-6">
-          {messages.map((message, index) => (
-            <ChatMessage 
-              key={message.id} 
-              message={message} 
-              isLast={index === messages.length - 1}
-            />
-          ))}
-          <div ref={messagesEndRef} />
+      <div className="flex flex-col h-[calc(100vh-8rem)] relative">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="flex-1 overflow-y-auto px-4 py-6 pb-24"
+        >
+          <div className="space-y-6">
+            {messages.map((message, index) => (
+              <ChatMessage 
+                key={message.id} 
+                message={message} 
+                isLast={index === messages.length - 1}
+              />
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        </motion.div>
+        
+        <div className="absolute bottom-0 left-0 right-0 border-t border-primary/10 neo-blur px-4 py-4">
+          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
         </div>
-      </motion.div>
-      
-      <div className="mt-auto border-t border-primary/10 neo-blur px-4 py-4">
-        <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
       </div>
     </div>
   );

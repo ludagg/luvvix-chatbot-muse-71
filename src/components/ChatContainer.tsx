@@ -17,7 +17,7 @@ const INITIAL_MESSAGES: Message[] = [
 
 // Gemini API key
 const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent";
 
 export const ChatContainer = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
@@ -58,14 +58,18 @@ export const ChatContainer = () => {
         parts: [{ text: content }]
       });
 
-      // Call Gemini API
+      // Call Gemini API with the correct URL
       const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          contents: conversationHistory,
+          contents: [
+            {
+              parts: [{ text: content }]
+            }
+          ],
           generationConfig: {
             temperature: 0.7,
             topK: 40,

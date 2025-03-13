@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Verify credentials
       if (!verifyCredentials(email, password)) {
-        return Promise.reject(new Error("Invalid credentials"));
+        throw new Error("Invalid credentials");
       }
       
       const savedUser = {
@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Check if user already exists
       const credentials = getUserCredentials();
       if (credentials[email]) {
-        return Promise.reject(new Error("User already exists"));
+        throw new Error("User already exists");
       }
       
       // Save credentials

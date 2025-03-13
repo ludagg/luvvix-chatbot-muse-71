@@ -40,6 +40,8 @@ export const Header = () => {
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Login attempt with:", loginData);
+    
     if (!loginData.email || !loginData.password) {
       toast({
         title: "Erreur",
@@ -58,6 +60,7 @@ export const Header = () => {
         description: "Bienvenue sur LuvviX AI",
       });
     } catch (error) {
+      console.error("Login error:", error);
       toast({
         title: "Erreur de connexion",
         description: "Vérifiez vos identifiants et réessayez",
@@ -70,6 +73,8 @@ export const Header = () => {
   
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Register attempt with:", registerData);
+    
     if (!registerData.email || !registerData.password || !registerData.confirmPassword) {
       toast({
         title: "Erreur",
@@ -97,6 +102,7 @@ export const Header = () => {
         description: "Bienvenue sur LuvviX AI",
       });
     } catch (error) {
+      console.error("Register error:", error);
       toast({
         title: "Erreur d'inscription",
         description: "Une erreur est survenue lors de la création de votre compte",
@@ -139,7 +145,7 @@ export const Header = () => {
           >
             <div className={cn(
               "flex items-center justify-center w-10 h-10 rounded-xl",
-              "bg-gradient-deep-sea shadow-lg shadow-primary/25"
+              "bg-gradient-to-r from-blue-600 to-indigo-700 shadow-lg shadow-primary/25"
             )}>
               <span className="text-primary-foreground font-bold text-lg">L</span>
             </div>

@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { SendIcon, Mic, Smiley, Paperclip } from "lucide-react";
+import { SendIcon, Mic, Smile, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -92,7 +92,7 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
                 variant="ghost"
                 className="h-8 w-8 text-muted-foreground hover:text-foreground"
               >
-                <Smiley size={16} />
+                <Smile size={16} />
               </Button>
               <Button
                 type="button"

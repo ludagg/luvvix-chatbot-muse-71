@@ -7,10 +7,10 @@ const Index = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-background via-background to-background/90">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -inset-[10%] opacity-30">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/30 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
+        <div className="absolute -inset-[10%] opacity-20">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
           <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-purple-400/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-1/3 left-1/3 w-96 h-96 bg-indigo-400/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
+          <div className="absolute bottom-1/3 left-1/3 w-96 h-96 bg-indigo-400/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
         </div>
       </div>
       
@@ -20,7 +20,7 @@ const Index = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex flex-col flex-grow pt-16 pb-6 relative z-10"
+        className="flex flex-col flex-grow pt-20 pb-6 relative z-10"
       >
         <div className="flex-1 w-full max-w-5xl mx-auto px-4">
           <ChatContainer />

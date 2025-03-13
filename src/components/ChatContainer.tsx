@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChatMessage, Message } from "./ChatMessage";
@@ -10,14 +11,14 @@ const INITIAL_MESSAGES: Message[] = [
     id: "1",
     role: "assistant",
     content:
-      "Bonjour ! Je suis **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**. Comment puis-je vous aider aujourd’hui ? 😊",
+      "Bonjour ! Je suis **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**. Comment puis-je vous aider aujourd'hui ? 😊",
     timestamp: new Date(),
   },
 ];
 
 const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
 const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+  "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
 
 export const ChatContainer = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
@@ -77,7 +78,7 @@ export const ChatContainer = () => {
         body: JSON.stringify({
           contents: conversationHistory,
           generationConfig: {
-            temperature: 1.0, // Plus naturel et créatif
+            temperature: 1.0,
             topK: 50,
             topP: 0.9,
             maxOutputTokens: 1024,
@@ -99,7 +100,7 @@ export const ChatContainer = () => {
         role: "assistant",
         content:
           aiResponse +
-          "\n\n*— LuvviX AI, votre assistant IA amical 🤖*", // Signature ajoutée
+          "\n\n*— LuvviX AI, votre assistant IA amical 🤖*",
         timestamp: new Date(),
       };
 
@@ -127,13 +128,15 @@ export const ChatContainer = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full max-w-4xl mx-auto">
+    <div className="flex flex-col h-full w-full max-w-4xl mx-auto bg-gradient-to-b from-background/50 via-background/80 to-background rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
       <div className="flex flex-col h-[calc(100vh-8rem)] relative">
+        <div className="absolute top-0 left-0 right-0 h-24 pointer-events-none bg-gradient-to-b from-background to-transparent z-10"></div>
+        
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="flex-1 overflow-y-auto px-4 py-6 pb-24"
+          className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 pb-24 scrollbar-none"
         >
           <div className="space-y-6">
             {messages.map((message, index) => (
@@ -147,7 +150,7 @@ export const ChatContainer = () => {
           </div>
         </motion.div>
 
-        <div className="absolute bottom-0 left-0 right-0 border-t border-primary/10 neo-blur px-4 py-4">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/95 via-background/90 to-transparent pt-10 pb-4 px-4 sm:px-6">
           <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
         </div>
       </div>

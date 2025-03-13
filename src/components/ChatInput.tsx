@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { SendIcon, Mic } from "lucide-react";
+import { SendIcon, Mic, Smiley, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -39,7 +39,16 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
       onSubmit={handleSubmit}
       className="relative w-full"
     >
-      <div className="relative flex items-center w-full">
+      <div className="relative flex items-center w-full bg-secondary/30 backdrop-blur-sm border border-primary/20 rounded-full shadow-lg overflow-hidden pl-2">
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+        >
+          <Paperclip size={16} />
+        </Button>
+        
         <textarea
           ref={textareaRef}
           value={message}
@@ -51,10 +60,11 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
             }
           }}
           placeholder="Message LuvviX..."
-          className="w-full py-3 pl-4 pr-14 bg-secondary/50 border border-primary/20 rounded-full resize-none max-h-[150px] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+          className="w-full py-3 px-3 bg-transparent border-none resize-none max-h-[150px] focus-visible:outline-none"
           rows={1}
           disabled={isLoading}
         />
+        
         <AnimatePresence mode="wait">
           {isLoading ? (
             <motion.div
@@ -62,7 +72,7 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="absolute right-2"
+              className="pr-3 pl-2"
             >
               <div className="h-8 w-8 flex items-center justify-center">
                 <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
@@ -74,15 +84,23 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="absolute right-2 flex"
+              className="flex pr-3 pl-2 gap-1"
             >
               <Button
                 type="button"
                 size="icon"
                 variant="ghost"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground mr-1"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
               >
-                <Mic size={18} />
+                <Smiley size={16} />
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              >
+                <Mic size={16} />
               </Button>
               <Button
                 type="submit"
@@ -93,7 +111,7 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
                   message.trim() === "" && "opacity-70"
                 )}
               >
-                <SendIcon size={16} />
+                <SendIcon size={14} />
               </Button>
             </motion.div>
           )}

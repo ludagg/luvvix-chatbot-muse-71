@@ -1,5 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { toast } from "@/hooks/use-toast";
 
 type User = {
   id: string;
@@ -41,19 +42,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     // Check for saved user session in localStorage
-    const savedUser = localStorage.getItem('luvvix_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    try {
+      const savedUser = localStorage.getItem('luvvix_user');
+      if (savedUser) {
+        setUser(JSON.parse(savedUser));
+      }
+    } catch (error) {
+      console.error('Error loading saved user:', error);
+      localStorage.removeItem('luvvix_user'); // Remove corrupted data
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
+    console.log(`Login attempt for ${email}`);
+    setIsLoading(true);
+    
     try {
-      setIsLoading(true);
-      
       // Verify credentials
       if (!verifyCredentials(email, password)) {
+        console.error('Invalid credentials');
         throw new Error("Invalid credentials");
       }
       
@@ -66,22 +74,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       localStorage.setItem('luvvix_user', JSON.stringify(savedUser));
       setUser(savedUser);
-      
-      return Promise.resolve();
+      console.log('Login successful for', email);
+      toast({
+        title: "Connexion réussie",
+        description: "Bienvenue sur LuvviX AI",
+      });
     } catch (error) {
-      return Promise.reject(error);
+      console.error('Login error:', error);
+      toast({
+        title: "Erreur de connexion",
+        description: "Vérifiez vos identifiants et réessayez",
+        variant: "destructive"
+      });
+      throw error; // Re-throw for component handling
     } finally {
       setIsLoading(false);
     }
   };
 
   const register = async (email: string, password: string) => {
+    console.log(`Register attempt for ${email}`);
+    setIsLoading(true);
+    
     try {
-      setIsLoading(true);
-      
       // Check if user already exists
       const credentials = getUserCredentials();
       if (credentials[email]) {
+        console.error('User already exists');
         throw new Error("User already exists");
       }
       
@@ -98,10 +117,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       localStorage.setItem('luvvix_user', JSON.stringify(newUser));
       setUser(newUser);
-      
-      return Promise.resolve();
+      console.log('Registration successful for', email);
+      toast({
+        title: "Inscription réussie",
+        description: "Bienvenue sur LuvviX AI",
+      });
     } catch (error) {
-      return Promise.reject(error);
+      console.error('Register error:', error);
+      toast({
+        title: "Erreur d'inscription",
+        description: "Une erreur est survenue lors de la création de votre compte",
+        variant: "destructive"
+      });
+      throw error; // Re-throw for component handling
     } finally {
       setIsLoading(false);
     }
@@ -112,9 +140,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(true);
       localStorage.removeItem('luvvix_user');
       setUser(null);
-      return Promise.resolve();
+      toast({
+        title: "Déconnexion réussie",
+        description: "À bientôt sur LuvviX AI",
+      });
     } catch (error) {
-      return Promise.reject(error);
+      console.error('Logout error:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la déconnexion",
+        variant: "destructive"
+      });
+      throw error;
     } finally {
       setIsLoading(false);
     }

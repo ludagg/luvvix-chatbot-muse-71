@@ -1,9 +1,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { SendIcon, Mic, Smile, Paperclip } from "lucide-react";
+import { SendIcon, Mic, MicOff, Smile, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -12,13 +13,100 @@ interface ChatInputProps {
 
 export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) => {
   const [message, setMessage] = useState("");
+  const [isListening, setIsListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { toast } = useToast();
+  
+  // Speech recognition setup
+  const [recognitionInstance, setRecognitionInstance] = useState<SpeechRecognition | null>(null);
+
+  useEffect(() => {
+    // Check if browser supports SpeechRecognition
+    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+      // Create a speech recognition instance
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      
+      // Configure recognition
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'fr-FR'; // Set to French
+      
+      // Handle result event
+      recognition.onresult = (event) => {
+        const transcript = Array.from(event.results)
+          .map(result => result[0])
+          .map(result => result.transcript)
+          .join('');
+        
+        setMessage(transcript);
+      };
+      
+      // Handle end event
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+      
+      // Handle error event
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+        toast({
+          title: "Erreur de reconnaissance vocale",
+          description: "Impossible d'utiliser le microphone. Veuillez vérifier les autorisations.",
+          variant: "destructive"
+        });
+      };
+      
+      setRecognitionInstance(recognition);
+    } else {
+      toast({
+        title: "Fonctionnalité non supportée",
+        description: "La reconnaissance vocale n'est pas supportée par votre navigateur.",
+        variant: "destructive"
+      });
+    }
+    
+    // Cleanup
+    return () => {
+      if (recognitionInstance) {
+        recognitionInstance.stop();
+      }
+    };
+  }, [toast]);
+
+  const toggleListening = () => {
+    if (!recognitionInstance) return;
+    
+    if (isListening) {
+      recognitionInstance.stop();
+      setIsListening(false);
+    } else {
+      try {
+        recognitionInstance.start();
+        setIsListening(true);
+      } catch (error) {
+        console.error('Speech recognition error:', error);
+        toast({
+          title: "Erreur de reconnaissance vocale",
+          description: "Impossible de démarrer la reconnaissance vocale.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !isLoading) {
       onSendMessage(message);
       setMessage("");
+      
+      // Stop listening after sending
+      if (isListening && recognitionInstance) {
+        recognitionInstance.stop();
+        setIsListening(false);
+      }
     }
   };
 
@@ -97,10 +185,14 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
               <Button
                 type="button"
                 size="icon"
-                variant="ghost"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                variant={isListening ? "default" : "ghost"}
+                className={cn(
+                  "h-8 w-8 transition-all",
+                  isListening ? "bg-red-500 hover:bg-red-600 text-white" : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={toggleListening}
               >
-                <Mic size={16} />
+                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
               </Button>
               <Button
                 type="submit"
@@ -117,6 +209,17 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
           )}
         </AnimatePresence>
       </div>
+      
+      {isListening && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 10 }}
+          className="absolute -top-8 left-0 right-0 text-center text-xs text-red-500 font-medium"
+        >
+          Écoute en cours... Parlez maintenant
+        </motion.div>
+      )}
     </motion.form>
   );
 };

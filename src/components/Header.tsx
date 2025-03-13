@@ -5,7 +5,7 @@ import { LogIn, LogOut, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Dialog,
   DialogContent,
@@ -55,17 +55,9 @@ export const Header = () => {
       setIsSubmitting(true);
       await login(loginData.email, loginData.password);
       setAuthDialogOpen(false);
-      toast({
-        title: "Connexion réussie",
-        description: "Bienvenue sur LuvviX AI",
-      });
     } catch (error) {
       console.error("Login error:", error);
-      toast({
-        title: "Erreur de connexion",
-        description: "Vérifiez vos identifiants et réessayez",
-        variant: "destructive"
-      });
+      // Error handling is done in AuthContext
     } finally {
       setIsSubmitting(false);
     }
@@ -97,17 +89,9 @@ export const Header = () => {
       setIsSubmitting(true);
       await register(registerData.email, registerData.password);
       setAuthDialogOpen(false);
-      toast({
-        title: "Inscription réussie",
-        description: "Bienvenue sur LuvviX AI",
-      });
     } catch (error) {
       console.error("Register error:", error);
-      toast({
-        title: "Erreur d'inscription",
-        description: "Une erreur est survenue lors de la création de votre compte",
-        variant: "destructive"
-      });
+      // Error handling is done in AuthContext
     } finally {
       setIsSubmitting(false);
     }
@@ -116,16 +100,9 @@ export const Header = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      toast({
-        title: "Déconnexion réussie",
-        description: "À bientôt sur LuvviX AI",
-      });
     } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la déconnexion",
-        variant: "destructive"
-      });
+      console.error("Logout error:", error);
+      // Error handling is done in AuthContext
     }
   };
   
@@ -170,10 +147,10 @@ export const Header = () => {
                   <span>{user.email.split('@')[0]}</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-56 bg-background/95 backdrop-blur-lg border border-primary/20">
                 <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+                <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Se déconnecter</span>
                 </DropdownMenuItem>
@@ -198,7 +175,7 @@ export const Header = () => {
 
       {/* Auth Dialog */}
       <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur-lg border border-primary/20">
           <DialogHeader>
             <DialogTitle className="text-center text-xl">
               <span className="bg-gradient-to-r from-blue-400 to-indigo-600 bg-clip-text text-transparent">

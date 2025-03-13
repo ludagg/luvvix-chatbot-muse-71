@@ -5,6 +5,7 @@ type User = {
   id: string;
   email: string;
   displayName?: string;
+  createdAt: string;
 };
 
 type AuthContextType = {
@@ -21,8 +22,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // User credentials storage helper functions
+  const getUserCredentials = () => {
+    const credentials = localStorage.getItem('luvvix_credentials');
+    return credentials ? JSON.parse(credentials) : {};
+  };
+
+  const saveUserCredentials = (email: string, password: string) => {
+    const credentials = getUserCredentials();
+    credentials[email] = { password };
+    localStorage.setItem('luvvix_credentials', JSON.stringify(credentials));
+  };
+
+  const verifyCredentials = (email: string, password: string) => {
+    const credentials = getUserCredentials();
+    return credentials[email] && credentials[email].password === password;
+  };
+
   useEffect(() => {
-    // Check for saved user in localStorage
+    // Check for saved user session in localStorage
     const savedUser = localStorage.getItem('luvvix_user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
@@ -33,16 +51,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      // Mock login - in a real app, this would call your auth service
-      // This is just for demonstration purposes
-      const mockUser = {
-        id: `user_${Math.random().toString(36).substring(2, 9)}`,
+      
+      // Verify credentials
+      if (!verifyCredentials(email, password)) {
+        return Promise.reject(new Error("Invalid credentials"));
+      }
+      
+      const savedUser = {
+        id: `user_${email.split('@')[0]}`,
         email,
         displayName: email.split('@')[0],
+        createdAt: new Date().toISOString(),
       };
       
-      localStorage.setItem('luvvix_user', JSON.stringify(mockUser));
-      setUser(mockUser);
+      localStorage.setItem('luvvix_user', JSON.stringify(savedUser));
+      setUser(savedUser);
       
       return Promise.resolve();
     } catch (error) {
@@ -55,16 +78,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const register = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      // Mock registration - in a real app, this would call your auth service
-      // This is just for demonstration purposes
-      const mockUser = {
-        id: `user_${Math.random().toString(36).substring(2, 9)}`,
+      
+      // Check if user already exists
+      const credentials = getUserCredentials();
+      if (credentials[email]) {
+        return Promise.reject(new Error("User already exists"));
+      }
+      
+      // Save credentials
+      saveUserCredentials(email, password);
+      
+      // Create and save user
+      const newUser = {
+        id: `user_${email.split('@')[0]}`,
         email,
         displayName: email.split('@')[0],
+        createdAt: new Date().toISOString(),
       };
       
-      localStorage.setItem('luvvix_user', JSON.stringify(mockUser));
-      setUser(mockUser);
+      localStorage.setItem('luvvix_user', JSON.stringify(newUser));
+      setUser(newUser);
       
       return Promise.resolve();
     } catch (error) {

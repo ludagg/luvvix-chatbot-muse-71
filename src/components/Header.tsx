@@ -1,7 +1,7 @@
 
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Settings, HelpCircle, UserCircle, LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut, UserCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -155,14 +155,7 @@ export const Header = () => {
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-            <HelpCircle size={18} />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-            <Settings size={18} />
-          </Button>
-          
+        <div>
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -173,9 +166,6 @@ export const Header = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Profil</DropdownMenuItem>
-                <DropdownMenuItem>Paramètres</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-red-500">
                   <LogOut className="mr-2 h-4 w-4" />

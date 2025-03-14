@@ -2,12 +2,19 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { PlusCircle, Trash2, MessageSquare, FileText } from 'lucide-react';
+import { PlusCircle, Trash2, MessageSquare, FileText, MoreVertical, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export function ConversationSelector() {
   const { 
@@ -52,48 +59,48 @@ export function ConversationSelector() {
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-2 truncate w-[180px] md:w-[220px] justify-start flex-shrink-0 border-primary/20 hover:bg-primary/5 hover:text-primary"
-          >
-            <FileText className="h-4 w-4 flex-shrink-0 text-primary" />
-            <span className="truncate font-medium">{conversationTitle}</span>
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl font-semibold text-primary">Mes discussions</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 py-4">
+      <div className="flex items-center space-x-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
             <Button 
               variant="outline" 
+              size="sm" 
+              className="gap-2 truncate w-[180px] md:w-[220px] justify-between flex-shrink-0 border-primary/20 hover:bg-primary/5 hover:text-primary"
+            >
+              <div className="flex items-center gap-2 truncate flex-1">
+                <FileText className="h-4 w-4 flex-shrink-0 text-primary" />
+                <span className="truncate font-medium">{conversationTitle}</span>
+              </div>
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-[220px]">
+            <DropdownMenuLabel>Mes discussions</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              className="gap-2 cursor-pointer"
               onClick={handleNewConversation}
-              className="w-full justify-start gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary"
             >
               <PlusCircle className="h-4 w-4 text-primary" />
               Nouvelle discussion
-            </Button>
+            </DropdownMenuItem>
             
-            <ScrollArea className="h-[300px] pr-4">
-              <div className="space-y-2">
+            <DropdownMenuSeparator />
+            
+            <ScrollArea className="h-[220px]">
+              <div className="p-1 space-y-1">
                 {conversations.map((conversation) => (
-                  <motion.div
+                  <div
                     key={conversation.id}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
                     onClick={() => handleSelectConversation(conversation.id)}
                     className={cn(
-                      "flex items-center justify-between px-3 py-2 text-sm rounded-md cursor-pointer transition-all duration-200",
+                      "flex items-center justify-between px-2 py-1.5 text-sm rounded-md cursor-pointer transition-all duration-200",
                       conversation.id === currentConversationId
-                        ? "bg-primary/15 text-primary font-medium border border-primary/20"
-                        : "hover:bg-muted border border-transparent"
+                        ? "bg-primary/15 text-primary font-medium"
+                        : "hover:bg-muted"
                     )}
                   >
-                    <div className="flex items-center gap-2 truncate">
+                    <div className="flex items-center gap-2 truncate max-w-[160px]">
                       <MessageSquare className={cn(
                         "h-4 w-4 flex-shrink-0",
                         conversation.id === currentConversationId ? "text-primary" : "text-muted-foreground"
@@ -105,18 +112,28 @@ export function ConversationSelector() {
                         variant="ghost"
                         size="icon"
                         onClick={(e) => handleDeleteConversation(e, conversation.id)}
-                        className="h-7 w-7 opacity-70 hover:opacity-100 flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                        className="h-6 w-6 opacity-70 hover:opacity-100 flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </ScrollArea>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={createNewConversation}
+          title="Nouvelle discussion"
+          className="h-8 w-8"
+        >
+          <PlusCircle className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Delete confirmation dialog */}
       {deleteConfirmId && (

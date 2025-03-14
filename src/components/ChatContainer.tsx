@@ -7,9 +7,18 @@ import { nanoid } from "nanoid";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { ConversationSelector } from "./ConversationSelector";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, MessageCircleQuestion } from "lucide-react";
 import { Button } from "./ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+// Sample suggested questions for new conversation
+const SAMPLE_QUESTIONS = [
+  "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",
+  "Comment puis-je améliorer ma productivité au quotidien ?",
+  "Quelles sont les dernières tendances technologiques à surveiller ?",
+  "Comment fonctionne la blockchain et les cryptomonnaies ?",
+  "Quels sont les meilleurs livres de développement personnel à lire ?"
+];
 
 const INITIAL_MESSAGES: Message[] = [
   {
@@ -28,6 +37,7 @@ const GEMINI_API_URL =
 export const ChatContainer = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [isLoading, setIsLoading] = useState(false);
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { 
@@ -47,19 +57,100 @@ export const ChatContainer = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Initialize suggested questions for new conversations
+  useEffect(() => {
+    if (messages.length <= 1) {
+      // Only show initial suggestions for new conversations
+      const randomQuestions = [...SAMPLE_QUESTIONS]
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 3);
+      setSuggestedQuestions(randomQuestions);
+    }
+  }, [messages.length]);
+
   // Load conversation messages when currentConversationId changes
   useEffect(() => {
     if (user && currentConversationId) {
       const currentConv = conversations.find(c => c.id === currentConversationId);
       if (currentConv) {
         setMessages(currentConv.messages as Message[]);
+        
+        // Reset suggested questions for new conversation
+        if (currentConv.messages.length <= 1) {
+          const randomQuestions = [...SAMPLE_QUESTIONS]
+            .sort(() => 0.5 - Math.random())
+            .slice(0, 3);
+          setSuggestedQuestions(randomQuestions);
+        } else {
+          setSuggestedQuestions([]);
+        }
       } else {
         setMessages(INITIAL_MESSAGES);
+        // Show suggestions for fresh conversations
+        const randomQuestions = [...SAMPLE_QUESTIONS]
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 3);
+        setSuggestedQuestions(randomQuestions);
       }
     } else if (!user) {
       setMessages(INITIAL_MESSAGES);
+      // Show suggestions for fresh conversations
+      const randomQuestions = [...SAMPLE_QUESTIONS]
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 3);
+      setSuggestedQuestions(randomQuestions);
     }
   }, [currentConversationId, conversations, user]);
+
+  // Generate context-aware suggested questions based on the latest assistant response
+  const generateSuggestedQuestions = async (assistantResponse: string) => {
+    try {
+      // Create a prompt that asks for question suggestions based on the conversation
+      const systemMessage = {
+        role: "user",
+        parts: [
+          {
+            text: `Basé sur cette réponse, génère 3 questions de suivi pertinentes que l'utilisateur pourrait poser. Renvoie uniquement les questions séparées par un pipe (|). Exemple: "Question 1?|Question 2?|Question 3?". Réponse: "${assistantResponse.substring(0, 500)}..."`,
+          },
+        ],
+      };
+
+      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [systemMessage],
+          generationConfig: {
+            temperature: 1.0,
+            topK: 50,
+            topP: 0.9,
+            maxOutputTokens: 256,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const suggestions = data.candidates[0]?.content?.parts[0]?.text || "";
+      
+      // Split by pipe character and take up to 3 suggestions
+      const questionArray = suggestions.split("|").map(q => q.trim()).filter(Boolean).slice(0, 3);
+      
+      if (questionArray.length > 0) {
+        setSuggestedQuestions(questionArray);
+      } else {
+        setSuggestedQuestions([]);
+      }
+    } catch (error) {
+      console.error("Error generating suggestions:", error);
+      setSuggestedQuestions([]);
+    }
+  };
 
   const handleSendMessage = async (content: string) => {
     const userMessage: Message = {
@@ -71,6 +162,9 @@ export const ChatContainer = () => {
 
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
+    
+    // Clear suggested questions while processing
+    setSuggestedQuestions([]);
 
     // Save the conversation after adding user message
     if (user && currentConversationId) {
@@ -148,6 +242,9 @@ export const ChatContainer = () => {
       const finalMessages = [...updatedMessages, assistantMessage];
       setMessages(finalMessages);
 
+      // Generate new suggested questions based on the assistant's response
+      generateSuggestedQuestions(aiResponse);
+
       // Save the conversation after adding assistant message
       if (user && currentConversationId) {
         saveCurrentConversation(finalMessages as {
@@ -190,20 +287,16 @@ export const ChatContainer = () => {
     }
   };
 
+  // Handle clicking on a suggested question
+  const handleSuggestedQuestionClick = (question: string) => {
+    handleSendMessage(question);
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto bg-gradient-to-b from-background/50 via-background/80 to-background rounded-xl md:rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
       <div className="border-b border-border/40 p-2 px-3 md:px-4">
         <div className="flex items-center justify-between">
           <ConversationSelector />
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={createNewConversation}
-            title="Nouvelle discussion"
-            className="h-8 w-8"
-          >
-            <PlusCircle className="h-4 w-4" />
-          </Button>
         </div>
       </div>
       <div className="flex flex-col h-full relative">
@@ -226,6 +319,29 @@ export const ChatContainer = () => {
             <div ref={messagesEndRef} />
           </div>
         </motion.div>
+
+        {/* Suggested questions */}
+        {suggestedQuestions.length > 0 && !isLoading && (
+          <div className="px-4 md:px-6 pb-3 pt-1">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <MessageCircleQuestion className="h-4 w-4 text-primary" />
+              <span className="text-xs font-medium text-primary">Questions suggérées</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {suggestedQuestions.map((question, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs border-primary/30 hover:bg-primary/10 hover:text-primary text-muted-foreground"
+                  onClick={() => handleSuggestedQuestionClick(question)}
+                >
+                  {question}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/95 via-background/90 to-transparent pt-10 pb-3 md:pb-4 px-3 md:px-6">
           <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />

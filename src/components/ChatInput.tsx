@@ -5,6 +5,7 @@ import { SendIcon, Mic, MicOff, Smile, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -16,6 +17,7 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
   const [isListening, setIsListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   // Speech recognition setup
   const [recognitionInstance, setRecognitionInstance] = useState<SpeechRecognition | null>(null);
@@ -125,9 +127,12 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       onSubmit={handleSubmit}
-      className="relative w-full"
+      className={cn(
+        "relative w-full",
+        isMobile && "fixed bottom-0 left-0 right-0 pb-2 px-3 bg-gradient-to-t from-background via-background/95 to-background/80 pt-3 z-50"
+      )}
     >
-      <div className="relative flex items-center w-full bg-secondary/30 backdrop-blur-sm border border-primary/20 rounded-full shadow-lg overflow-hidden pl-2">
+      <div className="relative flex items-center w-full bg-secondary/40 backdrop-blur-sm border border-primary/20 rounded-full shadow-lg overflow-hidden pl-2">
         <Button
           type="button"
           size="icon"

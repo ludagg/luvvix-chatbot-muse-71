@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { ChatContainer } from "@/components/ChatContainer";
@@ -13,6 +12,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 // Define validation schemas
 const loginSchema = z.object({
@@ -35,7 +35,6 @@ const Index = () => {
   const [error, setError] = useState("");
   const isMobile = useIsMobile();
 
-  // Define forms
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -105,7 +104,10 @@ const Index = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex flex-col flex-grow pt-16 md:pt-20 pb-6 px-2 md:px-4 relative z-10"
+        className={cn(
+          "flex flex-col flex-grow pt-16 md:pt-20 pb-6 px-2 md:px-4 relative z-10",
+          isMobile && "pb-20"
+        )}
       >
         <div className="flex-1 w-full max-w-5xl mx-auto">
           {!user && (
@@ -132,12 +134,10 @@ const Index = () => {
         </div>
       </motion.main>
       
-      {/* Modern footer with gradient */}
       <div className="relative z-10 py-2 md:py-3 text-center text-xs text-muted-foreground bg-gradient-to-t from-background/80 to-transparent">
         <p>© {new Date().getFullYear()} LuvviX AI · Tous droits réservés</p>
       </div>
 
-      {/* Authentication Dialog */}
       <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
         <DialogContent className="sm:max-w-[425px] p-4 md:p-6">
           <DialogHeader>

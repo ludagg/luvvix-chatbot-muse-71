@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChatMessage, Message } from "./ChatMessage";
@@ -7,9 +8,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { ConversationSelector } from "./ConversationSelector";
 import { SuggestedQuestions } from "./SuggestedQuestions";
-import { MessageCircleQuestion } from "lucide-react";
+import { MessageCircleQuestion, Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const SAMPLE_QUESTIONS = [
   "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",
@@ -47,6 +49,7 @@ export const ChatContainer = () => {
     createNewConversation 
   } = useAuth();
   const isMobile = useIsMobile();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -57,13 +60,14 @@ export const ChatContainer = () => {
   }, [messages]);
 
   useEffect(() => {
-    if (messages.length <= 1) {
+    // Toujours montrer des questions suggérées par défaut
+    if (messages.length <= 1 || suggestedQuestions.length === 0) {
       const randomQuestions = [...SAMPLE_QUESTIONS]
         .sort(() => 0.5 - Math.random())
         .slice(0, 3);
       setSuggestedQuestions(randomQuestions);
     }
-  }, [messages.length]);
+  }, [messages.length, suggestedQuestions.length]);
 
   useEffect(() => {
     if (user && currentConversationId) {
@@ -76,8 +80,6 @@ export const ChatContainer = () => {
             .sort(() => 0.5 - Math.random())
             .slice(0, 3);
           setSuggestedQuestions(randomQuestions);
-        } else {
-          setSuggestedQuestions([]);
         }
       } else {
         setMessages(INITIAL_MESSAGES);
@@ -134,11 +136,19 @@ export const ChatContainer = () => {
       if (questionArray.length > 0) {
         setSuggestedQuestions(questionArray);
       } else {
-        setSuggestedQuestions([]);
+        // Si on ne peut pas générer de questions, utiliser les questions par défaut
+        const randomQuestions = [...SAMPLE_QUESTIONS]
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 3);
+        setSuggestedQuestions(randomQuestions);
       }
     } catch (error) {
       console.error("Error generating suggestions:", error);
-      setSuggestedQuestions([]);
+      // Utiliser les questions par défaut en cas d'erreur
+      const randomQuestions = [...SAMPLE_QUESTIONS]
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 3);
+      setSuggestedQuestions(randomQuestions);
     }
   };
 
@@ -153,8 +163,6 @@ export const ChatContainer = () => {
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     
-    setSuggestedQuestions([]);
-
     if (user && currentConversationId) {
       saveCurrentConversation(updatedMessages as {
         id: string;
@@ -265,6 +273,14 @@ export const ChatContainer = () => {
           timestamp: Date;
         }[]);
       }
+      
+      // Assurer qu'il y a toujours des questions suggérées
+      if (suggestedQuestions.length === 0) {
+        const randomQuestions = [...SAMPLE_QUESTIONS]
+          .sort(() => 0.5 - Math.random())
+          .slice(0, 3);
+        setSuggestedQuestions(randomQuestions);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -278,7 +294,27 @@ export const ChatContainer = () => {
     <div className="flex flex-col h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto bg-gradient-to-b from-background/50 via-background/80 to-background rounded-xl md:rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
       <div className="border-b border-border/40 p-2 px-3 md:px-4 sticky top-0 z-20 bg-background/95 backdrop-blur-sm">
         <div className="flex items-center justify-between">
-          <ConversationSelector />
+          <div className="flex items-center">
+            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-muted-foreground mr-2">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side={isMobile ? "left" : "left"} className="w-72 sm:w-80">
+                <div className="pt-6">
+                  <ConversationSelector closeMenu={() => setIsMenuOpen(false)} />
+                </div>
+              </SheetContent>
+            </Sheet>
+            <div className="text-sm font-medium">
+              {currentConversationId ? (
+                conversations.find(c => c.id === currentConversationId)?.title || "Nouvelle discussion"
+              ) : (
+                "Nouvelle discussion"
+              )}
+            </div>
+          </div>
         </div>
       </div>
       <div className="flex flex-col h-full relative">
@@ -288,7 +324,7 @@ export const ChatContainer = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6 pb-20 md:pb-24 scrollbar-none"
+          className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6 pb-36 scrollbar-none"
         >
           <div className="space-y-4 md:space-y-6">
             {messages.map((message, index) => (
@@ -302,15 +338,19 @@ export const ChatContainer = () => {
           </div>
         </motion.div>
 
-        {suggestedQuestions.length > 0 && !isLoading && (
-          <SuggestedQuestions 
-            questions={suggestedQuestions} 
-            onQuestionClick={handleSuggestedQuestionClick} 
-          />
-        )}
-
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/95 via-background/90 to-transparent pt-10 pb-3 md:pb-4 px-3 md:px-6">
-          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/95 via-background/90 to-transparent pt-16 pb-4">
+          <div className="px-3 md:px-6 mb-3">
+            {suggestedQuestions.length > 0 && (
+              <SuggestedQuestions 
+                questions={suggestedQuestions} 
+                onQuestionClick={handleSuggestedQuestionClick} 
+              />
+            )}
+          </div>
+          
+          <div className="px-3 md:px-6">
+            <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+          </div>
         </div>
       </div>
     </div>

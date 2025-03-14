@@ -46,13 +46,21 @@ export function ConversationSelector() {
     setDeleteConfirmId(null);
   };
 
+  // Get the current conversation title
+  const currentConversation = conversations.find(c => c.id === currentConversationId);
+  const conversationTitle = currentConversation?.title || 'Nouvelle discussion';
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-2">
-            <MessageSquare className="h-4 w-4" />
-            {conversations.find(c => c.id === currentConversationId)?.title || 'Nouvelle discussion'}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="gap-2 truncate max-w-[200px] justify-start flex-shrink-0"
+          >
+            <MessageSquare className="h-4 w-4 flex-shrink-0" />
+            <span className="truncate">{conversationTitle}</span>
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
@@ -90,7 +98,7 @@ export function ConversationSelector() {
                         variant="ghost"
                         size="icon"
                         onClick={(e) => handleDeleteConversation(e, conversation.id)}
-                        className="h-7 w-7 opacity-70 hover:opacity-100"
+                        className="h-7 w-7 opacity-70 hover:opacity-100 flex-shrink-0"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

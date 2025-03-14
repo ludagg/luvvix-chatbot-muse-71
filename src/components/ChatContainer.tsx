@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChatMessage, Message } from "./ChatMessage";
@@ -7,6 +6,7 @@ import { nanoid } from "nanoid";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { ConversationSelector } from "./ConversationSelector";
+import { SuggestedQuestions } from "./SuggestedQuestions";
 import { PlusCircle, MessageCircleQuestion } from "lucide-react";
 import { Button } from "./ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -57,10 +57,8 @@ export const ChatContainer = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Initialize suggested questions for new conversations
   useEffect(() => {
     if (messages.length <= 1) {
-      // Only show initial suggestions for new conversations
       const randomQuestions = [...SAMPLE_QUESTIONS]
         .sort(() => 0.5 - Math.random())
         .slice(0, 3);
@@ -68,14 +66,12 @@ export const ChatContainer = () => {
     }
   }, [messages.length]);
 
-  // Load conversation messages when currentConversationId changes
   useEffect(() => {
     if (user && currentConversationId) {
       const currentConv = conversations.find(c => c.id === currentConversationId);
       if (currentConv) {
         setMessages(currentConv.messages as Message[]);
         
-        // Reset suggested questions for new conversation
         if (currentConv.messages.length <= 1) {
           const randomQuestions = [...SAMPLE_QUESTIONS]
             .sort(() => 0.5 - Math.random())
@@ -86,7 +82,6 @@ export const ChatContainer = () => {
         }
       } else {
         setMessages(INITIAL_MESSAGES);
-        // Show suggestions for fresh conversations
         const randomQuestions = [...SAMPLE_QUESTIONS]
           .sort(() => 0.5 - Math.random())
           .slice(0, 3);
@@ -94,7 +89,6 @@ export const ChatContainer = () => {
       }
     } else if (!user) {
       setMessages(INITIAL_MESSAGES);
-      // Show suggestions for fresh conversations
       const randomQuestions = [...SAMPLE_QUESTIONS]
         .sort(() => 0.5 - Math.random())
         .slice(0, 3);
@@ -102,10 +96,8 @@ export const ChatContainer = () => {
     }
   }, [currentConversationId, conversations, user]);
 
-  // Generate context-aware suggested questions based on the latest assistant response
   const generateSuggestedQuestions = async (assistantResponse: string) => {
     try {
-      // Create a prompt that asks for question suggestions based on the conversation
       const systemMessage = {
         role: "user",
         parts: [
@@ -138,7 +130,6 @@ export const ChatContainer = () => {
       const data = await response.json();
       const suggestions = data.candidates[0]?.content?.parts[0]?.text || "";
       
-      // Split by pipe character and take up to 3 suggestions
       const questionArray = suggestions.split("|").map(q => q.trim()).filter(Boolean).slice(0, 3);
       
       if (questionArray.length > 0) {
@@ -163,10 +154,8 @@ export const ChatContainer = () => {
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     
-    // Clear suggested questions while processing
     setSuggestedQuestions([]);
 
-    // Save the conversation after adding user message
     if (user && currentConversationId) {
       saveCurrentConversation(updatedMessages as {
         id: string;
@@ -179,7 +168,6 @@ export const ChatContainer = () => {
     setIsLoading(true);
 
     try {
-      // Contexte IA intégré dans l'historique sous forme de message utilisateur
       const systemMessage = {
         role: "user",
         parts: [
@@ -193,13 +181,12 @@ export const ChatContainer = () => {
         ],
       };
 
-      // Historique des 6 derniers messages + Contexte IA
       const conversationHistory = updatedMessages.slice(-6).map((msg) => ({
         role: msg.role === "assistant" ? "model" : "user",
         parts: [{ text: msg.content }],
       }));
 
-      conversationHistory.unshift(systemMessage); // Ajout du contexte en premier
+      conversationHistory.unshift(systemMessage);
       conversationHistory.push({
         role: "user",
         parts: [{ text: content }],
@@ -242,10 +229,8 @@ export const ChatContainer = () => {
       const finalMessages = [...updatedMessages, assistantMessage];
       setMessages(finalMessages);
 
-      // Generate new suggested questions based on the assistant's response
       generateSuggestedQuestions(aiResponse);
 
-      // Save the conversation after adding assistant message
       if (user && currentConversationId) {
         saveCurrentConversation(finalMessages as {
           id: string;
@@ -273,7 +258,6 @@ export const ChatContainer = () => {
       const finalMessages = [...updatedMessages, errorMessage];
       setMessages(finalMessages);
       
-      // Save even if there's an error
       if (user && currentConversationId) {
         saveCurrentConversation(finalMessages as {
           id: string;
@@ -287,7 +271,6 @@ export const ChatContainer = () => {
     }
   };
 
-  // Handle clicking on a suggested question
   const handleSuggestedQuestionClick = (question: string) => {
     handleSendMessage(question);
   };
@@ -320,27 +303,11 @@ export const ChatContainer = () => {
           </div>
         </motion.div>
 
-        {/* Suggested questions */}
         {suggestedQuestions.length > 0 && !isLoading && (
-          <div className="px-4 md:px-6 pb-3 pt-1">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <MessageCircleQuestion className="h-4 w-4 text-primary" />
-              <span className="text-xs font-medium text-primary">Questions suggérées</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {suggestedQuestions.map((question, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs border-primary/30 hover:bg-primary/10 hover:text-primary text-muted-foreground"
-                  onClick={() => handleSuggestedQuestionClick(question)}
-                >
-                  {question}
-                </Button>
-              ))}
-            </div>
-          </div>
+          <SuggestedQuestions 
+            questions={suggestedQuestions} 
+            onQuestionClick={handleSuggestedQuestionClick} 
+          />
         )}
 
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/95 via-background/90 to-transparent pt-10 pb-3 md:pb-4 px-3 md:px-6">

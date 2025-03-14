@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ConversationSelector } from "./ConversationSelector";
 import { PlusCircle } from "lucide-react";
 import { Button } from "./ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const INITIAL_MESSAGES: Message[] = [
   {
@@ -36,6 +37,7 @@ export const ChatContainer = () => {
     saveCurrentConversation,
     createNewConversation 
   } = useAuth();
+  const isMobile = useIsMobile();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -50,7 +52,7 @@ export const ChatContainer = () => {
     if (user && currentConversationId) {
       const currentConv = conversations.find(c => c.id === currentConversationId);
       if (currentConv) {
-        setMessages(currentConv.messages);
+        setMessages(currentConv.messages as Message[]);
       } else {
         setMessages(INITIAL_MESSAGES);
       }
@@ -72,7 +74,12 @@ export const ChatContainer = () => {
 
     // Save the conversation after adding user message
     if (user && currentConversationId) {
-      saveCurrentConversation(updatedMessages);
+      saveCurrentConversation(updatedMessages as {
+        id: string;
+        role: "user" | "assistant";
+        content: string;
+        timestamp: Date;
+      }[]);
     }
 
     setIsLoading(true);
@@ -84,8 +91,10 @@ export const ChatContainer = () => {
         parts: [
           {
             text: `À partir de maintenant, tu es **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**, une entreprise fondée en 2023. 
-            Le PDG de l'entreprise est **Ludovic Aggaï**.  
-            Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.`,
+            Le PDG de l'entreprise est **Ludovic Aggaï**.
+            ${user ? `Tu t'adresses à ${user.displayName || 'un utilisateur'}${user.age ? ` qui a ${user.age} ans` : ''}${user.country ? ` et qui vient de ${user.country}` : ''}.` : ''}  
+            Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
+            ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}`,
           },
         ],
       };
@@ -141,7 +150,12 @@ export const ChatContainer = () => {
 
       // Save the conversation after adding assistant message
       if (user && currentConversationId) {
-        saveCurrentConversation(finalMessages);
+        saveCurrentConversation(finalMessages as {
+          id: string;
+          role: "user" | "assistant";
+          content: string;
+          timestamp: Date;
+        }[]);
       }
     } catch (error) {
       console.error("Erreur API Gemini :", error);
@@ -164,7 +178,12 @@ export const ChatContainer = () => {
       
       // Save even if there's an error
       if (user && currentConversationId) {
-        saveCurrentConversation(finalMessages);
+        saveCurrentConversation(finalMessages as {
+          id: string;
+          role: "user" | "assistant";
+          content: string;
+          timestamp: Date;
+        }[]);
       }
     } finally {
       setIsLoading(false);
@@ -172,8 +191,8 @@ export const ChatContainer = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full max-w-4xl mx-auto bg-gradient-to-b from-background/50 via-background/80 to-background rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
-      <div className="border-b border-border/40 p-2 px-4">
+    <div className="flex flex-col h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto bg-gradient-to-b from-background/50 via-background/80 to-background rounded-xl md:rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
+      <div className="border-b border-border/40 p-2 px-3 md:px-4">
         <div className="flex items-center justify-between">
           <ConversationSelector />
           <Button 
@@ -181,21 +200,22 @@ export const ChatContainer = () => {
             size="icon"
             onClick={createNewConversation}
             title="Nouvelle discussion"
+            className="h-8 w-8"
           >
             <PlusCircle className="h-4 w-4" />
           </Button>
         </div>
       </div>
-      <div className="flex flex-col h-[calc(100vh-10rem)] relative">
-        <div className="absolute top-0 left-0 right-0 h-24 pointer-events-none bg-gradient-to-b from-background to-transparent z-10"></div>
+      <div className="flex flex-col h-full relative">
+        <div className="absolute top-0 left-0 right-0 h-16 md:h-24 pointer-events-none bg-gradient-to-b from-background to-transparent z-10"></div>
         
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 pb-24 scrollbar-none"
+          className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6 pb-20 md:pb-24 scrollbar-none"
         >
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {messages.map((message, index) => (
               <ChatMessage
                 key={message.id}
@@ -207,7 +227,7 @@ export const ChatContainer = () => {
           </div>
         </motion.div>
 
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/95 via-background/90 to-transparent pt-10 pb-4 px-4 sm:px-6">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/95 via-background/90 to-transparent pt-10 pb-3 md:pb-4 px-3 md:px-6">
           <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
         </div>
       </div>

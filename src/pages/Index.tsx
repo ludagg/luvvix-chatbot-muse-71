@@ -8,26 +8,76 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+// Define validation schemas
+const loginSchema = z.object({
+  email: z.string().email({ message: "Adresse email invalide" }),
+  password: z.string().min(6, { message: "Mot de passe doit contenir au moins 6 caractères" }),
+});
+
+const registerSchema = z.object({
+  email: z.string().email({ message: "Adresse email invalide" }),
+  password: z.string().min(6, { message: "Mot de passe doit contenir au moins 6 caractères" }),
+  displayName: z.string().min(2, { message: "Prénom requis" }),
+  age: z.coerce.number().min(13, { message: "Vous devez avoir au moins 13 ans" }).max(120, { message: "Âge invalide" }),
+  country: z.string().min(2, { message: "Pays requis" }),
+});
 
 const Index = () => {
   const { user, login, register, isLoading } = useAuth();
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const isMobile = useIsMobile();
 
-  const handleAuth = async () => {
+  // Define forms
+  const loginForm = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const registerForm = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      displayName: "",
+      age: undefined,
+      country: "",
+    },
+  });
+
+  const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     setError("");
     try {
-      if (authMode === "login") {
-        await login(email, password);
-      } else {
-        await register(email, password);
-      }
+      await login(values.email, values.password);
       setIsAuthDialogOpen(false);
-      setEmail("");
-      setPassword("");
+      loginForm.reset();
+    } catch (err: any) {
+      setError(err.message || "Une erreur est survenue");
+    }
+  };
+
+  const handleRegister = async (values: z.infer<typeof registerSchema>) => {
+    setError("");
+    try {
+      await register(
+        values.email, 
+        values.password, 
+        values.displayName, 
+        values.age, 
+        values.country
+      );
+      setIsAuthDialogOpen(false);
+      registerForm.reset();
     } catch (err: any) {
       setError(err.message || "Une erreur est survenue");
     }
@@ -43,9 +93,9 @@ const Index = () => {
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-background via-background to-background/90">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -inset-[10%] opacity-10">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
-          <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-1/3 left-1/3 w-96 h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
+          <div className="absolute top-1/4 left-1/4 w-72 h-72 md:w-96 md:h-96 bg-blue-500/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
+          <div className="absolute top-1/3 right-1/4 w-72 h-72 md:w-96 md:h-96 bg-indigo-500/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
+          <div className="absolute bottom-1/3 left-1/3 w-72 h-72 md:w-96 md:h-96 bg-primary/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
         </div>
       </div>
       
@@ -55,19 +105,23 @@ const Index = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex flex-col flex-grow pt-20 pb-6 relative z-10"
+        className="flex flex-col flex-grow pt-16 md:pt-20 pb-6 px-2 md:px-4 relative z-10"
       >
-        <div className="flex-1 w-full max-w-5xl mx-auto px-4">
+        <div className="flex-1 w-full max-w-5xl mx-auto">
           {!user && (
-            <div className="text-center mb-6">
-              <p className="text-muted-foreground mb-4">
+            <div className="text-center my-4 md:mb-6">
+              <p className="text-muted-foreground mb-3 md:mb-4 text-sm md:text-base">
                 Connectez-vous pour sauvegarder vos discussions
               </p>
-              <div className="flex justify-center gap-4">
-                <Button onClick={() => handleOpenAuth("login")}>
+              <div className="flex justify-center gap-3 md:gap-4">
+                <Button size={isMobile ? "sm" : "default"} onClick={() => handleOpenAuth("login")}>
                   Se connecter
                 </Button>
-                <Button variant="outline" onClick={() => handleOpenAuth("register")}>
+                <Button 
+                  variant="outline" 
+                  size={isMobile ? "sm" : "default"} 
+                  onClick={() => handleOpenAuth("register")}
+                >
                   S'inscrire
                 </Button>
               </div>
@@ -79,13 +133,13 @@ const Index = () => {
       </motion.main>
       
       {/* Modern footer with gradient */}
-      <div className="relative z-10 py-3 text-center text-xs text-muted-foreground bg-gradient-to-t from-background/80 to-transparent">
+      <div className="relative z-10 py-2 md:py-3 text-center text-xs text-muted-foreground bg-gradient-to-t from-background/80 to-transparent">
         <p>© {new Date().getFullYear()} LuvviX AI · Tous droits réservés</p>
       </div>
 
       {/* Authentication Dialog */}
       <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] p-4 md:p-6">
           <DialogHeader>
             <DialogTitle>
               {authMode === "login" ? "Connexion" : "Inscription"}
@@ -98,47 +152,157 @@ const Index = () => {
           </DialogHeader>
           
           <Tabs defaultValue={authMode} className="w-full" onValueChange={(v) => setAuthMode(v as "login" | "register")}>
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
               <TabsTrigger value="login">Connexion</TabsTrigger>
               <TabsTrigger value="register">Inscription</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="login" className="space-y-4 mt-2">
+              {error && (
+                <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+                  {error}
+                </div>
+              )}
+              
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                  <FormField
+                    control={loginForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="exemple@email.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mot de passe</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Chargement..." : "Se connecter"}
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+            
+            <TabsContent value="register" className="space-y-4 mt-2">
+              {error && (
+                <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+                  {error}
+                </div>
+              )}
+              
+              <Form {...registerForm}>
+                <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                  <FormField
+                    control={registerForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="exemple@email.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={registerForm.control}
+                    name="displayName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prénom</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Votre prénom" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={registerForm.control}
+                      name="age"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Âge</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="25" 
+                              min={13}
+                              max={120}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={registerForm.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Pays</FormLabel>
+                          <FormControl>
+                            <Input placeholder="France" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <FormField
+                    control={registerForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mot de passe</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Chargement..." : "S'inscrire"}
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
           </Tabs>
-
-          <div className="grid gap-4 py-4">
-            {error && (
-              <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
-                {error}
-              </div>
-            )}
-            <div className="grid gap-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="exemple@email.com"
-              />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                Mot de passe
-              </label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={handleAuth} disabled={isLoading}>
-              {isLoading ? "Chargement..." : authMode === "login" ? "Se connecter" : "S'inscrire"}
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

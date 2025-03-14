@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
 
@@ -6,6 +5,8 @@ type User = {
   id: string;
   email: string;
   displayName?: string;
+  age?: number;
+  country?: string;
   createdAt: string;
 };
 
@@ -27,7 +28,7 @@ type AuthContextType = {
   conversations: Conversation[];
   currentConversationId: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, displayName?: string, age?: number, country?: string) => Promise<void>;
   logout: () => Promise<void>;
   createNewConversation: () => void;
   loadConversation: (conversationId: string) => void;
@@ -50,15 +51,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return credentials ? JSON.parse(credentials) : {};
   };
 
-  const saveUserCredentials = (email: string, password: string) => {
+  const saveUserCredentials = (email: string, password: string, userData: Partial<User> = {}) => {
     const credentials = getUserCredentials();
-    credentials[email] = { password };
+    credentials[email] = { 
+      password,
+      userData
+    };
     localStorage.setItem('luvvix_credentials', JSON.stringify(credentials));
   };
 
   const verifyCredentials = (email: string, password: string) => {
     const credentials = getUserCredentials();
     return credentials[email] && credentials[email].password === password;
+  };
+
+  const getUserData = (email: string) => {
+    const credentials = getUserCredentials();
+    return credentials[email]?.userData || {};
   };
 
   // Conversation management functions
@@ -99,6 +108,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const createNewConversation = () => {
+    // Generate greeting with personalization if user info available
+    let greeting = "Bonjour ! Je suis **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**. Comment puis-je vous aider aujourd'hui ? 😊";
+    
+    if (user?.displayName) {
+      greeting = `Bonjour ${user.displayName} ! Je suis **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**. Comment puis-je vous aider aujourd'hui ? 😊`;
+    }
+
     const newConversation: Conversation = {
       id: `conv_${Date.now()}`,
       title: `Nouvelle discussion ${conversations.length + 1}`,
@@ -106,7 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       messages: [{
         id: "1",
         role: "assistant",
-        content: "Bonjour ! Je suis **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**. Comment puis-je vous aider aujourd'hui ? 😊",
+        content: greeting,
         timestamp: new Date(),
       }]
     };
@@ -213,13 +229,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Verify credentials
       if (!verifyCredentials(email, password)) {
         console.error('Invalid credentials');
-        throw new Error("Invalid credentials");
+        throw new Error("Email ou mot de passe incorrect");
       }
+      
+      // Get additional user data from storage
+      const userData = getUserData(email);
       
       const savedUser = {
         id: `user_${email.split('@')[0]}`,
         email,
-        displayName: email.split('@')[0],
+        displayName: userData.displayName || email.split('@')[0],
+        age: userData.age,
+        country: userData.country,
         createdAt: new Date().toISOString(),
       };
       
@@ -232,7 +253,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('Login successful for', email);
       toast({
         title: "Connexion réussie",
-        description: "Bienvenue sur LuvviX AI",
+        description: `Bienvenue ${savedUser.displayName} sur LuvviX AI`,
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -247,7 +268,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const register = async (email: string, password: string) => {
+  const register = async (email: string, password: string, displayName?: string, age?: number, country?: string) => {
     console.log(`Register attempt for ${email}`);
     setIsLoading(true);
     
@@ -256,17 +277,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const credentials = getUserCredentials();
       if (credentials[email]) {
         console.error('User already exists');
-        throw new Error("User already exists");
+        throw new Error("Un compte avec cet email existe déjà");
       }
       
-      // Save credentials
-      saveUserCredentials(email, password);
+      // Save credentials and user data
+      saveUserCredentials(email, password, { displayName, age, country });
       
       // Create and save user
       const newUser = {
         id: `user_${email.split('@')[0]}`,
         email,
-        displayName: email.split('@')[0],
+        displayName: displayName || email.split('@')[0],
+        age,
+        country,
         createdAt: new Date().toISOString(),
       };
       
@@ -279,7 +302,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('Registration successful for', email);
       toast({
         title: "Inscription réussie",
-        description: "Bienvenue sur LuvviX AI",
+        description: `Bienvenue ${newUser.displayName} sur LuvviX AI`,
       });
     } catch (error) {
       console.error('Register error:', error);

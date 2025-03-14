@@ -7,11 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { ConversationSelector } from "./ConversationSelector";
 import { SuggestedQuestions } from "./SuggestedQuestions";
-import { PlusCircle, MessageCircleQuestion } from "lucide-react";
+import { MessageCircleQuestion } from "lucide-react";
 import { Button } from "./ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-// Sample suggested questions for new conversation
 const SAMPLE_QUESTIONS = [
   "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",
   "Comment puis-je améliorer ma productivité au quotidien ?",
@@ -277,7 +276,7 @@ export const ChatContainer = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto bg-gradient-to-b from-background/50 via-background/80 to-background rounded-xl md:rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
-      <div className="border-b border-border/40 p-2 px-3 md:px-4">
+      <div className="border-b border-border/40 p-2 px-3 md:px-4 sticky top-0 z-20 bg-background/95 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <ConversationSelector />
         </div>

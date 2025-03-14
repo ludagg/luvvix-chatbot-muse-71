@@ -57,7 +57,7 @@ export function SuggestedQuestions({ questions, onQuestionClick }: SuggestedQues
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs border-primary/30 hover:bg-primary/10 hover:text-primary text-muted-foreground whitespace-nowrap"
+                className="text-xs md:text-sm border-primary/30 hover:bg-primary/10 hover:text-primary text-muted-foreground whitespace-nowrap"
                 onClick={() => onQuestionClick(question)}
               >
                 {question}
@@ -77,7 +77,7 @@ export function SuggestedQuestions({ questions, onQuestionClick }: SuggestedQues
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs border-primary/30 hover:bg-primary/10 hover:text-primary text-muted-foreground whitespace-nowrap"
+                className="text-xs md:text-sm border-primary/30 hover:bg-primary/10 hover:text-primary text-muted-foreground whitespace-nowrap"
                 onClick={() => onQuestionClick(question)}
               >
                 {question}

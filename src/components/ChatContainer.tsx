@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChatMessage, Message } from "./ChatMessage";
@@ -8,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { ConversationSelector } from "./ConversationSelector";
 import { SuggestedQuestions } from "./SuggestedQuestions";
-import { MessageCircleQuestion, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -46,7 +45,8 @@ export const ChatContainer = () => {
     conversations, 
     currentConversationId, 
     saveCurrentConversation,
-    createNewConversation 
+    createNewConversation,
+    setCurrentConversation
   } = useAuth();
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -60,7 +60,6 @@ export const ChatContainer = () => {
   }, [messages]);
 
   useEffect(() => {
-    // Toujours montrer des questions suggérées par défaut
     if (messages.length <= 1 || suggestedQuestions.length === 0) {
       const randomQuestions = [...SAMPLE_QUESTIONS]
         .sort(() => 0.5 - Math.random())
@@ -136,7 +135,6 @@ export const ChatContainer = () => {
       if (questionArray.length > 0) {
         setSuggestedQuestions(questionArray);
       } else {
-        // Si on ne peut pas générer de questions, utiliser les questions par défaut
         const randomQuestions = [...SAMPLE_QUESTIONS]
           .sort(() => 0.5 - Math.random())
           .slice(0, 3);
@@ -144,7 +142,6 @@ export const ChatContainer = () => {
       }
     } catch (error) {
       console.error("Error generating suggestions:", error);
-      // Utiliser les questions par défaut en cas d'erreur
       const randomQuestions = [...SAMPLE_QUESTIONS]
         .sort(() => 0.5 - Math.random())
         .slice(0, 3);
@@ -274,7 +271,6 @@ export const ChatContainer = () => {
         }[]);
       }
       
-      // Assurer qu'il y a toujours des questions suggérées
       if (suggestedQuestions.length === 0) {
         const randomQuestions = [...SAMPLE_QUESTIONS]
           .sort(() => 0.5 - Math.random())
@@ -291,7 +287,7 @@ export const ChatContainer = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto bg-gradient-to-b from-background/50 via-background/80 to-background rounded-xl md:rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
+    <div className="flex flex-col h-full w-full max-w-4xl mx-auto bg-gradient-to-b from-background/50 via-background/80 to-background rounded-xl md:rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
       <div className="border-b border-border/40 p-2 px-3 md:px-4 sticky top-0 z-20 bg-background/95 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
@@ -301,9 +297,12 @@ export const ChatContainer = () => {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side={isMobile ? "left" : "left"} className="w-72 sm:w-80">
+              <SheetContent side="left" className="w-72 sm:w-80">
                 <div className="pt-6">
-                  <ConversationSelector closeMenu={() => setIsMenuOpen(false)} />
+                  <ConversationSelector 
+                    closeMenu={() => setIsMenuOpen(false)} 
+                    setCurrentConversationId={setCurrentConversation}
+                  />
                 </div>
               </SheetContent>
             </Sheet>
@@ -317,7 +316,7 @@ export const ChatContainer = () => {
           </div>
         </div>
       </div>
-      <div className="flex flex-col h-full relative">
+      <div className="flex flex-col flex-grow relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-16 md:h-24 pointer-events-none bg-gradient-to-b from-background to-transparent z-10"></div>
         
         <motion.div
@@ -348,7 +347,7 @@ export const ChatContainer = () => {
             )}
           </div>
           
-          <div className="px-3 md:px-6">
+          <div className="px-3 md:px-6 mb-4">
             <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
           </div>
         </div>

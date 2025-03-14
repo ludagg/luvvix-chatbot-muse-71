@@ -14,7 +14,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
-// Define validation schemas
 const loginSchema = z.object({
   email: z.string().email({ message: "Adresse email invalide" }),
   password: z.string().min(6, { message: "Mot de passe doit contenir au moins 6 caractères" }),
@@ -89,7 +88,7 @@ const Index = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-background via-background to-background/90">
+    <div className="flex flex-col min-h-screen h-screen bg-gradient-to-b from-background via-background to-background/90 overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -inset-[10%] opacity-10">
           <div className="absolute top-1/4 left-1/4 w-72 h-72 md:w-96 md:h-96 bg-blue-500/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
@@ -104,37 +103,34 @@ const Index = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className={cn(
-          "flex flex-col flex-grow pt-16 md:pt-20 pb-6 px-2 md:px-4 relative z-10",
-          isMobile && "pb-20"
-        )}
+        className="flex flex-col flex-grow relative z-10 overflow-hidden"
       >
-        <div className="flex-1 w-full max-w-5xl mx-auto">
-          {!user && (
-            <div className="text-center my-4 md:mb-6">
-              <p className="text-muted-foreground mb-3 md:mb-4 text-sm md:text-base">
-                Connectez-vous pour sauvegarder vos discussions
-              </p>
-              <div className="flex justify-center gap-3 md:gap-4">
-                <Button size={isMobile ? "sm" : "default"} onClick={() => handleOpenAuth("login")}>
-                  Se connecter
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size={isMobile ? "sm" : "default"} 
-                  onClick={() => handleOpenAuth("register")}
-                >
-                  S'inscrire
-                </Button>
-              </div>
+        {!user && (
+          <div className="text-center mt-4 mb-2 px-4 md:mb-4">
+            <p className="text-muted-foreground mb-3 md:mb-4 text-sm md:text-base">
+              Connectez-vous pour sauvegarder vos discussions
+            </p>
+            <div className="flex justify-center gap-3 md:gap-4">
+              <Button size={isMobile ? "sm" : "default"} onClick={() => handleOpenAuth("login")}>
+                Se connecter
+              </Button>
+              <Button 
+                variant="outline" 
+                size={isMobile ? "sm" : "default"} 
+                onClick={() => handleOpenAuth("register")}
+              >
+                S'inscrire
+              </Button>
             </div>
-          )}
+          </div>
+        )}
 
+        <div className="flex-1 h-full w-full max-w-5xl mx-auto px-2 md:px-4 pb-8">
           <ChatContainer />
         </div>
       </motion.main>
       
-      <div className="relative z-10 py-2 md:py-3 text-center text-xs text-muted-foreground bg-gradient-to-t from-background/80 to-transparent">
+      <div className="relative z-10 py-2 md:py-3 text-center text-xs text-muted-foreground bg-background">
         <p>© {new Date().getFullYear()} LuvviX AI · Tous droits réservés</p>
       </div>
 

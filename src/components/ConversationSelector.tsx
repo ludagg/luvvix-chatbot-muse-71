@@ -2,7 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { PlusCircle, Trash2, MessageSquare } from 'lucide-react';
+import { PlusCircle, Trash2, MessageSquare, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -55,55 +55,62 @@ export function ConversationSelector() {
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="sm" 
-            className="gap-2 truncate max-w-[200px] justify-start flex-shrink-0"
+            className="gap-2 truncate w-[180px] md:w-[220px] justify-start flex-shrink-0 border-primary/20 hover:bg-primary/5 hover:text-primary"
           >
-            <MessageSquare className="h-4 w-4 flex-shrink-0" />
-            <span className="truncate">{conversationTitle}</span>
+            <FileText className="h-4 w-4 flex-shrink-0 text-primary" />
+            <span className="truncate font-medium">{conversationTitle}</span>
           </Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Mes discussions</DialogTitle>
+            <DialogTitle className="text-center text-xl font-semibold text-primary">Mes discussions</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-4">
             <Button 
               variant="outline" 
               onClick={handleNewConversation}
-              className="w-full justify-start gap-2"
+              className="w-full justify-start gap-2 border-primary/20 hover:bg-primary/5 hover:text-primary"
             >
-              <PlusCircle className="h-4 w-4" />
+              <PlusCircle className="h-4 w-4 text-primary" />
               Nouvelle discussion
             </Button>
             
             <ScrollArea className="h-[300px] pr-4">
               <div className="space-y-2">
                 {conversations.map((conversation) => (
-                  <div
+                  <motion.div
                     key={conversation.id}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
                     onClick={() => handleSelectConversation(conversation.id)}
                     className={cn(
-                      "flex items-center justify-between px-3 py-2 text-sm rounded-md cursor-pointer",
+                      "flex items-center justify-between px-3 py-2 text-sm rounded-md cursor-pointer transition-all duration-200",
                       conversation.id === currentConversationId
-                        ? "bg-primary/10 text-primary"
-                        : "hover:bg-muted"
+                        ? "bg-primary/15 text-primary font-medium border border-primary/20"
+                        : "hover:bg-muted border border-transparent"
                     )}
                   >
-                    <div className="truncate">
-                      {conversation.title}
+                    <div className="flex items-center gap-2 truncate">
+                      <MessageSquare className={cn(
+                        "h-4 w-4 flex-shrink-0",
+                        conversation.id === currentConversationId ? "text-primary" : "text-muted-foreground"
+                      )} />
+                      <span className="truncate">{conversation.title}</span>
                     </div>
                     {conversations.length > 1 && (
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={(e) => handleDeleteConversation(e, conversation.id)}
-                        className="h-7 w-7 opacity-70 hover:opacity-100 flex-shrink-0"
+                        className="h-7 w-7 opacity-70 hover:opacity-100 flex-shrink-0 hover:bg-destructive/10 hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </ScrollArea>
@@ -117,9 +124,9 @@ export function ConversationSelector() {
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-card p-6 rounded-lg shadow-lg max-w-md w-full mx-4"
+            className="bg-card p-6 rounded-lg shadow-lg max-w-md w-full mx-4 border border-border"
           >
-            <h3 className="text-lg font-medium mb-2">Supprimer la discussion ?</h3>
+            <h3 className="text-lg font-medium mb-2 text-primary">Supprimer la discussion ?</h3>
             <p className="text-muted-foreground mb-4">
               Cette action est irréversible. Êtes-vous sûr de vouloir supprimer cette discussion ?
             </p>

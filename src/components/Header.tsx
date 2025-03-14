@@ -127,3 +127,4 @@ export const Header = ({ onOpenAuth }: HeaderProps) => {
       </div>
     </motion.header>
   );
+};

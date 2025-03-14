@@ -9,12 +9,31 @@ type User = {
   createdAt: string;
 };
 
+type Conversation = {
+  id: string;
+  title: string;
+  createdAt: string;
+  messages: Array<{
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+    timestamp: Date;
+  }>;
+};
+
 type AuthContextType = {
   user: User | null;
   isLoading: boolean;
+  conversations: Conversation[];
+  currentConversationId: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  createNewConversation: () => void;
+  loadConversation: (conversationId: string) => void;
+  saveCurrentConversation: (messages: Conversation['messages']) => void;
+  updateConversationTitle: (conversationId: string, title: string) => void;
+  deleteConversation: (conversationId: string) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +41,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
   // User credentials storage helper functions
   const getUserCredentials = () => {
@@ -40,12 +61,135 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return credentials[email] && credentials[email].password === password;
   };
 
+  // Conversation management functions
+  const loadUserConversations = (userId: string) => {
+    try {
+      const savedConversations = localStorage.getItem(`luvvix_conversations_${userId}`);
+      if (savedConversations) {
+        const parsedConversations = JSON.parse(savedConversations);
+        // Convert string timestamps back to Date objects
+        const formattedConversations = parsedConversations.map((conv: any) => ({
+          ...conv,
+          messages: conv.messages.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }))
+        }));
+        setConversations(formattedConversations);
+        
+        // Set current conversation to the most recent one
+        if (formattedConversations.length > 0) {
+          setCurrentConversationId(formattedConversations[0].id);
+        }
+      } else {
+        // Create a default conversation for new users
+        createNewConversation();
+      }
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      // Create default conversation if there's an error
+      createNewConversation();
+    }
+  };
+
+  const saveConversations = () => {
+    if (user) {
+      localStorage.setItem(`luvvix_conversations_${user.id}`, JSON.stringify(conversations));
+    }
+  };
+
+  const createNewConversation = () => {
+    const newConversation: Conversation = {
+      id: `conv_${Date.now()}`,
+      title: `Nouvelle discussion ${conversations.length + 1}`,
+      createdAt: new Date().toISOString(),
+      messages: [{
+        id: "1",
+        role: "assistant",
+        content: "Bonjour ! Je suis **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**. Comment puis-je vous aider aujourd'hui ? 😊",
+        timestamp: new Date(),
+      }]
+    };
+    
+    const updatedConversations = [newConversation, ...conversations];
+    setConversations(updatedConversations);
+    setCurrentConversationId(newConversation.id);
+    
+    // Save to localStorage
+    if (user) {
+      localStorage.setItem(`luvvix_conversations_${user.id}`, JSON.stringify(updatedConversations));
+    }
+  };
+
+  const loadConversation = (conversationId: string) => {
+    setCurrentConversationId(conversationId);
+  };
+
+  const saveCurrentConversation = (messages: Conversation['messages']) => {
+    if (!currentConversationId || !user) return;
+    
+    const updatedConversations = conversations.map(conv => 
+      conv.id === currentConversationId 
+        ? { ...conv, messages } 
+        : conv
+    );
+    
+    // If this is a new conversation with more than 2 messages, update its title
+    const currentConv = updatedConversations.find(c => c.id === currentConversationId);
+    if (currentConv && currentConv.title.startsWith('Nouvelle discussion') && messages.length >= 3) {
+      // Use the first user message as the title
+      const firstUserMessage = messages.find(m => m.role === 'user');
+      if (firstUserMessage) {
+        const title = firstUserMessage.content.slice(0, 30) + (firstUserMessage.content.length > 30 ? '...' : '');
+        currentConv.title = title;
+      }
+    }
+    
+    setConversations(updatedConversations);
+    localStorage.setItem(`luvvix_conversations_${user.id}`, JSON.stringify(updatedConversations));
+  };
+
+  const updateConversationTitle = (conversationId: string, title: string) => {
+    if (!user) return;
+    
+    const updatedConversations = conversations.map(conv => 
+      conv.id === conversationId 
+        ? { ...conv, title } 
+        : conv
+    );
+    
+    setConversations(updatedConversations);
+    localStorage.setItem(`luvvix_conversations_${user.id}`, JSON.stringify(updatedConversations));
+  };
+
+  const deleteConversation = (conversationId: string) => {
+    if (!user) return;
+    
+    const updatedConversations = conversations.filter(conv => conv.id !== conversationId);
+    setConversations(updatedConversations);
+    
+    // If we're deleting the current conversation, switch to another one
+    if (currentConversationId === conversationId) {
+      if (updatedConversations.length > 0) {
+        setCurrentConversationId(updatedConversations[0].id);
+      } else {
+        // Create a new conversation if we deleted the last one
+        createNewConversation();
+        return; // createNewConversation already saves to localStorage
+      }
+    }
+    
+    localStorage.setItem(`luvvix_conversations_${user.id}`, JSON.stringify(updatedConversations));
+  };
+
   useEffect(() => {
     // Check for saved user session in localStorage
     try {
       const savedUser = localStorage.getItem('luvvix_user');
       if (savedUser) {
-        setUser(JSON.parse(savedUser));
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+        loadUserConversations(parsedUser.id);
       }
     } catch (error) {
       console.error('Error loading saved user:', error);
@@ -53,6 +197,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     setIsLoading(false);
   }, []);
+
+  // Save conversations when they change
+  useEffect(() => {
+    if (user && conversations.length > 0) {
+      saveConversations();
+    }
+  }, [conversations, user]);
 
   const login = async (email: string, password: string) => {
     console.log(`Login attempt for ${email}`);
@@ -74,6 +225,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       localStorage.setItem('luvvix_user', JSON.stringify(savedUser));
       setUser(savedUser);
+      
+      // Load user conversations
+      loadUserConversations(savedUser.id);
+      
       console.log('Login successful for', email);
       toast({
         title: "Connexion réussie",
@@ -117,6 +272,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       localStorage.setItem('luvvix_user', JSON.stringify(newUser));
       setUser(newUser);
+      
+      // Create default conversation for new user
+      loadUserConversations(newUser.id);
+      
       console.log('Registration successful for', email);
       toast({
         title: "Inscription réussie",
@@ -140,6 +299,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(true);
       localStorage.removeItem('luvvix_user');
       setUser(null);
+      setConversations([]);
+      setCurrentConversationId(null);
       toast({
         title: "Déconnexion réussie",
         description: "À bientôt sur LuvviX AI",
@@ -158,7 +319,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isLoading, 
+      conversations, 
+      currentConversationId,
+      login, 
+      register, 
+      logout,
+      createNewConversation,
+      loadConversation,
+      saveCurrentConversation,
+      updateConversationTitle,
+      deleteConversation
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -5,6 +5,10 @@ import { ChatMessage, Message } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { nanoid } from "nanoid";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { ConversationSelector } from "./ConversationSelector";
+import { PlusCircle } from "lucide-react";
+import { Button } from "./ui/button";
 
 const INITIAL_MESSAGES: Message[] = [
   {
@@ -25,6 +29,13 @@ export const ChatContainer = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { 
+    user, 
+    conversations, 
+    currentConversationId, 
+    saveCurrentConversation,
+    createNewConversation 
+  } = useAuth();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -34,6 +45,20 @@ export const ChatContainer = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Load conversation messages when currentConversationId changes
+  useEffect(() => {
+    if (user && currentConversationId) {
+      const currentConv = conversations.find(c => c.id === currentConversationId);
+      if (currentConv) {
+        setMessages(currentConv.messages);
+      } else {
+        setMessages(INITIAL_MESSAGES);
+      }
+    } else if (!user) {
+      setMessages(INITIAL_MESSAGES);
+    }
+  }, [currentConversationId, conversations, user]);
+
   const handleSendMessage = async (content: string) => {
     const userMessage: Message = {
       id: nanoid(),
@@ -42,7 +67,14 @@ export const ChatContainer = () => {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+
+    // Save the conversation after adding user message
+    if (user && currentConversationId) {
+      saveCurrentConversation(updatedMessages);
+    }
+
     setIsLoading(true);
 
     try {
@@ -59,7 +91,7 @@ export const ChatContainer = () => {
       };
 
       // Historique des 6 derniers messages + Contexte IA
-      const conversationHistory = messages.slice(-6).map((msg) => ({
+      const conversationHistory = updatedMessages.slice(-6).map((msg) => ({
         role: msg.role === "assistant" ? "model" : "user",
         parts: [{ text: msg.content }],
       }));
@@ -104,7 +136,13 @@ export const ChatContainer = () => {
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      const finalMessages = [...updatedMessages, assistantMessage];
+      setMessages(finalMessages);
+
+      // Save the conversation after adding assistant message
+      if (user && currentConversationId) {
+        saveCurrentConversation(finalMessages);
+      }
     } catch (error) {
       console.error("Erreur API Gemini :", error);
       toast({
@@ -121,7 +159,13 @@ export const ChatContainer = () => {
           "Désolé, j'ai rencontré un problème de connexion. Veuillez réessayer plus tard.",
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      const finalMessages = [...updatedMessages, errorMessage];
+      setMessages(finalMessages);
+      
+      // Save even if there's an error
+      if (user && currentConversationId) {
+        saveCurrentConversation(finalMessages);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -129,7 +173,20 @@ export const ChatContainer = () => {
 
   return (
     <div className="flex flex-col h-full w-full max-w-4xl mx-auto bg-gradient-to-b from-background/50 via-background/80 to-background rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
-      <div className="flex flex-col h-[calc(100vh-8rem)] relative">
+      <div className="border-b border-border/40 p-2 px-4">
+        <div className="flex items-center justify-between">
+          <ConversationSelector />
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={createNewConversation}
+            title="Nouvelle discussion"
+          >
+            <PlusCircle className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      <div className="flex flex-col h-[calc(100vh-10rem)] relative">
         <div className="absolute top-0 left-0 right-0 h-24 pointer-events-none bg-gradient-to-b from-background to-transparent z-10"></div>
         
         <motion.div

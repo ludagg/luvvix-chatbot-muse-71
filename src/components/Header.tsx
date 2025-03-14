@@ -1,278 +1,99 @@
 
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
-import { LogIn, LogOut, UserCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { LogOut, User } from "lucide-react";
 
-export const Header = () => {
-  const { user, login, register, logout } = useAuth();
-  const { toast } = useToast();
-  const [authDialogOpen, setAuthDialogOpen] = useState(false);
-  const [authTab, setAuthTab] = useState<"login" | "register">("login");
-  const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [registerData, setRegisterData] = useState({ 
-    email: "", 
-    password: "", 
-    confirmPassword: "" 
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Login attempt with:", loginData);
-    
-    if (!loginData.email || !loginData.password) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    try {
-      setIsSubmitting(true);
-      await login(loginData.email, loginData.password);
-      setAuthDialogOpen(false);
-    } catch (error) {
-      console.error("Login error:", error);
-      // Error handling is done in AuthContext
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Register attempt with:", registerData);
-    
-    if (!registerData.email || !registerData.password || !registerData.confirmPassword) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    if (registerData.password !== registerData.confirmPassword) {
-      toast({
-        title: "Erreur",
-        description: "Les mots de passe ne correspondent pas",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    try {
-      setIsSubmitting(true);
-      await register(registerData.email, registerData.password);
-      setAuthDialogOpen(false);
-    } catch (error) {
-      console.error("Register error:", error);
-      // Error handling is done in AuthContext
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
+type HeaderProps = {
+  onOpenAuth?: (mode: "login" | "register") => void;
+};
+
+export function Header({ onOpenAuth }: HeaderProps) {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const { user, logout } = useAuth();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const handleLogout = async () => {
     try {
       await logout();
     } catch (error) {
       console.error("Logout error:", error);
-      // Error handling is done in AuthContext
     }
   };
-  
+
   return (
-    <motion.header
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="fixed top-0 left-0 right-0 z-10 border-b border-primary/10 bg-background/80 backdrop-blur-xl"
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? "bg-background/80 backdrop-blur-md shadow-sm"
+          : "bg-transparent"
+      }`}
     >
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-3">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-          >
-            <div className={cn(
-              "flex items-center justify-center w-10 h-10 rounded-xl",
-              "bg-gradient-to-r from-blue-600 to-indigo-700 shadow-lg shadow-primary/25"
-            )}>
-              <span className="text-primary-foreground font-bold text-lg">L</span>
-            </div>
-          </motion.div>
-          <div>
-            <h1 className="text-xl font-bold">
-              <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-600 bg-clip-text text-transparent">
-                LuvviX
-              </span>
-              <span className="ml-1 text-foreground font-medium">AI</span>
-            </h1>
-            <p className="text-xs text-muted-foreground">Votre assistant IA personnel</p>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gradient-to-r from-primary to-indigo-500">
+            <span className="flex h-full w-full items-center justify-center font-bold text-white">
+              L
+            </span>
+          </span>
+          <div className="font-bold text-xl">LuvviX AI</div>
         </div>
-        
-        <div>
+
+        <nav className="flex items-center gap-2">
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 ml-2 text-xs font-medium border-primary/20 bg-primary/5">
-                  <UserCircle size={14} />
-                  <span>{user.email.split('@')[0]}</span>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                  <Avatar>
+                    <AvatarFallback className="bg-primary/10 text-primary">
+                      {user.displayName?.[0] || user.email[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-background/95 backdrop-blur-lg border border-primary/20">
+              <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer">
+                <DropdownMenuItem disabled className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>{user.email}</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Se déconnecter</span>
+                  <span>Déconnexion</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="gap-2 ml-2 text-xs font-medium bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 border-0"
-              onClick={() => {
-                setAuthDialogOpen(true);
-                setAuthTab("login");
-              }}
-            >
-              <LogIn size={14} />
-              <span>Connexion</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={() => onOpenAuth?.("login")}>
+                Connexion
+              </Button>
+              <Button onClick={() => onOpenAuth?.("register")}>
+                S'inscrire
+              </Button>
+            </div>
           )}
-        </div>
+        </nav>
       </div>
-
-      {/* Auth Dialog */}
-      <Dialog open={authDialogOpen} onOpenChange={setAuthDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-background/95 backdrop-blur-lg border border-primary/20">
-          <DialogHeader>
-            <DialogTitle className="text-center text-xl">
-              <span className="bg-gradient-to-r from-blue-400 to-indigo-600 bg-clip-text text-transparent">
-                {authTab === "login" ? "Connexion" : "Créer un compte"}
-              </span>
-            </DialogTitle>
-            <DialogDescription className="text-center">
-              {authTab === "login" 
-                ? "Connectez-vous à votre compte LuvviX AI" 
-                : "Rejoignez LuvviX AI pour une expérience personnalisée"}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Tabs value={authTab} onValueChange={(value) => setAuthTab(value as "login" | "register")} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="login">Connexion</TabsTrigger>
-              <TabsTrigger value="register">Inscription</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input 
-                    id="login-email" 
-                    placeholder="vous@exemple.com" 
-                    type="email"
-                    value={loginData.email}
-                    onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-password">Mot de passe</Label>
-                  <Input 
-                    id="login-password" 
-                    type="password"
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                    required
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 border-0"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Connexion en cours..." : "Se connecter"}
-                </Button>
-              </form>
-            </TabsContent>
-            
-            <TabsContent value="register">
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="register-email">Email</Label>
-                  <Input 
-                    id="register-email" 
-                    placeholder="vous@exemple.com" 
-                    type="email"
-                    value={registerData.email}
-                    onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="register-password">Mot de passe</Label>
-                  <Input 
-                    id="register-password" 
-                    type="password"
-                    value={registerData.password}
-                    onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirmer le mot de passe</Label>
-                  <Input 
-                    id="confirm-password" 
-                    type="password"
-                    value={registerData.confirmPassword}
-                    onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
-                    required
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 border-0"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Création en cours..." : "Créer un compte"}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
-    </motion.header>
+    </header>
   );
-};
+}

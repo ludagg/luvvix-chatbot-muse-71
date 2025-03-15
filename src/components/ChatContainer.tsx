@@ -301,7 +301,6 @@ export const ChatContainer = () => {
                 <div className="pt-6">
                   <ConversationSelector 
                     closeMenu={() => setIsMenuOpen(false)} 
-                    setCurrentConversationId={setCurrentConversation}
                   />
                 </div>
               </SheetContent>
@@ -316,6 +315,7 @@ export const ChatContainer = () => {
           </div>
         </div>
       </div>
+      
       <div className="flex flex-col flex-grow relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-16 md:h-24 pointer-events-none bg-gradient-to-b from-background to-transparent z-10"></div>
         

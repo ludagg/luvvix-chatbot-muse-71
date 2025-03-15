@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
@@ -24,7 +23,7 @@ export function ConversationSelector({ closeMenu }: ConversationSelectorProps) {
     user, 
     conversations, 
     currentConversationId, 
-    setCurrentConversationId, 
+    setCurrentConversation,
     createNewConversation,
     deleteConversation,
     updateConversationTitle 
@@ -51,7 +50,7 @@ export function ConversationSelector({ closeMenu }: ConversationSelectorProps) {
   };
 
   const handleSelectConversation = (id: string) => {
-    setCurrentConversationId(id);
+    setCurrentConversation(id);
     if (closeMenu) closeMenu();
   };
 

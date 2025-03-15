@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { ChatContainer } from "@/components/ChatContainer";
@@ -125,7 +126,7 @@ const Index = () => {
           </div>
         )}
 
-        <div className="flex-1 h-full w-full max-w-5xl mx-auto px-2 md:px-4 pb-8">
+        <div className="flex-1 h-full w-full max-w-5xl mx-auto px-2 md:px-4 pb-12">
           <ChatContainer />
         </div>
       </motion.main>

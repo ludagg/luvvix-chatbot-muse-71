@@ -35,6 +35,7 @@ type AuthContextType = {
   saveCurrentConversation: (messages: Conversation['messages']) => void;
   updateConversationTitle: (conversationId: string, title: string) => void;
   deleteConversation: (conversationId: string) => void;
+  setCurrentConversation: (conversationId: string) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,7 +46,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
-  // User credentials storage helper functions
   const getUserCredentials = () => {
     const credentials = localStorage.getItem('luvvix_credentials');
     return credentials ? JSON.parse(credentials) : {};
@@ -70,13 +70,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return credentials[email]?.userData || {};
   };
 
-  // Conversation management functions
   const loadUserConversations = (userId: string) => {
     try {
       const savedConversations = localStorage.getItem(`luvvix_conversations_${userId}`);
       if (savedConversations) {
         const parsedConversations = JSON.parse(savedConversations);
-        // Convert string timestamps back to Date objects
         const formattedConversations = parsedConversations.map((conv: any) => ({
           ...conv,
           messages: conv.messages.map((msg: any) => ({
@@ -86,17 +84,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }));
         setConversations(formattedConversations);
         
-        // Set current conversation to the most recent one
         if (formattedConversations.length > 0) {
           setCurrentConversationId(formattedConversations[0].id);
         }
       } else {
-        // Create a default conversation for new users
         createNewConversation();
       }
     } catch (error) {
       console.error('Error loading conversations:', error);
-      // Create default conversation if there's an error
       createNewConversation();
     }
   };
@@ -108,7 +103,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const createNewConversation = () => {
-    // Generate greeting with personalization if user info available
     let greeting = "Bonjour ! Je suis **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**. Comment puis-je vous aider aujourd'hui ? 😊";
     
     if (user?.displayName) {
@@ -131,7 +125,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setConversations(updatedConversations);
     setCurrentConversationId(newConversation.id);
     
-    // Save to localStorage
     if (user) {
       localStorage.setItem(`luvvix_conversations_${user.id}`, JSON.stringify(updatedConversations));
     }
@@ -150,14 +143,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         : conv
     );
     
-    // If this is a new conversation with more than 2 messages, update its title
-    const currentConv = updatedConversations.find(c => c.id === currentConversationId);
-    if (currentConv && currentConv.title.startsWith('Nouvelle discussion') && messages.length >= 3) {
-      // Use the first user message as the title
+    if (currentConversationId && currentConversationId.startsWith('Nouvelle discussion') && messages.length >= 3) {
       const firstUserMessage = messages.find(m => m.role === 'user');
       if (firstUserMessage) {
         const title = firstUserMessage.content.slice(0, 30) + (firstUserMessage.content.length > 30 ? '...' : '');
-        currentConv.title = title;
+        updatedConversations.find(c => c.id === currentConversationId).title = title;
       }
     }
     
@@ -184,22 +174,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const updatedConversations = conversations.filter(conv => conv.id !== conversationId);
     setConversations(updatedConversations);
     
-    // If we're deleting the current conversation, switch to another one
     if (currentConversationId === conversationId) {
       if (updatedConversations.length > 0) {
         setCurrentConversationId(updatedConversations[0].id);
       } else {
-        // Create a new conversation if we deleted the last one
         createNewConversation();
-        return; // createNewConversation already saves to localStorage
+        return;
       }
     }
     
     localStorage.setItem(`luvvix_conversations_${user.id}`, JSON.stringify(updatedConversations));
   };
 
+  const setCurrentConversation = (conversationId: string) => {
+    setCurrentConversationId(conversationId);
+  };
+
   useEffect(() => {
-    // Check for saved user session in localStorage
     try {
       const savedUser = localStorage.getItem('luvvix_user');
       if (savedUser) {
@@ -209,12 +200,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error) {
       console.error('Error loading saved user:', error);
-      localStorage.removeItem('luvvix_user'); // Remove corrupted data
+      localStorage.removeItem('luvvix_user');
     }
     setIsLoading(false);
   }, []);
 
-  // Save conversations when they change
   useEffect(() => {
     if (user && conversations.length > 0) {
       saveConversations();
@@ -226,13 +216,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
     
     try {
-      // Verify credentials
       if (!verifyCredentials(email, password)) {
         console.error('Invalid credentials');
         throw new Error("Email ou mot de passe incorrect");
       }
       
-      // Get additional user data from storage
       const userData = getUserData(email);
       
       const savedUser = {
@@ -247,7 +235,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.setItem('luvvix_user', JSON.stringify(savedUser));
       setUser(savedUser);
       
-      // Load user conversations
       loadUserConversations(savedUser.id);
       
       console.log('Login successful for', email);
@@ -262,7 +249,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: "Vérifiez vos identifiants et réessayez",
         variant: "destructive"
       });
-      throw error; // Re-throw for component handling
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -273,17 +260,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsLoading(true);
     
     try {
-      // Check if user already exists
       const credentials = getUserCredentials();
       if (credentials[email]) {
         console.error('User already exists');
         throw new Error("Un compte avec cet email existe déjà");
       }
       
-      // Save credentials and user data
       saveUserCredentials(email, password, { displayName, age, country });
       
-      // Create and save user
       const newUser = {
         id: `user_${email.split('@')[0]}`,
         email,
@@ -296,7 +280,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.setItem('luvvix_user', JSON.stringify(newUser));
       setUser(newUser);
       
-      // Create default conversation for new user
       loadUserConversations(newUser.id);
       
       console.log('Registration successful for', email);
@@ -311,7 +294,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: "Une erreur est survenue lors de la création de votre compte",
         variant: "destructive"
       });
-      throw error; // Re-throw for component handling
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -354,7 +337,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       loadConversation,
       saveCurrentConversation,
       updateConversationTitle,
-      deleteConversation
+      deleteConversation,
+      setCurrentConversation
     }}>
       {children}
     </AuthContext.Provider>

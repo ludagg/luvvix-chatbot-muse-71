@@ -170,9 +170,7 @@ const Index = () => {
         </div>
       </main>
       
-      <footer className="relative z-10 py-2 text-center text-xs text-muted-foreground bg-background border-t border-border/20">
-        <p>© {new Date().getFullYear()} LuvviX AI · Tous droits réservés</p>
-      </footer>
+      <footer className="relative z-10 py-2 text-center"></footer>
 
       <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
         <DialogContent className="sm:max-w-[425px] p-4 md:p-6">

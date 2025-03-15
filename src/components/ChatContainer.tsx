@@ -317,9 +317,9 @@ export const ChatContainer = () => {
     <div className="flex flex-col h-full relative">
       <div 
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-32"
+        className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-24"
       >
-        <div className="space-y-4 md:space-y-6 pb-4">
+        <div className="space-y-4 md:space-y-6 pb-2">
           {messages.map((message, index) => (
             <ChatMessage
               key={message.id}
@@ -327,20 +327,19 @@ export const ChatContainer = () => {
               isLast={index === messages.length - 1}
             />
           ))}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background/95 to-transparent pt-8 pb-4">
-        <div className="px-3 md:px-6 mb-2">
+          
           {suggestedQuestions.length > 0 && (
             <SuggestedQuestions 
               questions={suggestedQuestions} 
               onQuestionClick={handleSuggestedQuestionClick} 
             />
           )}
+          
+          <div ref={messagesEndRef} />
         </div>
-        
+      </div>
+
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background/95 to-transparent pt-6 pb-4">
         <div className="px-3 md:px-6">
           <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
         </div>

@@ -38,6 +38,8 @@ export const ChatContainer = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { 
     user, 
@@ -51,12 +53,35 @@ export const ChatContainer = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (shouldAutoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (shouldAutoScroll) {
+      scrollToBottom();
+    }
+  }, [messages, shouldAutoScroll]);
+
+  useEffect(() => {
+    const chatContainer = chatContainerRef.current;
+    
+    const handleScroll = () => {
+      if (!chatContainer) return;
+      
+      const { scrollTop, scrollHeight, clientHeight } = chatContainer;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      
+      setShouldAutoScroll(isNearBottom);
+    };
+    
+    chatContainer?.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      chatContainer?.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     if (messages.length <= 1 || suggestedQuestions.length === 0) {
@@ -149,6 +174,8 @@ export const ChatContainer = () => {
   };
 
   const handleSendMessage = async (content: string) => {
+    setShouldAutoScroll(true);
+    
     const userMessage: Message = {
       id: nanoid(),
       role: "user",
@@ -218,7 +245,7 @@ export const ChatContainer = () => {
       const data = await response.json();
       const aiResponse =
         data.candidates[0]?.content?.parts[0]?.text ||
-        "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
+        "Oups ! Je n'ai pas pu générer une r��ponse. Veuillez réessayer.";
 
       const assistantMessage: Message = {
         id: nanoid(),
@@ -282,12 +309,16 @@ export const ChatContainer = () => {
   };
 
   const handleSuggestedQuestionClick = (question: string) => {
+    setShouldAutoScroll(true);
     handleSendMessage(question);
   };
 
   return (
     <div className="flex flex-col h-full relative">
-      <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-32">
+      <div 
+        ref={chatContainerRef}
+        className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-32"
+      >
         <div className="space-y-4 md:space-y-6 pb-4">
           {messages.map((message, index) => (
             <ChatMessage

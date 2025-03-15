@@ -14,6 +14,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
 import { ConversationSelector } from "@/components/ConversationSelector";
 import { DiscussionsMenu } from "@/components/DiscussionsMenu";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Adresse email invalide" }),
@@ -118,6 +119,7 @@ const Index = () => {
         </div>
         
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <DiscussionsMenu />
           {user ? (
             <Button 

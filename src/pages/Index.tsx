@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { ChatContainer } from "@/components/ChatContainer";
@@ -13,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
+import { DiscussionsMenu } from "@/components/DiscussionsMenu";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Adresse email invalide" }),
@@ -98,7 +97,33 @@ const Index = () => {
         </div>
       </div>
       
-      <Header onOpenAuth={handleOpenAuth} />
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-background/95 backdrop-blur-sm z-20">
+        <div className="flex items-center space-x-2">
+          <span className="text-xl font-bold text-primary">LuvviX AI</span>
+          <span className="text-xs px-2 py-0.5 bg-primary/10 rounded-full">Beta</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <DiscussionsMenu />
+          {user ? (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="rounded-full bg-primary/10"
+              onClick={() => console.log("User profile")}
+            >
+              <span className="font-medium text-sm">{user.displayName?.charAt(0) || "U"}</span>
+            </Button>
+          ) : (
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={() => handleOpenAuth("login")}
+            >
+              Se connecter
+            </Button>
+          )}
+        </div>
+      </div>
       
       <motion.main 
         initial={{ opacity: 0 }}
@@ -131,7 +156,7 @@ const Index = () => {
         </div>
       </motion.main>
       
-      <div className="relative z-10 py-2 md:py-3 text-center text-xs text-muted-foreground bg-background">
+      <div className="relative z-10 py-2 text-center text-xs text-muted-foreground bg-background border-t border-border/20">
         <p>© {new Date().getFullYear()} LuvviX AI · Tous droits réservés</p>
       </div>
 

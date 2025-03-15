@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { SendIcon, Mic, MicOff, Smile, Paperclip } from "lucide-react";
@@ -19,22 +18,17 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
   const { toast } = useToast();
   const isMobile = useIsMobile();
   
-  // Speech recognition setup
   const [recognitionInstance, setRecognitionInstance] = useState<SpeechRecognition | null>(null);
 
   useEffect(() => {
-    // Check if browser supports SpeechRecognition
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      // Create a speech recognition instance
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
       
-      // Configure recognition
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = 'fr-FR'; // Set to French
+      recognition.lang = 'fr-FR';
       
-      // Handle result event
       recognition.onresult = (event) => {
         const transcript = Array.from(event.results)
           .map(result => result[0])
@@ -44,12 +38,10 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
         setMessage(transcript);
       };
       
-      // Handle end event
       recognition.onend = () => {
         setIsListening(false);
       };
       
-      // Handle error event
       recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
@@ -69,7 +61,6 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
       });
     }
     
-    // Cleanup
     return () => {
       if (recognitionInstance) {
         recognitionInstance.stop();
@@ -104,7 +95,6 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
       onSendMessage(message);
       setMessage("");
       
-      // Stop listening after sending
       if (isListening && recognitionInstance) {
         recognitionInstance.stop();
         setIsListening(false);
@@ -112,7 +102,6 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
     }
   };
 
-  // Auto-resize textarea
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -127,10 +116,7 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       onSubmit={handleSubmit}
-      className={cn(
-        "relative w-full",
-        isMobile && "fixed bottom-0 left-0 right-0 pb-2 px-3 bg-gradient-to-t from-background via-background/95 to-background/80 pt-3 z-50"
-      )}
+      className="relative w-full"
     >
       <div className="relative flex items-center w-full bg-secondary/40 backdrop-blur-sm border border-primary/20 rounded-full shadow-lg overflow-hidden pl-2">
         <Button

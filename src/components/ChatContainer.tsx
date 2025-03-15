@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ChatMessage, Message } from "./ChatMessage";
@@ -323,7 +324,7 @@ export const ChatContainer = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5 }}
-          className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6 pb-36 scrollbar-none"
+          className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6 pb-40 scrollbar-none"
         >
           <div className="space-y-4 md:space-y-6">
             {messages.map((message, index) => (
@@ -337,7 +338,7 @@ export const ChatContainer = () => {
           </div>
         </motion.div>
 
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/95 via-background/90 to-transparent pt-16 pb-4">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background/95 to-transparent pt-16 pb-4">
           <div className="px-3 md:px-6 mb-3">
             {suggestedQuestions.length > 0 && (
               <SuggestedQuestions 
@@ -347,7 +348,7 @@ export const ChatContainer = () => {
             )}
           </div>
           
-          <div className="px-3 md:px-6 mb-4">
+          <div className="px-3 md:px-6 mb-12">
             <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
           </div>
         </div>

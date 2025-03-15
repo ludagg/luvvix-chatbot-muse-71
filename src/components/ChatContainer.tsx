@@ -1,17 +1,14 @@
-
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
 import { ChatMessage, Message } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { nanoid } from "nanoid";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { ConversationSelector } from "./ConversationSelector";
 import { SuggestedQuestions } from "./SuggestedQuestions";
-import { Menu } from "lucide-react";
-import { Button } from "./ui/button";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "./ui/button";
+import { Menu } from "lucide-react";
+import { ConversationSelector } from "./ConversationSelector";
 
 const SAMPLE_QUESTIONS = [
   "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",
@@ -288,69 +285,32 @@ export const ChatContainer = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full max-w-4xl mx-auto bg-gradient-to-b from-background/50 via-background/80 to-background rounded-xl md:rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
-      <div className="border-b border-border/40 p-2 px-3 md:px-4 sticky top-0 z-20 bg-background/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-muted-foreground mr-2">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-72 sm:w-80">
-                <div className="pt-6">
-                  <ConversationSelector 
-                    closeMenu={() => setIsMenuOpen(false)} 
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
-            <div className="text-sm font-medium">
-              {currentConversationId ? (
-                conversations.find(c => c.id === currentConversationId)?.title || "Nouvelle discussion"
-              ) : (
-                "Nouvelle discussion"
-              )}
-            </div>
-          </div>
+    <div className="flex flex-col h-full relative">
+      <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-32">
+        <div className="space-y-4 md:space-y-6 pb-4">
+          {messages.map((message, index) => (
+            <ChatMessage
+              key={message.id}
+              message={message}
+              isLast={index === messages.length - 1}
+            />
+          ))}
+          <div ref={messagesEndRef} />
         </div>
       </div>
-      
-      <div className="flex flex-col flex-grow relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-16 md:h-24 pointer-events-none bg-gradient-to-b from-background to-transparent z-10"></div>
-        
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="flex-1 overflow-y-auto px-3 md:px-6 py-4 md:py-6 pb-40 scrollbar-none"
-        >
-          <div className="space-y-4 md:space-y-6">
-            {messages.map((message, index) => (
-              <ChatMessage
-                key={message.id}
-                message={message}
-                isLast={index === messages.length - 1}
-              />
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-        </motion.div>
 
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background/95 to-transparent pt-16 pb-4">
-          <div className="px-3 md:px-6 mb-3">
-            {suggestedQuestions.length > 0 && (
-              <SuggestedQuestions 
-                questions={suggestedQuestions} 
-                onQuestionClick={handleSuggestedQuestionClick} 
-              />
-            )}
-          </div>
-          
-          <div className="px-3 md:px-6 mb-12">
-            <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
-          </div>
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background/95 to-transparent pt-8 pb-4">
+        <div className="px-3 md:px-6 mb-2">
+          {suggestedQuestions.length > 0 && (
+            <SuggestedQuestions 
+              questions={suggestedQuestions} 
+              onQuestionClick={handleSuggestedQuestionClick} 
+            />
+          )}
+        </div>
+        
+        <div className="px-3 md:px-6">
+          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
         </div>
       </div>
     </div>

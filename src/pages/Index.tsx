@@ -1,17 +1,18 @@
-import { motion } from "framer-motion";
-import { Header } from "@/components/Header";
-import { ChatContainer } from "@/components/ChatContainer";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { ChatContainer } from "@/components/ChatContainer";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
+import { ConversationSelector } from "@/components/ConversationSelector";
 import { DiscussionsMenu } from "@/components/DiscussionsMenu";
 
 const loginSchema = z.object({
@@ -33,6 +34,7 @@ const Index = () => {
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const isMobile = useIsMobile();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -97,11 +99,24 @@ const Index = () => {
         </div>
       </div>
       
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-background/95 backdrop-blur-sm z-20">
-        <div className="flex items-center space-x-2">
+      <header className="sticky top-0 flex items-center justify-between px-4 py-3 border-b border-border/40 bg-background/95 backdrop-blur-sm z-30">
+        <div className="flex items-center gap-2">
+          <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-foreground">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0">
+              <div className="p-4 h-full">
+                <ConversationSelector closeMenu={() => setIsSidebarOpen(false)} />
+              </div>
+            </SheetContent>
+          </Sheet>
           <span className="text-xl font-bold text-primary">LuvviX AI</span>
           <span className="text-xs px-2 py-0.5 bg-primary/10 rounded-full">Beta</span>
         </div>
+        
         <div className="flex items-center gap-2">
           <DiscussionsMenu />
           {user ? (
@@ -123,14 +138,9 @@ const Index = () => {
             </Button>
           )}
         </div>
-      </div>
+      </header>
       
-      <motion.main 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex flex-col flex-grow relative z-10 overflow-hidden"
-      >
+      <main className="flex flex-col flex-grow relative z-10 overflow-hidden">
         {!user && (
           <div className="text-center mt-4 mb-2 px-4 md:mb-4">
             <p className="text-muted-foreground mb-3 md:mb-4 text-sm md:text-base">
@@ -151,14 +161,16 @@ const Index = () => {
           </div>
         )}
 
-        <div className="flex-1 h-full w-full max-w-5xl mx-auto px-2 md:px-4 pb-12">
-          <ChatContainer />
+        <div className="flex-1 h-full w-full max-w-5xl mx-auto px-2 md:px-4 pb-2">
+          <div className="h-full flex flex-col bg-gradient-to-b from-background/50 via-background/80 to-background rounded-xl md:rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
+            <ChatContainer />
+          </div>
         </div>
-      </motion.main>
+      </main>
       
-      <div className="relative z-10 py-2 text-center text-xs text-muted-foreground bg-background border-t border-border/20">
+      <footer className="relative z-10 py-2 text-center text-xs text-muted-foreground bg-background border-t border-border/20">
         <p>© {new Date().getFullYear()} LuvviX AI · Tous droits réservés</p>
-      </div>
+      </footer>
 
       <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
         <DialogContent className="sm:max-w-[425px] p-4 md:p-6">

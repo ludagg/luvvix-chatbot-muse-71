@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "./ui/button";
 import { Menu } from "lucide-react";
 import { ConversationSelector } from "./ConversationSelector";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const SAMPLE_QUESTIONS = [
   "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",

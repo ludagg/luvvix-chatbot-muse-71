@@ -314,10 +314,10 @@ export const ChatContainer = () => {
   };
 
   return (
-    <div className="flex flex-col h-full relative">
+    <div className="flex flex-col h-full">
       <div 
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-20"
+        className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-28"
       >
         <div className="space-y-4 md:space-y-6 mb-2">
           {messages.map((message, index) => (
@@ -328,11 +328,13 @@ export const ChatContainer = () => {
             />
           ))}
           
-          {suggestedQuestions.length > 0 && (
-            <SuggestedQuestions 
-              questions={suggestedQuestions} 
-              onQuestionClick={handleSuggestedQuestionClick} 
-            />
+          {messages.length > 0 && suggestedQuestions.length > 0 && (
+            <div className="mt-4">
+              <SuggestedQuestions 
+                questions={suggestedQuestions} 
+                onQuestionClick={handleSuggestedQuestionClick} 
+              />
+            </div>
           )}
           
           <div ref={messagesEndRef} />

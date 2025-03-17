@@ -15,6 +15,9 @@ import { Menu, User, Settings, LogOut, Star } from "lucide-react";
 import { ConversationSelector } from "@/components/ConversationSelector";
 import { DiscussionsMenu } from "@/components/DiscussionsMenu";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useToast } from "@/hooks/use-toast";
+import { ProFeatures } from "@/components/ProFeatures";
+import { ProBadge } from "@/components/ProBadge";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +55,7 @@ const Index = () => {
   const [error, setError] = useState("");
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { toast } = useToast();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -164,9 +168,7 @@ const Index = () => {
           <div className="flex items-center">
             <span className="text-xl font-bold text-primary">LuvviX AI</span>
             {isPro ? (
-              <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-500 rounded-full flex items-center gap-1 ml-2">
-                <Star size={10} className="fill-amber-500" /> Pro
-              </span>
+              <ProBadge className="ml-2" />
             ) : (
               <span className="text-xs px-2 py-0.5 bg-primary/10 rounded-full ml-2">Beta</span>
             )}
@@ -191,7 +193,10 @@ const Index = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
-                    <span>{user.displayName}</span>
+                    <div className="flex items-center gap-2">
+                      <span>{user.displayName}</span>
+                      {isPro && <ProBadge size="sm" />}
+                    </div>
                     <span className="text-xs text-muted-foreground">{user.email}</span>
                   </div>
                 </DropdownMenuLabel>
@@ -515,21 +520,7 @@ const Index = () => {
           </DialogHeader>
           
           <div className="space-y-4 mt-4">
-            <div className="grid grid-cols-1 gap-4">
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <h3 className="font-medium flex items-center mb-2">
-                  <Star className="h-4 w-4 mr-2 text-amber-500" />
-                  Avantages Pro
-                </h3>
-                <ul className="text-sm space-y-2">
-                  <li>• Envoi d'images pour analyse</li>
-                  <li>• Réponses plus détaillées</li>
-                  <li>• Conversations plus longues</li>
-                  <li>• Priorité dans la file d'attente</li>
-                  <li>• Support personnalisé</li>
-                </ul>
-              </div>
-            </div>
+            <ProFeatures />
             
             <Button 
               className="w-full"

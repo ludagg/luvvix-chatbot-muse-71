@@ -124,19 +124,25 @@ export function ChatMessage({
               {message.content}
             </ReactMarkdown>
           </div>
+        </div>
+        
+        <div className="flex items-center space-x-1 px-1">
+          <span className="text-xs text-muted-foreground">
+            {new Date(message.timestamp).toLocaleString()}
+          </span>
           
           {/* Action buttons for assistant messages */}
           {!isUser && (
-            <div className="absolute top-2 right-2 flex space-x-1">
+            <div className="flex space-x-1 ml-2">
               {isLast && onRegenerate && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground"
+                  className="h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground"
                   onClick={() => onRegenerate(message.id)}
                   title="Régénérer la réponse"
                 >
-                  <RefreshCcw className="h-3.5 w-3.5" />
+                  <RefreshCcw className="h-3 w-3" />
                 </Button>
               )}
               
@@ -145,9 +151,9 @@ export function ChatMessage({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground"
+                    className="h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground"
                   >
-                    <Share2 className="h-3.5 w-3.5" />
+                    <Share2 className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -166,33 +172,30 @@ export function ChatMessage({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-7 w-7 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground",
+                  "h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground",
                   hasFeedback === "positive" && "text-green-500 bg-green-100 hover:bg-green-200"
                 )}
                 onClick={() => handleFeedback("positive")}
                 title="Cette réponse est utile"
               >
-                <ThumbsUp className="h-3.5 w-3.5" />
+                <ThumbsUp className="h-3 w-3" />
               </Button>
               
               <Button
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-7 w-7 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground",
+                  "h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground",
                   hasFeedback === "negative" && "text-red-500 bg-red-100 hover:bg-red-200"
                 )}
                 onClick={() => handleFeedback("negative")}
                 title="Cette réponse n'est pas utile"
               >
-                <ThumbsDown className="h-3.5 w-3.5" />
+                <ThumbsDown className="h-3 w-3" />
               </Button>
             </div>
           )}
         </div>
-        <span className="text-xs text-muted-foreground px-1">
-          {new Date(message.timestamp).toLocaleString()}
-        </span>
       </div>
     </motion.div>
   );

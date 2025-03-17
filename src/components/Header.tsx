@@ -51,7 +51,7 @@ export const Header = ({ onOpenAuth }: HeaderProps) => {
       <div className="container max-w-5xl mx-auto px-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span className="text-lg font-bold tracking-tight text-gradient">
-            LuvviX AI
+            LuvviX
           </span>
           <span className="text-xs font-medium px-1.5 py-0.5 bg-primary/10 text-primary rounded-md">
             Beta

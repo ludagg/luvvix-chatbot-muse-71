@@ -66,7 +66,7 @@ export const ChatContainer = () => {
 
   useEffect(() => {
     if (shouldAutoScroll) {
-      scrollToBottom();
+      scrollToTop();
     }
   }, [messages, shouldAutoScroll]);
 

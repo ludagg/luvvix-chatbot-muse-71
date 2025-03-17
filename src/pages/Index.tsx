@@ -11,10 +11,18 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu } from "lucide-react";
+import { Menu, User, Settings, LogOut, Star } from "lucide-react";
 import { ConversationSelector } from "@/components/ConversationSelector";
 import { DiscussionsMenu } from "@/components/DiscussionsMenu";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Adresse email invalide" }),
@@ -29,9 +37,17 @@ const registerSchema = z.object({
   country: z.string().min(2, { message: "Pays requis" }),
 });
 
+const profileSchema = z.object({
+  displayName: z.string().min(2, { message: "Prénom requis" }),
+  age: z.coerce.number().min(13, { message: "Vous devez avoir au moins 13 ans" }).max(120, { message: "Âge invalide" }),
+  country: z.string().min(2, { message: "Pays requis" }),
+});
+
 const Index = () => {
-  const { user, login, register, isLoading } = useAuth();
+  const { user, login, register, logout, isLoading, isPro = false } = useAuth();
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const isMobile = useIsMobile();
@@ -53,6 +69,15 @@ const Index = () => {
       displayName: "",
       age: undefined,
       country: "",
+    },
+  });
+
+  const profileForm = useForm<z.infer<typeof profileSchema>>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      displayName: user?.displayName || "",
+      age: user?.age || undefined,
+      country: user?.country || "",
     },
   });
 
@@ -84,10 +109,32 @@ const Index = () => {
     }
   };
 
+  const handleUpdateProfile = async (values: z.infer<typeof profileSchema>) => {
+    setError("");
+    console.log("Update profile with:", values);
+    setIsProfileDialogOpen(false);
+    profileForm.reset({
+      displayName: values.displayName,
+      age: values.age,
+      country: values.country,
+    });
+  };
+
   const handleOpenAuth = (mode: "login" | "register") => {
     setAuthMode(mode);
     setIsAuthDialogOpen(true);
     setError("");
+  };
+
+  const handleOpenProfile = () => {
+    if (user) {
+      profileForm.reset({
+        displayName: user.displayName || "",
+        age: user.age || undefined,
+        country: user.country || "",
+      });
+      setIsProfileDialogOpen(true);
+    }
   };
 
   return (
@@ -114,22 +161,58 @@ const Index = () => {
               </div>
             </SheetContent>
           </Sheet>
-          <span className="text-xl font-bold text-primary">LuvviX AI</span>
-          <span className="text-xs px-2 py-0.5 bg-primary/10 rounded-full">Beta</span>
+          <div className="flex items-center">
+            <span className="text-xl font-bold text-primary">LuvviX AI</span>
+            {isPro ? (
+              <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-500 rounded-full flex items-center gap-1 ml-2">
+                <Star size={10} className="fill-amber-500" /> Pro
+              </span>
+            ) : (
+              <span className="text-xs px-2 py-0.5 bg-primary/10 rounded-full ml-2">Beta</span>
+            )}
+          </div>
         </div>
         
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <DiscussionsMenu />
+          
           {user ? (
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="rounded-full bg-primary/10"
-              onClick={() => console.log("User profile")}
-            >
-              <span className="font-medium text-sm">{user.displayName?.charAt(0) || "U"}</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-full bg-primary/10"
+                >
+                  <span className="font-medium text-sm">{user.displayName?.charAt(0) || "U"}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>
+                  <div className="flex flex-col">
+                    <span>{user.displayName}</span>
+                    <span className="text-xs text-muted-foreground">{user.email}</span>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleOpenProfile}>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profil</span>
+                </DropdownMenuItem>
+                {!isPro && (
+                  <DropdownMenuItem onClick={() => setIsProModalOpen(true)}>
+                    <Star className="mr-2 h-4 w-4" />
+                    <span>Passer à Pro</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Déconnexion</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <Button 
               variant="default" 
@@ -337,6 +420,132 @@ const Index = () => {
               </Form>
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
+        <DialogContent className="sm:max-w-[425px] p-4 md:p-6">
+          <DialogHeader>
+            <DialogTitle>Modifier votre profil</DialogTitle>
+            <DialogDescription>
+              Mettez à jour vos informations personnelles
+            </DialogDescription>
+          </DialogHeader>
+          
+          {error && (
+            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+              {error}
+            </div>
+          )}
+          
+          <Form {...profileForm}>
+            <form onSubmit={profileForm.handleSubmit(handleUpdateProfile)} className="space-y-4">
+              <FormField
+                control={profileForm.control}
+                name="displayName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prénom</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Votre prénom" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={profileForm.control}
+                  name="age"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Âge</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="25" 
+                          min={13}
+                          max={120}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={profileForm.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pays</FormLabel>
+                      <FormControl>
+                        <Input placeholder="France" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? "Chargement..." : "Enregistrer"}
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      <Dialog open={isProModalOpen} onOpenChange={setIsProModalOpen}>
+        <DialogContent className="sm:max-w-[425px] p-4 md:p-6">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-center gap-2">
+              <Star className="h-5 w-5 text-amber-500 fill-amber-500" />
+              <span>LuvviX AI Pro</span>
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              Débloquez toutes les fonctionnalités avancées
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h3 className="font-medium flex items-center mb-2">
+                  <Star className="h-4 w-4 mr-2 text-amber-500" />
+                  Avantages Pro
+                </h3>
+                <ul className="text-sm space-y-2">
+                  <li>• Envoi d'images pour analyse</li>
+                  <li>• Réponses plus détaillées</li>
+                  <li>• Conversations plus longues</li>
+                  <li>• Priorité dans la file d'attente</li>
+                  <li>• Support personnalisé</li>
+                </ul>
+              </div>
+            </div>
+            
+            <Button 
+              className="w-full"
+              variant="default"
+              onClick={() => {
+                console.log("Open payment modal");
+                setIsProModalOpen(false);
+                toast({
+                  title: "Bientôt disponible",
+                  description: "La version Pro sera disponible prochainement. Restez à l'écoute !",
+                });
+              }}
+            >
+              Passer à Pro - 9.99€/mois
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

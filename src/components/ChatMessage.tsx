@@ -1,12 +1,18 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bot, User, Copy, Check } from "lucide-react";
+import { Bot, User, Copy, Check, RefreshCcw, Share2, ThumbsUp, ThumbsDown, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export interface Message {
   id: string;
@@ -18,10 +24,18 @@ export interface Message {
 interface ChatMessageProps {
   message: Message;
   isLast?: boolean;
+  onRegenerate?: (messageId: string) => void;
+  onFeedback?: (messageId: string, feedback: "positive" | "negative") => void;
 }
 
-export function ChatMessage({ message, isLast = false }: ChatMessageProps) {
-  const [copiedId, setCopiedId] = React.useState<string | null>(null);
+export function ChatMessage({ 
+  message, 
+  isLast = false, 
+  onRegenerate, 
+  onFeedback 
+}: ChatMessageProps) {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [hasFeedback, setHasFeedback] = useState<"positive" | "negative" | null>(null);
   const { toast } = useToast();
 
   const handleCopy = (text: string, id: string) => {
@@ -33,6 +47,46 @@ export function ChatMessage({ message, isLast = false }: ChatMessageProps) {
       });
       setTimeout(() => setCopiedId(null), 2000);
     });
+  };
+
+  const handleShare = (text: string) => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Réponse de LuvviX AI',
+        text: text,
+      }).then(() => {
+        toast({
+          title: "Partage réussi",
+          description: "La réponse a été partagée avec succès.",
+        });
+      }).catch((error) => {
+        console.error('Erreur lors du partage :', error);
+        toast({
+          title: "Erreur de partage",
+          description: "Impossible de partager ce contenu.",
+          variant: "destructive"
+        });
+      });
+    } else {
+      handleCopy(text, message.id);
+      toast({
+        title: "Fonctionnalité limitée",
+        description: "Le partage direct n'est pas supporté par votre navigateur. Le texte a été copié à la place.",
+      });
+    }
+  };
+
+  const handleFeedback = (type: "positive" | "negative") => {
+    if (onFeedback) {
+      onFeedback(message.id, type);
+      setHasFeedback(type);
+      toast({
+        title: type === "positive" ? "Merci pour votre retour positif!" : "Désolé que cette réponse ne soit pas utile",
+        description: type === "positive" 
+          ? "Nous sommes ravis que cette réponse vous ait aidé." 
+          : "Nous utiliserons votre retour pour améliorer nos réponses.",
+      });
+    }
   };
 
   const isUser = message.role === "user";
@@ -71,20 +125,67 @@ export function ChatMessage({ message, isLast = false }: ChatMessageProps) {
             </ReactMarkdown>
           </div>
           
-          {/* Copy button for assistant messages */}
+          {/* Action buttons for assistant messages */}
           {!isUser && (
-            <div className="absolute top-2 right-2">
+            <div className="absolute top-2 right-2 flex space-x-1">
+              {isLast && onRegenerate && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground"
+                  onClick={() => onRegenerate(message.id)}
+                  title="Régénérer la réponse"
+                >
+                  <RefreshCcw className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleCopy(message.content, message.id)}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copier
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare(message.content)}>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Partager
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground"
-                onClick={() => handleCopy(message.content, message.id)}
-              >
-                {copiedId === message.id ? (
-                  <Check className="h-3.5 w-3.5" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
+                className={cn(
+                  "h-7 w-7 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground",
+                  hasFeedback === "positive" && "text-green-500 bg-green-100 hover:bg-green-200"
                 )}
+                onClick={() => handleFeedback("positive")}
+                title="Cette réponse est utile"
+              >
+                <ThumbsUp className="h-3.5 w-3.5" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-7 w-7 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground",
+                  hasFeedback === "negative" && "text-red-500 bg-red-100 hover:bg-red-200"
+                )}
+                onClick={() => handleFeedback("negative")}
+                title="Cette réponse n'est pas utile"
+              >
+                <ThumbsDown className="h-3.5 w-3.5" />
               </Button>
             </div>
           )}

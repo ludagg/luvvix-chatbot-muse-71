@@ -1,20 +1,33 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { SendIcon, Mic, MicOff, Smile, Paperclip } from "lucide-react";
+import { SendIcon, Mic, MicOff, Smile, Paperclip, Image as ImageIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
+  onSendImage?: (file: File) => void;
   isLoading?: boolean;
+  isPro?: boolean;
 }
 
-export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) => {
+export const ChatInput = ({ onSendMessage, onSendImage, isLoading = false, isPro = false }: ChatInputProps) => {
   const [message, setMessage] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   
@@ -91,6 +104,14 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (selectedFile && onSendImage && !isLoading) {
+      onSendImage(selectedFile);
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      return;
+    }
+    
     if (message.trim() && !isLoading) {
       onSendMessage(message);
       setMessage("");
@@ -99,6 +120,47 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
         recognitionInstance.stop();
         setIsListening(false);
       }
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!isPro && file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Limite de taille atteinte",
+          description: "Les images sont limitées à 5 MB. Passez à la version Pro pour envoyer des fichiers plus grands.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Type de fichier non supporté",
+          description: "Seules les images sont acceptées.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleEmojiSelect = (emoji: { native: string }) => {
+    setMessage(prev => prev + emoji.native);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  };
+
+  const clearSelectedFile = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -118,15 +180,70 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
       onSubmit={handleSubmit}
       className="relative w-full"
     >
+      {selectedFile && previewUrl && (
+        <div className="absolute -top-24 left-0 right-0 bg-background/95 backdrop-blur-sm border border-primary/20 rounded-lg p-2 flex items-center">
+          <div className="relative w-16 h-16 rounded-md overflow-hidden mr-2">
+            <img src={previewUrl} alt="Aperçu" className="w-full h-full object-cover" />
+          </div>
+          <div className="flex-1 truncate">
+            <p className="text-sm font-medium truncate">{selectedFile.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {(selectedFile.size / 1024).toFixed(1)} KB
+            </p>
+          </div>
+          <Button 
+            type="button" 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={clearSelectedFile}
+          >
+            <X size={16} />
+          </Button>
+        </div>
+      )}
+      
       <div className="relative flex items-center w-full bg-secondary/40 backdrop-blur-sm border border-primary/20 rounded-full shadow-lg overflow-hidden pl-2">
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+        
         <Button
           type="button"
           size="icon"
           variant="ghost"
           className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isLoading}
         >
-          <Paperclip size={16} />
+          <ImageIcon size={16} />
         </Button>
+        
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              disabled={isLoading}
+            >
+              <Smile size={16} />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0 border-none bg-transparent shadow-none" align="start" sideOffset={5}>
+            <Picker 
+              data={data} 
+              onEmojiSelect={handleEmojiSelect}
+              theme={window.document.documentElement.classList.contains('dark') ? 'dark' : 'light'}
+              set="apple"
+            />
+          </PopoverContent>
+        </Popover>
         
         <textarea
           ref={textareaRef}
@@ -168,30 +285,23 @@ export const ChatInput = ({ onSendMessage, isLoading = false }: ChatInputProps) 
               <Button
                 type="button"
                 size="icon"
-                variant="ghost"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              >
-                <Smile size={16} />
-              </Button>
-              <Button
-                type="button"
-                size="icon"
                 variant={isListening ? "default" : "ghost"}
                 className={cn(
                   "h-8 w-8 transition-all",
                   isListening ? "bg-red-500 hover:bg-red-600 text-white" : "text-muted-foreground hover:text-foreground"
                 )}
                 onClick={toggleListening}
+                disabled={isLoading}
               >
                 {isListening ? <MicOff size={16} /> : <Mic size={16} />}
               </Button>
               <Button
                 type="submit"
                 size="icon"
-                disabled={message.trim() === "" || isLoading}
+                disabled={(message.trim() === "" && !selectedFile) || isLoading}
                 className={cn(
                   "h-8 w-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-md shadow-primary/25",
-                  message.trim() === "" && "opacity-70"
+                  (message.trim() === "" && !selectedFile) && "opacity-70"
                 )}
               >
                 <SendIcon size={14} />

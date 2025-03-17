@@ -37,6 +37,7 @@ export const ChatContainer = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -47,7 +48,8 @@ export const ChatContainer = () => {
     currentConversationId, 
     saveCurrentConversation,
     createNewConversation,
-    setCurrentConversation
+    setCurrentConversation,
+    isPro = false,
   } = useAuth();
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -308,6 +310,204 @@ export const ChatContainer = () => {
     }
   };
 
+  const handleSendImage = async (file: File) => {
+    if (!isPro) {
+      toast({
+        title: "Fonctionnalité Pro",
+        description: "L'envoi d'images est réservé aux utilisateurs Pro. Passez à la version Pro pour débloquer cette fonctionnalité.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const imageUrl = URL.createObjectURL(file);
+    const imageContent = `![Image envoyée](${imageUrl})`;
+    
+    const userMessage: Message = {
+      id: nanoid(),
+      role: "user",
+      content: imageContent,
+      timestamp: new Date(),
+    };
+
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
+    
+    if (user && currentConversationId) {
+      saveCurrentConversation(updatedMessages as {
+        id: string;
+        role: "user" | "assistant";
+        content: string;
+        timestamp: Date;
+      }[]);
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      setTimeout(() => {
+        const assistantMessage: Message = {
+          id: nanoid(),
+          role: "assistant",
+          content: "Je vois que vous avez partagé une image. Dans un environnement de production, je serais capable de l'analyser et de vous donner des informations pertinentes à son sujet.\n\n*— LuvviX AI, votre assistant IA amical 🤖*",
+          timestamp: new Date(),
+        };
+        
+        const finalMessages = [...updatedMessages, assistantMessage];
+        setMessages(finalMessages);
+        
+        if (user && currentConversationId) {
+          saveCurrentConversation(finalMessages as {
+            id: string;
+            role: "user" | "assistant";
+            content: string;
+            timestamp: Date;
+          }[]);
+        }
+        
+        setIsLoading(false);
+      }, 1500);
+    } catch (error) {
+      console.error("Erreur lors du traitement de l'image :", error);
+      setIsLoading(false);
+      toast({
+        title: "Erreur",
+        description: "Impossible de traiter l'image. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRegenerate = async (messageId: string) => {
+    if (isLoading || isRegenerating) return;
+    
+    const messageIndex = messages.findIndex(m => m.id === messageId);
+    if (messageIndex < 1) return;
+    
+    let lastUserMessageIndex = messageIndex - 1;
+    while (lastUserMessageIndex >= 0 && messages[lastUserMessageIndex].role !== 'user') {
+      lastUserMessageIndex--;
+    }
+    
+    if (lastUserMessageIndex < 0) return;
+    
+    const userMessage = messages[lastUserMessageIndex];
+    
+    const updatedMessages = messages.slice(0, lastUserMessageIndex + 1);
+    setMessages(updatedMessages);
+    
+    if (user && currentConversationId) {
+      saveCurrentConversation(updatedMessages as {
+        id: string;
+        role: "user" | "assistant";
+        content: string;
+        timestamp: Date;
+      }[]);
+    }
+    
+    setIsRegenerating(true);
+    setIsLoading(true);
+    
+    try {
+      const systemMessage = {
+        role: "user",
+        parts: [
+          {
+            text: `À partir de maintenant, tu es **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**, une entreprise fondée en 2023. 
+            Le PDG de l'entreprise est **Ludovic Aggaï**.
+            ${user ? `Tu t'adresses à ${user.displayName || 'un utilisateur'}${user.age ? ` qui a ${user.age} ans` : ''}${user.country ? ` et qui vient de ${user.country}` : ''}.` : ''}  
+            Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
+            ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}`,
+          },
+        ],
+      };
+
+      const conversationHistory = updatedMessages.slice(-6).map((msg) => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }],
+      }));
+
+      conversationHistory.unshift(systemMessage);
+      
+      conversationHistory.push({
+        role: "user",
+        parts: [{ text: userMessage.content }],
+      });
+
+      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: conversationHistory,
+          generationConfig: {
+            temperature: 1.0,
+            topK: 50,
+            topP: 0.9,
+            maxOutputTokens: 1024,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse =
+        data.candidates[0]?.content?.parts[0]?.text ||
+        "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
+
+      const assistantMessage: Message = {
+        id: nanoid(),
+        role: "assistant",
+        content:
+          aiResponse +
+          "\n\n*— LuvviX AI, votre assistant IA amical 🤖*",
+        timestamp: new Date(),
+      };
+
+      const finalMessages = [...updatedMessages, assistantMessage];
+      setMessages(finalMessages);
+
+      generateSuggestedQuestions(aiResponse);
+
+      if (user && currentConversationId) {
+        saveCurrentConversation(finalMessages as {
+          id: string;
+          role: "user" | "assistant";
+          content: string;
+          timestamp: Date;
+        }[]);
+      }
+      
+      toast({
+        title: "Réponse régénérée",
+        description: "Une nouvelle réponse a été générée avec succès.",
+      });
+    } catch (error) {
+      console.error("Erreur lors de la régénération :", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de régénérer la réponse. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setIsRegenerating(false);
+    }
+  };
+
+  const handleFeedback = (messageId: string, feedback: "positive" | "negative") => {
+    console.log(`Feedback ${feedback} for message ${messageId}`);
+    
+    toast({
+      title: feedback === "positive" ? "Merci pour votre retour positif!" : "Nous prenons note de votre feedback",
+      description: "Votre avis nous aide à améliorer LuvviX AI.",
+    });
+  };
+
   const handleSuggestedQuestionClick = (question: string) => {
     setShouldAutoScroll(true);
     handleSendMessage(question);
@@ -324,7 +524,9 @@ export const ChatContainer = () => {
             <ChatMessage
               key={message.id}
               message={message}
-              isLast={index === messages.length - 1}
+              isLast={index === messages.length - 1 && message.role === "assistant"}
+              onRegenerate={handleRegenerate}
+              onFeedback={handleFeedback}
             />
           ))}
           
@@ -345,7 +547,12 @@ export const ChatContainer = () => {
         <div className="max-w-5xl mx-auto w-full px-2 md:px-4">
           <div className="bg-gradient-to-t from-background via-background to-background/80 pt-6 pb-4 border-t border-primary/10 backdrop-blur-sm">
             <div className="px-3 md:px-6">
-              <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+              <ChatInput 
+                onSendMessage={handleSendMessage}
+                onSendImage={handleSendImage} 
+                isLoading={isLoading}
+                isPro={isPro} 
+              />
             </div>
           </div>
         </div>

@@ -10,6 +10,7 @@ import { Button } from "./ui/button";
 import { Menu } from "lucide-react";
 import { ConversationSelector } from "./ConversationSelector";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { FloatingActions } from "./FloatingActions";
 
 const SAMPLE_QUESTIONS = [
   "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",
@@ -54,9 +55,12 @@ export const ChatContainer = () => {
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const scrollToBottom = () => {
-    if (shouldAutoScroll) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToTop = () => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
     }
   };
 
@@ -542,6 +546,8 @@ export const ChatContainer = () => {
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      <FloatingActions scrollToTop={scrollToTop} />
 
       <div className="fixed bottom-0 left-0 right-0 z-10">
         <div className="max-w-5xl mx-auto w-full px-2 md:px-4">

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { nanoid } from "nanoid";
 import { useLocalStorage } from "@/hooks/use-local-storage";
@@ -43,6 +42,7 @@ export interface AuthContextType {
   setCurrentConversation: (id: string) => void;
   deleteConversation: (id: string) => void;
   renameConversation: (id: string, title: string) => void;
+  updateConversationTitle: (id: string, title: string) => void;
   clearConversations: () => void;
 }
 
@@ -73,11 +73,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     null
   );
 
-  // Simulating authentication
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
       
       let existingUser = null;
@@ -97,12 +95,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { password: _, ...userWithoutPassword } = existingUser;
       setUser(userWithoutPassword);
       
-      // Check if user is Pro (would be from a real backend)
       if (email.includes("pro") || email.includes("premium")) {
         setProStatus(true);
       }
       
-      // Load user's conversations
       const userConversations = conversations.filter(
         (conv) => conv.id.startsWith(userWithoutPassword.id)
       );
@@ -129,7 +125,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ) => {
     setIsLoading(true);
     try {
-      // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
       
       let users = [];
@@ -160,12 +155,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { password: _, ...userWithoutPassword } = newUser;
       setUser(userWithoutPassword);
       
-      // Check if registering with a pro email
       if (email.includes("pro") || email.includes("premium")) {
         setProStatus(true);
       }
       
-      // Create first conversation
       const newConvId = createNewConversation();
       setCurrentConversationId(newConvId);
     } catch (error: any) {
@@ -217,7 +210,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     const updatedConversations = conversations.map((conv) => {
       if (conv.id === currentConversationId) {
-        // Generate title from first user message if this is a new conversation
         let title = conv.title;
         if (messages.length > 1 && conv.messages.length <= 1) {
           const firstUserMessage = messages.find((m) => m.role === "user");
@@ -270,6 +262,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setConversations(updatedConversations);
   };
 
+  const updateConversationTitle = (id: string, title: string) => {
+    renameConversation(id, title);
+  };
+
   const clearConversations = () => {
     setConversations([]);
     setCurrentConversationId(null);
@@ -291,6 +287,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setCurrentConversation,
         deleteConversation,
         renameConversation,
+        updateConversationTitle,
         clearConversations,
       }}
     >

@@ -16,7 +16,7 @@ export function SuggestedQuestions({ questions, onQuestionClick }: SuggestedQues
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, staggerChildren: 0.1 }}
-      className="w-full flex flex-col items-center my-2"
+      className="w-full flex flex-col items-center my-4"
     >
       <div className="w-full flex flex-wrap justify-center gap-2">
         {questions.map((question, index) => (

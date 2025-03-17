@@ -317,9 +317,9 @@ export const ChatContainer = () => {
     <div className="flex flex-col h-full relative">
       <div 
         ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-24"
+        className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-20"
       >
-        <div className="space-y-4 md:space-y-6 pb-2">
+        <div className="space-y-4 md:space-y-6 mb-2">
           {messages.map((message, index) => (
             <ChatMessage
               key={message.id}
@@ -339,9 +339,13 @@ export const ChatContainer = () => {
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background/95 to-transparent pt-6 pb-4">
-        <div className="px-3 md:px-6">
-          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+      <div className="fixed bottom-0 left-0 right-0 z-10">
+        <div className="max-w-5xl mx-auto w-full px-2 md:px-4">
+          <div className="bg-gradient-to-t from-background via-background to-background/80 pt-6 pb-4 border-t border-primary/10 backdrop-blur-sm">
+            <div className="px-3 md:px-6">
+              <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

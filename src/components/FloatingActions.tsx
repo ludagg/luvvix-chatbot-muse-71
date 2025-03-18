@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { ArrowUp, ArrowDown, MessageSquarePlus } from "lucide-react";
+import { ArrowUp, MessageSquarePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
@@ -35,8 +35,17 @@ export const FloatingActions = ({ scrollToTop, className }: FloatingActionsProps
   }, []);
 
   const handleScrollToggle = () => {
-    // Simply use the provided scrollToTop function
-    scrollToTop();
+    // Make sure we're calling scrollToTop correctly
+    if (typeof scrollToTop === 'function') {
+      scrollToTop();
+    } else {
+      console.error("scrollToTop is not a function:", scrollToTop);
+      // Fallback scrolling behavior
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    }
   };
 
   const handleNewConversation = () => {

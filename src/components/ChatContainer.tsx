@@ -56,10 +56,18 @@ export const ChatContainer = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const scrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
+    console.log("Scrolling to top");
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    } else {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    }
   };
 
   useEffect(() => {

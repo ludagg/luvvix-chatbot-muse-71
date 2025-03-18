@@ -35,16 +35,8 @@ export const FloatingActions = ({ scrollToTop, className }: FloatingActionsProps
   }, []);
 
   const handleScrollToggle = () => {
-    if (isAtTop) {
-      // Scroll to bottom when at top
-      window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: "smooth"
-      });
-    } else {
-      // Use the provided scrollToTop function
-      scrollToTop();
-    }
+    // Simply use the provided scrollToTop function
+    scrollToTop();
   };
 
   const handleNewConversation = () => {
@@ -70,13 +62,9 @@ export const FloatingActions = ({ scrollToTop, className }: FloatingActionsProps
         size="icon"
         className="rounded-full bg-primary shadow-lg hover:bg-primary/90"
         onClick={handleScrollToggle}
-        aria-label={isAtTop ? "Aller en bas" : "Retour en haut"}
+        aria-label="Retour en haut"
       >
-        {isAtTop ? (
-          <ArrowDown className="h-5 w-5" />
-        ) : (
-          <ArrowUp className="h-5 w-5" />
-        )}
+        <ArrowUp className="h-5 w-5" />
       </Button>
       
       <Button

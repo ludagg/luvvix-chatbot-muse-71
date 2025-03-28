@@ -85,7 +85,7 @@ export const ChatContainer = () => {
      const { scrollTop, scrollHeight, clientHeight } = chatContainer;
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
       
-     setShouldAutoScroll(isNearBottom);
+     setShouldAutoScroll(false);
     };
     
     chatContainer?.addEventListener('scroll', handleScroll);

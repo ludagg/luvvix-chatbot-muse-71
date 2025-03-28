@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+ùimport { useState, useRef, useEffect } from "react";
 import { ChatMessage, Message } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { nanoid } from "nanoid";
@@ -79,14 +79,14 @@ export const ChatContainer = () => {
   useEffect(() => {
     const chatContainer = chatContainerRef.current;
     
-    //const handleScroll = () => {
-     // if (!chatContainer) return;
+    const handleScroll = () => {
+      if (!chatContainer) return;
       
-    //  const { scrollTop, scrollHeight, clientHeight } = chatContainer;
-    //  const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+     const { scrollTop, scrollHeight, clientHeight } = chatContainer;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
       
-    //  setShouldAutoScroll(isNearBottom);
-  //  };
+     setShouldAutoScroll(isNearBottom);
+    };
     
     chatContainer?.addEventListener('scroll', handleScroll);
     

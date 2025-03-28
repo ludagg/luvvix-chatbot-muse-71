@@ -40,7 +40,7 @@ export const ChatContainer = () => {
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { 

@@ -57,15 +57,15 @@ const MessageContent = ({ content }: { content: string }) => {
       components={{
         // Custom rendering for tables to use shadcn/ui Table component
         table: ({ node, ...props }) => (
-          <div className="my-4 w-full overflow-auto">
+          <div className="my-4 w-full overflow-auto rounded border border-border/50">
             <Table>{props.children}</Table>
           </div>
         ),
         thead: ({ node, ...props }) => <TableHeader {...props} />,
         tbody: ({ node, ...props }) => <TableBody {...props} />,
         tr: ({ node, ...props }) => <TableRow {...props} />,
-        th: ({ node, ...props }) => <TableHead {...props} />,
-        td: ({ node, ...props }) => <TableCell {...props} />,
+        th: ({ node, ...props }) => <TableHead className="bg-muted/50 font-medium p-2 text-muted-foreground" {...props} />,
+        td: ({ node, ...props }) => <TableCell className="p-2 border-t border-border/20" {...props} />,
         // Better styling for code blocks
         code: ({ node, className, children, ...props }) => {
           const match = /language-(\w+)/.exec(className || "");
@@ -81,9 +81,6 @@ const MessageContent = ({ content }: { content: string }) => {
             </code>
           );
         },
-        // Better rendering for math elements using katex
-        // Note: ReactMarkdown doesn't have a 'math' component directly,
-        // we need to handle math elements differently through the remarkMath & rehypeKatex plugins
       }}
     >
       {content}

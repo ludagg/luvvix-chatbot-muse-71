@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, Message, SourceReference } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
@@ -366,8 +367,16 @@ export const ChatContainer = () => {
             Nouvelles fonctionnalités de formatage disponibles:
             1. Tu peux utiliser LaTeX pour les formules mathématiques en les entourant de $ pour l'inline ou $$ pour les blocs.
             2. Tu peux créer des tableaux en Markdown avec la syntaxe standard des tableaux.
+            
+            Exemple de tableau:
+            | Colonne 1 | Colonne 2 | Colonne 3 |
+            |-----------|-----------|-----------|
+            | Donnée 1  | Donnée 2  | Donnée 3  |
+            | Exemple A | Exemple B | Exemple C |
 
-            Si la requête concerne des mathématiques, de la physique ou des domaines scientifiques, utilise LaTeX pour rendre les formules élégantes.`,
+            Si la requête concerne des mathématiques, de la physique ou des domaines scientifiques, utilise LaTeX pour rendre les formules élégantes.
+            
+            Exemple formule LaTeX: L'équation quadratique est $ax^2 + bx + c = 0$ et sa solution est $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$.`,
           },
         ],
       };
@@ -560,12 +569,7 @@ export const ChatContainer = () => {
     setMessages(updatedMessages);
     
     if (user && currentConversationId) {
-      saveCurrentConversation(updatedMessages as {
-        id: string;
-        role: "user" | "assistant";
-        content: string;
-        timestamp: Date;
-      }[]);
+      saveCurrentConversation(updatedMessages as any);
     }
     
     setIsRegenerating(true);
@@ -596,7 +600,17 @@ export const ChatContainer = () => {
             Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
             ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}
             ${useAdvancedReasoning ? `Utilise le raisonnement avancé pour répondre aux questions. Analyse étape par étape, explore différents angles, présente des arguments pour et contre, et ajoute une section de synthèse.` : ''}
-            ${searchResults ? searchResults + "\n\nUtilise ces informations lorsqu'elles sont pertinentes pour enrichir ta réponse, mais ne te limite pas à ces résultats." : ''}`,
+            ${sources.length > 0 ? `${searchResults}\n\nPour citer une source dans ta réponse, utilise [cite:X] où X est le numéro de la source (de 1 à ${sources.length}). Cite les sources après chaque fait ou affirmation pour montrer d'où vient l'information.` : ''}
+            
+            Nouvelles fonctionnalités de formatage disponibles:
+            1. Tu peux utiliser LaTeX pour les formules mathématiques en les entourant de $ pour l'inline ou $$ pour les blocs.
+            2. Tu peux créer des tableaux en Markdown avec la syntaxe standard des tableaux.
+            
+            Exemple de tableau:
+            | Colonne 1 | Colonne 2 | Colonne 3 |
+            |-----------|-----------|-----------|
+            | Donnée 1  | Donnée 2  | Donnée 3  |
+            | Exemple A | Exemple B | Exemple C |`,
           },
         ],
       };
@@ -638,15 +652,21 @@ export const ChatContainer = () => {
         data.candidates[0]?.content?.parts[0]?.text ||
         "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
 
+      // Format the response with source citations if needed
+      const formattedResponse = sources.length > 0 
+        ? formatSourceCitations(aiResponse, sources)
+        : aiResponse;
+
       const assistantMessage: Message = {
         id: nanoid(),
         role: "assistant",
         content:
-          aiResponse +
+          formattedResponse +
           "\n\n*— LuvviX AI, votre assistant IA amical 🤖*",
         timestamp: new Date(),
         useAdvancedReasoning: useAdvancedReasoning,
-        useWebSearch: useWebSearch
+        useWebSearch: useWebSearch,
+        sourceReferences: sources.length > 0 ? sources : undefined
       };
 
       const finalMessages = [...updatedMessages, assistantMessage];
@@ -655,12 +675,7 @@ export const ChatContainer = () => {
       generateSuggestedQuestions(aiResponse);
 
       if (user && currentConversationId) {
-        saveCurrentConversation(finalMessages as {
-          id: string;
-          role: "user" | "assistant";
-          content: string;
-          timestamp: Date;
-        }[]);
+        saveCurrentConversation(finalMessages as any);
       }
       
       toast({

@@ -572,9 +572,18 @@ export const ChatContainer = () => {
     setIsLoading(true);
     
     try {
+      let sources: SourceReference[] = [];
       let searchResults = "";
+      
       if (useWebSearch) {
-        searchResults = await performWebSearch(userMessage.content);
+        sources = await performWebSearch(userMessage.content);
+        
+        if (sources.length > 0) {
+          searchResults = "Voici des résultats de recherche récents qui pourraient être pertinents pour répondre à la question de l'utilisateur:\n\n";
+          sources.forEach(source => {
+            searchResults += `[${source.id}] ${source.title}\n${source.url}\n${source.snippet}\n\n`;
+          });
+        }
       }
       
       const systemMessage = {
@@ -587,7 +596,7 @@ export const ChatContainer = () => {
             Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
             ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}
             ${useAdvancedReasoning ? `Utilise le raisonnement avancé pour répondre aux questions. Analyse étape par étape, explore différents angles, présente des arguments pour et contre, et ajoute une section de synthèse.` : ''}
-            ${searchResults ? `Voici des résultats de recherche récents qui pourraient être pertinents pour répondre à la question de l'utilisateur:\n${searchResults}\n\nUtilise ces informations lorsqu'elles sont pertinentes pour enrichir ta réponse, mais ne te limite pas à ces résultats.` : ''}`,
+            ${searchResults ? searchResults + "\n\nUtilise ces informations lorsqu'elles sont pertinentes pour enrichir ta réponse, mais ne te limite pas à ces résultats." : ''}`,
           },
         ],
       };

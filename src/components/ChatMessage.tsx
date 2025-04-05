@@ -81,16 +81,9 @@ const MessageContent = ({ content }: { content: string }) => {
             </code>
           );
         },
-        // Better styling for math blocks
-        math: ({ node, ...props }) => (
-          <div className="flex justify-center my-4 overflow-auto">
-            <div {...props} />
-          </div>
-        ),
-        // Better styling for inline math
-        inlineMath: ({ node, ...props }) => (
-          <span className="text-primary" {...props} />
-        ),
+        // Better rendering for math elements using katex
+        // Note: ReactMarkdown doesn't have a 'math' component directly,
+        // we need to handle math elements differently through the remarkMath & rehypeKatex plugins
       }}
     >
       {content}

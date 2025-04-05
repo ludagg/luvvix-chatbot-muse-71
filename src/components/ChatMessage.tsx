@@ -5,6 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bot, User, Copy, Check, RefreshCcw, Share2, ThumbsUp, ThumbsDown, Image as ImageIcon, BrainCircuit, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { Button } from "./ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -20,6 +23,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+export interface SourceReference {
+  id: number;
+  title: string;
+  url: string;
+  snippet: string;
+}
+
 export interface Message {
   id: string;
   role: "user" | "assistant";
@@ -27,6 +37,7 @@ export interface Message {
   timestamp: Date;
   useAdvancedReasoning?: boolean;
   useWebSearch?: boolean;
+  sourceReferences?: SourceReference[];
 }
 
 interface ChatMessageProps {
@@ -44,6 +55,7 @@ export function ChatMessage({
 }: ChatMessageProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [hasFeedback, setHasFeedback] = useState<"positive" | "negative" | null>(null);
+  const [showSources, setShowSources] = useState(false);
   const { toast } = useToast();
 
   const handleCopy = (text: string, id: string) => {
@@ -102,6 +114,7 @@ export function ChatMessage({
 
   // Indicateurs des modes spéciaux
   const hasSpecialModes = !isUser && (message.useAdvancedReasoning || message.useWebSearch);
+  const hasSources = !isUser && message.sourceReferences && message.sourceReferences.length > 0;
 
   return (
     <motion.div
@@ -166,10 +179,44 @@ export function ChatMessage({
           isUser ? "bg-blue-500 text-white" : "bg-muted text-foreground"
         )}>
           <div className="prose dark:prose-invert prose-sm sm:prose-base max-w-none">
-            <ReactMarkdown>
+            <ReactMarkdown
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+            >
               {message.content}
             </ReactMarkdown>
           </div>
+
+          {/* Sources References */}
+          {hasSources && (
+            <div className="mt-4 pt-3 border-t border-border/30">
+              <div 
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                onClick={() => setShowSources(!showSources)}
+              >
+                <Globe size={12} />
+                <span>{showSources ? "Masquer les sources" : "Afficher les sources"} ({message.sourceReferences?.length})</span>
+              </div>
+              
+              {showSources && (
+                <div className="mt-2 space-y-2">
+                  {message.sourceReferences?.map(source => (
+                    <div key={source.id} className="p-2 rounded-md bg-background/50 border border-border/30 text-xs">
+                      <a 
+                        href={source.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="font-medium text-primary hover:underline"
+                      >
+                        [{source.id}] {source.title}
+                      </a>
+                      <p className="text-muted-foreground mt-1">{source.snippet}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Action buttons for assistant messages */}

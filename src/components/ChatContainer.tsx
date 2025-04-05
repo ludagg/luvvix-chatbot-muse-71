@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from "react";
-import { ChatMessage, Message } from "./ChatMessage";
+import { ChatMessage, Message, SourceReference } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { nanoid } from "nanoid";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +36,31 @@ const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
 const SERPER_API_URL = "https://google.serper.dev/search";
 
+// Helper function to extract and format source citations
+const formatSourceCitations = (content: string, sources: SourceReference[]): string => {
+  let formattedContent = content;
+  
+  // Add superscript source references
+  sources.forEach(source => {
+    const sourceTag = `[^${source.id}]`;
+    // Look for citation markers in the text
+    formattedContent = formattedContent.replace(
+      new RegExp(`\\[cite:${source.id}\\]`, 'g'), 
+      sourceTag
+    );
+  });
+  
+  // Add footnotes at the end
+  if (sources.length > 0) {
+    formattedContent += "\n\n";
+    sources.forEach(source => {
+      formattedContent += `[^${source.id}]: [${source.title}](${source.url})\n`;
+    });
+  }
+  
+  return formattedContent;
+};
+
 export const ChatContainer = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,7 +91,6 @@ export const ChatContainer = () => {
   };
 
   const scrollToTop = () => {
-    console.log("Scrolling to top");
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTo({
         top: 0,
@@ -153,7 +177,7 @@ export const ChatContainer = () => {
         },
         body: JSON.stringify({
           q: query,
-          num: 5,
+          num: 8,
         }),
       });
 
@@ -164,23 +188,56 @@ export const ChatContainer = () => {
       const data = await response.json();
       console.log("Search results:", data);
       
-      // Format search results
+      // Extract and format search results as sources
       const organicResults = data.organic || [];
-      let searchResults = "### Résultats de recherche LuvvixSEARCH\n\n";
+      const sources: SourceReference[] = [];
       
       if (organicResults.length > 0) {
-        organicResults.slice(0, 3).forEach((result: any, index: number) => {
-          searchResults += `**${index + 1}. [${result.title}](${result.link})**\n`;
-          searchResults += `${result.snippet}\n\n`;
+        organicResults.slice(0, 8).forEach((result: any, index: number) => {
+          sources.push({
+            id: index + 1,
+            title: result.title,
+            url: result.link,
+            snippet: result.snippet
+          });
         });
-      } else {
-        searchResults += "Aucun résultat trouvé pour cette recherche.\n\n";
       }
       
-      return searchResults;
+      return sources;
     } catch (error) {
       console.error("Error during web search:", error);
-      return "**Recherche web échouée.** Impossible d'obtenir des résultats de recherche pour cette requête.";
+      return [];
+    }
+  };
+
+  const fetchImage = async (query: string) => {
+    try {
+      console.log("Searching for images:", query);
+      const response = await fetch(SERPER_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-KEY": "c2a8e7aeda35e9e97a12c03a9bea0c89c06e6595",
+        },
+        body: JSON.stringify({
+          q: query + " high quality image",
+          searchType: "images",
+          num: 5,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Image Search API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("Image search results:", data);
+      
+      const images = data.images || [];
+      return images.length > 0 ? images[0].imageUrl : null;
+    } catch (error) {
+      console.error("Error during image search:", error);
+      return null;
     }
   };
 
@@ -251,24 +308,47 @@ export const ChatContainer = () => {
     setMessages(updatedMessages);
     
     if (user && currentConversationId) {
-      saveCurrentConversation(updatedMessages as {
-        id: string;
-        role: "user" | "assistant";
-        content: string;
-        timestamp: Date;
-      }[]);
+      saveCurrentConversation(updatedMessages as any);
     }
 
     setIsLoading(true);
 
     try {
-      let searchResults = "";
+      let sources: SourceReference[] = [];
+      let imageQuery = '';
       
       // Perform web search if enabled
       if (useWebSearch) {
         console.log("Web search enabled, searching for:", content);
-        searchResults = await performWebSearch(content);
-        console.log("Search results obtained:", searchResults.substring(0, 100) + "...");
+        sources = await performWebSearch(content);
+        console.log("Search results obtained:", sources.length);
+
+        // Check if we should search for an image
+        const shouldFetchImage = content.toLowerCase().includes("montre") || 
+                                content.toLowerCase().includes("image") || 
+                                content.toLowerCase().includes("photo") ||
+                                content.toLowerCase().includes("illustration") ||
+                                content.toLowerCase().includes("afficher");
+        
+        if (shouldFetchImage) {
+          imageQuery = content.replace(/montre(-moi)?|affiche(-moi)?|image|photo/gi, '').trim();
+        }
+      }
+
+      // Format sources for system prompt
+      let searchResults = "";
+      if (sources.length > 0) {
+        searchResults = "Voici des résultats de recherche récents qui pourraient être pertinents pour répondre à la question de l'utilisateur:\n\n";
+        sources.forEach(source => {
+          searchResults += `[${source.id}] ${source.title}\n${source.url}\n${source.snippet}\n\n`;
+        });
+      }
+      
+      // Fetch an image if requested
+      let imageUrl = null;
+      if (imageQuery) {
+        imageUrl = await fetchImage(imageQuery);
+        console.log("Image fetched:", imageUrl ? "Yes" : "No");
       }
       
       const systemMessage = {
@@ -281,7 +361,14 @@ export const ChatContainer = () => {
             Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
             ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}
             ${useAdvancedReasoning ? `Utilise le raisonnement avancé pour répondre aux questions. Analyse étape par étape, explore différents angles, présente des arguments pour et contre, et ajoute une section de synthèse.` : ''}
-            ${searchResults ? `Voici des résultats de recherche récents qui pourraient être pertinents pour répondre à la question de l'utilisateur:\n${searchResults}\n\nUtilise ces informations lorsqu'elles sont pertinentes pour enrichir ta réponse, mais ne te limite pas à ces résultats.` : ''}`,
+            ${sources.length > 0 ? `${searchResults}\n\nPour citer une source dans ta réponse, utilise [cite:X] où X est le numéro de la source (de 1 à ${sources.length}). Cite les sources après chaque fait ou affirmation pour montrer d'où vient l'information. Je vais transformer tes citations en notes de bas de page.` : ''}
+            ${imageUrl ? `J'ai trouvé une image pertinente pour illustrer ta réponse: ${imageUrl}\nIntègre cette image dans ta réponse si c'est pertinent en utilisant la syntaxe markdown: ![Description](${imageUrl})` : ''}
+
+            Nouvelles fonctionnalités de formatage disponibles:
+            1. Tu peux utiliser LaTeX pour les formules mathématiques en les entourant de $ pour l'inline ou $$ pour les blocs.
+            2. Tu peux créer des tableaux en Markdown avec la syntaxe standard des tableaux.
+
+            Si la requête concerne des mathématiques, de la physique ou des domaines scientifiques, utilise LaTeX pour rendre les formules élégantes.`,
           },
         ],
       };
@@ -324,15 +411,21 @@ export const ChatContainer = () => {
         data.candidates[0]?.content?.parts[0]?.text ||
         "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
 
+      // Format the response with source citations if needed
+      const formattedResponse = sources.length > 0 
+        ? formatSourceCitations(aiResponse, sources)
+        : aiResponse;
+
       const assistantMessage: Message = {
         id: nanoid(),
         role: "assistant",
         content:
-          aiResponse +
+          formattedResponse +
           "\n\n*— LuvviX AI, votre assistant IA amical 🤖*",
         timestamp: new Date(),
         useAdvancedReasoning: useAdvancedReasoning,
-        useWebSearch: useWebSearch
+        useWebSearch: useWebSearch,
+        sourceReferences: sources.length > 0 ? sources : undefined
       };
 
       const finalMessages = [...updatedMessages, assistantMessage];
@@ -341,12 +434,7 @@ export const ChatContainer = () => {
       generateSuggestedQuestions(aiResponse);
 
       if (user && currentConversationId) {
-        saveCurrentConversation(finalMessages as {
-          id: string;
-          role: "user" | "assistant";
-          content: string;
-          timestamp: Date;
-        }[]);
+        saveCurrentConversation(finalMessages as any);
       }
       
       setTimeout(() => {
@@ -372,12 +460,7 @@ export const ChatContainer = () => {
       setMessages(finalMessages);
       
       if (user && currentConversationId) {
-        saveCurrentConversation(finalMessages as {
-          id: string;
-          role: "user" | "assistant";
-          content: string;
-          timestamp: Date;
-        }[]);
+        saveCurrentConversation(finalMessages as any);
       }
       
       if (suggestedQuestions.length === 0) {

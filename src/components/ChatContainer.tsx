@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, Message, SourceReference } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
@@ -166,7 +165,7 @@ export const ChatContainer = () => {
     }
   }, [currentConversationId, conversations, user]);
 
-  const performWebSearch = async (query: string) => {
+  const performWebSearch = async (query: string): Promise<SourceReference[]> => {
     try {
       console.log("Performing web search for:", query);
       const response = await fetch(SERPER_API_URL, {

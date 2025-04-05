@@ -126,76 +126,70 @@ export function ChatMessage({
           </div>
         </div>
         
-        <div className="flex items-center space-x-1 px-1">
-          <span className="text-xs text-muted-foreground">
-            {new Date(message.timestamp).toLocaleString()}
-          </span>
-          
-          {/* Action buttons for assistant messages */}
-          {!isUser && (
-            <div className="flex space-x-1 ml-2">
-              {isLast && onRegenerate && (
+        {/* Action buttons for assistant messages */}
+        {!isUser && (
+          <div className="flex space-x-1 ml-2">
+            {isLast && onRegenerate && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground"
+                onClick={() => onRegenerate(message.id)}
+                title="Régénérer la réponse"
+              >
+                <RefreshCcw className="h-3 w-3" />
+              </Button>
+            )}
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground"
-                  onClick={() => onRegenerate(message.id)}
-                  title="Régénérer la réponse"
                 >
-                  <RefreshCcw className="h-3 w-3" />
+                  <Share2 className="h-3 w-3" />
                 </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleCopy(message.content, message.id)}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copier
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleShare(message.content)}>
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Partager
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground",
+                hasFeedback === "positive" && "text-green-500 bg-green-100 hover:bg-green-200"
               )}
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground"
-                  >
-                    <Share2 className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleCopy(message.content, message.id)}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    Copier
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleShare(message.content)}>
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Partager
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground",
-                  hasFeedback === "positive" && "text-green-500 bg-green-100 hover:bg-green-200"
-                )}
-                onClick={() => handleFeedback("positive")}
-                title="Cette réponse est utile"
-              >
-                <ThumbsUp className="h-3 w-3" />
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground",
-                  hasFeedback === "negative" && "text-red-500 bg-red-100 hover:bg-red-200"
-                )}
-                onClick={() => handleFeedback("negative")}
-                title="Cette réponse n'est pas utile"
-              >
-                <ThumbsDown className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
-        </div>
+              onClick={() => handleFeedback("positive")}
+              title="Cette réponse est utile"
+            >
+              <ThumbsUp className="h-3 w-3" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground",
+                hasFeedback === "negative" && "text-red-500 bg-red-100 hover:bg-red-200"
+              )}
+              onClick={() => handleFeedback("negative")}
+              title="Cette réponse n'est pas utile"
+            >
+              <ThumbsDown className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
       </div>
     </motion.div>
   );

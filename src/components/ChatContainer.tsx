@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, Message } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
@@ -33,6 +34,7 @@ const INITIAL_MESSAGES: Message[] = [
 const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
 const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
+const SERPER_API_URL = "https://google.serper.dev/search";
 
 export const ChatContainer = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
@@ -40,7 +42,7 @@ export const ChatContainer = () => {
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { 
@@ -54,6 +56,14 @@ export const ChatContainer = () => {
   } = useAuth();
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [useAdvancedReasoning, setUseAdvancedReasoning] = useState(false);
+  const [useWebSearch, setUseWebSearch] = useState(false);
+
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
 
   const scrollToTop = () => {
     console.log("Scrolling to top");
@@ -72,7 +82,7 @@ export const ChatContainer = () => {
 
   useEffect(() => {
     if (shouldAutoScroll) {
-      scrollToTop();
+      scrollToBottom();
     }
   }, [messages, shouldAutoScroll]);
 
@@ -82,10 +92,10 @@ export const ChatContainer = () => {
     const handleScroll = () => {
       if (!chatContainer) return;
       
-     const { scrollTop, scrollHeight, clientHeight } = chatContainer;
+      const { scrollTop, scrollHeight, clientHeight } = chatContainer;
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
       
-     setShouldAutoScroll(false);
+      setShouldAutoScroll(isNearBottom);
     };
     
     chatContainer?.addEventListener('scroll', handleScroll);
@@ -131,6 +141,46 @@ export const ChatContainer = () => {
       setSuggestedQuestions(randomQuestions);
     }
   }, [currentConversationId, conversations, user]);
+
+  const performWebSearch = async (query: string) => {
+    try {
+      const response = await fetch(SERPER_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-KEY": "c2a8e7aeda35e9e97a12c03a9bea0c89c06e6595", // Free API key for demo purposes
+        },
+        body: JSON.stringify({
+          q: query,
+          num: 5,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Search API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Format search results
+      const organicResults = data.organic || [];
+      let searchResults = "### Résultats de recherche LuvvixSEARCH\n\n";
+      
+      if (organicResults.length > 0) {
+        organicResults.slice(0, 3).forEach((result: any, index: number) => {
+          searchResults += `**${index + 1}. [${result.title}](${result.link})**\n`;
+          searchResults += `${result.snippet}\n\n`;
+        });
+      } else {
+        searchResults += "Aucun résultat trouvé pour cette recherche.\n\n";
+      }
+      
+      return searchResults;
+    } catch (error) {
+      console.error("Error during web search:", error);
+      return "**Recherche web échouée.** Impossible d'obtenir des résultats de recherche pour cette requête.";
+    }
+  };
 
   const generateSuggestedQuestions = async (assistantResponse: string) => {
     try {
@@ -210,6 +260,13 @@ export const ChatContainer = () => {
     setIsLoading(true);
 
     try {
+      let searchResults = "";
+      
+      // Perform web search if enabled
+      if (useWebSearch) {
+        searchResults = await performWebSearch(content);
+      }
+      
       const systemMessage = {
         role: "user",
         parts: [
@@ -218,7 +275,9 @@ export const ChatContainer = () => {
             Le PDG de l'entreprise est **Ludovic Aggaï**.
             ${user ? `Tu t'adresses à ${user.displayName || 'un utilisateur'}${user.age ? ` qui a ${user.age} ans` : ''}${user.country ? ` et qui vient de ${user.country}` : ''}.` : ''}  
             Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
-            ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}`,
+            ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}
+            ${useAdvancedReasoning ? `Utilise le raisonnement avancé pour répondre aux questions. Analyse étape par étape, explore différents angles, présente des arguments pour et contre, et ajoute une section de synthèse.` : ''}
+            ${searchResults ? `Voici des résultats de recherche récents qui pourraient être pertinents pour répondre à la question de l'utilisateur:\n${searchResults}\n\nUtilise ces informations lorsqu'elles sont pertinentes pour enrichir ta réponse, mais ne te limite pas à ces résultats.` : ''}`,
           },
         ],
       };
@@ -242,10 +301,10 @@ export const ChatContainer = () => {
         body: JSON.stringify({
           contents: conversationHistory,
           generationConfig: {
-            temperature: 1.0,
+            temperature: useAdvancedReasoning ? 0.7 : 1.0,
             topK: 50,
             topP: 0.9,
-            maxOutputTokens: 1024,
+            maxOutputTokens: useAdvancedReasoning ? 1500 : 1024,
           },
         }),
       });
@@ -257,7 +316,7 @@ export const ChatContainer = () => {
       const data = await response.json();
       const aiResponse =
         data.candidates[0]?.content?.parts[0]?.text ||
-        "Oups ! Je n'ai pas pu générer une r��ponse. Veuillez réessayer.";
+        "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
 
       const assistantMessage: Message = {
         id: nanoid(),
@@ -281,6 +340,10 @@ export const ChatContainer = () => {
           timestamp: Date;
         }[]);
       }
+      
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
     } catch (error) {
       console.error("Erreur API Gemini :", error);
       toast({
@@ -523,8 +586,49 @@ export const ChatContainer = () => {
     handleSendMessage(question);
   };
 
+  const toggleAdvancedReasoning = () => {
+    setUseAdvancedReasoning(!useAdvancedReasoning);
+    toast({
+      title: useAdvancedReasoning ? "Raisonnement standard activé" : "Raisonnement avancé activé",
+      description: useAdvancedReasoning 
+        ? "Les réponses seront plus concises" 
+        : "Les réponses incluront une analyse étape par étape et plus de détails",
+    });
+  };
+
+  const toggleWebSearch = () => {
+    setUseWebSearch(!useWebSearch);
+    toast({
+      title: useWebSearch ? "LuvvixSEARCH désactivé" : "LuvvixSEARCH activé",
+      description: useWebSearch 
+        ? "Les réponses n'incluront plus de résultats de recherche web" 
+        : "Les réponses incluront maintenant des résultats de recherche web en temps réel",
+    });
+  };
+
   return (
     <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-primary/10">
+        <div className="flex items-center space-x-2">
+          <Button
+            variant={useAdvancedReasoning ? "default" : "outline"}
+            size="sm"
+            onClick={toggleAdvancedReasoning}
+            className="text-xs"
+          >
+            Raisonnement avancé
+          </Button>
+          <Button
+            variant={useWebSearch ? "default" : "outline"}
+            size="sm"
+            onClick={toggleWebSearch}
+            className="text-xs"
+          >
+            LuvvixSEARCH
+          </Button>
+        </div>
+      </div>
+      
       <div 
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-28"

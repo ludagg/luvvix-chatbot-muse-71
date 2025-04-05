@@ -144,6 +144,7 @@ export const ChatContainer = () => {
 
   const performWebSearch = async (query: string) => {
     try {
+      console.log("Performing web search for:", query);
       const response = await fetch(SERPER_API_URL, {
         method: "POST",
         headers: {
@@ -161,6 +162,7 @@ export const ChatContainer = () => {
       }
 
       const data = await response.json();
+      console.log("Search results:", data);
       
       // Format search results
       const organicResults = data.organic || [];
@@ -264,7 +266,9 @@ export const ChatContainer = () => {
       
       // Perform web search if enabled
       if (useWebSearch) {
+        console.log("Web search enabled, searching for:", content);
         searchResults = await performWebSearch(content);
+        console.log("Search results obtained:", searchResults.substring(0, 100) + "...");
       }
       
       const systemMessage = {
@@ -282,6 +286,8 @@ export const ChatContainer = () => {
         ],
       };
 
+      console.log("Preparing to send to Gemini with advanced reasoning:", useAdvancedReasoning, "and web search:", useWebSearch);
+      
       const conversationHistory = updatedMessages.slice(-6).map((msg) => ({
         role: msg.role === "assistant" ? "model" : "user",
         parts: [{ text: msg.content }],
@@ -325,6 +331,8 @@ export const ChatContainer = () => {
           aiResponse +
           "\n\n*— LuvviX AI, votre assistant IA amical 🤖*",
         timestamp: new Date(),
+        useAdvancedReasoning: useAdvancedReasoning,
+        useWebSearch: useWebSearch
       };
 
       const finalMessages = [...updatedMessages, assistantMessage];
@@ -482,6 +490,11 @@ export const ChatContainer = () => {
     setIsLoading(true);
     
     try {
+      let searchResults = "";
+      if (useWebSearch) {
+        searchResults = await performWebSearch(userMessage.content);
+      }
+      
       const systemMessage = {
         role: "user",
         parts: [
@@ -490,7 +503,9 @@ export const ChatContainer = () => {
             Le PDG de l'entreprise est **Ludovic Aggaï**.
             ${user ? `Tu t'adresses à ${user.displayName || 'un utilisateur'}${user.age ? ` qui a ${user.age} ans` : ''}${user.country ? ` et qui vient de ${user.country}` : ''}.` : ''}  
             Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
-            ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}`,
+            ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}
+            ${useAdvancedReasoning ? `Utilise le raisonnement avancé pour répondre aux questions. Analyse étape par étape, explore différents angles, présente des arguments pour et contre, et ajoute une section de synthèse.` : ''}
+            ${searchResults ? `Voici des résultats de recherche récents qui pourraient être pertinents pour répondre à la question de l'utilisateur:\n${searchResults}\n\nUtilise ces informations lorsqu'elles sont pertinentes pour enrichir ta réponse, mais ne te limite pas à ces résultats.` : ''}`,
           },
         ],
       };
@@ -515,10 +530,10 @@ export const ChatContainer = () => {
         body: JSON.stringify({
           contents: conversationHistory,
           generationConfig: {
-            temperature: 1.0,
+            temperature: useAdvancedReasoning ? 0.7 : 1.0,
             topK: 50,
             topP: 0.9,
-            maxOutputTokens: 1024,
+            maxOutputTokens: useAdvancedReasoning ? 1500 : 1024,
           },
         }),
       });
@@ -539,6 +554,8 @@ export const ChatContainer = () => {
           aiResponse +
           "\n\n*— LuvviX AI, votre assistant IA amical 🤖*",
         timestamp: new Date(),
+        useAdvancedReasoning: useAdvancedReasoning,
+        useWebSearch: useWebSearch
       };
 
       const finalMessages = [...updatedMessages, assistantMessage];
@@ -607,28 +624,7 @@ export const ChatContainer = () => {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-primary/10">
-        <div className="flex items-center space-x-2">
-          <Button
-            variant={useAdvancedReasoning ? "default" : "outline"}
-            size="sm"
-            onClick={toggleAdvancedReasoning}
-            className="text-xs"
-          >
-            Raisonnement avancé
-          </Button>
-          <Button
-            variant={useWebSearch ? "default" : "outline"}
-            size="sm"
-            onClick={toggleWebSearch}
-            className="text-xs"
-          >
-            LuvvixSEARCH
-          </Button>
-        </div>
-      </div>
-      
+    <div className="flex flex-col h-full">      
       <div 
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-28"
@@ -667,7 +663,11 @@ export const ChatContainer = () => {
                 onSendMessage={handleSendMessage}
                 onSendImage={handleSendImage} 
                 isLoading={isLoading}
-                isPro={isPro} 
+                isPro={isPro}
+                useAdvancedReasoning={useAdvancedReasoning}
+                useWebSearch={useWebSearch}
+                onToggleAdvancedReasoning={toggleAdvancedReasoning}
+                onToggleWebSearch={toggleWebSearch}
               />
             </div>
           </div>

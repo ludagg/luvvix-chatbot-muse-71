@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { SendIcon, Mic, MicOff, Smile, Paperclip, Image as ImageIcon, X } from "lucide-react";
+import { SendIcon, Mic, MicOff, Smile, Paperclip, Image as ImageIcon, X, Brain, Search, BrainCircuit, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -13,15 +13,34 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   onSendImage?: (file: File) => void;
   isLoading?: boolean;
   isPro?: boolean;
+  useAdvancedReasoning: boolean;
+  useWebSearch: boolean;
+  onToggleAdvancedReasoning: () => void;
+  onToggleWebSearch: () => void;
 }
 
-export const ChatInput = ({ onSendMessage, onSendImage, isLoading = false, isPro = false }: ChatInputProps) => {
+export const ChatInput = ({ 
+  onSendMessage, 
+  onSendImage, 
+  isLoading = false, 
+  isPro = false,
+  useAdvancedReasoning,
+  useWebSearch,
+  onToggleAdvancedReasoning,
+  onToggleWebSearch
+}: ChatInputProps) => {
   const [message, setMessage] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -202,6 +221,46 @@ export const ChatInput = ({ onSendMessage, onSendImage, isLoading = false, isPro
           </Button>
         </div>
       )}
+      
+      <div className="mb-2 flex items-center justify-center gap-2">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant={useAdvancedReasoning ? "default" : "outline"}
+                size="sm"
+                onClick={onToggleAdvancedReasoning}
+                className="h-8 gap-1 text-xs font-medium transition-all"
+              >
+                <BrainCircuit size={14} className={useAdvancedReasoning ? "text-primary-foreground" : "text-muted-foreground"} />
+                <span>Raisonnement avancé</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p>Réponses plus détaillées avec analyse étape par étape</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant={useWebSearch ? "default" : "outline"}
+                size="sm"
+                onClick={onToggleWebSearch}
+                className="h-8 gap-1 text-xs font-medium transition-all"
+              >
+                <Globe size={14} className={useWebSearch ? "text-primary-foreground" : "text-muted-foreground"} />
+                <span>LuvvixSEARCH</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p>Recherche sur le web en temps réel pour des réponses actualisées</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
       
       <div className="relative flex items-center w-full bg-secondary/40 backdrop-blur-sm border border-primary/20 rounded-full shadow-lg overflow-hidden pl-2">
         <input

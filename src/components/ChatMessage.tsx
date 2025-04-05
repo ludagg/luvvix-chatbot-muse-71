@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bot, User, Copy, Check, RefreshCcw, Share2, ThumbsUp, ThumbsDown, Image as ImageIcon } from "lucide-react";
+import { Bot, User, Copy, Check, RefreshCcw, Share2, ThumbsUp, ThumbsDown, Image as ImageIcon, BrainCircuit, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import { Button } from "./ui/button";
@@ -13,12 +13,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  useAdvancedReasoning?: boolean;
+  useWebSearch?: boolean;
 }
 
 interface ChatMessageProps {
@@ -92,6 +100,9 @@ export function ChatMessage({
   const isUser = message.role === "user";
   const variant = isUser ? "user" : "bot";
 
+  // Indicateurs des modes spéciaux
+  const hasSpecialModes = !isUser && (message.useAdvancedReasoning || message.useWebSearch);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -115,6 +126,41 @@ export function ChatMessage({
         "flex flex-col space-y-1 max-w-[85%] md:max-w-[75%]",
         isUser ? "items-end" : "items-start"
       )}>
+        {/* Modes utilisés */}
+        {hasSpecialModes && (
+          <div className="flex items-center gap-1.5 mb-1">
+            <TooltipProvider>
+              {message.useAdvancedReasoning && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full text-xs font-medium">
+                      <BrainCircuit size={12} />
+                      <span>Raisonnement avancé</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Cette réponse utilise une analyse approfondie avec raisonnement détaillé</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              
+              {message.useWebSearch && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full text-xs font-medium">
+                      <Globe size={12} />
+                      <span>LuvvixSEARCH</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Cette réponse inclut des résultats de recherche web en temps réel</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </TooltipProvider>
+          </div>
+        )}
+        
         <div className={cn(
           "px-4 py-3 rounded-lg relative",
           isUser ? "bg-blue-500 text-white" : "bg-muted text-foreground"

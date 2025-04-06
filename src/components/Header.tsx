@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { LogOut, Settings, User, Globe } from "lucide-react";
+import { LogOut, Settings, User, Globe, Search } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,8 +42,8 @@ export const Header = ({ onOpenAuth }: HeaderProps) => {
   };
 
   const handleWebSearchClick = () => {
-    // Open a new tab with a search engine
-    window.open("https://www.google.com", "_blank");
+    // Open a new tab with a search engine (using Bing for its API integration possibilities)
+    window.open("https://www.bing.com", "_blank");
   };
 
   return (
@@ -65,6 +65,15 @@ export const Header = ({ onOpenAuth }: HeaderProps) => {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleWebSearchClick}
+            className="gap-1 text-xs h-8 border-primary/30 hover:bg-primary/10 hidden md:flex"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span>Recherche</span>
+          </Button>
           
           {user ? (
             <DropdownMenu>

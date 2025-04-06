@@ -32,8 +32,10 @@ const INITIAL_MESSAGES: Message[] = [
 
 const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
-const SERP_API_KEY = "f8c49e3a2fb3f4d82ddb89ccc9e36fc9a85aeab7";
+const SERP_API_KEY = "f8c49e3a2fb3f4d82ddb89ccc9e36fc9a85aeab7"; 
 const SERP_API_URL = "https://serpapi.com/search.json";
+const BRIGHTDATA_API_KEY = "brd-customer-hl_a4fafc73-zone-luvvix:lrxxshdpwp1i";
+const BRIGHTDATA_SEARCH_URL = "https://api.brightdata.com/dca/search";
 
 const formatSourceCitations = (content: string, sources: SourceReference[]): string => {
   let formattedContent = content;
@@ -164,6 +166,43 @@ export const ChatContainer = () => {
   const performWebSearch = async (query: string): Promise<SourceReference[]> => {
     try {
       console.log("Performing enhanced web search for:", query);
+      
+      try {
+        const brightDataResponse = await fetch(BRIGHTDATA_SEARCH_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${BRIGHTDATA_API_KEY}`
+          },
+          body: JSON.stringify({
+            search_query: query,
+            max_results: 8,
+            include_snippets: true,
+            language: 'fr',
+          })
+        });
+        
+        if (brightDataResponse.ok) {
+          const data = await brightDataResponse.json();
+          console.log("BrightData search results:", data);
+          
+          const sources: SourceReference[] = [];
+          
+          data.results.forEach((result: any, index: number) => {
+            sources.push({
+              id: index + 1,
+              title: result.title || "Source inconnue",
+              url: result.url || "#",
+              snippet: result.snippet || "Pas de description disponible"
+            });
+          });
+          
+          console.log("Formatted BrightData sources:", sources);
+          return sources;
+        }
+      } catch (brightDataError) {
+        console.error("BrightData search failed, falling back to SerpAPI:", brightDataError);
+      }
       
       const searchParams = new URLSearchParams({
         q: query,

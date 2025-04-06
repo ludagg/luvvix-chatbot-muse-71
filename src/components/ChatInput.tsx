@@ -256,10 +256,10 @@ export const ChatInput = ({
                 variant={useWebSearch ? "default" : "outline"}
                 size="sm"
                 onClick={handleWebSearchToggle}
-                className="h-8 gap-1 text-xs font-medium transition-all"
+                className={`h-8 gap-1 text-xs font-medium transition-all ${useWebSearch ? "animate-pulse" : ""}`}
               >
                 <Globe size={14} className={useWebSearch ? "text-primary-foreground" : "text-muted-foreground"} />
-                <span>LuvvixSEARCH</span>
+                <span>{useWebSearch ? "LuvvixSEARCH ACTIF" : "LuvvixSEARCH"}</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">

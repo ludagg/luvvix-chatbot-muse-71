@@ -17,7 +17,11 @@ jobs:
       run: |
         curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -  # Installe Node.js 16
         sudo apt-get install -y nodejs  # Installe Node.js sur l'environnement
-        npm install  # Installe toutes les dépendances de ton projet Node.js
+        npm install  # Installe toutes les dépendances de ton projet
+
+    - name: Install Capacitor dependencies
+      run: |
+        npm install @capacitor/core @capacitor/cli  # Installe Capacitor et ses dépendances
 
     - name: Install Java
       run: |
@@ -26,7 +30,7 @@ jobs:
 
     - name: Install Capacitor Android platform
       run: |
-        npx cap add android  # Si tu n'as pas déjà ajouté Android, sinon tu peux ignorer cette étape
+        npx cap add android  # Ajoute la plateforme Android à ton projet Capacitor
 
     - name: Build the project
       run: |

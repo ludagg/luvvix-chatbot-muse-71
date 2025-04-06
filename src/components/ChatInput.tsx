@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { SendIcon, Mic, MicOff, Smile, Paperclip, Image as ImageIcon, X, Brain, Search, BrainCircuit, Globe } from "lucide-react";
@@ -184,8 +183,11 @@ export const ChatInput = ({
   };
 
   const handleWebSearchToggle = () => {
-    // Silently toggle web search without showing notifications
     onToggleWebSearch();
+  };
+
+  const handleAdvancedReasoningToggle = () => {
+    onToggleAdvancedReasoning();
   };
 
   useEffect(() => {
@@ -235,7 +237,7 @@ export const ChatInput = ({
                 type="button"
                 variant={useAdvancedReasoning ? "default" : "outline"}
                 size="sm"
-                onClick={onToggleAdvancedReasoning}
+                onClick={handleAdvancedReasoningToggle}
                 className="h-8 gap-1 text-xs font-medium transition-all"
               >
                 <BrainCircuit size={14} className={useAdvancedReasoning ? "text-primary-foreground" : "text-muted-foreground"} />

@@ -41,6 +41,11 @@ export const Header = ({ onOpenAuth }: HeaderProps) => {
       .toUpperCase();
   };
 
+  const handleWebSearchClick = () => {
+    // Open a new tab with a search engine
+    window.open("https://www.google.com", "_blank");
+  };
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -20 }}
@@ -97,7 +102,10 @@ export const Header = ({ onOpenAuth }: HeaderProps) => {
                   <User className="mr-2 h-4 w-4" />
                   <span>Mon profil</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer flex items-center">
+                <DropdownMenuItem 
+                  className="cursor-pointer flex items-center"
+                  onClick={handleWebSearchClick}
+                >
                   <Globe className="mr-2 h-4 w-4" />
                   <span>Recherche web</span>
                 </DropdownMenuItem>

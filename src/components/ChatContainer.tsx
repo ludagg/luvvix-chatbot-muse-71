@@ -31,10 +31,9 @@ const INITIAL_MESSAGES: Message[] = [
 ];
 
 const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
-const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
-const SERPER_API_URL = "https://google.serper.dev/search";
-const SERPER_API_KEY = "c2a8e7aeda35e9e97a12c03a9bea0c89c06e6595"; // Free API key for demo
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
+const SERP_API_KEY = "f8c49e3a2fb3f4d82ddb89ccc9e36fc9a85aeab7";
+const SERP_API_URL = "https://serpapi.com/search.json";
 
 const formatSourceCitations = (content: string, sources: SourceReference[]): string => {
   let formattedContent = content;
@@ -164,30 +163,27 @@ export const ChatContainer = () => {
 
   const performWebSearch = async (query: string): Promise<SourceReference[]> => {
     try {
-      console.log("Performing web search for:", query);
-      const response = await fetch(SERPER_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-KEY": SERPER_API_KEY,
-        },
-        body: JSON.stringify({
-          q: query,
-          num: 8,
-          gl: "fr",
-          hl: "fr",
-        }),
+      console.log("Performing enhanced web search for:", query);
+      
+      const searchParams = new URLSearchParams({
+        q: query,
+        api_key: SERP_API_KEY,
+        num: "8",
+        gl: "fr",
+        hl: "fr",
       });
+      
+      const response = await fetch(`${SERP_API_URL}?${searchParams.toString()}`);
 
       if (!response.ok) {
-        console.error(`Search API Error: ${response.status}`);
+        console.error(`Enhanced Search API Error: ${response.status}`);
         return [];
       }
 
       const data = await response.json();
-      console.log("Search results:", data);
+      console.log("Enhanced search results:", data);
       
-      const organicResults = data.organic || [];
+      const organicResults = data.organic_results || [];
       const sources: SourceReference[] = [];
       
       if (organicResults.length > 0) {
@@ -204,50 +200,47 @@ export const ChatContainer = () => {
       console.log("Formatted sources:", sources);
       return sources;
     } catch (error) {
-      console.error("Error during web search:", error);
+      console.error("Error during enhanced web search:", error);
       return [];
     }
   };
 
   const fetchImage = async (query: string): Promise<string | null> => {
     try {
-      console.log("Searching for images:", query);
-      const response = await fetch(SERPER_API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-KEY": SERPER_API_KEY,
-        },
-        body: JSON.stringify({
-          q: query + " haute qualité",
-          searchType: "images",
-          num: 5,
-          gl: "fr",
-          hl: "fr",
-        }),
+      console.log("Searching for images with enhanced API:", query);
+      
+      const searchParams = new URLSearchParams({
+        q: query + " haute qualité",
+        api_key: SERP_API_KEY,
+        tbm: "isch",
+        num: "5",
+        gl: "fr",
+        hl: "fr",
       });
+      
+      const response = await fetch(`${SERP_API_URL}?${searchParams.toString()}`);
 
       if (!response.ok) {
-        console.error(`Image Search API Error: ${response.status}`);
+        console.error(`Enhanced Image Search API Error: ${response.status}`);
         return null;
       }
 
       const data = await response.json();
-      console.log("Image search results:", data);
+      console.log("Enhanced image search results:", data);
       
-      const images = data.images || [];
+      const images = data.images_results || [];
       if (images.length > 0) {
         const highQualityImages = images.filter((img: any) => 
-          img.imageUrl && img.height > 400 && img.width > 400
+          img.original && img.original.height > 400 && img.original.width > 400
         );
         
         return highQualityImages.length > 0 
-          ? highQualityImages[0].imageUrl 
-          : images[0].imageUrl;
+          ? highQualityImages[0].original 
+          : images[0].original;
       }
       return null;
     } catch (error) {
-      console.error("Error during image search:", error);
+      console.error("Error during enhanced image search:", error);
       return null;
     }
   };
@@ -329,9 +322,9 @@ export const ChatContainer = () => {
       let imageUrl: string | null = null;
       
       if (useWebSearch) {
-        console.log("Web search enabled, searching for:", content);
+        console.log("Enhanced web search enabled, searching for:", content);
         sources = await performWebSearch(content);
-        console.log("Search results obtained:", sources.length);
+        console.log("Enhanced search results obtained:", sources.length);
 
         const shouldFetchImage = content.toLowerCase().includes("montre") || 
                                 content.toLowerCase().includes("image") || 
@@ -346,9 +339,20 @@ export const ChatContainer = () => {
             .trim();
           
           imageUrl = await fetchImage(imageQuery);
-          console.log("Image fetched:", imageUrl ? "Yes" : "No");
+          console.log("Enhanced image fetched:", imageUrl ? "Yes" : "No");
         }
       }
+
+      const advancedReasoningInstructions = `
+      Utilise le mode de raisonnement avancé pour répondre à cette question. Organise ta réponse selon cette structure:
+      
+      1. ANALYSE PRÉLIMINAIRE: Décompose la question/problème en ses éléments essentiels.
+      2. EXPLORATION MÉTHODIQUE: Présente plusieurs angles d'approche ou perspectives différentes.
+      3. ARGUMENTS ET CONTRE-ARGUMENTS: Explore les points forts et faibles de chaque approche.
+      4. DONNÉES PROBANTES: Présente des preuves, citations ou exemples pertinents.
+      5. CONCLUSION NUANCÉE: Résume les points clés et propose une réponse équilibrée.
+      
+      Ta réponse doit être structurée, factuelle, et approfondie tout en restant accessible.`;
 
       const systemMessage = {
         role: "user",
@@ -359,7 +363,7 @@ export const ChatContainer = () => {
             ${user ? `Tu t'adresses à ${user.displayName || 'un utilisateur'}${user.age ? ` qui a ${user.age} ans` : ''}${user.country ? ` et qui vient de ${user.country}` : ''}.` : ''}  
             Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
             ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}
-            ${useAdvancedReasoning ? `Utilise le raisonnement avancé pour répondre aux questions. Analyse étape par étape, explore différents angles, présente des arguments pour et contre, et ajoute une section de synthèse.` : ''}
+            ${useAdvancedReasoning ? advancedReasoningInstructions : ''}
             ${sources.length > 0 ? `Voici des résultats de recherche récents qui pourraient être pertinents pour répondre à la question de l'utilisateur:\n\n${sources.map(source => `[${source.id}] ${source.title}\n${source.url}\n${source.snippet}\n\n`).join("")}\n\nPour citer une source dans ta réponse, utilise [cite:X] où X est le numéro de la source (de 1 à ${sources.length}). Cite les sources après chaque fait ou affirmation pour montrer d'où vient l'information. IMPORTANT: Tu DOIS citer au moins 3-4 sources différentes dans ta réponse pour montrer que tu as bien fait des recherches.` : ''}
             ${imageUrl ? `J'ai trouvé une image pertinente pour illustrer ta réponse: ${imageUrl}\nIntègre cette image dans ta réponse si c'est pertinent en utilisant la syntaxe markdown: ![Description](${imageUrl})` : ''}
 
@@ -725,22 +729,10 @@ export const ChatContainer = () => {
 
   const toggleAdvancedReasoning = () => {
     setUseAdvancedReasoning(!useAdvancedReasoning);
-    toast({
-      title: useAdvancedReasoning ? "Raisonnement standard activé" : "Raisonnement avancé activé",
-      description: useAdvancedReasoning 
-        ? "Les réponses seront plus concises" 
-        : "Les réponses incluront une analyse étape par étape et plus de détails",
-    });
   };
 
   const toggleWebSearch = () => {
     setUseWebSearch(!useWebSearch);
-    toast({
-      title: useWebSearch ? "LuvvixSEARCH désactivé" : "LuvvixSEARCH activé",
-      description: useWebSearch 
-        ? "Les réponses n'incluront plus de résultats de recherche web" 
-        : "Les réponses incluront maintenant des résultats de recherche web en temps réel",
-    });
   };
 
   return (

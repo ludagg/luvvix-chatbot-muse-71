@@ -1,55 +1,50 @@
-name: Build APK with Gradle and Capacitor
+name: Build APK with Capacitor and Gradle
 
 on:
   push:
     branches:
-      - main  # Déclenchement du workflow sur chaque push vers la branche 'main'
+      - main  # Déclenchement sur chaque push vers la branche 'main'
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Utilise une machine virtuelle Ubuntu
+    runs-on: ubuntu-latest  # Utilisation d'une machine Ubuntu
 
     steps:
     - name: Checkout code
-      run: git clone https://github.com/ludagg/luvvix-chatbot-muse-33.git .  # Clone directement le code du dépôt
+      uses: actions/checkout@v2
 
-    - name: Install Node.js and npm dependencies
+    - name: Install Node.js
       run: |
-        curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -  # Installe Node.js 16
-        sudo apt-get install -y nodejs  # Installe Node.js sur l'environnement
-        npm install  # Installe toutes les dépendances de ton projet
+        curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+
+    - name: Install npm dependencies
+      run: |
+        npm install
 
     - name: Install Capacitor dependencies
       run: |
-        npm install @capacitor/core @capacitor/cli  # Installe Capacitor et ses dépendances
-        npm install @capacitor/android  # Installe la plateforme Android pour Capacitor
+        npm install @capacitor/core @capacitor/cli @capacitor/android
 
-    - name: Install Java
+    - name: Initialize Capacitor
       run: |
-        sudo apt update
-        sudo apt install openjdk-11-jdk -y  # Installe Java 11 nécessaire pour Gradle
+        npx cap init "Luvvix Chatbot" "com.ludagg.luvvixchatbot"  # Remplace par ton nom et appId
 
-    - name: Install Capacitor Android platform
+    - name: Add Android platform
       run: |
-        npx cap add android  # Ajoute la plateforme Android à ton projet Capacitor
+        npx cap add android
 
     - name: Build the project
       run: |
-        npm run build  # Compile ton projet Vite.js
+        npm run build
 
     - name: Build APK using Gradle
       run: |
-        cd android  # Va dans le dossier android
-        ./gradlew assembleDebug  # Compile le projet Android en mode Debug
+        cd android
+        ./gradlew assembleDebug
 
     - name: Upload APK as artifact
-      run: |
-        mkdir -p /tmp/artifacts  # Crée un dossier temporaire pour stocker l'APK
-        cp android/app/build/outputs/apk/debug/app-debug.apk /tmp/artifacts/  # Copie l'APK généré
-        ls -l /tmp/artifacts  # Vérifie que l'APK a bien été copié
-
-    - name: Upload APK artifact
-      uses: actions/upload-artifact@v4  # Utilisation de l'action GitHub pour télécharger l'APK
+      uses: actions/upload-artifact@v4
       with:
-        name: luvvix-apk  # Nom du fichier APK
-        path: /tmp/artifacts/app-debug.apk  # Emplacement du fichier APK
+        name: apk-file
+        path: android/app/build/outputs/apk/debug/app-debug.apk

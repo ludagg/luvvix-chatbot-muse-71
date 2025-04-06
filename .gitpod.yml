@@ -1,10 +1,19 @@
-image: gitpod/workspace-android-ndk
+image: gitpod/workspace-full
 
 tasks:
   - name: Setup Android
     init: |
-      yes | sdkmanager "platforms;android-33" "build-tools;33.0.0"
-      echo "sdk.dir=/home/gitpod/android-sdk" > android/local.properties
+      # Installer Java et Android SDK
+      sudo apt-get update
+      sudo apt-get install -y openjdk-17-jdk android-sdk
+      
+      # Configurer les variables d'environnement
+      export ANDROID_HOME=/usr/lib/android-sdk
+      echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+      
+      # Accepter les licences
+      yes | sdkmanager --licenses
+      sdkmanager "platforms;android-33" "build-tools;33.0.0"
 
   - name: Install Dependencies
     command: |

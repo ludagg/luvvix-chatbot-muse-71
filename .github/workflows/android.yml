@@ -38,7 +38,7 @@ jobs:
         ./gradlew assembleDebug  # Compile ton projet Android en mode Debug
 
     - name: Upload APK as artifact
-      uses: actions/upload-artifact@v3  # Mise à jour vers la dernière version
+      uses: actions/upload-artifact@v2  # Utilisation de la version stable v2
       with:
         name: luvvix-apk  # Nom de l'APK généré
         path: android/app/build/outputs/apk/debug/app-debug.apk  # Où trouver l'APK généré

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, Settings, User, Globe } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,6 +96,10 @@ export const Header = ({ onOpenAuth }: HeaderProps) => {
                 <DropdownMenuItem className="cursor-pointer flex items-center">
                   <User className="mr-2 h-4 w-4" />
                   <span>Mon profil</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer flex items-center">
+                  <Globe className="mr-2 h-4 w-4" />
+                  <span>Recherche web</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer flex items-center">
                   <Settings className="mr-2 h-4 w-4" />

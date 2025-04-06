@@ -183,6 +183,11 @@ export const ChatInput = ({
     }
   };
 
+  const handleWebSearchToggle = () => {
+    // Silently toggle web search without showing notifications
+    onToggleWebSearch();
+  };
+
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -248,7 +253,7 @@ export const ChatInput = ({
                 type="button"
                 variant={useWebSearch ? "default" : "outline"}
                 size="sm"
-                onClick={onToggleWebSearch}
+                onClick={handleWebSearchToggle}
                 className="h-8 gap-1 text-xs font-medium transition-all"
               >
                 <Globe size={14} className={useWebSearch ? "text-primary-foreground" : "text-muted-foreground"} />

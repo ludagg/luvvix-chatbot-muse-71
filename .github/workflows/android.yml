@@ -6,6 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -28,8 +29,8 @@ jobs:
         run: npm run build
 
       - name: Configure Capacitor
-  run: |
-    npx cap init "Luvvix Chatbot" "com.ludagg.luvvixchatbot" --web-dir=dist
+        run: |
+          npx cap init "Luvvix Chatbot" "com.ludagg.luvvixchatbot" --web-dir=dist
           npx cap add android
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 

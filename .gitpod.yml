@@ -1,0 +1,17 @@
+image: gitpod/workspace-android-ndk
+
+tasks:
+  - name: Setup Android
+    init: |
+      yes | sdkmanager "platforms;android-33" "build-tools;33.0.0"
+      echo "sdk.dir=/home/gitpod/android-sdk" > android/local.properties
+
+  - name: Install Dependencies
+    command: |
+      npm install
+      npx cap sync android
+
+  - name: Build APK
+    command: |
+      cd android
+      ./gradlew assembleDebug

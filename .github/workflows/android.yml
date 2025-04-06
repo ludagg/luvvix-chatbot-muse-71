@@ -22,6 +22,7 @@ jobs:
     - name: Install Capacitor dependencies
       run: |
         npm install @capacitor/core @capacitor/cli  # Installe Capacitor et ses dépendances
+        npm install @capacitor/android  # Installe la plateforme Android pour Capacitor
 
     - name: Install Java
       run: |

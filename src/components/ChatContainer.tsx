@@ -210,7 +210,7 @@ export const ChatContainer = () => {
     }
   };
 
-  const fetchImage = async (query: string) => {
+  const fetchImage = async (query: string): Promise<string | null> => {
     try {
       console.log("Searching for images:", query);
       const response = await fetch(SERPER_API_URL, {

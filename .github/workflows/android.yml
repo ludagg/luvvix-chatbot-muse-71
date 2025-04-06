@@ -44,7 +44,7 @@ jobs:
         ls -l /tmp/artifacts  # Vérifie que l'APK a bien été copié
 
     - name: Upload APK artifact
-      uses: actions/upload-artifact@latest  # Utilisation de l'action GitHub pour télécharger l'APK
+      uses: actions/upload-artifact@v2  # Utilisation de l'action GitHub pour télécharger l'APK
       with:
         name: luvvix-apk  # Nom du fichier APK
         path: /tmp/artifacts/app-debug.apk  # Emplacement du fichier APK

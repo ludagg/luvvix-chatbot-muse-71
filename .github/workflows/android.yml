@@ -1,56 +1,64 @@
-name: Build APK with Capacitor and Gradle
+name: Build and Generate APK for Android
 
 on:
   push:
     branches:
-      - main  # Déclenchement sur chaque push vers la branche 'main'
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Utilisation d'une machine Ubuntu
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Install Node.js
-      run: |
-        curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-        sudo apt-get install -y nodejs
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
 
-    - name: Install npm dependencies
-      run: |
-        npm install
+      - name: Install dependencies
+        run: |
+          npm install
+          npm install @capacitor/core @capacitor/cli
+          
+      - name: Initialize Capacitor
+        run: |
+          npx cap init "LuvvixApp" "com.luvvix.chatbot" || echo "Capacitor already initialized"
+          npx cap add android || echo "Android platform already added"
 
-    - name: Install Capacitor dependencies
-      run: |
-        npm install @capacitor/core @capacitor/cli @capacitor/android
+      - name: Build Vite.js app
+        run: |
+          npm run build || { echo 'Vite build failed'; exit 1; }
 
-    - name: Initialize Capacitor
-      run: |
-        npx cap init "Luvvix Chatbot" "com.ludagg.luvvixchatbot"  # Remplace par ton nom et appId
+      - name: Sync Capacitor with Android
+        run: |
+          npx cap sync || { echo 'Capacitor sync failed'; exit 1; }
 
-    - name: Add Android platform
-      run: |
-        npx cap add android
+      - name: Copy the build to Android
+        run: |
+          npx cap copy android || { echo 'Capacitor copy failed'; exit 1; }
 
-    - name: Ensure capacitor.settings.gradle exists
-      run: |
-        echo "rootProject.name = 'android'" > android/capacitor.settings.gradle
-        echo "include ':app'" >> android/capacitor.settings.gradle
-        echo "apply from: '../node_modules/@capacitor/android/capacitor.settings.gradle'" >> android/capacitor.settings.gradle
+      - name: Install Android dependencies
+        run: |
+          cd android && ./gradlew clean
+          cd android && ./gradlew dependencies || { echo 'Gradle dependencies installation failed'; exit 1; }
 
-    - name: Build the project
-      run: |
-        npm run build
+      - name: Build APK (Release)
+        run: |
+          cd android
+          ./gradlew assembleRelease || { echo 'APK build failed'; exit 1; }
 
-    - name: Build APK using Gradle
-      run: |
-        cd android
-        ./gradlew assembleDebug
+      - name: Upload APK as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
 
-    - name: Upload APK as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: apk-file
-        path: android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Clean up
+        run: |
+          rm -rf android/app/build || echo "No build folder to clean"

@@ -29,7 +29,7 @@ jobs:
 
       - name: Configure Capacitor
         run: |
-          npx cap init --web-dir=dist --app-name="Luvvix Chatbot" --app-id="com.ludagg.luvvixchatbot"
+          npx cap init --web-dir=dist --app-id="com.ludagg.luvvixchatbot"
           npx cap add android
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 

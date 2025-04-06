@@ -81,6 +81,24 @@ const MessageContent = ({ content }: { content: string }) => {
             </code>
           );
         },
+        // Make images responsive
+        img: ({ node, ...props }) => (
+          <img 
+            {...props} 
+            className="max-w-full h-auto my-4 rounded-md border border-border/30" 
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        ),
+        // Style links
+        a: ({ node, ...props }) => (
+          <a 
+            {...props} 
+            className="text-primary hover:text-primary/80 underline underline-offset-2" 
+            target="_blank" 
+            rel="noopener noreferrer"
+          />
+        ),
       }}
     >
       {content}
@@ -348,7 +366,7 @@ export function ChatMessage({
           "px-4 py-3 rounded-lg relative",
           isUser ? "bg-blue-500 text-white" : "bg-muted text-foreground"
         )}>
-          <div className="prose dark:prose-invert prose-sm sm:prose-base max-w-none">
+          <div className="prose dark:prose-invert prose-sm sm:prose-base max-w-none prose-img:mx-auto prose-img:rounded-md">
             <MessageContent content={message.content} />
           </div>
 

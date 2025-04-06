@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, Message, SourceReference } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
@@ -35,22 +34,19 @@ const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
 const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
 const SERPER_API_URL = "https://google.serper.dev/search";
+const SERPER_API_KEY = "c2a8e7aeda35e9e97a12c03a9bea0c89c06e6595"; // Free API key for demo
 
-// Helper function to extract and format source citations
 const formatSourceCitations = (content: string, sources: SourceReference[]): string => {
   let formattedContent = content;
   
-  // Add superscript source references
   sources.forEach(source => {
     const sourceTag = `[^${source.id}]`;
-    // Look for citation markers in the text
     formattedContent = formattedContent.replace(
       new RegExp(`\\[cite:${source.id}\\]`, 'g'), 
       sourceTag
     );
   });
   
-  // Add footnotes at the end
   if (sources.length > 0) {
     formattedContent += "\n\n";
     sources.forEach(source => {
@@ -173,22 +169,24 @@ export const ChatContainer = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-API-KEY": "c2a8e7aeda35e9e97a12c03a9bea0c89c06e6595", // Free API key for demo purposes
+          "X-API-KEY": SERPER_API_KEY,
         },
         body: JSON.stringify({
           q: query,
           num: 8,
+          gl: "fr",
+          hl: "fr",
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Search API Error: ${response.status}`);
+        console.error(`Search API Error: ${response.status}`);
+        return [];
       }
 
       const data = await response.json();
       console.log("Search results:", data);
       
-      // Extract and format search results as sources
       const organicResults = data.organic || [];
       const sources: SourceReference[] = [];
       
@@ -196,13 +194,14 @@ export const ChatContainer = () => {
         organicResults.slice(0, 8).forEach((result: any, index: number) => {
           sources.push({
             id: index + 1,
-            title: result.title,
-            url: result.link,
-            snippet: result.snippet
+            title: result.title || "Source inconnue",
+            url: result.link || "#",
+            snippet: result.snippet || "Pas de description disponible"
           });
         });
       }
       
+      console.log("Formatted sources:", sources);
       return sources;
     } catch (error) {
       console.error("Error during web search:", error);
@@ -217,24 +216,36 @@ export const ChatContainer = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-API-KEY": "c2a8e7aeda35e9e97a12c03a9bea0c89c06e6595",
+          "X-API-KEY": SERPER_API_KEY,
         },
         body: JSON.stringify({
-          q: query + " high quality image",
+          q: query + " haute qualité",
           searchType: "images",
           num: 5,
+          gl: "fr",
+          hl: "fr",
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Image Search API Error: ${response.status}`);
+        console.error(`Image Search API Error: ${response.status}`);
+        return null;
       }
 
       const data = await response.json();
       console.log("Image search results:", data);
       
       const images = data.images || [];
-      return images.length > 0 ? images[0].imageUrl : null;
+      if (images.length > 0) {
+        const highQualityImages = images.filter((img: any) => 
+          img.imageUrl && img.height > 400 && img.width > 400
+        );
+        
+        return highQualityImages.length > 0 
+          ? highQualityImages[0].imageUrl 
+          : images[0].imageUrl;
+      }
+      return null;
     } catch (error) {
       console.error("Error during image search:", error);
       return null;
@@ -315,42 +326,30 @@ export const ChatContainer = () => {
 
     try {
       let sources: SourceReference[] = [];
-      let imageQuery = '';
+      let imageUrl: string | null = null;
       
-      // Perform web search if enabled
       if (useWebSearch) {
         console.log("Web search enabled, searching for:", content);
         sources = await performWebSearch(content);
         console.log("Search results obtained:", sources.length);
 
-        // Check if we should search for an image
         const shouldFetchImage = content.toLowerCase().includes("montre") || 
                                 content.toLowerCase().includes("image") || 
                                 content.toLowerCase().includes("photo") ||
                                 content.toLowerCase().includes("illustration") ||
-                                content.toLowerCase().includes("afficher");
+                                content.toLowerCase().includes("afficher") ||
+                                content.toLowerCase().includes("voir");
         
         if (shouldFetchImage) {
-          imageQuery = content.replace(/montre(-moi)?|affiche(-moi)?|image|photo/gi, '').trim();
+          const imageQuery = content
+            .replace(/montre(-moi)?|affiche(-moi)?|image|photo|voir|illustration/gi, '')
+            .trim();
+          
+          imageUrl = await fetchImage(imageQuery);
+          console.log("Image fetched:", imageUrl ? "Yes" : "No");
         }
       }
 
-      // Format sources for system prompt
-      let searchResults = "";
-      if (sources.length > 0) {
-        searchResults = "Voici des résultats de recherche récents qui pourraient être pertinents pour répondre à la question de l'utilisateur:\n\n";
-        sources.forEach(source => {
-          searchResults += `[${source.id}] ${source.title}\n${source.url}\n${source.snippet}\n\n`;
-        });
-      }
-      
-      // Fetch an image if requested
-      let imageUrl = null;
-      if (imageQuery) {
-        imageUrl = await fetchImage(imageQuery);
-        console.log("Image fetched:", imageUrl ? "Yes" : "No");
-      }
-      
       const systemMessage = {
         role: "user",
         parts: [
@@ -361,7 +360,7 @@ export const ChatContainer = () => {
             Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
             ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}
             ${useAdvancedReasoning ? `Utilise le raisonnement avancé pour répondre aux questions. Analyse étape par étape, explore différents angles, présente des arguments pour et contre, et ajoute une section de synthèse.` : ''}
-            ${sources.length > 0 ? `${searchResults}\n\nPour citer une source dans ta réponse, utilise [cite:X] où X est le numéro de la source (de 1 à ${sources.length}). Cite les sources après chaque fait ou affirmation pour montrer d'où vient l'information. Je vais transformer tes citations en notes de bas de page.` : ''}
+            ${sources.length > 0 ? `Voici des résultats de recherche récents qui pourraient être pertinents pour répondre à la question de l'utilisateur:\n\n${sources.map(source => `[${source.id}] ${source.title}\n${source.url}\n${source.snippet}\n\n`).join("")}\n\nPour citer une source dans ta réponse, utilise [cite:X] où X est le numéro de la source (de 1 à ${sources.length}). Cite les sources après chaque fait ou affirmation pour montrer d'où vient l'information. IMPORTANT: Tu DOIS citer au moins 3-4 sources différentes dans ta réponse pour montrer que tu as bien fait des recherches.` : ''}
             ${imageUrl ? `J'ai trouvé une image pertinente pour illustrer ta réponse: ${imageUrl}\nIntègre cette image dans ta réponse si c'est pertinent en utilisant la syntaxe markdown: ![Description](${imageUrl})` : ''}
 
             Nouvelles fonctionnalités de formatage disponibles:
@@ -419,7 +418,6 @@ export const ChatContainer = () => {
         data.candidates[0]?.content?.parts[0]?.text ||
         "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
 
-      // Format the response with source citations if needed
       const formattedResponse = sources.length > 0 
         ? formatSourceCitations(aiResponse, sources)
         : aiResponse;
@@ -578,6 +576,7 @@ export const ChatContainer = () => {
     try {
       let sources: SourceReference[] = [];
       let searchResults = "";
+      let imageUrl: string | null = null;
       
       if (useWebSearch) {
         sources = await performWebSearch(userMessage.content);
@@ -587,6 +586,21 @@ export const ChatContainer = () => {
           sources.forEach(source => {
             searchResults += `[${source.id}] ${source.title}\n${source.url}\n${source.snippet}\n\n`;
           });
+        }
+        
+        const shouldFetchImage = userMessage.content.toLowerCase().includes("montre") || 
+                                userMessage.content.toLowerCase().includes("image") || 
+                                userMessage.content.toLowerCase().includes("photo") ||
+                                userMessage.content.toLowerCase().includes("illustration") ||
+                                userMessage.content.toLowerCase().includes("afficher") ||
+                                userMessage.content.toLowerCase().includes("voir");
+        
+        if (shouldFetchImage) {
+          const imageQuery = userMessage.content
+            .replace(/montre(-moi)?|affiche(-moi)?|image|photo|voir|illustration/gi, '')
+            .trim();
+          
+          imageUrl = await fetchImage(imageQuery);
         }
       }
       
@@ -600,7 +614,8 @@ export const ChatContainer = () => {
             Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
             ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}
             ${useAdvancedReasoning ? `Utilise le raisonnement avancé pour répondre aux questions. Analyse étape par étape, explore différents angles, présente des arguments pour et contre, et ajoute une section de synthèse.` : ''}
-            ${sources.length > 0 ? `${searchResults}\n\nPour citer une source dans ta réponse, utilise [cite:X] où X est le numéro de la source (de 1 à ${sources.length}). Cite les sources après chaque fait ou affirmation pour montrer d'où vient l'information.` : ''}
+            ${sources.length > 0 ? `${searchResults}\n\nPour citer une source dans ta réponse, utilise [cite:X] où X est le numéro de la source (de 1 à ${sources.length}). Cite les sources après chaque fait ou affirmation pour montrer d'où vient l'information. IMPORTANT: Tu DOIS citer au moins 3-4 sources différentes dans ta réponse pour montrer que tu as bien fait des recherches.` : ''}
+            ${imageUrl ? `J'ai trouvé une image pertinente pour illustrer ta réponse: ${imageUrl}\nIntègre cette image dans ta réponse si c'est pertinent en utilisant la syntaxe markdown: ![Description](${imageUrl})` : ''}
             
             Nouvelles fonctionnalités de formatage disponibles:
             1. Tu peux utiliser LaTeX pour les formules mathématiques en les entourant de $ pour l'inline ou $$ pour les blocs.
@@ -652,7 +667,6 @@ export const ChatContainer = () => {
         data.candidates[0]?.content?.parts[0]?.text ||
         "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
 
-      // Format the response with source citations if needed
       const formattedResponse = sources.length > 0 
         ? formatSourceCitations(aiResponse, sources)
         : aiResponse;

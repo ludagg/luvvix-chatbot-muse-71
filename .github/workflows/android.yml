@@ -11,15 +11,15 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@latest  # Utilise la dernière version de actions/checkout
+      uses: actions/checkout@v2  # Utilisation de la version stable v2 de checkout
 
     - name: Set up Java 11
-      uses: actions/setup-java@latest  # Utilise la dernière version de actions/setup-java
+      uses: actions/setup-java@v2  # Utilisation de la version stable v2 de setup-java
       with:
         java-version: '11'  # Gradle a besoin de Java 11 pour fonctionner
 
     - name: Set up Node.js
-      uses: actions/setup-node@latest  # Utilise la dernière version de actions/setup-node
+      uses: actions/setup-node@v2  # Utilisation de la version stable v2 de setup-node
       with:
         node-version: '16'  # Assure-toi que Node.js 16 est utilisé pour ton projet
 
@@ -38,7 +38,7 @@ jobs:
         ./gradlew assembleDebug  # Compile ton projet Android en mode Debug
 
     - name: Upload APK as artifact
-      uses: actions/upload-artifact@latest  # Utilise la dernière version de actions/upload-artifact
+      uses: actions/upload-artifact@v2  # Utilisation de la version stable v2 de upload-artifact
       with:
         name: luvvix-apk  # Nom de l'APK généré
         path: android/app/build/outputs/apk/debug/app-debug.apk  # Où trouver l'APK généré

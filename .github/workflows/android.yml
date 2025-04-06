@@ -1,0 +1,44 @@
+name: Build APK with Gradle
+
+on:
+  push:
+    branches:
+      - main  # Ce workflow va s'exécuter lorsque tu fais un push sur la branche principale
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # Utilise une machine virtuelle Ubuntu pour compiler
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2  # Cela va télécharger ton code
+
+    - name: Set up Java 11
+      uses: actions/setup-java@v2
+      with:
+        java-version: '11'  # Gradle a besoin de Java 11 pour fonctionner
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '16'  # Assure-toi que Node.js 16 est utilisé pour ton projet
+
+    - name: Install dependencies
+      run: |
+        npm install  # Installe toutes les dépendances de ton projet
+        npx cap add android  # Ajoute Android comme plateforme avec Capacitor
+
+    - name: Build the project
+      run: |
+        npm run build  # Crée le build de ton application Vite.js
+
+    - name: Build APK with Gradle
+      run: |
+        cd android  # Va dans le répertoire Android
+        ./gradlew assembleDebug  # Compile ton projet Android en mode Debug
+
+    - name: Upload APK as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: luvvix-apk  # Nom de l'APK généré
+        path: android/app/build/outputs/apk/debug/app-debug.apk  # Où trouver l'APK généré

@@ -1,0 +1,6 @@
+{
+  "appId": "com.ludagg.luvvixchatbot",  // Remplace par l'ID unique de ton application
+  "appName": "Luvvix Chatbot",  // Nom de ton application
+  "webDir": "dist",  // Le répertoire où se trouvent les fichiers de build (après npm run build)
+  "bundledWebRuntime": false
+}

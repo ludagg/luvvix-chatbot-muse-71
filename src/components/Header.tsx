@@ -2,24 +2,33 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { LogOut, Settings, User, Globe, Search } from "lucide-react";
+import { LogOut, Settings, User, Globe, Search, Menu } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ConversationSelector } from "@/components/ConversationSelector";
+import { DiscussionsMenu } from "@/components/DiscussionsMenu";
+import { ProBadge } from "@/components/ProBadge";
+import { Dispatch, SetStateAction } from "react";
 
 interface HeaderProps {
   onOpenAuth: (mode: "login" | "register") => void;
+  onOpenProfile: () => void;
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: Dispatch<SetStateAction<boolean>>;
 }
 
-export const Header = ({ onOpenAuth }: HeaderProps) => {
-  const { user, logout } = useAuth();
+export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarOpen }: HeaderProps) => {
+  const { user, logout, isPro = false } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -55,12 +64,28 @@ export const Header = ({ onOpenAuth }: HeaderProps) => {
     >
       <div className="container max-w-5xl mx-auto px-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
+          <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-foreground">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0">
+              <div className="p-4 h-full">
+                <ConversationSelector closeMenu={() => setIsSidebarOpen(false)} />
+              </div>
+            </SheetContent>
+          </Sheet>
           <span className="text-lg font-bold tracking-tight text-gradient">
             LuvviX
           </span>
-          <span className="text-xs font-medium px-1.5 py-0.5 bg-primary/10 text-primary rounded-md">
-            Beta
-          </span>
+          {isPro ? (
+            <ProBadge className="ml-0" />
+          ) : (
+            <span className="text-xs font-medium px-1.5 py-0.5 bg-primary/10 text-primary rounded-md">
+              Beta
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -74,6 +99,7 @@ export const Header = ({ onOpenAuth }: HeaderProps) => {
             <Search className="h-3.5 w-3.5" />
             <span>Recherche</span>
           </Button>
+          <DiscussionsMenu />
           
           {user ? (
             <DropdownMenu>
@@ -91,25 +117,19 @@ export const Header = ({ onOpenAuth }: HeaderProps) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <div className="flex items-center gap-2 p-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary/20 text-foreground text-xs">
-                      {getInitials(user.displayName || "User")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col space-y-0.5">
-                    <p className="text-sm font-medium">
-                      {user.displayName || "Utilisateur"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {user.email}
-                    </p>
+                <DropdownMenuLabel>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <span>{user.displayName}</span>
+                      {isPro && <ProBadge size="sm" />}
+                    </div>
+                    <span className="text-xs text-muted-foreground">{user.email}</span>
                   </div>
-                </div>
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer flex items-center">
+                <DropdownMenuItem className="cursor-pointer flex items-center" onClick={onOpenProfile}>
                   <User className="mr-2 h-4 w-4" />
-                  <span>Mon profil</span>
+                  <span>Profil</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   className="cursor-pointer flex items-center"

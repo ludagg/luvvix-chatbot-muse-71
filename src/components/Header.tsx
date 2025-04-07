@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { LogOut, Settings, User, Globe, Search, Menu } from "lucide-react";
+import { LogOut, Settings, User, Globe, Search, Menu, Sparkles } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,7 @@ import { ConversationSelector } from "@/components/ConversationSelector";
 import { DiscussionsMenu } from "@/components/DiscussionsMenu";
 import { ProBadge } from "@/components/ProBadge";
 import { Dispatch, SetStateAction } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 interface HeaderProps {
   onOpenAuth: (mode: "login" | "register") => void;
@@ -30,6 +31,8 @@ interface HeaderProps {
 export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarOpen }: HeaderProps) => {
   const { user, logout, isPro = false } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const location = useLocation();
+  const isWorldPage = location.pathname === "/world";
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -90,6 +93,20 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          
+          {/* World button */}
+          <Button
+            variant={isWorldPage ? "default" : "outline"}
+            size="sm"
+            asChild
+            className={`gap-1 text-xs h-8 ${isWorldPage ? '' : 'border-primary/30 hover:bg-primary/10'} hidden md:flex`}
+          >
+            <Link to={isWorldPage ? "/" : "/world"}>
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>{isWorldPage ? "Chat" : "World"}</span>
+            </Link>
+          </Button>
+          
           <Button
             variant="outline"
             size="sm"

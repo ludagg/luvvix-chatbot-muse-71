@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useEffect, useState } from "react";
 import Index from "./pages/Index";
+import LuvviXWorld from "./pages/LuvviXWorld";
 import NotFound from "./pages/NotFound";
 import { useLocalStorage } from "./hooks/use-local-storage";
 import { Theme } from "./components/ThemeToggle";
@@ -46,6 +47,7 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/world" element={<LuvviXWorld />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

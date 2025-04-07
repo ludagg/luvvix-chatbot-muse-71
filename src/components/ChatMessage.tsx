@@ -37,6 +37,7 @@ export interface Message {
   content: string;
   timestamp: Date;
   useAdvancedReasoning?: boolean;
+  useLuvviXThink?: boolean;
   useWebSearch?: boolean;
   sourceReferences?: SourceReference[];
 }

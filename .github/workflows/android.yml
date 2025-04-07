@@ -25,11 +25,6 @@ jobs:
           npm install
           npm install @capacitor/cli @capacitor/core @capacitor/android
 
-      - name: Install custom icons
-        run: |
-          unzip android-icons.zip -d .
-          cp -r android/* android/app/src/main/res/
-
       - name: Build project
         run: npm run build
 
@@ -37,7 +32,13 @@ jobs:
         run: |
           npx cap init "LuvviX" "com.ludagg.luvvixchatbot" --web-dir=dist
           npx cap add android
+          mkdir -p android/app/src/main/res  # Crée le dossier si inexistant
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+      - name: Install custom icons
+        run: |
+          unzip android-icons.zip -d .
+          cp -r android/* android/app/src/main/res/
 
       - name: Build APK
         run: |

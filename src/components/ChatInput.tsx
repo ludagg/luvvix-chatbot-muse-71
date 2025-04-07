@@ -1,6 +1,7 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { SendIcon, Mic, MicOff, Smile, Paperclip, Image as ImageIcon, X, Brain, Search, BrainCircuit, Globe } from "lucide-react";
+import { SendIcon, Mic, MicOff, Smile, Paperclip, Image as ImageIcon, X, Brain, Search, BrainCircuit, Globe, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -25,8 +26,10 @@ interface ChatInputProps {
   isLoading?: boolean;
   isPro?: boolean;
   useAdvancedReasoning: boolean;
+  useLuvviXThink: boolean;
   useWebSearch: boolean;
   onToggleAdvancedReasoning: () => void;
+  onToggleLuvviXThink: () => void;
   onToggleWebSearch: () => void;
 }
 
@@ -36,8 +39,10 @@ export const ChatInput = ({
   isLoading = false, 
   isPro = false,
   useAdvancedReasoning,
+  useLuvviXThink,
   useWebSearch,
   onToggleAdvancedReasoning,
+  onToggleLuvviXThink,
   onToggleWebSearch
 }: ChatInputProps) => {
   const [message, setMessage] = useState("");
@@ -190,6 +195,10 @@ export const ChatInput = ({
     onToggleAdvancedReasoning();
   };
 
+  const handleLuvviXThinkToggle = () => {
+    onToggleLuvviXThink();
+  };
+
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -229,7 +238,7 @@ export const ChatInput = ({
         </div>
       )}
       
-      <div className="mb-2 flex items-center justify-center gap-2">
+      <div className="mb-2 flex items-center justify-center gap-2 flex-wrap">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -246,6 +255,24 @@ export const ChatInput = ({
             </TooltipTrigger>
             <TooltipContent side="top">
               <p>Réponses plus détaillées avec analyse étape par étape</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant={useLuvviXThink ? "default" : "outline"}
+                size="sm"
+                onClick={handleLuvviXThinkToggle}
+                className="h-8 gap-1 text-xs font-medium transition-all"
+              >
+                <Lightbulb size={14} className={useLuvviXThink ? "text-primary-foreground" : "text-muted-foreground"} />
+                <span>LuvviXThink</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              <p>Réflexion approfondie avant de répondre à vos questions</p>
             </TooltipContent>
           </Tooltip>
 

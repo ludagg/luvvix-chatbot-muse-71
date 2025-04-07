@@ -28,7 +28,7 @@ jobs:
       - name: Install custom icons
         run: |
           unzip android-icons.zip -d .
-          cp -r android-icons/* android/app/src/main/res/
+          cp -r android/* android/app/src/main/res/
 
       - name: Build project
         run: npm run build

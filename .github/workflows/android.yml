@@ -20,28 +20,28 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
+      - name: Clean workspace
+        run: |
+          rm -rf android || true
+          rm -f capacitor.config.ts || true
+
       - name: Install dependencies
         run: |
           npm install
           npm install @capacitor/cli @capacitor/core @capacitor/android
-
-      - name: Clean previous android platform
-        run: |
-          rm -rf android
-          rm -f capacitor.config.ts
-
-      - name: Install custom icons
-        run: |
-          unzip android-icons.zip -d temp_icons
-          mkdir -p android/app/src/main/res
-          cp -r temp_icons/android/mipmap-* android/app/src/main/res/
-          rm -rf temp_icons
 
       - name: Initialize Capacitor
         run: |
           npx cap init "LuvviX" "com.ludagg.luvvixchatbot" --web-dir=dist
           npx cap add android
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+      - name: Install custom icons
+        run: |
+          unzip -o android-icons.zip -d temp_icons || true
+          mkdir -p android/app/src/main/res
+          cp -rn temp_icons/android/mipmap-* android/app/src/main/res/ || true
+          rm -rf temp_icons || true
 
       - name: Build project
         run: npm run build

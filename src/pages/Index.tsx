@@ -11,7 +11,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, User, Settings, LogOut, Star } from "lucide-react";
+import { Menu, User, Settings, LogOut, Star, Paintbrush } from "lucide-react";
 import { ConversationSelector } from "@/components/ConversationSelector";
 import { DiscussionsMenu } from "@/components/DiscussionsMenu";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -26,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { Header } from "@/components/Header";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Adresse email invalide" }),
@@ -151,86 +152,14 @@ const Index = () => {
         </div>
       </div>
       
-      <header className="sticky top-0 flex items-center justify-between px-4 py-3 border-b border-border/40 bg-background/95 backdrop-blur-sm z-30">
-        <div className="flex items-center gap-2">
-          <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-foreground">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <div className="p-4 h-full">
-                <ConversationSelector closeMenu={() => setIsSidebarOpen(false)} />
-              </div>
-            </SheetContent>
-          </Sheet>
-          <div className="flex items-center">
-            <span className="text-xl font-bold text-primary">LuvviX AI</span>
-            {isPro ? (
-              <ProBadge className="ml-2" />
-            ) : (
-              <span className="text-xs px-2 py-0.5 bg-primary/10 rounded-full ml-2">Beta</span>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <DiscussionsMenu />
-          
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="rounded-full bg-primary/10"
-                >
-                  <span className="font-medium text-sm">{user.displayName?.charAt(0) || "U"}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span>{user.displayName}</span>
-                      {isPro && <ProBadge size="sm" />}
-                    </div>
-                    <span className="text-xs text-muted-foreground">{user.email}</span>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleOpenProfile}>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profil</span>
-                </DropdownMenuItem>
-                {!isPro && (
-                  <DropdownMenuItem onClick={() => setIsProModalOpen(true)}>
-                    <Star className="mr-2 h-4 w-4" />
-                    <span>Passer à Pro</span>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Déconnexion</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button 
-              variant="default" 
-              size="sm" 
-              onClick={() => handleOpenAuth("login")}
-            >
-              Se connecter
-            </Button>
-          )}
-        </div>
-      </header>
+      <Header
+        onOpenAuth={handleOpenAuth}
+        onOpenProfile={handleOpenProfile}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+      />
       
-      <main className="flex flex-col flex-grow relative z-10 overflow-hidden">
+      <main className="flex flex-col flex-grow relative z-10 overflow-hidden pt-16">
         {!user && (
           <div className="text-center mt-4 mb-2 px-4 md:mb-4">
             <p className="text-muted-foreground mb-3 md:mb-4 text-sm md:text-base">

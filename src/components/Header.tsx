@@ -20,6 +20,7 @@ import { DiscussionsMenu } from "@/components/DiscussionsMenu";
 import { ProBadge } from "@/components/ProBadge";
 import { Dispatch, SetStateAction } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface HeaderProps {
   onOpenAuth: (mode: "login" | "register") => void;
@@ -33,6 +34,7 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
   const isWorldPage = location.pathname === "/world";
+  const isMobile = useIsMobile();
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -94,18 +96,20 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
         <div className="flex items-center gap-2">
           <ThemeToggle />
           
-          {/* World button */}
-          <Button
-            variant={isWorldPage ? "default" : "outline"}
-            size="sm"
-            asChild
-            className={`gap-1 text-xs h-8 ${isWorldPage ? '' : 'border-primary/30 hover:bg-primary/10'} hidden md:flex`}
-          >
-            <Link to={isWorldPage ? "/" : "/world"}>
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>{isWorldPage ? "Chat" : "World"}</span>
-            </Link>
-          </Button>
+          {/* World button - visible on desktop */}
+          {!isMobile && (
+            <Button
+              variant={isWorldPage ? "default" : "outline"}
+              size="sm"
+              asChild
+              className={`gap-1 text-xs h-8 ${isWorldPage ? '' : 'border-primary/30 hover:bg-primary/10'} hidden md:flex`}
+            >
+              <Link to={isWorldPage ? "/" : "/world"}>
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>{isWorldPage ? "Chat" : "World"}</span>
+              </Link>
+            </Button>
+          )}
           
           <Button
             variant="outline"
@@ -148,6 +152,15 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
                   <User className="mr-2 h-4 w-4" />
                   <span>Profil</span>
                 </DropdownMenuItem>
+                {/* World button - For mobile only */}
+                {isMobile && (
+                  <DropdownMenuItem asChild className="cursor-pointer flex items-center">
+                    <Link to={isWorldPage ? "/" : "/world"}>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      <span>{isWorldPage ? "Chat" : "World"}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem 
                   className="cursor-pointer flex items-center"
                   onClick={handleWebSearchClick}

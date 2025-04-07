@@ -12,7 +12,15 @@ import NotFound from "./pages/NotFound";
 import { useLocalStorage } from "./hooks/use-local-storage";
 import { Theme } from "./components/ThemeToggle";
 
-const queryClient = new QueryClient();
+// Create the query client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => {
   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'dark');
@@ -35,6 +43,26 @@ const App = () => {
       root.classList.add(theme);
     }
   }, [theme]);
+
+  // Add a scroll smoothing effect
+  useEffect(() => {
+    // Smooth scroll function
+    const handleAnchorClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const anchor = target.closest('a');
+      
+      if (anchor && anchor.hash && anchor.hash.startsWith('#') && anchor.href.includes(window.location.pathname)) {
+        e.preventDefault();
+        const targetElement = document.querySelector(anchor.hash);
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    };
+
+    document.addEventListener('click', handleAnchorClick);
+    return () => document.removeEventListener('click', handleAnchorClick);
+  }, []);
 
   if (!mounted) return null; // Wait until theme is determined
 

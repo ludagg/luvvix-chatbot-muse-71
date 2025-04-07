@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Volume2, VolumeX, Info } from "lucide-react";
+import { ArrowLeft, Volume2, VolumeX, Info, Sparkles } from "lucide-react";
 import { CentralPlanet } from "@/components/world/CentralPlanet";
 import { KnowledgeTree } from "@/components/world/KnowledgeTree";
 import { SoulMirror } from "@/components/world/SoulMirror";
@@ -13,6 +13,7 @@ import { DreamPortal } from "@/components/world/DreamPortal";
 import { WorldTooltip } from "@/components/world/WorldTooltip";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export interface WorldState {
   knowledge: number; // 0-100
@@ -39,6 +40,7 @@ const LuvviXWorld = () => {
   });
   
   const audioRef = useRef<HTMLAudioElement>(null);
+  const isMobile = useIsMobile();
   
   // Calculate days since last visit
   useEffect(() => {
@@ -106,6 +108,29 @@ const LuvviXWorld = () => {
     // Navigate back to main page for profile
     navigate("/", { state: { openProfile: true } });
   };
+
+  // Different element positions based on device type
+  const getPositionClass = (element: string) => {
+    if (isMobile) {
+      switch (element) {
+        case "planet": return "absolute";
+        case "tree": return "absolute -left-4 bottom-1/4";
+        case "mirror": return "absolute top-1/4 right-0";
+        case "tower": return "absolute bottom-12 left-1/4";
+        case "portal": return "absolute bottom-36 right-1/4";
+        default: return "absolute";
+      }
+    } else {
+      switch (element) {
+        case "planet": return "absolute";
+        case "tree": return "absolute top-1/2 left-1/4 transform -translate-x-1/2 -translate-y-1/2";
+        case "mirror": return "absolute top-1/4 right-1/4 transform translate-x-1/2 -translate-y-1/2";
+        case "tower": return "absolute bottom-1/4 left-1/3 transform -translate-x-1/2 translate-y-1/2";
+        case "portal": return "absolute bottom-1/3 right-1/4 transform translate-x-1/2 translate-y-1/2";
+        default: return "absolute";
+      }
+    }
+  };
   
   return (
     <div className="flex flex-col min-h-screen h-screen bg-gradient-to-b from-[#F2FCE2] via-[#E5DEFF] to-[#D3E4FD] dark:from-[#0A1F2C] dark:via-[#1A1B3C] dark:to-[#121842] overflow-hidden">
@@ -122,6 +147,32 @@ const LuvviXWorld = () => {
           <div className="absolute top-1/3 right-1/4 w-72 h-72 md:w-96 md:h-96 bg-purple-300/20 dark:bg-indigo-500/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
           <div className="absolute bottom-1/3 left-1/3 w-72 h-72 md:w-96 md:h-96 bg-pink-300/20 dark:bg-primary/5 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
         </div>
+        
+        {/* Floating particles */}
+        <div className="absolute inset-0">
+          {Array.from({ length: isMobile ? 15 : 30 }).map((_, i) => (
+            <motion.div
+              key={`particle-${i}`}
+              className="absolute rounded-full bg-white/60 dark:bg-white/30"
+              style={{
+                width: Math.random() * 3 + 1,
+                height: Math.random() * 3 + 1,
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [0, -30, 0],
+                x: [0, Math.random() * 10 - 5, 0],
+                opacity: [0.2, 0.7, 0.2],
+              }}
+              transition={{
+                duration: Math.random() * 10 + 10,
+                repeat: Infinity,
+                delay: Math.random() * 5,
+              }}
+            />
+          ))}
+        </div>
       </div>
       
       <Header
@@ -136,7 +187,7 @@ const LuvviXWorld = () => {
           variant="ghost" 
           size="icon" 
           onClick={() => navigate("/")}
-          className="bg-white/20 backdrop-blur-sm dark:bg-white/10 rounded-full"
+          className="bg-white/20 backdrop-blur-sm dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 rounded-full"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -145,26 +196,32 @@ const LuvviXWorld = () => {
           variant="ghost" 
           size="icon" 
           onClick={() => setIsMuted(!isMuted)}
-          className="bg-white/20 backdrop-blur-sm dark:bg-white/10 rounded-full"
+          className="bg-white/20 backdrop-blur-sm dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 rounded-full"
         >
           {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
         </Button>
       </div>
       
       <main className="flex-grow relative pt-16 flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.5 }}
+          className="absolute inset-0 flex items-center justify-center"
+        >
           {/* Central Planet */}
           <div 
-            className="absolute" 
+            className={getPositionClass("planet")}
             onMouseEnter={() => setShowTooltip("planet")}
             onMouseLeave={() => setShowTooltip(null)}
+            onClick={() => setShowTooltip("planet")}
           >
             <CentralPlanet progress={worldState.interactions / 100} />
           </div>
           
           {/* Knowledge Trees */}
           <div 
-            className="absolute top-1/2 left-1/4 transform -translate-x-1/2 -translate-y-1/2"
+            className={getPositionClass("tree")}
             onMouseEnter={() => setShowTooltip("tree")}
             onMouseLeave={() => setShowTooltip(null)}
             onClick={incrementKnowledge}
@@ -174,7 +231,7 @@ const LuvviXWorld = () => {
           
           {/* Soul Mirror */}
           <div 
-            className="absolute top-1/4 right-1/4 transform translate-x-1/2 -translate-y-1/2"
+            className={getPositionClass("mirror")}
             onMouseEnter={() => setShowTooltip("mirror")}
             onMouseLeave={() => setShowTooltip(null)}
             onClick={() => changeEmotionalState(Math.random() > 0.5 ? 5 : -5)}
@@ -184,29 +241,45 @@ const LuvviXWorld = () => {
           
           {/* Concentration Tower */}
           <div 
-            className="absolute bottom-1/4 left-1/3 transform -translate-x-1/2 translate-y-1/2"
+            className={getPositionClass("tower")}
             onMouseEnter={() => setShowTooltip("tower")}
             onMouseLeave={() => setShowTooltip(null)}
+            onClick={() => setWorldState({...worldState, concentration: Math.min(100, worldState.concentration + 3)})}
           >
             <ConcentrationTower height={worldState.concentration} />
           </div>
           
           {/* Dream Portal */}
           <div 
-            className="absolute bottom-1/3 right-1/4 transform translate-x-1/2 translate-y-1/2"
+            className={getPositionClass("portal")}
             onMouseEnter={() => setShowTooltip("portal")}
             onMouseLeave={() => setShowTooltip(null)}
             onClick={incrementGoals}
           >
             <DreamPortal openness={worldState.goalsAchieved} />
           </div>
-        </div>
+        </motion.div>
+        
+        {/* Floating hint for mobile */}
+        {isMobile && !showTooltip && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1, duration: 0.5 }}
+            className="absolute bottom-20 left-0 right-0 text-center text-xs text-white/70 px-4"
+          >
+            <div className="bg-black/20 backdrop-blur-sm rounded-full px-4 py-2 mx-auto inline-flex items-center gap-1">
+              <Sparkles className="h-3 w-3" />
+              <span>Touchez les éléments pour interagir</span>
+            </div>
+          </motion.div>
+        )}
         
         {/* Info button */}
         <Button 
           variant="ghost" 
           size="icon" 
-          className="absolute bottom-4 right-4 bg-white/20 backdrop-blur-sm dark:bg-white/10 rounded-full"
+          className="absolute bottom-4 right-4 bg-white/20 backdrop-blur-sm dark:bg-white/10 hover:bg-white/30 dark:hover:bg-white/20 rounded-full"
           onClick={() => setShowTooltip("info")}
         >
           <Info className="h-4 w-4" />

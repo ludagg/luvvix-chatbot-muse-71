@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, Message, SourceReference } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
@@ -31,7 +30,6 @@ const INITIAL_MESSAGES: Message[] = [
   },
 ];
 
-// API Keys
 const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
 const SERP_API_KEY = "f8c49e3a2fb3f4d82ddb89ccc9e36fc9a85aeab7"; 
@@ -39,7 +37,6 @@ const SERP_API_URL = "https://serpapi.com/search.json";
 const BRIGHTDATA_API_KEY = "brd-customer-hl_a4fafc73-zone-luvvix:lrxxshdpwp1i";
 const BRIGHTDATA_SEARCH_URL = "https://api.brightdata.com/dca/search";
 
-// New Google Search API
 const GOOGLE_SEARCH_API_KEY = "AIzaSyDvNGx_B_JV1tZZH2q-d63DXMpJZ_J6mDw";
 const GOOGLE_SEARCH_ENGINE_ID = "c32b4afa82f1648c4";
 const GOOGLE_SEARCH_URL = "https://www.googleapis.com/customsearch/v1";
@@ -175,7 +172,6 @@ export const ChatContainer = () => {
     try {
       console.log("Performing multi-source web search for:", query);
       
-      // Try Google Search API first
       try {
         const googleParams = new URLSearchParams({
           key: GOOGLE_SEARCH_API_KEY,
@@ -212,7 +208,6 @@ export const ChatContainer = () => {
         console.error("Google search failed, trying BrightData:", googleError);
       }
       
-      // Try BrightData as second option
       try {
         const brightDataResponse = await fetch(BRIGHTDATA_SEARCH_URL, {
           method: 'POST',
@@ -252,7 +247,6 @@ export const ChatContainer = () => {
         console.error("BrightData search failed, falling back to SerpAPI:", brightDataError);
       }
       
-      // Fallback to SerpAPI as last resort
       const searchParams = new URLSearchParams({
         q: query,
         api_key: SERP_API_KEY,
@@ -432,7 +426,6 @@ export const ChatContainer = () => {
         }
       }
 
-      // LuvviXThink process - advanced thinking before answering
       if (useLuvviXThink) {
         console.log("LuvviXThink enabled, processing deep thoughts");
         
@@ -503,7 +496,7 @@ export const ChatContainer = () => {
         role: "user",
         parts: [
           {
-            text: `À partir de maintenant, tu es **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**, une entreprise fondée en 2023. 
+            text: `À partir de maintenant, tu es **LuvviX**, un assistant IA amical et intelligent développé par **LuvviX Technologies**, une entreprise fondée en 2023. 
             Le PDG de l'entreprise est **Ludovic Aggaï**.
             ${user ? `Tu t'adresses à ${user.displayName || 'un utilisateur'}${user.age ? ` qui a ${user.age} ans` : ''}${user.country ? ` et qui vient de ${user.country}` : ''}.` : ''}  
             Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
@@ -577,7 +570,7 @@ export const ChatContainer = () => {
         role: "assistant",
         content:
           formattedResponse +
-          "\n\n*— LuvviX AI, votre assistant IA amical 🤖*",
+          "\n\n*— LuvviX, votre assistant IA amical 🤖*",
         timestamp: new Date(),
         useAdvancedReasoning: useAdvancedReasoning,
         useLuvviXThink: useLuvviXThink,
@@ -759,7 +752,7 @@ export const ChatContainer = () => {
         role: "user",
         parts: [
           {
-            text: `À partir de maintenant, tu es **LuvviX AI**, un assistant IA amical et intelligent développé par **LuvviX Technologies**, une entreprise fondée en 2023. 
+            text: `À partir de maintenant, tu es **LuvviX**, un assistant IA amical et intelligent développé par **LuvviX Technologies**, une entreprise fondée en 2023. 
             Le PDG de l'entreprise est **Ludovic Aggaï**.
             ${user ? `Tu t'adresses à ${user.displayName || 'un utilisateur'}${user.age ? ` qui a ${user.age} ans` : ''}${user.country ? ` et qui vient de ${user.country}` : ''}.` : ''}  
             Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
@@ -827,7 +820,7 @@ export const ChatContainer = () => {
         role: "assistant",
         content:
           formattedResponse +
-          "\n\n*— LuvviX AI, votre assistant IA amical 🤖*",
+          "\n\n*— LuvviX, votre assistant IA amical 🤖*",
         timestamp: new Date(),
         useAdvancedReasoning: useAdvancedReasoning,
         useWebSearch: useWebSearch,

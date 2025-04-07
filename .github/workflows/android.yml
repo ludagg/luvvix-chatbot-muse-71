@@ -25,6 +25,11 @@ jobs:
           npm install
           npm install @capacitor/cli @capacitor/core @capacitor/android
 
+      - name: Clean previous android platform
+        run: |
+          rm -rf android
+          rm -f capacitor.config.ts
+
       - name: Install custom icons
         run: |
           unzip android-icons.zip -d temp_icons
@@ -32,14 +37,17 @@ jobs:
           cp -r temp_icons/android/mipmap-* android/app/src/main/res/
           rm -rf temp_icons
 
-      - name: Build project
-        run: npm run build
-
-      - name: Configure Capacitor
+      - name: Initialize Capacitor
         run: |
           npx cap init "LuvviX" "com.ludagg.luvvixchatbot" --web-dir=dist
           npx cap add android
           echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+      - name: Build project
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
 
       - name: Build APK
         run: |

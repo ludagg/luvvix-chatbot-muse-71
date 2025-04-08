@@ -1,7 +1,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { Theme } from '@/components/ThemeToggle';
+import { Theme } from '@/hooks/use-theme';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Particle {

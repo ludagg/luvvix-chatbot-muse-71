@@ -135,7 +135,6 @@ export const BatteryManager = ({ className }: BatteryManagerProps) => {
                   <Switch 
                     checked={powerSavingMode}
                     onCheckedChange={togglePowerSavingMode}
-                    size="sm"
                   />
                 </div>
                 <div className="flex items-center gap-2">
@@ -143,7 +142,6 @@ export const BatteryManager = ({ className }: BatteryManagerProps) => {
                   <Switch 
                     checked={autoEnablePowerSaving}
                     onCheckedChange={toggleAutoPowerSaving}
-                    size="sm"
                   />
                 </div>
               </div>

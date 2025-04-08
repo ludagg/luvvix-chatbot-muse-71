@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Header } from "@/components/Header";
+import { ParticlesBackground } from "@/components/ParticlesBackground";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Adresse email invalide" }),
@@ -144,6 +145,8 @@ const Index = () => {
 
   return (
     <div className="flex flex-col min-h-screen h-screen bg-gradient-to-b from-background via-background to-background/90 overflow-hidden">
+      <ParticlesBackground />
+      
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -inset-[10%] opacity-10">
           <div className="absolute top-1/4 left-1/4 w-72 h-72 md:w-96 md:h-96 bg-blue-500/20 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>

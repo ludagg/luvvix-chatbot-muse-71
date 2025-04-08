@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { Sun, Moon, Palette } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
-import { useLocalStorage } from '@/hooks/use-local-storage';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,60 +9,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { toast } from 'sonner';
-
-export type Theme = 'light' | 'dark' | 'purple' | 'blue' | 'green';
+import { useTheme, Theme } from '@/hooks/use-theme';
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useLocalStorage<Theme>('theme', 'dark');
+  const { theme, setTheme, getThemeName } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
-
+  
   useEffect(() => {
-    const root = window.document.documentElement;
-    
-    // First, remove all theme classes
-    root.classList.remove('light', 'dark', 'theme-purple', 'theme-blue', 'theme-green');
-    
-    // Then apply the appropriate classes based on the theme
-    if (theme === 'purple') {
-      root.classList.add('dark', 'theme-purple');
-    } else if (theme === 'blue') {
-      root.classList.add('dark', 'theme-blue');
-    } else if (theme === 'green') {
-      root.classList.add('dark', 'theme-green');
-    } else {
-      root.classList.add(theme);
-    }
-    
-    // Store the theme in localStorage directly as a backup
-    localStorage.setItem('theme', theme);
-    
     // Notify the user when theme is changed (except initial load)
     if (mounted) {
       toast.success(`Thème ${getThemeName(theme)} appliqué`);
     }
-  }, [theme, mounted]);
+  }, [theme, mounted, getThemeName]);
 
   const toggleBasicTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
-  
-  // Helper function to get the display name for a theme
-  const getThemeName = (t: Theme): string => {
-    switch(t) {
-      case 'light': return 'Clair';
-      case 'dark': return 'Sombre';
-      case 'purple': return 'Violet';
-      case 'blue': return 'Bleu';
-      case 'green': return 'Vert';
-      default: return t;
-    }
   };
 
   if (!mounted) return null;

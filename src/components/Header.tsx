@@ -1,201 +1,165 @@
 
-import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { motion } from "framer-motion";
-import { LogOut, Settings, User, Globe, Search, Menu, Sparkles } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "./ThemeToggle";
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { Menu, X, User, MessageSquareText, Globe, Sparkles } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { ConversationSelector } from "@/components/ConversationSelector";
-import { DiscussionsMenu } from "@/components/DiscussionsMenu";
-import { ProBadge } from "@/components/ProBadge";
-import { Dispatch, SetStateAction } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Skeleton } from "@/components/ui/skeleton";
+import { motion, AnimatePresence } from 'framer-motion';
+import { Badge } from "@/components/ui/badge";
+import { BatteryManager } from "@/components/BatteryManager";
 
-interface HeaderProps {
-  onOpenAuth: (mode: "login" | "register") => void;
-  onOpenProfile: () => void;
-  isSidebarOpen: boolean;
-  setIsSidebarOpen: Dispatch<SetStateAction<boolean>>;
-}
-
-export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarOpen }: HeaderProps) => {
-  const { user, logout, isPro = false } = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+export const Header = () => {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
-  const isWorldPage = location.pathname === "/world";
-  const isMobile = useIsMobile();
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logout();
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
-  };
-
-  const handleWebSearchClick = () => {
-    // Open a new tab with a search engine (using Bing for its API integration possibilities)
-    window.open("https://www.bing.com", "_blank");
-  };
+  const isActive = (path: string) => location.pathname === path;
 
   return (
-    <motion.header
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="fixed top-0 left-0 right-0 z-20 bg-gradient-to-b from-background/90 to-background/70 backdrop-blur-md border-b border-border/30 py-3"
-    >
-      <div className="container max-w-5xl mx-auto px-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      isScrolled ? 'bg-background/80 backdrop-blur-md shadow-md py-2' : 'bg-transparent py-4'
+    }`}>
+      <div className="container max-w-7xl mx-auto px-4 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-primary"
+          >
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+            <path d="M16 16h5v5" />
+          </svg>
+          <span className="font-extrabold text-lg tracking-tight">LuvviX</span>
+          <Badge variant="outline" className="hidden sm:inline-flex h-5 border-primary/50 text-xs">AI</Badge>
+        </Link>
+        
+        <nav className="hidden md:flex items-center gap-1">
+          <Link to="/">
+            <Button variant={isActive('/') ? "default" : "ghost"} size="sm" className="gap-1">
+              <MessageSquareText size={16} />
+              <span>Chat</span>
+            </Button>
+          </Link>
+          <Link to="/world">
+            <Button variant={isActive('/world') ? "default" : "ghost"} size="sm" className="gap-1">
+              <Globe size={16} />
+              <span>World</span>
+            </Button>
+          </Link>
+          <Link to="/enhanced">
+            <Button variant={isActive('/enhanced') ? "default" : "ghost"} size="sm" className="gap-1">
+              <Sparkles size={16} />
+              <span>Enhanced</span>
+            </Button>
+          </Link>
+        </nav>
+        
+        <div className="flex items-center gap-2">
+          <BatteryManager className="hidden sm:flex" />
+          <ThemeToggle />
+          
+          <Button variant="ghost" size="icon" className="hidden md:flex">
+            <User size={20} />
+          </Button>
+          
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-foreground">
-                <Menu className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu size={24} />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <div className="p-4 h-full">
-                <ConversationSelector closeMenu={() => setIsSidebarOpen(false)} />
+            <SheetContent side="left" className="w-[80%] sm:w-[350px] p-0">
+              <div className="p-6 flex flex-col h-full">
+                <div className="flex items-center justify-between mb-8">
+                  <Link to="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-primary"
+                    >
+                      <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                      <path d="M3 3v5h5" />
+                      <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                      <path d="M16 16h5v5" />
+                    </svg>
+                    <span className="font-extrabold text-lg tracking-tight">LuvviX</span>
+                    <Badge variant="outline" className="h-5 border-primary/50 text-xs">AI</Badge>
+                  </Link>
+                  <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)} className="h-auto p-1">
+                    <X size={24} />
+                  </Button>
+                </div>
+                
+                <nav className="space-y-2 flex-1">
+                  <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button 
+                      variant={isActive('/') ? "default" : "ghost"} 
+                      className="w-full justify-start gap-2"
+                    >
+                      <MessageSquareText size={18} />
+                      <span>Chat</span>
+                    </Button>
+                  </Link>
+                  
+                  <Link to="/world" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button 
+                      variant={isActive('/world') ? "default" : "ghost"} 
+                      className="w-full justify-start gap-2"
+                    >
+                      <Globe size={18} />
+                      <span>World</span>
+                    </Button>
+                  </Link>
+                  
+                  <Link to="/enhanced" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Button 
+                      variant={isActive('/enhanced') ? "default" : "ghost"} 
+                      className="w-full justify-start gap-2"
+                    >
+                      <Sparkles size={18} />
+                      <span>Enhanced</span>
+                    </Button>
+                  </Link>
+                </nav>
+                
+                <div className="pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <ThemeToggle />
+                    <BatteryManager />
+                  </div>
+                </div>
               </div>
             </SheetContent>
           </Sheet>
-          <span className="text-lg font-bold tracking-tight text-gradient">
-            LuvviX
-          </span>
-          {isPro ? (
-            <ProBadge className="ml-0" />
-          ) : (
-            <span className="text-xs font-medium px-1.5 py-0.5 bg-primary/10 text-primary rounded-md">
-              Beta
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          
-          {/* World button - visible on desktop */}
-          {!isMobile && (
-            <Button
-              variant={isWorldPage ? "default" : "outline"}
-              size="sm"
-              asChild
-              className={`gap-1 text-xs h-8 ${isWorldPage ? '' : 'border-primary/30 hover:bg-primary/10'} hidden md:flex`}
-            >
-              <Link to={isWorldPage ? "/" : "/world"}>
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>{isWorldPage ? "Chat" : "World"}</span>
-              </Link>
-            </Button>
-          )}
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleWebSearchClick}
-            className="gap-1 text-xs h-8 border-primary/30 hover:bg-primary/10 hidden md:flex"
-          >
-            <Search className="h-3.5 w-3.5" />
-            <span>Recherche</span>
-          </Button>
-          <DiscussionsMenu />
-          
-          {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative rounded-full h-8 w-8 bg-primary/10"
-                >
-                  <Avatar className="h-8 w-8 select-none">
-                    <AvatarFallback className="bg-primary/20 text-foreground text-xs">
-                      {getInitials(user.displayName || "User")}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span>{user.displayName}</span>
-                      {isPro && <ProBadge size="sm" />}
-                    </div>
-                    <span className="text-xs text-muted-foreground">{user.email}</span>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer flex items-center" onClick={onOpenProfile}>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profil</span>
-                </DropdownMenuItem>
-                {/* World button - For mobile only */}
-                {isMobile && (
-                  <DropdownMenuItem asChild className="cursor-pointer flex items-center">
-                    <Link to={isWorldPage ? "/" : "/world"}>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      <span>{isWorldPage ? "Chat" : "World"}</span>
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem 
-                  className="cursor-pointer flex items-center"
-                  onClick={handleWebSearchClick}
-                >
-                  <Globe className="mr-2 h-4 w-4" />
-                  <span>Recherche web</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer flex items-center">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Paramètres</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  disabled={isLoggingOut}
-                  onClick={handleLogout}
-                  className="cursor-pointer flex items-center text-destructive focus:text-destructive"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>{isLoggingOut ? "Déconnexion..." : "Déconnexion"}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => onOpenAuth("login")}
-              className="gap-2"
-            >
-              <User className="h-4 w-4" />
-              Connexion
-            </Button>
-          )}
         </div>
       </div>
-    </motion.header>
+    </header>
   );
 };

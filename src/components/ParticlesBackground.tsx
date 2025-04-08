@@ -1,8 +1,8 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { Theme } from '@/hooks/use-theme';
-import { motion } from 'framer-motion';
+import { Theme } from '@/components/ThemeToggle';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Particle {
   x: number;
@@ -20,6 +20,7 @@ export function ParticlesBackground() {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number | null>(null);
+  const [isVisible, setIsVisible] = useState(true);
 
   // Update canvas dimensions on resize
   useEffect(() => {
@@ -85,7 +86,7 @@ export function ParticlesBackground() {
   // Animation loop
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !isVisible) return;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -140,15 +141,36 @@ export function ParticlesBackground() {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [dimensions, theme]);
+  }, [dimensions, isVisible, theme]);
+
+  // Toggle particles visibility
+  const toggleVisibility = () => {
+    setIsVisible(prev => !prev);
+  };
 
   return (
-    <motion.canvas
-      ref={canvasRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 0.6 }}
-      transition={{ duration: 0.5 }}
-      className="fixed inset-0 pointer-events-none z-0"
-    />
+    <>
+      <AnimatePresence>
+        {isVisible && (
+          <motion.canvas
+            ref={canvasRef}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.6 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 pointer-events-none z-0"
+          />
+        )}
+      </AnimatePresence>
+      
+      <motion.button
+        onClick={toggleVisibility}
+        className="fixed bottom-4 left-4 z-50 bg-primary/10 hover:bg-primary/20 text-foreground rounded-full p-2 text-xs"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {isVisible ? 'Masquer Particules' : 'Afficher Particules'}
+      </motion.button>
+    </>
   );
 }

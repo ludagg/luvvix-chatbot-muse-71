@@ -170,327 +170,156 @@ export const ChatContainer = () => {
 
   const performWebSearch = async (query: string): Promise<SourceReference[]> => {
     try {
-      console.log("Performing multi-source web search with enhanced intelligence for:", query);
+      console.log("Performing multi-source web search for:", query);
       
-      // Strategy 1: Enhanced query generation - create multiple query variations for better search coverage
-      const queryVariations = [
-        query,
-        `"${query}"`, // Exact match
-        query.includes(" ") ? query.split(" ").slice(0, 3).join(" ") + " definition" : query + " definition", // Definition search
-        query + " examples", // Example-focused search
-        query + " latest research" // Recent research
-      ];
-      
-      // Select the main query and a backup query
-      const mainQuery = queryVariations[0];
-      const backupQuery = queryVariations[Math.floor(Math.random() * (queryVariations.length - 1)) + 1];
-      
-      // Define sources to try in order of preference
-      const searchSources = [
-        {
-          name: "Google Custom Search",
-          search: async (q: string) => {
-            const googleParams = new URLSearchParams({
-              key: GOOGLE_SEARCH_API_KEY,
-              cx: GOOGLE_SEARCH_ENGINE_ID,
-              q: q,
-              num: "8",
-              lr: "lang_fr",
-              hl: "fr"
+      try {
+        const googleParams = new URLSearchParams({
+          key: GOOGLE_SEARCH_API_KEY,
+          cx: GOOGLE_SEARCH_ENGINE_ID,
+          q: query,
+          num: "8",
+          lr: "lang_fr",
+          hl: "fr"
+        });
+        
+        const googleResponse = await fetch(`${GOOGLE_SEARCH_URL}?${googleParams.toString()}`);
+        
+        if (googleResponse.ok) {
+          const data = await googleResponse.json();
+          console.log("Google search results:", data);
+          
+          const sources: SourceReference[] = [];
+          
+          if (data.items && data.items.length > 0) {
+            data.items.forEach((item: any, index: number) => {
+              sources.push({
+                id: index + 1,
+                title: item.title || "Source inconnue",
+                url: item.link || "#",
+                snippet: item.snippet || "Pas de description disponible"
+              });
             });
             
-            try {
-              const googleResponse = await fetch(`${GOOGLE_SEARCH_URL}?${googleParams.toString()}`);
-              
-              if (googleResponse.ok) {
-                const data = await googleResponse.json();
-                console.log("Google search results:", data);
-                
-                if (data.items && data.items.length > 0) {
-                  return data.items.map((item: any, index: number) => ({
-                    id: index + 1,
-                    title: item.title || "Source inconnue",
-                    url: item.link || "#",
-                    snippet: item.snippet || "Pas de description disponible",
-                    relevanceScore: calculateRelevanceScore(q, item.title, item.snippet)
-                  }));
-                }
-              }
-              return null;
-            } catch (error) {
-              console.error("Google search failed:", error);
-              return null;
-            }
-          }
-        },
-        {
-          name: "BrightData",
-          search: async (q: string) => {
-            try {
-              const brightDataResponse = await fetch(BRIGHTDATA_SEARCH_URL, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${BRIGHTDATA_API_KEY}`
-                },
-                body: JSON.stringify({
-                  search_query: q,
-                  max_results: 8,
-                  include_snippets: true,
-                  language: 'fr',
-                })
-              });
-              
-              if (brightDataResponse.ok) {
-                const data = await brightDataResponse.json();
-                console.log("BrightData search results:", data);
-                
-                if (data.results && data.results.length > 0) {
-                  return data.results.map((result: any, index: number) => ({
-                    id: index + 1,
-                    title: result.title || "Source inconnue",
-                    url: result.url || "#",
-                    snippet: result.snippet || "Pas de description disponible",
-                    relevanceScore: calculateRelevanceScore(q, result.title, result.snippet)
-                  }));
-                }
-              }
-              return null;
-            } catch (error) {
-              console.error("BrightData search failed:", error);
-              return null;
-            }
-          }
-        },
-        {
-          name: "SerpAPI",
-          search: async (q: string) => {
-            try {
-              const searchParams = new URLSearchParams({
-                q: q,
-                api_key: SERP_API_KEY,
-                num: "8",
-                gl: "fr",
-                hl: "fr",
-              });
-              
-              const response = await fetch(`${SERP_API_URL}?${searchParams.toString()}`);
-              
-              if (response.ok) {
-                const data = await response.json();
-                console.log("SerpAPI search results:", data);
-                
-                const organicResults = data.organic_results || [];
-                
-                if (organicResults.length > 0) {
-                  return organicResults.slice(0, 8).map((result: any, index: number) => ({
-                    id: index + 1,
-                    title: result.title || "Source inconnue",
-                    url: result.link || "#",
-                    snippet: result.snippet || "Pas de description disponible",
-                    relevanceScore: calculateRelevanceScore(q, result.title, result.snippet)
-                  }));
-                }
-              }
-              return null;
-            } catch (error) {
-              console.error("SerpAPI search failed:", error);
-              return null;
-            }
+            console.log("Formatted Google sources:", sources);
+            return sources;
           }
         }
-      ];
+      } catch (googleError) {
+        console.error("Google search failed, trying BrightData:", googleError);
+      }
       
-      // Calculate a relevance score for ranking results
-      const calculateRelevanceScore = (query: string, title: string, snippet: string): number => {
-        const text = (title + " " + snippet).toLowerCase();
-        const queryTerms = query.toLowerCase().split(/\s+/);
-        
-        // Base score for term matching
-        let score = 0;
-        queryTerms.forEach(term => {
-          if (text.includes(term)) score += 2;
-          
-          // Partial matching (for longer terms)
-          if (term.length > 4) {
-            for (let i = 3; i < term.length; i++) {
-              const partial = term.substring(0, i);
-              if (text.includes(partial)) score += 0.5;
-            }
-          }
+      try {
+        const brightDataResponse = await fetch(BRIGHTDATA_SEARCH_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${BRIGHTDATA_API_KEY}`
+          },
+          body: JSON.stringify({
+            search_query: query,
+            max_results: 8,
+            include_snippets: true,
+            language: 'fr',
+          })
         });
         
-        // Exact phrase matching bonus
-        if (text.includes(query.toLowerCase())) score += 4;
-        
-        // Title match bonus
-        if (title.toLowerCase().includes(query.toLowerCase())) score += 3;
-        
-        return score;
-      };
-      
-      // Merge and deduplicate results from multiple sources
-      const mergeResults = (resultSets: Array<SourceReference[] | null>): SourceReference[] => {
-        const allResults: SourceReference[] = [];
-        const seenUrls = new Set<string>();
-        
-        resultSets.forEach(resultSet => {
-          if (!resultSet) return;
+        if (brightDataResponse.ok) {
+          const data = await brightDataResponse.json();
+          console.log("BrightData search results:", data);
           
-          resultSet.forEach(result => {
-            if (!seenUrls.has(result.url)) {
-              seenUrls.add(result.url);
-              allResults.push(result);
-            }
+          const sources: SourceReference[] = [];
+          
+          if (data.results && data.results.length > 0) {
+            data.results.forEach((result: any, index: number) => {
+              sources.push({
+                id: index + 1,
+                title: result.title || "Source inconnue",
+                url: result.url || "#",
+                snippet: result.snippet || "Pas de description disponible"
+              });
+            });
+            
+            console.log("Formatted BrightData sources:", sources);
+            return sources;
+          }
+        }
+      } catch (brightDataError) {
+        console.error("BrightData search failed, falling back to SerpAPI:", brightDataError);
+      }
+      
+      const searchParams = new URLSearchParams({
+        q: query,
+        api_key: SERP_API_KEY,
+        num: "8",
+        gl: "fr",
+        hl: "fr",
+      });
+      
+      const response = await fetch(`${SERP_API_URL}?${searchParams.toString()}`);
+
+      if (!response.ok) {
+        console.error(`Search API Error: ${response.status}`);
+        return [];
+      }
+
+      const data = await response.json();
+      console.log("SerpAPI search results:", data);
+      
+      const organicResults = data.organic_results || [];
+      const sources: SourceReference[] = [];
+      
+      if (organicResults.length > 0) {
+        organicResults.slice(0, 8).forEach((result: any, index: number) => {
+          sources.push({
+            id: index + 1,
+            title: result.title || "Source inconnue",
+            url: result.link || "#",
+            snippet: result.snippet || "Pas de description disponible"
           });
         });
-        
-        // Sort by relevance score
-        return allResults
-          .sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0))
-          .slice(0, 8)
-          .map((result, index) => ({
-            ...result,
-            id: index + 1 // Reassign IDs after sorting
-          }));
-      };
-      
-      // Adaptive search: Try multiple sources and queries with intelligent fallback
-      let mainQueryResults: Array<SourceReference[] | null> = [];
-      let backupQueryResults: SourceReference[] | null = null;
-      
-      // First, try all sources with the main query
-      for (const source of searchSources) {
-        console.log(`Trying ${source.name} with main query...`);
-        const results = await source.search(mainQuery);
-        mainQueryResults.push(results);
-        
-        // If we got good results from this source, we can stop trying others
-        if (results && results.length >= 4) {
-          console.log(`Got sufficient results from ${source.name}, stopping search.`);
-          break;
-        }
       }
       
-      // If we didn't get enough results, try the backup query with the first source
-      const combinedMainResults = mergeResults(mainQueryResults);
-      if (combinedMainResults.length < 3) {
-        console.log("Insufficient results from main query, trying backup query...");
-        backupQueryResults = await searchSources[0].search(backupQuery);
-      }
-      
-      // Combine all results
-      const finalResults = mergeResults([combinedMainResults, backupQueryResults]);
-      
-      console.log("Final aggregated search results:", finalResults);
-      return finalResults;
+      console.log("Formatted SerpAPI sources:", sources);
+      return sources;
     } catch (error) {
-      console.error("Error during enhanced multi-source web search:", error);
+      console.error("Error during multi-source web search:", error);
       return [];
     }
   };
 
   const fetchImage = async (query: string): Promise<string | null> => {
     try {
-      console.log("Searching for images with enhanced quality algorithm:", query);
+      console.log("Searching for images with enhanced API:", query);
       
-      // Enhance the query with quality terms
-      const enhancedQuery = `${query} haute qualité haute résolution`;
+      const searchParams = new URLSearchParams({
+        q: query + " haute qualité",
+        api_key: SERP_API_KEY,
+        tbm: "isch",
+        num: "5",
+        gl: "fr",
+        hl: "fr",
+      });
       
-      // Try multiple image search sources
-      const imageSources = [
-        // SerpAPI image search
-        async () => {
-          const searchParams = new URLSearchParams({
-            q: enhancedQuery,
-            api_key: SERP_API_KEY,
-            tbm: "isch",
-            num: "8",
-            gl: "fr",
-            hl: "fr",
-            tbs: "isz:l,iar:t" // Large images, tall aspect ratio
-          });
-          
-          const response = await fetch(`${SERP_API_URL}?${searchParams.toString()}`);
-          
-          if (response.ok) {
-            const data = await response.json();
-            const images = data.images_results || [];
-            
-            if (images.length > 0) {
-              // Filter for high-quality images and sort by metrics
-              const qualityImages = images
-                .filter((img: any) => img.original && img.original.height > 500 && img.original.width > 500)
-                .sort((a: any, b: any) => {
-                  // Prioritize higher resolution images
-                  const aRes = a.original.height * a.original.width;
-                  const bRes = b.original.height * b.original.width;
-                  return bRes - aRes;
-                });
-              
-              if (qualityImages.length > 0) {
-                return qualityImages[0].original;
-              } else if (images.length > 0) {
-                return images[0].original;
-              }
-            }
-          }
-          return null;
-        },
-        
-        // Google Custom Search API for images
-        async () => {
-          const googleParams = new URLSearchParams({
-            key: GOOGLE_SEARCH_API_KEY,
-            cx: GOOGLE_SEARCH_ENGINE_ID,
-            q: enhancedQuery,
-            searchType: "image",
-            num: "8",
-            imgSize: "large",
-            lr: "lang_fr",
-            hl: "fr"
-          });
-          
-          const googleResponse = await fetch(`${GOOGLE_SEARCH_URL}?${googleParams.toString()}`);
-          
-          if (googleResponse.ok) {
-            const data = await googleResponse.json();
-            const items = data.items || [];
-            
-            if (items.length > 0) {
-              // Find the highest quality image
-              const bestImage = items.reduce((best: any, current: any) => {
-                if (!best || (current.image && current.image.height * current.image.width > 
-                              best.image.height * best.image.width)) {
-                  return current;
-                }
-                return best;
-              }, null);
-              
-              if (bestImage && bestImage.link) {
-                return bestImage.link;
-              }
-            }
-          }
-          return null;
-        }
-      ];
-      
-      // Try each source in sequence until we get a good image
-      for (const source of imageSources) {
-        try {
-          const imageUrl = await source();
-          if (imageUrl) {
-            console.log("Found high-quality image:", imageUrl);
-            return imageUrl;
-          }
-        } catch (err) {
-          console.error("Error with image source:", err);
-          // Continue to next source
-        }
+      const response = await fetch(`${SERP_API_URL}?${searchParams.toString()}`);
+
+      if (!response.ok) {
+        console.error(`Enhanced Image Search API Error: ${response.status}`);
+        return null;
       }
+
+      const data = await response.json();
+      console.log("Enhanced image search results:", data);
       
-      console.log("No suitable images found");
+      const images = data.images_results || [];
+      if (images.length > 0) {
+        const highQualityImages = images.filter((img: any) => 
+          img.original && img.original.height > 400 && img.original.width > 400
+        );
+        
+        return highQualityImages.length > 0 
+          ? highQualityImages[0].original 
+          : images[0].original;
+      }
       return null;
     } catch (error) {
       console.error("Error during enhanced image search:", error);
@@ -610,7 +439,7 @@ export const ChatContainer = () => {
               Suis ces étapes:
               1. Comprendre la question: Reformule la question avec tes propres mots pour en saisir l'essence.
               2. Identifier les concepts clés: Liste les concepts et termes importants liés à cette question.
-              3. Évaluer différentes perspectives: Considères plusieurs angles d'approche possibles.
+              3. Évaluer différentes perspectives: Considère plusieurs angles d'approche possibles.
               4. Analyser les implications: Réfléchis aux conséquences logiques et aux ramifications.
               5. Plan de réponse: Prépare un plan pour une réponse structurée.
               

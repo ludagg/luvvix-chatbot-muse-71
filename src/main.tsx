@@ -34,19 +34,23 @@ style.innerHTML = `
   --accent-foreground: 255 255 255;
   --ring: 34 197 94;
 }
-
-/* Power saving mode styles */
-.power-saving * {
-  transition: none !important;
-  animation-duration: 0 !important;
-}
-
-.power-saving .animate-pulse,
-.power-saving .animate-spin,
-.power-saving .animate-bounce {
-  animation: none !important;
-}
 `;
 document.head.appendChild(style);
+
+// Initialize theme from localStorage
+const savedTheme = localStorage.getItem('theme') || 'dark';
+const root = document.documentElement;
+
+// Apply theme classes on initial load
+root.classList.remove('light', 'dark', 'theme-purple', 'theme-blue', 'theme-green');
+if (savedTheme === 'purple') {
+  root.classList.add('dark', 'theme-purple');
+} else if (savedTheme === 'blue') {
+  root.classList.add('dark', 'theme-blue');
+} else if (savedTheme === 'green') {
+  root.classList.add('dark', 'theme-green');
+} else {
+  root.classList.add(savedTheme);
+}
 
 createRoot(document.getElementById("root")!).render(<App />);

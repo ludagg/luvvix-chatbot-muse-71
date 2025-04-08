@@ -1,8 +1,8 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Header } from "@/components/Header";
-import { HeaderWrapper } from "@/components/HeaderWrapper";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Volume2, VolumeX, Info, Sparkles } from "lucide-react";
 import { CentralPlanet } from "@/components/world/CentralPlanet";
@@ -42,12 +42,14 @@ const LuvviXWorld = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const isMobile = useIsMobile();
   
+  // Calculate days since last visit
   useEffect(() => {
     const lastVisit = new Date(worldState.lastVisit);
     const today = new Date();
     const diffTime = Math.abs(today.getTime() - lastVisit.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
+    // If it's a new visit, update interaction count and last visit date
     if (diffDays >= 1) {
       setWorldState({
         ...worldState,
@@ -58,6 +60,7 @@ const LuvviXWorld = () => {
     }
   }, []);
   
+  // Handle audio
   useEffect(() => {
     if (audioRef.current) {
       if (isMuted) {
@@ -97,10 +100,12 @@ const LuvviXWorld = () => {
   };
   
   const handleOpenAuth = (mode: "login" | "register") => {
+    // Navigate back to main page for auth
     navigate("/", { state: { openAuth: mode } });
   };
   
   const handleOpenProfile = () => {
+    // Navigate back to main page for profile
     navigate("/", { state: { openProfile: true } });
   };
 
@@ -112,6 +117,7 @@ const LuvviXWorld = () => {
         loop
       />
       
+      {/* Background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -inset-[10%] opacity-50">
           <div className="absolute top-1/4 left-1/4 w-72 h-72 md:w-96 md:h-96 bg-blue-300/20 dark:bg-blue-500/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
@@ -119,6 +125,7 @@ const LuvviXWorld = () => {
           <div className="absolute bottom-1/3 left-1/3 w-72 h-72 md:w-96 md:h-96 bg-pink-300/20 dark:bg-primary/5 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
         </div>
         
+        {/* Floating particles */}
         <div className="absolute inset-0">
           {Array.from({ length: isMobile ? 15 : 30 }).map((_, i) => (
             <motion.div
@@ -145,7 +152,12 @@ const LuvviXWorld = () => {
         </div>
       </div>
       
-      <HeaderWrapper />
+      <Header
+        onOpenAuth={handleOpenAuth}
+        onOpenProfile={handleOpenProfile}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+      />
       
       <div className="absolute top-20 left-4 z-10 flex gap-2">
         <Button 
@@ -174,8 +186,10 @@ const LuvviXWorld = () => {
           transition={{ duration: 1.5 }}
           className="h-full w-full"
         >
+          {/* Grid Layout Container */}
           <div className="grid grid-cols-2 md:grid-cols-3 h-full w-full">
             
+            {/* Knowledge Tree - Top Left */}
             <div className="flex items-center justify-center">
               <KnowledgeTree 
                 growth={worldState.knowledge} 
@@ -186,6 +200,7 @@ const LuvviXWorld = () => {
               />
             </div>
             
+            {/* Soul Mirror - Top Right */}
             <div className="flex items-center justify-center">
               <SoulMirror 
                 emotionalState={worldState.emotionalState} 
@@ -196,6 +211,7 @@ const LuvviXWorld = () => {
               />
             </div>
             
+            {/* Central Planet - Middle (spans multiple columns on desktop) */}
             <div className={`${isMobile ? "col-span-2" : "col-span-1"} flex items-center justify-center`}>
               <CentralPlanet 
                 progress={worldState.interactions / 100} 
@@ -203,6 +219,7 @@ const LuvviXWorld = () => {
               />
             </div>
             
+            {/* Concentration Tower - Bottom Left */}
             <div className="flex items-center justify-center">
               <ConcentrationTower 
                 height={worldState.concentration} 
@@ -213,6 +230,7 @@ const LuvviXWorld = () => {
               />
             </div>
             
+            {/* Dream Portal - Bottom Right */}
             <div className="flex items-center justify-center">
               <DreamPortal 
                 openness={worldState.goalsAchieved} 
@@ -225,6 +243,7 @@ const LuvviXWorld = () => {
           </div>
         </motion.div>
         
+        {/* Info button */}
         <Button 
           variant="ghost" 
           size="icon" 
@@ -234,6 +253,7 @@ const LuvviXWorld = () => {
           <Info className="h-4 w-4" />
         </Button>
         
+        {/* Tooltip */}
         <AnimatePresence>
           {showTooltip && (
             <WorldTooltip 

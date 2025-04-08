@@ -27,7 +27,6 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { Header } from "@/components/Header";
-import { HeaderWrapper } from "@/components/HeaderWrapper";
 import { ParticlesBackground } from "@/components/ParticlesBackground";
 
 const loginSchema = z.object({
@@ -156,7 +155,12 @@ const Index = () => {
         </div>
       </div>
       
-      <HeaderWrapper />
+      <Header
+        onOpenAuth={handleOpenAuth}
+        onOpenProfile={handleOpenProfile}
+        isSidebarOpen={isSidebarOpen}
+        setIsSidebarOpen={setIsSidebarOpen}
+      />
       
       <main className="flex flex-col flex-grow relative z-10 overflow-hidden pt-16">
         {!user && (

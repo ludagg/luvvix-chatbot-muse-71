@@ -27,11 +27,12 @@ export const VoiceChat = ({ onVoiceStart, onVoiceEnd, onSpeaking }: VoiceChatPro
       recognition.interimResults = true;
       recognition.lang = 'fr-FR';
       
-      recognition.onstart = () => {
+      // Add event listener for the 'start' event instead of using onstart property
+      recognition.addEventListener('start', () => {
         setIsListening(true);
         if (onVoiceStart) onVoiceStart();
         if (onSpeaking) onSpeaking(true);
-      };
+      });
       
       recognition.onresult = (event) => {
         const currentTranscript = Array.from(event.results)
@@ -60,8 +61,15 @@ export const VoiceChat = ({ onVoiceStart, onVoiceEnd, onSpeaking }: VoiceChatPro
     }
     
     return () => {
-      if (recognitionRef.current && isListening) {
-        recognitionRef.current.stop();
+      if (recognitionRef.current) {
+        // Clean up event listeners
+        if (recognitionRef.current instanceof EventTarget) {
+          recognitionRef.current.removeEventListener('start', () => {});
+        }
+        
+        if (isListening) {
+          recognitionRef.current.stop();
+        }
       }
     };
   }, [onVoiceStart, onVoiceEnd, onSpeaking, transcript, isListening]);

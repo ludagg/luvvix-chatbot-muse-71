@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 
 interface KnowledgeTreeProps {
   growth: number; // 0-100
+  onClick: () => void;
 }
 
-export const KnowledgeTree = ({ growth }: KnowledgeTreeProps) => {
+export const KnowledgeTree = ({ growth, onClick }: KnowledgeTreeProps) => {
   // Scale height based on growth
   const height = 80 + (growth / 100) * 120;
   const leafDensity = Math.max(1, Math.floor(growth / 10));
@@ -18,6 +19,7 @@ export const KnowledgeTree = ({ growth }: KnowledgeTreeProps) => {
       className="relative cursor-pointer"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
+      onClick={onClick}
     >
       {/* Tree Trunk */}
       <motion.div 

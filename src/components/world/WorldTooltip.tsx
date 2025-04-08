@@ -66,17 +66,17 @@ export const WorldTooltip = ({ type, worldState, onClose }: WorldTooltipProps) =
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
       transition={{ duration: 0.2 }}
-      className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-full max-w-xs p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-lg shadow-lg border border-white/30 dark:border-white/10 z-50"
+      className="fixed bottom-16 left-0 right-0 mx-auto w-full max-w-xs p-4 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-lg shadow-lg border border-white/30 dark:border-white/10 z-50"
     >
       <div className="flex justify-between items-start">
-        <h3 className="text-sm font-medium">{content.title}</h3>
+        <h3 className="text-md font-medium">{content.title}</h3>
         <Button size="icon" variant="ghost" className="h-5 w-5" onClick={onClose}>
           <X className="h-3 w-3" />
         </Button>
       </div>
-      <p className="text-xs text-foreground/80 mt-1">{content.description}</p>
+      <p className="text-sm text-foreground/80 mt-2">{content.description}</p>
       {content.stat && (
-        <p className="text-xs font-medium mt-2 text-primary">{content.stat}</p>
+        <p className="text-sm font-medium mt-2 text-primary">{content.stat}</p>
       )}
     </motion.div>
   );

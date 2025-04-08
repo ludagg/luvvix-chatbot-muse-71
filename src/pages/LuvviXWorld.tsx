@@ -109,29 +109,6 @@ const LuvviXWorld = () => {
     navigate("/", { state: { openProfile: true } });
   };
 
-  // Different element positions based on device type
-  const getPositionClass = (element: string) => {
-    if (isMobile) {
-      switch (element) {
-        case "planet": return "absolute";
-        case "tree": return "absolute -left-4 bottom-1/4";
-        case "mirror": return "absolute top-1/4 right-0";
-        case "tower": return "absolute bottom-12 left-1/4";
-        case "portal": return "absolute bottom-36 right-1/4";
-        default: return "absolute";
-      }
-    } else {
-      switch (element) {
-        case "planet": return "absolute";
-        case "tree": return "absolute top-1/2 left-1/4 transform -translate-x-1/2 -translate-y-1/2";
-        case "mirror": return "absolute top-1/4 right-1/4 transform translate-x-1/2 -translate-y-1/2";
-        case "tower": return "absolute bottom-1/4 left-1/3 transform -translate-x-1/2 translate-y-1/2";
-        case "portal": return "absolute bottom-1/3 right-1/4 transform translate-x-1/2 translate-y-1/2";
-        default: return "absolute";
-      }
-    }
-  };
-  
   return (
     <div className="flex flex-col min-h-screen h-screen bg-gradient-to-b from-[#F2FCE2] via-[#E5DEFF] to-[#D3E4FD] dark:from-[#0A1F2C] dark:via-[#1A1B3C] dark:to-[#121842] overflow-hidden">
       <audio
@@ -202,78 +179,69 @@ const LuvviXWorld = () => {
         </Button>
       </div>
       
-      <main className="flex-grow relative pt-16 flex items-center justify-center overflow-hidden">
+      <main className="flex-grow relative pt-16 overflow-hidden">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.5 }}
-          className="absolute inset-0 flex items-center justify-center"
+          className="h-full w-full"
         >
-          {/* Central Planet */}
-          <div 
-            className={getPositionClass("planet")}
-            onMouseEnter={() => setShowTooltip("planet")}
-            onMouseLeave={() => setShowTooltip(null)}
-            onClick={() => setShowTooltip("planet")}
-          >
-            <CentralPlanet progress={worldState.interactions / 100} />
-          </div>
-          
-          {/* Knowledge Trees */}
-          <div 
-            className={getPositionClass("tree")}
-            onMouseEnter={() => setShowTooltip("tree")}
-            onMouseLeave={() => setShowTooltip(null)}
-            onClick={incrementKnowledge}
-          >
-            <KnowledgeTree growth={worldState.knowledge} />
-          </div>
-          
-          {/* Soul Mirror */}
-          <div 
-            className={getPositionClass("mirror")}
-            onMouseEnter={() => setShowTooltip("mirror")}
-            onMouseLeave={() => setShowTooltip(null)}
-            onClick={() => changeEmotionalState(Math.random() > 0.5 ? 5 : -5)}
-          >
-            <SoulMirror emotionalState={worldState.emotionalState} />
-          </div>
-          
-          {/* Concentration Tower */}
-          <div 
-            className={getPositionClass("tower")}
-            onMouseEnter={() => setShowTooltip("tower")}
-            onMouseLeave={() => setShowTooltip(null)}
-            onClick={() => setWorldState({...worldState, concentration: Math.min(100, worldState.concentration + 3)})}
-          >
-            <ConcentrationTower height={worldState.concentration} />
-          </div>
-          
-          {/* Dream Portal */}
-          <div 
-            className={getPositionClass("portal")}
-            onMouseEnter={() => setShowTooltip("portal")}
-            onMouseLeave={() => setShowTooltip(null)}
-            onClick={incrementGoals}
-          >
-            <DreamPortal openness={worldState.goalsAchieved} />
+          {/* Grid Layout Container */}
+          <div className="grid grid-cols-2 md:grid-cols-3 h-full w-full">
+            
+            {/* Knowledge Tree - Top Left */}
+            <div className="flex items-center justify-center">
+              <KnowledgeTree 
+                growth={worldState.knowledge} 
+                onClick={() => {
+                  incrementKnowledge();
+                  setShowTooltip("tree");
+                }}
+              />
+            </div>
+            
+            {/* Soul Mirror - Top Right */}
+            <div className="flex items-center justify-center">
+              <SoulMirror 
+                emotionalState={worldState.emotionalState} 
+                onClick={() => {
+                  changeEmotionalState(Math.random() > 0.5 ? 5 : -5);
+                  setShowTooltip("mirror");
+                }}
+              />
+            </div>
+            
+            {/* Central Planet - Middle (spans multiple columns on desktop) */}
+            <div className={`${isMobile ? "col-span-2" : "col-span-1"} flex items-center justify-center`}>
+              <CentralPlanet 
+                progress={worldState.interactions / 100} 
+                onClick={() => setShowTooltip("planet")}
+              />
+            </div>
+            
+            {/* Concentration Tower - Bottom Left */}
+            <div className="flex items-center justify-center">
+              <ConcentrationTower 
+                height={worldState.concentration} 
+                onClick={() => {
+                  setWorldState({...worldState, concentration: Math.min(100, worldState.concentration + 3)});
+                  setShowTooltip("tower");
+                }}
+              />
+            </div>
+            
+            {/* Dream Portal - Bottom Right */}
+            <div className="flex items-center justify-center">
+              <DreamPortal 
+                openness={worldState.goalsAchieved} 
+                onClick={() => {
+                  incrementGoals();
+                  setShowTooltip("portal");
+                }}
+              />
+            </div>
           </div>
         </motion.div>
-        
-        {/* Floating hint for mobile */}
-        {isMobile && !showTooltip && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1, duration: 0.5 }}
-            className="absolute bottom-20 left-0 right-0 text-center text-xs text-white/70 px-4"
-          >
-            <div className="bg-black/20 backdrop-blur-sm rounded-full px-4 py-2 mx-auto inline-flex items-center gap-1">
-              <Sparkles className="h-3 w-3" />
-              <span>Touchez les éléments pour interagir</span>
-            </div>
-          </motion.div>
-        )}
         
         {/* Info button */}
         <Button 

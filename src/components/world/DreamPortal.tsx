@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 
 interface DreamPortalProps {
   openness: number; // 0-100
+  onClick: () => void;
 }
 
-export const DreamPortal = ({ openness }: DreamPortalProps) => {
+export const DreamPortal = ({ openness, onClick }: DreamPortalProps) => {
   // Scale based on openness
   const size = 60 + (openness / 100) * 40;
   const opacity = 0.4 + (openness / 100) * 0.6;
@@ -18,6 +19,7 @@ export const DreamPortal = ({ openness }: DreamPortalProps) => {
       className="relative cursor-pointer"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
+      onClick={onClick}
     >
       <div className="relative">
         <motion.div 

@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 
 interface ConcentrationTowerProps {
   height: number; // 0-100
+  onClick: () => void;
 }
 
-export const ConcentrationTower = ({ height }: ConcentrationTowerProps) => {
+export const ConcentrationTower = ({ height, onClick }: ConcentrationTowerProps) => {
   // Calculate tower segments based on height
   const segments = Math.max(1, Math.ceil(height / 20));
   const actualHeight = 100 + (height / 100) * 100;
@@ -15,7 +16,10 @@ export const ConcentrationTower = ({ height }: ConcentrationTowerProps) => {
       initial={{ scale: 0.8, opacity: 0, y: 20 }}
       animate={{ scale: 1, opacity: 1, y: 0 }}
       transition={{ duration: 1 }}
-      className="relative"
+      className="relative cursor-pointer"
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={onClick}
     >
       <div className="flex flex-col items-center justify-end h-full">
         {Array.from({ length: segments }).map((_, index) => {

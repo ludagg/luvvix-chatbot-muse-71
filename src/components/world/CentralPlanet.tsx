@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 
 interface CentralPlanetProps {
   progress: number; // 0-1
+  onClick: () => void;
 }
 
-export const CentralPlanet = ({ progress }: CentralPlanetProps) => {
+export const CentralPlanet = ({ progress, onClick }: CentralPlanetProps) => {
   // Calculate size based on progress
   const size = 120 + progress * 50;
   
@@ -27,7 +28,10 @@ export const CentralPlanet = ({ progress }: CentralPlanetProps) => {
         opacity: { duration: 2 },
         scale: { duration: 2 },
       }}
-      className="relative"
+      className="relative cursor-pointer"
+      onClick={onClick}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
     >
       <div 
         className="rounded-full bg-gradient-to-br from-blue-200 to-purple-300 dark:from-blue-500/40 dark:to-purple-600/40 backdrop-blur-sm border border-white/30 shadow-lg flex items-center justify-center"

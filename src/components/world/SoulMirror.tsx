@@ -3,9 +3,10 @@ import { motion } from "framer-motion";
 
 interface SoulMirrorProps {
   emotionalState: number; // 0-100
+  onClick: () => void;
 }
 
-export const SoulMirror = ({ emotionalState }: SoulMirrorProps) => {
+export const SoulMirror = ({ emotionalState, onClick }: SoulMirrorProps) => {
   // Map emotional state to colors
   const getEmotionColor = () => {
     if (emotionalState < 30) return { from: 'from-blue-300', to: 'to-blue-100', dark: 'dark:from-blue-600/40 dark:to-blue-400/40' }; // Sad
@@ -25,6 +26,7 @@ export const SoulMirror = ({ emotionalState }: SoulMirrorProps) => {
       className="relative cursor-pointer"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
+      onClick={onClick}
     >
       <motion.div 
         className={`w-40 h-60 rounded-xl backdrop-blur-md bg-gradient-to-br ${emotionColor.from} ${emotionColor.to} ${emotionColor.dark} border border-white/30 shadow-lg overflow-hidden`}

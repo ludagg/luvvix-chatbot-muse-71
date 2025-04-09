@@ -89,3 +89,13 @@ export const performWebSearch = async (
     return [];
   }
 };
+
+// src/services/searchService.ts
+
+export const fetchImage = async (
+  query: string,
+  apiKeys: ApiKeys,
+  toast: ReturnType<typeof useToast>["toast"]
+): Promise<string | null> => {
+  // Ton code de recherche d'image ici...
+};

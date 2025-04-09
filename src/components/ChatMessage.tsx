@@ -119,10 +119,9 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
               a: ({ node, ...props }) => (
                 <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" />
               ),
-              code: ({ node, inline, className, children, ...props }) => {
-                const codeContent = String(children).replace(/\n$/, '');
-                
-                if (inline) {
+              code: ({ node, className, children, ...props }) => {
+                if (props.className === undefined && !className) {
+                  // This is an inline code block
                   return (
                     <code className={cn("bg-muted px-1 py-0.5 rounded text-sm font-mono", className)} {...props}>
                       {children}
@@ -130,6 +129,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
                   );
                 }
                 
+                const codeContent = String(children).replace(/\n$/, '');
                 const language = className ? className.replace('language-', '') : '';
                 const codeBlockId = `code-${message.id}-${language}-${codeContent.length}`;
                 
@@ -148,7 +148,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
                         {isCodeBlockCopied[codeBlockId] ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                       </Button>
                     </div>
-                    <pre className={cn("p-4 overflow-x-auto bg-muted/40 rounded-b-md text-sm font-mono", className)} style={{ marginTop: 0 }} {...props}>
+                    <pre className={cn("p-4 overflow-x-auto bg-muted/40 rounded-b-md text-sm font-mono", className)}>
                       <code>{codeContent}</code>
                     </pre>
                   </div>

@@ -1,34 +1,24 @@
 
-import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bot, User, Copy, Check, RefreshCcw, Share2, ThumbsUp, ThumbsDown, Image as ImageIcon, BrainCircuit, Globe } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { Check, Copy, ThumbsDown, ThumbsUp, RefreshCw, BookOpenCheck, Globe, BrainCircuit, Code, CodeSquare, Lightbulb, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
+import { motion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
+import remarkMath from "remark-math";
 import 'katex/dist/katex.min.css';
-import { Button } from "./ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export interface SourceReference {
-  id: number;
+  id: number | string;
   title: string;
   url: string;
-  snippet: string;
+  snippet?: string;
 }
 
 export interface Message {
@@ -40,6 +30,8 @@ export interface Message {
   useLuvviXThink?: boolean;
   useWebSearch?: boolean;
   sourceReferences?: SourceReference[];
+  sentimentAnalysis?: string;
+  contextMemory?: string;
 }
 
 interface ChatMessageProps {
@@ -49,351 +41,320 @@ interface ChatMessageProps {
   onFeedback?: (messageId: string, feedback: "positive" | "negative") => void;
 }
 
-// Simple component to render the message content with markdown
-const MessageContent = ({ content }: { content: string }) => {
-  return (
-    <ReactMarkdown
-      remarkPlugins={[remarkMath]}
-      rehypePlugins={[rehypeKatex]}
-      components={{
-        // Custom rendering for tables to use shadcn/ui Table component
-        table: ({ node, ...props }) => (
-          <div className="my-4 w-full overflow-auto rounded border border-border/50">
-            <Table>{props.children}</Table>
-          </div>
-        ),
-        thead: ({ node, ...props }) => <TableHeader {...props} />,
-        tbody: ({ node, ...props }) => <TableBody {...props} />,
-        tr: ({ node, ...props }) => <TableRow {...props} />,
-        th: ({ node, ...props }) => <TableHead className="bg-muted/50 font-medium p-2 text-muted-foreground" {...props} />,
-        td: ({ node, ...props }) => <TableCell className="p-2 border-t border-border/20" {...props} />,
-        // Better styling for code blocks
-        code: ({ node, className, children, ...props }) => {
-          const match = /language-(\w+)/.exec(className || "");
-          return match ? (
-            <pre className="p-4 bg-secondary/50 rounded-md overflow-x-auto">
-              <code className={className} {...props}>
-                {children}
-              </code>
-            </pre>
-          ) : (
-            <code className="px-1.5 py-0.5 bg-secondary/50 rounded-sm" {...props}>
-              {children}
-            </code>
-          );
-        },
-        // Make images responsive
-        img: ({ node, ...props }) => (
-          <img 
-            {...props} 
-            className="max-w-full h-auto my-4 rounded-md border border-border/30" 
-            loading="lazy"
-            referrerPolicy="no-referrer"
-          />
-        ),
-        // Style links
-        a: ({ node, ...props }) => (
-          <a 
-            {...props} 
-            className="text-primary hover:text-primary/80 underline underline-offset-2" 
-            target="_blank" 
-            rel="noopener noreferrer"
-          />
-        ),
-      }}
-    >
-      {content}
-    </ReactMarkdown>
-  );
-};
+export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback }: ChatMessageProps) {
+  const [isCopied, setIsCopied] = useState(false);
+  const [feedbackGiven, setFeedbackGiven] = useState<"positive" | "negative" | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const [showSourcesDialog, setShowSourcesDialog] = useState(false);
+  const [isCodeBlockCopied, setIsCodeBlockCopied] = useState<Record<string, boolean>>({});
 
-// Component to display source references
-const SourceReferences = ({ 
-  sources, 
-  showSources, 
-  setShowSources 
-}: { 
-  sources: SourceReference[], 
-  showSources: boolean, 
-  setShowSources: React.Dispatch<React.SetStateAction<boolean>> 
-}) => {
-  if (!sources || sources.length === 0) return null;
-  
-  return (
-    <div className="mt-4 pt-3 border-t border-border/30">
-      <div 
-        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
-        onClick={() => setShowSources(!showSources)}
-      >
-        <Globe size={12} />
-        <span>{showSources ? "Masquer les sources" : "Afficher les sources"} ({sources.length})</span>
-      </div>
-      
-      {showSources && (
-        <div className="mt-2 space-y-2">
-          {sources.map(source => (
-            <div key={source.id} className="p-2 rounded-md bg-background/50 border border-border/30 text-xs">
-              <a 
-                href={source.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="font-medium text-primary hover:underline"
-              >
-                [{source.id}] {source.title}
-              </a>
-              <p className="text-muted-foreground mt-1">{source.snippet}</p>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+  useEffect(() => {
+    if (isCopied) {
+      const timeout = setTimeout(() => {
+        setIsCopied(false);
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [isCopied]);
 
-// Component for action buttons
-const ActionButtons = ({ 
-  message,
-  isLast,
-  onRegenerate,
-  hasFeedback,
-  handleCopy,
-  handleShare,
-  handleFeedback
-}: {
-  message: Message,
-  isLast?: boolean,
-  onRegenerate?: (messageId: string) => void,
-  hasFeedback: "positive" | "negative" | null,
-  handleCopy: (text: string, id: string) => void,
-  handleShare: (text: string) => void,
-  handleFeedback: (type: "positive" | "negative") => void
-}) => {
-  return (
-    <div className="flex space-x-1 ml-2">
-      {isLast && onRegenerate && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground"
-          onClick={() => onRegenerate(message.id)}
-          title="Régénérer la réponse"
-        >
-          <RefreshCcw className="h-3 w-3" />
-        </Button>
-      )}
-      
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground"
-          >
-            <Share2 className="h-3 w-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => handleCopy(message.content, message.id)}>
-            <Copy className="mr-2 h-4 w-4" />
-            Copier
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleShare(message.content)}>
-            <Share2 className="mr-2 h-4 w-4" />
-            Partager
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      
-      <Button
-        variant="ghost"
-        size="icon"
-        className={cn(
-          "h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground",
-          hasFeedback === "positive" && "text-green-500 bg-green-100 hover:bg-green-200"
-        )}
-        onClick={() => handleFeedback("positive")}
-        title="Cette réponse est utile"
-      >
-        <ThumbsUp className="h-3 w-3" />
-      </Button>
-      
-      <Button
-        variant="ghost"
-        size="icon"
-        className={cn(
-          "h-6 w-6 rounded-full bg-background/70 hover:bg-background text-muted-foreground hover:text-foreground",
-          hasFeedback === "negative" && "text-red-500 bg-red-100 hover:bg-red-200"
-        )}
-        onClick={() => handleFeedback("negative")}
-        title="Cette réponse n'est pas utile"
-      >
-        <ThumbsDown className="h-3 w-3" />
-      </Button>
-    </div>
-  );
-};
-
-// Component for special mode badges
-const ModeBadges = ({ message }: { message: Message }) => {
-  if (!message.useAdvancedReasoning && !message.useWebSearch) return null;
-  
-  return (
-    <div className="flex items-center gap-1.5 mb-1">
-      <TooltipProvider>
-        {message.useAdvancedReasoning && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full text-xs font-medium">
-                <BrainCircuit size={12} />
-                <span>Raisonnement avancé</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>Cette réponse utilise une analyse approfondie avec raisonnement détaillé</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-        
-        {message.useWebSearch && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-full text-xs font-medium">
-                <Globe size={12} />
-                <span>LuvvixSEARCH</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>Cette réponse inclut des résultats de recherche web en temps réel</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </TooltipProvider>
-    </div>
-  );
-};
-
-export function ChatMessage({ 
-  message, 
-  isLast = false, 
-  onRegenerate, 
-  onFeedback 
-}: ChatMessageProps) {
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [hasFeedback, setHasFeedback] = useState<"positive" | "negative" | null>(null);
-  const [showSources, setShowSources] = useState(false);
-  const { toast } = useToast();
-
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedId(id);
-      toast({
-        title: "Texte copié !",
-        description: "Le contenu du message a été copié dans le presse-papier.",
-      });
-      setTimeout(() => setCopiedId(null), 2000);
-    });
-  };
-
-  const handleShare = (text: string) => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Réponse de LuvviX AI',
-        text: text,
-      }).then(() => {
-        toast({
-          title: "Partage réussi",
-          description: "La réponse a été partagée avec succès.",
-        });
-      }).catch((error) => {
-        console.error('Erreur lors du partage :', error);
-        toast({
-          title: "Erreur de partage",
-          description: "Impossible de partager ce contenu.",
-          variant: "destructive"
-        });
-      });
-    } else {
-      handleCopy(text, message.id);
-      toast({
-        title: "Fonctionnalité limitée",
-        description: "Le partage direct n'est pas supporté par votre navigateur. Le texte a été copié à la place.",
-      });
+  const handleCopy = () => {
+    if (contentRef.current) {
+      const text = contentRef.current.textContent || "";
+      navigator.clipboard.writeText(text);
+      setIsCopied(true);
     }
   };
 
   const handleFeedback = (type: "positive" | "negative") => {
-    if (onFeedback) {
+    if (onFeedback && !feedbackGiven) {
       onFeedback(message.id, type);
-      setHasFeedback(type);
-      toast({
-        title: type === "positive" ? "Merci pour votre retour positif!" : "Désolé que cette réponse ne soit pas utile",
-        description: type === "positive" 
-          ? "Nous sommes ravis que cette réponse vous ait aidé." 
-          : "Nous utiliserons votre retour pour améliorer nos réponses.",
-      });
+      setFeedbackGiven(type);
     }
   };
-
-  const isUser = message.role === "user";
-  const hasSources = !isUser && message.sourceReferences && message.sourceReferences.length > 0;
+  
+  const countSources = () => {
+    return message.sourceReferences?.length || 0;
+  };
+  
+  const handleCodeBlockCopy = (codeContent: string, index: string) => {
+    navigator.clipboard.writeText(codeContent);
+    setIsCodeBlockCopied(prev => ({ ...prev, [index]: true }));
+    
+    setTimeout(() => {
+      setIsCodeBlockCopied(prev => ({ ...prev, [index]: false }));
+    }, 2000);
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.4 }}
       className={cn(
-        "flex gap-3 md:gap-4",
-        isUser ? "flex-row-reverse" : ""
+        "w-full flex gap-3",
+        message.role === "user" ? "flex-row-reverse" : "flex-row"
       )}
     >
-      <div className="flex-shrink-0 mt-1">
-        <Avatar className={cn("border", isUser ? "border-blue-200 bg-blue-100" : "border-purple-200 bg-purple-100")}>
-          <AvatarFallback className={isUser ? "text-blue-500" : "text-purple-500"}>
-            {isUser ? <User size={18} /> : <Bot size={18} />}
-          </AvatarFallback>
-          {!isUser && <AvatarImage src="/luvvix-avatar.png" alt="LuvviX AI" />}
-        </Avatar>
-      </div>
-
       <div className={cn(
-        "flex flex-col space-y-1 max-w-[85%] md:max-w-[75%]",
-        isUser ? "items-end" : "items-start"
+        "w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center",
+        message.role === "user" ? "bg-primary/20 text-primary" : "bg-primary text-primary-foreground"
       )}>
-        {/* Mode badges */}
-        {!isUser && <ModeBadges message={message} />}
-        
-        <div className={cn(
-          "px-4 py-3 rounded-lg relative",
-          isUser ? "bg-blue-500 text-white" : "bg-muted text-foreground"
-        )}>
-          <div className="prose dark:prose-invert prose-sm sm:prose-base max-w-none prose-img:mx-auto prose-img:rounded-md">
-            <MessageContent content={message.content} />
-          </div>
-
-          {/* Sources References */}
-          {hasSources && (
-            <SourceReferences 
-              sources={message.sourceReferences || []} 
-              showSources={showSources} 
-              setShowSources={setShowSources} 
-            />
-          )}
-        </div>
-        
-        {/* Action buttons for assistant messages */}
-        {!isUser && (
-          <ActionButtons 
-            message={message}
-            isLast={isLast}
-            onRegenerate={onRegenerate}
-            hasFeedback={hasFeedback}
-            handleCopy={handleCopy}
-            handleShare={handleShare}
-            handleFeedback={handleFeedback}
-          />
+        {message.role === "user" ? (
+          user?.displayName?.charAt(0).toUpperCase() || "U"
+        ) : (
+          "L"
         )}
       </div>
+      
+      <div className={cn(
+        "bg-muted/40 backdrop-blur-sm p-4 rounded-lg max-w-[85%]",
+        message.role === "user" ? "rounded-tr-none" : "rounded-tl-none"
+      )}>
+        <div ref={contentRef} className="prose prose-sm dark:prose-invert max-w-none break-words">
+          <ReactMarkdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+            components={{
+              a: ({ node, ...props }) => (
+                <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" />
+              ),
+              code: ({ node, inline, className, children, ...props }) => {
+                const codeContent = String(children).replace(/\n$/, '');
+                
+                if (inline) {
+                  return (
+                    <code className={cn("bg-muted px-1 py-0.5 rounded text-sm font-mono", className)} {...props}>
+                      {children}
+                    </code>
+                  );
+                }
+                
+                const language = className ? className.replace('language-', '') : '';
+                const codeBlockId = `code-${message.id}-${language}-${codeContent.length}`;
+                
+                return (
+                  <div className="relative mt-4 mb-4">
+                    <div className="flex items-center justify-between px-4 py-1.5 bg-muted/80 border-b border-border/50 rounded-t-md">
+                      <div className="text-xs font-medium text-muted-foreground">
+                        {language || 'Code'}
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={() => handleCodeBlockCopy(codeContent, codeBlockId)}
+                      >
+                        {isCodeBlockCopied[codeBlockId] ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                      </Button>
+                    </div>
+                    <pre className={cn("p-4 overflow-x-auto bg-muted/40 rounded-b-md text-sm font-mono", className)} style={{ marginTop: 0 }} {...props}>
+                      <code>{codeContent}</code>
+                    </pre>
+                  </div>
+                );
+              },
+              img: ({ node, ...props }) => (
+                <img {...props} className="rounded-lg w-auto max-w-full h-auto object-cover my-4" alt={props.alt || "Image"} />
+              ),
+              table: ({ node, ...props }) => (
+                <div className="overflow-x-auto my-4">
+                  <table className="border-collapse w-full" {...props} />
+                </div>
+              ),
+              th: ({ node, ...props }) => (
+                <th className="border border-border bg-muted px-4 py-2 text-left" {...props} />
+              ),
+              td: ({ node, ...props }) => (
+                <td className="border border-border px-4 py-2" {...props} />
+              ),
+            }}
+          >
+            {message.content}
+          </ReactMarkdown>
+        </div>
+        
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">
+              {new Date(message.timestamp).toLocaleTimeString()}
+            </span>
+            
+            {message.role === "assistant" && message.useAdvancedReasoning && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge variant="outline" className="px-1.5 gap-1 hover:bg-accent cursor-help">
+                      <BrainCircuit className="h-3 w-3" />
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Raisonnement avancé</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            
+            {message.role === "assistant" && message.useLuvviXThink && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge variant="outline" className="px-1.5 gap-1 hover:bg-accent cursor-help">
+                      <Lightbulb className="h-3 w-3" />
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Réflexion approfondie LuvviXThink</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            
+            {message.role === "assistant" && message.useWebSearch && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Badge 
+                      variant="outline" 
+                      className="px-1.5 gap-1 hover:bg-accent cursor-help"
+                      onClick={() => setShowSourcesDialog(true)}
+                    >
+                      <Globe className="h-3 w-3" />
+                      <span>{countSources()}</span>
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Recherche web avec {countSources()} sources</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-1">
+            {message.role === "assistant" && isLast && onRegenerate && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                      onClick={() => onRegenerate(message.id)}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Régénérer la réponse</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    onClick={handleCopy}
+                  >
+                    {isCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isCopied ? "Copié !" : "Copier"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            {message.role === "assistant" && isLast && onFeedback && (
+              <>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-7 w-7",
+                          feedbackGiven === "positive"
+                            ? "text-green-500"
+                            : "text-muted-foreground hover:text-green-500"
+                        )}
+                        onClick={() => handleFeedback("positive")}
+                        disabled={feedbackGiven !== null}
+                      >
+                        <ThumbsUp className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Cette réponse était utile</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "h-7 w-7",
+                          feedbackGiven === "negative"
+                            ? "text-red-500"
+                            : "text-muted-foreground hover:text-red-500"
+                        )}
+                        onClick={() => handleFeedback("negative")}
+                        disabled={feedbackGiven !== null}
+                      >
+                        <ThumbsDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Cette réponse n'était pas utile</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <Dialog open={showSourcesDialog} onOpenChange={setShowSourcesDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookOpenCheck className="h-5 w-5" />
+              Sources utilisées
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[70vh] pr-4">
+            <div className="space-y-4">
+              {message.sourceReferences?.map((source) => (
+                <div key={source.id} className="border border-border/40 rounded-lg p-3 bg-muted/30">
+                  <h3 className="font-medium text-base mb-1">{source.title}</h3>
+                  <a 
+                    href={source.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline break-all mb-2 inline-block"
+                  >
+                    {source.url}
+                  </a>
+                  {source.snippet && (
+                    <p className="text-sm text-muted-foreground mt-2">{source.snippet}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

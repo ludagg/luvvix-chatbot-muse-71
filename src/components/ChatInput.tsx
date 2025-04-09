@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { SendIcon, Mic, MicOff, Smile, Paperclip, Image as ImageIcon, X, Brain, Search, BrainCircuit, Globe, Lightbulb } from "lucide-react";
+import { SendIcon, Mic, MicOff, Smile, Paperclip, Image as ImageIcon, X, Brain, Search, BrainCircuit, Globe, Lightbulb, HeartPulse, MemoryStick } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +19,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -28,9 +36,13 @@ interface ChatInputProps {
   useAdvancedReasoning: boolean;
   useLuvviXThink: boolean;
   useWebSearch: boolean;
+  useSentimentAnalysis?: boolean;
+  useContextMemory?: boolean;
   onToggleAdvancedReasoning: () => void;
   onToggleLuvviXThink: () => void;
   onToggleWebSearch: () => void;
+  onToggleSentimentAnalysis?: () => void;
+  onToggleContextMemory?: () => void;
 }
 
 export const ChatInput = ({ 
@@ -41,9 +53,13 @@ export const ChatInput = ({
   useAdvancedReasoning,
   useLuvviXThink,
   useWebSearch,
+  useSentimentAnalysis = false,
+  useContextMemory = true,
   onToggleAdvancedReasoning,
   onToggleLuvviXThink,
-  onToggleWebSearch
+  onToggleWebSearch,
+  onToggleSentimentAnalysis,
+  onToggleContextMemory
 }: ChatInputProps) => {
   const [message, setMessage] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -198,6 +214,18 @@ export const ChatInput = ({
   const handleLuvviXThinkToggle = () => {
     onToggleLuvviXThink();
   };
+  
+  const handleSentimentAnalysisToggle = () => {
+    if (onToggleSentimentAnalysis) {
+      onToggleSentimentAnalysis();
+    }
+  };
+  
+  const handleContextMemoryToggle = () => {
+    if (onToggleContextMemory) {
+      onToggleContextMemory();
+    }
+  };
 
   useEffect(() => {
     const textarea = textareaRef.current;
@@ -238,61 +266,116 @@ export const ChatInput = ({
         </div>
       )}
       
-      <div className="mb-2 flex items-center justify-center gap-2 flex-wrap">
+      <div className="mb-2 flex items-center justify-center gap-2">
         <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
                 type="button"
-                variant={useAdvancedReasoning ? "default" : "outline"}
+                variant="outline"
                 size="sm"
+                className="h-8 gap-1 text-xs font-medium transition-all relative"
+              >
+                <Brain size={14} className="text-muted-foreground" />
+                <span>LuvviX Fonctionnalités</span>
+                {(useAdvancedReasoning || useLuvviXThink || useWebSearch || useSentimentAnalysis) && (
+                  <span className="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full transform -translate-y-1 translate-x-1"></span>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-56">
+              <DropdownMenuLabel>Intelligence</DropdownMenuLabel>
+              <DropdownMenuItem 
                 onClick={handleAdvancedReasoningToggle}
-                className="h-8 gap-1 text-xs font-medium transition-all"
+                className="cursor-pointer flex items-center gap-2"
               >
-                <BrainCircuit size={14} className={useAdvancedReasoning ? "text-primary-foreground" : "text-muted-foreground"} />
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <BrainCircuit size={14} className={useAdvancedReasoning ? "text-primary" : "text-muted-foreground"} />
+                </div>
                 <span>Raisonnement avancé</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>Réponses plus détaillées avec analyse étape par étape</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant={useLuvviXThink ? "default" : "outline"}
-                size="sm"
+                {useAdvancedReasoning && (
+                  <div className="ml-auto w-2 h-2 bg-primary rounded-full"></div>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem 
                 onClick={handleLuvviXThinkToggle}
-                className="h-8 gap-1 text-xs font-medium transition-all"
+                className="cursor-pointer flex items-center gap-2"
               >
-                <Lightbulb size={14} className={useLuvviXThink ? "text-primary-foreground" : "text-muted-foreground"} />
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <Lightbulb size={14} className={useLuvviXThink ? "text-primary" : "text-muted-foreground"} />
+                </div>
                 <span>LuvviXThink</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>Réflexion approfondie avant de répondre à vos questions</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant={useWebSearch ? "default" : "outline"}
-                size="sm"
+                {useLuvviXThink && (
+                  <div className="ml-auto w-2 h-2 bg-primary rounded-full"></div>
+                )}
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Recherche & Mémoire</DropdownMenuLabel>
+              
+              <DropdownMenuItem 
                 onClick={handleWebSearchToggle}
-                className={`h-8 gap-1 text-xs font-medium transition-all ${useWebSearch ? "animate-pulse" : ""}`}
+                className="cursor-pointer flex items-center gap-2"
               >
-                <Globe size={14} className={useWebSearch ? "text-primary-foreground" : "text-muted-foreground"} />
-                <span>{useWebSearch ? "LuvvixSEARCH ACTIF" : "LuvvixSEARCH"}</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>Recherche sur le web en temps réel pour des réponses actualisées</p>
-            </TooltipContent>
-          </Tooltip>
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <Globe size={14} className={useWebSearch ? "text-primary" : "text-muted-foreground"} />
+                </div>
+                <span>LuvvixSEARCH</span>
+                {useWebSearch && (
+                  <div className="ml-auto w-2 h-2 bg-primary rounded-full"></div>
+                )}
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem 
+                onClick={handleContextMemoryToggle}
+                className="cursor-pointer flex items-center gap-2"
+              >
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <MemoryStick size={14} className={useContextMemory ? "text-primary" : "text-muted-foreground"} />
+                </div>
+                <span>Mémoire de contexte</span>
+                {useContextMemory && (
+                  <div className="ml-auto w-2 h-2 bg-primary rounded-full"></div>
+                )}
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Compréhension émotionnelle</DropdownMenuLabel>
+              
+              <DropdownMenuItem 
+                onClick={handleSentimentAnalysisToggle}
+                className="cursor-pointer flex items-center gap-2"
+              >
+                <div className="w-4 h-4 flex items-center justify-center">
+                  <HeartPulse size={14} className={useSentimentAnalysis ? "text-primary" : "text-muted-foreground"} />
+                </div>
+                <span>Analyse de sentiment</span>
+                {useSentimentAnalysis && (
+                  <div className="ml-auto w-2 h-2 bg-primary rounded-full"></div>
+                )}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {useWebSearch && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant={useWebSearch ? "default" : "outline"}
+                  size="sm"
+                  onClick={handleWebSearchToggle}
+                  className={`h-8 gap-1 text-xs font-medium transition-all ${useWebSearch ? "animate-pulse" : ""}`}
+                >
+                  <Globe size={14} className={useWebSearch ? "text-primary-foreground" : "text-muted-foreground"} />
+                  <span>{useWebSearch ? "SEARCH ACTIF" : "SEARCH"}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p>Recherche web sémantique améliorée</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </TooltipProvider>
       </div>
       

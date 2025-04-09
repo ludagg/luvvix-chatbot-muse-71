@@ -7,8 +7,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
-import { MessageSquare, MessageSquarePlus, Loader2 } from "lucide-react";
+import { MessageSquare, MessageSquarePlus, Loader2, Settings, BrainCircuit, HeartPulse, Globe, MemoryStick, Lightbulb } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -16,7 +18,31 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { ScrollArea } from "./ui/scroll-area";
 
-export function DiscussionsMenu() {
+interface DiscussionsMenuProps {
+  onToggleAdvancedReasoning?: () => void;
+  onToggleLuvviXThink?: () => void;
+  onToggleWebSearch?: () => void;
+  onToggleSentimentAnalysis?: () => void;
+  onToggleContextMemory?: () => void;
+  useAdvancedReasoning?: boolean;
+  useLuvviXThink?: boolean;
+  useWebSearch?: boolean;
+  useSentimentAnalysis?: boolean;
+  useContextMemory?: boolean;
+}
+
+export function DiscussionsMenu({
+  onToggleAdvancedReasoning,
+  onToggleLuvviXThink,
+  onToggleWebSearch,
+  onToggleSentimentAnalysis,
+  onToggleContextMemory,
+  useAdvancedReasoning = false,
+  useLuvviXThink = false,
+  useWebSearch = false,
+  useSentimentAnalysis = false,
+  useContextMemory = true,
+}: DiscussionsMenuProps) {
   const { 
     user, 
     conversations, 
@@ -73,6 +99,74 @@ export function DiscussionsMenu() {
           </DropdownMenuItem>
           
           <DropdownMenuSeparator />
+          
+          {onToggleAdvancedReasoning && (
+            <>
+              <DropdownMenuLabel>Intelligence</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={useAdvancedReasoning}
+                onCheckedChange={onToggleAdvancedReasoning}
+                className="cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <BrainCircuit className="h-4 w-4" />
+                  <span>Raisonnement avancé</span>
+                </div>
+              </DropdownMenuCheckboxItem>
+              
+              <DropdownMenuCheckboxItem
+                checked={useLuvviXThink}
+                onCheckedChange={onToggleLuvviXThink}
+                className="cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4" />
+                  <span>LuvviXThink</span>
+                </div>
+              </DropdownMenuCheckboxItem>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Recherche & Mémoire</DropdownMenuLabel>
+              
+              <DropdownMenuCheckboxItem
+                checked={useWebSearch}
+                onCheckedChange={onToggleWebSearch}
+                className="cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  <span>LuvvixSEARCH</span>
+                </div>
+              </DropdownMenuCheckboxItem>
+              
+              <DropdownMenuCheckboxItem
+                checked={useContextMemory}
+                onCheckedChange={onToggleContextMemory}
+                className="cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <MemoryStick className="h-4 w-4" />
+                  <span>Mémoire de contexte</span>
+                </div>
+              </DropdownMenuCheckboxItem>
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Compréhension</DropdownMenuLabel>
+              
+              <DropdownMenuCheckboxItem
+                checked={useSentimentAnalysis}
+                onCheckedChange={onToggleSentimentAnalysis}
+                className="cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <HeartPulse className="h-4 w-4" />
+                  <span>Analyse de sentiment</span>
+                </div>
+              </DropdownMenuCheckboxItem>
+              
+              <DropdownMenuSeparator />
+            </>
+          )}
           
           {!user ? (
             <div className="text-center py-2 text-xs text-muted-foreground px-2">

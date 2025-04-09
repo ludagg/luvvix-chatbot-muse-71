@@ -274,115 +274,145 @@ export const ChatContainer = () => {
         throw new Error("SerpAPI key is missing. Please add your API key using /key serp YOUR_API_KEY");
       }
       
-      const serpParams = {
-        q: query,
-        api_key: apiKeys.serpApi,
-        google_domain: "google.fr",
-        gl: "fr",
-        hl: "fr",
-        num: 8,
-        output: "json"
-      };
-      
-      const searchParams = new URLSearchParams();
-      for (const [key, value] of Object.entries(serpParams)) {
+      const searchWebWithSerpAPI = async (query: string) => {
+  try {
+    const serpParams = {
+      q: query,
+      api_key: apiKeys.serpApi,
+      google_domain: "google.fr",
+      gl: "fr",
+      hl: "fr",
+      num: 8,
+      output: "json"
+    };
+
+    // Construction plus sécurisée des paramètres URL
+    const searchParams = new URLSearchParams();
+    Object.entries(serpParams).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
         searchParams.append(key, value.toString());
       }
-      
-      const serpUrl = `${SERP_API_URL}?${searchParams.toString()}`;
-      console.log("SerpAPI URL:", serpUrl);
-      
-      const response = await fetch(serpUrl);
-      const responseStatus = response.status;
-      let responseText;
-      
-      try {
-        responseText = await response.text();
-        console.log("SerpAPI raw response:", responseText.substring(0, 500) + "...");
-      } catch (textError) {
-        console.error("Failed to get response text:", textError);
-        responseText = "Could not retrieve response text";
-      }
-      
-      if (!response.ok) {
-        console.error(`SerpAPI Error (${responseStatus}):`, responseText);
-        
-        let errorMessage = "La recherche web a échoué. ";
-        
-        if (responseStatus === 401) {
-          errorMessage += "Votre clé API SerpAPI est invalide ou a expiré.";
-        } else if (responseStatus === 429) {
-          errorMessage += "Vous avez atteint votre limite de requêtes SerpAPI.";
-        } else {
-          errorMessage += "Veuillez vérifier votre clé API ou réessayer plus tard.";
+    });
+
+    const serpUrl = `https://serpapi.com/search?${searchParams.toString()}`;
+    console.log("SerpAPI URL:", serpUrl);
+
+    // Ajout d'un timeout et d'en-têtes
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+    let response;
+    try {
+      response = await fetch(serpUrl, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
         }
-        
-        toast({
-          title: `Erreur SerpAPI (${responseStatus})`,
-          description: errorMessage,
-          variant: "destructive"
-        });
-        
-        throw new Error(`SerpAPI failed with status ${responseStatus}: ${responseText}`);
-      }
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error("Failed to parse SerpAPI response:", parseError);
-        toast({
-          title: "Erreur de format SerpAPI",
-          description: "La réponse de SerpAPI n'était pas au format JSON attendu.",
-          variant: "destructive"
-        });
-        throw new Error("Invalid JSON from SerpAPI");
-      }
-      
-      console.log("SerpAPI search results:", data);
-      
-      const sources: SourceReference[] = [];
-      
-      if (data.organic_results && data.organic_results.length > 0) {
-        data.organic_results.slice(0, 8).forEach((result: any, index: number) => {
-          sources.push({
-            id: index + 1,
-            title: result.title || "Source inconnue",
-            url: result.link || "#",
-            snippet: result.snippet || "Pas de description disponible"
-          });
-        });
-      } else if (data.error) {
-        console.error("SerpAPI returned an error:", data.error);
-        toast({
-          title: "Erreur SerpAPI",
-          description: data.error,
-          variant: "destructive"
-        });
-        throw new Error(`SerpAPI error: ${data.error}`);
+      });
+      clearTimeout(timeout);
+    } catch (fetchError) {
+      console.error("Fetch error:", fetchError);
+      if (fetchError.name === 'AbortError') {
+        throw new Error("La requête a expiré (timeout de 10s)");
       } else {
-        console.warn("SerpAPI returned no organic results");
-        toast({
-          title: "Aucun résultat",
-          description: "SerpAPI n'a retourné aucun résultat pour cette recherche.",
-          variant: "default"
-        });
+        throw new Error(`Échec de la connexion à SerpAPI: ${fetchError.message}`);
       }
-      
-      console.log("Formatted SerpAPI sources:", sources);
-      return sources;
-    } catch (error) {
-      console.error("Error during multi-source web search:", error);
-      
+    }
+
+    // Vérification de la réponse
+    if (!response.ok) {
+      let errorDetails = '';
+      try {
+        errorDetails = await response.text();
+      } catch {} // Ignore si on ne peut pas lire le corps
+
+      console.error(`SerpAPI Error (${response.status}):`, errorDetails);
+
+      let errorMessage = "La recherche web a échoué. ";
+      switch(response.status) {
+        case 401:
+          errorMessage += "Clé API invalide ou expirée.";
+          break;
+        case 429:
+          errorMessage += "Limite de requêtes atteinte.";
+          break;
+        case 404:
+          errorMessage += "Endpoint introuvable. Vérifiez l'URL.";
+          break;
+        default:
+          errorMessage += `Erreur serveur (${response.status}).`;
+      }
+
       toast({
-        title: "Erreur de recherche",
-        description: error instanceof Error ? error.message : "La recherche web a échoué. Veuillez vérifier votre connexion et réessayer.",
+        title: `Erreur SerpAPI (${response.status})`,
+        description: errorMessage,
         variant: "destructive"
       });
-      
-      return [];
+
+      throw new Error(`SerpAPI error: ${response.status} - ${errorDetails}`);
     }
-  };
+
+    // Traitement de la réponse
+    let data;
+    try {
+      data = await response.json();
+      console.log("SerpAPI search results:", data);
+    } catch (parseError) {
+      console.error("JSON parse error:", parseError);
+      toast({
+        title: "Erreur de format",
+        description: "Réponse invalide de SerpAPI",
+        variant: "destructive"
+      });
+      throw new Error("Invalid JSON response from SerpAPI");
+    }
+
+    // Extraction des résultats
+    const sources: SourceReference[] = [];
+    if (data.organic_results?.length > 0) {
+      data.organic_results.slice(0, 8).forEach((result: any, index: number) => {
+        sources.push({
+          id: index + 1,
+          title: result.title?.trim() || "Sans titre",
+          url: result.link || "#",
+          snippet: result.snippet?.trim() || "Pas de description"
+        });
+      });
+    } else if (data.error) {
+      console.error("SerpAPI error:", data.error);
+      toast({
+        title: "Erreur API",
+        description: data.error,
+        variant: "destructive"
+      });
+      throw new Error(data.error);
+    } else {
+      console.warn("Aucun résultat trouvé");
+      toast({
+        title: "Aucun résultat",
+        description: "Aucun résultat trouvé pour cette recherche",
+        variant: "default"
+      });
+    }
+
+    return sources;
+
+  } catch (error) {
+    console.error("Search error:", error);
+    
+    if (!(error instanceof Error)) {
+      error = new Error("Erreur inconnue lors de la recherche");
+    }
+
+    toast({
+      title: "Erreur",
+      description: error.message,
+      variant: "destructive"
+    });
+
+    return [];
+  }
+};
 
   const fetchImage = async (query: string): Promise<string | null> => {
     try {

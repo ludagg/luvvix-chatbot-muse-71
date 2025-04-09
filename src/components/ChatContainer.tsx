@@ -32,7 +32,7 @@ const INITIAL_MESSAGES: Message[] = [
 
 const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
-const SERP_API_KEY = "f8c49e3a2fb3f4d82ddb89ccc9e36fc9a85aeab7"; 
+const SERP_API_KEY = "00cdc35836508e3559df7a87a14bd3401fd26e0dd6a4afc6b1fabf054d026db6"; 
 const SERP_API_URL = "https://serpapi.com/search.json";
 const BRIGHTDATA_API_KEY = "brd-customer-hl_a4fafc73-zone-luvvix:lrxxshdpwp1i";
 const BRIGHTDATA_SEARCH_URL = "https://api.brightdata.com/dca/search";

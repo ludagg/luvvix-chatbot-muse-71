@@ -12,45 +12,20 @@ style.innerHTML = `
 }
 
 .theme-purple {
-  --primary: 168 85 247;
-  --primary-foreground: 255 255 255;
-  --accent: 192 132 252;
-  --accent-foreground: 255 255 255;
-  --ring: 168 85 247;
+  --primary-color: 168 85 247;
+  --secondary-color: 192 132 252;
 }
 
 .theme-blue {
-  --primary: 59 130 246;
-  --primary-foreground: 255 255 255;
-  --accent: 96 165 250;  
-  --accent-foreground: 255 255 255;
-  --ring: 59 130 246;
+  --primary-color: 59 130 246;
+  --secondary-color: 96 165 250;
 }
 
 .theme-green {
-  --primary: 34 197 94;
-  --primary-foreground: 255 255 255;
-  --accent: 74 222 128;
-  --accent-foreground: 255 255 255;
-  --ring: 34 197 94;
+  --primary-color: 34 197 94;
+  --secondary-color: 74 222 128;
 }
 `;
 document.head.appendChild(style);
-
-// Initialize theme from localStorage
-const savedTheme = localStorage.getItem('theme') || 'dark';
-const root = document.documentElement;
-
-// Apply theme classes on initial load
-root.classList.remove('light', 'dark', 'theme-purple', 'theme-blue', 'theme-green');
-if (savedTheme === 'purple') {
-  root.classList.add('dark', 'theme-purple');
-} else if (savedTheme === 'blue') {
-  root.classList.add('dark', 'theme-blue');
-} else if (savedTheme === 'green') {
-  root.classList.add('dark', 'theme-green');
-} else {
-  root.classList.add(savedTheme);
-}
 
 createRoot(document.getElementById("root")!).render(<App />);

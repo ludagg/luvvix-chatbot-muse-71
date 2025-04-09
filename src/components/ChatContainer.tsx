@@ -365,7 +365,7 @@ export const ChatContainer = () => {
         toast({
           title: "Aucun résultat",
           description: "SerpAPI n'a retourné aucun résultat pour cette recherche.",
-          variant: "warning"
+          variant: "default"
         });
       }
       
@@ -654,7 +654,7 @@ export const ChatContainer = () => {
             ${useLuvviXThink ? luvvixThinkInstructions : ''}
             ${sources.length > 0 ? `Voici des résultats de recherche récents qui pourraient être pertinents pour répondre à la question de l'utilisateur:\n\n${sources.map(source => `[${source.id}] ${source.title}\n${source.url}\n${source.snippet}\n\n`).join("")}\n\nPour citer une source dans ta réponse, utilise [cite:X] où X est le numéro de la source (de 1 à ${sources.length}). Cite les sources après chaque fait ou affirmation pour montrer d'où vient l'information. IMPORTANT: Tu DOIS citer au moins 3-4 sources différentes dans ta réponse pour montrer que tu as bien fait des recherches.` : ''}
             ${imageUrl ? `J'ai trouvé une image pertinente pour illustrer ta réponse: ${imageUrl}\nIntègre cette image dans ta réponse si c'est pertinent en utilisant la syntaxe markdown: ![Description](${imageUrl})` : ''}
-
+            
             Nouvelles fonctionnalités de formatage disponibles:
             1. Tu peux utiliser LaTeX pour les formules mathématiques en les entourant de $ pour l'inline ou $$ pour les blocs.
             2. Tu peux créer des tableaux en Markdown avec la syntaxe standard des tableaux.

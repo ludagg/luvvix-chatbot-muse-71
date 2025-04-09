@@ -11,6 +11,7 @@ import { Menu } from "lucide-react";
 import { ConversationSelector } from "./ConversationSelector";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { FloatingActions } from "./FloatingActions";
+import axios from "axios";
 
 const SAMPLE_QUESTIONS = [
   "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",
@@ -177,216 +178,117 @@ export const ChatContainer = () => {
 
   const performWebSearch = async (query: string): Promise<SourceReference[]> => {
     try {
-      console.log("Performing multi-source web search for:", query);
-      
-      try {
-        const googleParams = new URLSearchParams({
-          key: apiKeys.googleSearch,
-          cx: GOOGLE_SEARCH_ENGINE_ID,
-          q: query,
-          num: "8",
-          lr: "lang_fr",
-          hl: "fr"
-        });
-        
-        const googleResponse = await fetch(`${GOOGLE_SEARCH_URL}?${googleParams.toString()}`);
-        
-        if (googleResponse.ok) {
-          const data = await googleResponse.json();
-          console.log("Google search results:", data);
-          
-          const sources: SourceReference[] = [];
-          
-          if (data.items && data.items.length > 0) {
-            data.items.forEach((item: any, index: number) => {
-              sources.push({
-                id: index + 1,
-                title: item.title || "Source inconnue",
-                url: item.link || "#",
-                snippet: item.snippet || "Pas de description disponible"
-              });
-            });
-            
-            console.log("Formatted Google sources:", sources);
-            
-            if (sources.length > 0) {
-              return sources;
-            }
-          }
-        } else {
-          console.warn("Google Search API failed with status:", googleResponse.status);
-          const errorData = await googleResponse.text();
-          console.error("Google Search error details:", errorData);
-        }
-      } catch (googleError) {
-        console.error("Google search failed, trying BrightData:", googleError);
-      }
-      
-      try {
-        const brightDataResponse = await fetch(BRIGHTDATA_SEARCH_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKeys.brightData}`
-          },
-          body: JSON.stringify({
-            search_query: query,
-            max_results: 8,
-            include_snippets: true,
-            language: 'fr',
-          })
-        });
-        
-        if (brightDataResponse.ok) {
-          const data = await brightDataResponse.json();
-          console.log("BrightData search results:", data);
-          
-          const sources: SourceReference[] = [];
-          
-          if (data.results && data.results.length > 0) {
-            data.results.forEach((result: any, index: number) => {
-              sources.push({
-                id: index + 1,
-                title: result.title || "Source inconnue",
-                url: result.url || "#",
-                snippet: result.snippet || "Pas de description disponible"
-              });
-            });
-            
-            console.log("Formatted BrightData sources:", sources);
-            
-            if (sources.length > 0) {
-              return sources;
-            }
-          }
-        } else {
-          console.warn("BrightData API failed with status:", brightDataResponse.status);
-          const errorData = await brightDataResponse.text();
-          console.error("BrightData error details:", errorData);
-        }
-      } catch (brightDataError) {
-        console.error("BrightData search failed, falling back to SerpAPI:", brightDataError);
-      }
-      
-      console.log("Attempting SerpAPI search with key:", apiKeys.serpApi ? "Key exists" : "No key");
+      console.log("Performing web search with SerpAPI for:", query);
       
       if (!apiKeys.serpApi) {
-        throw new Error("SerpAPI key is missing. Please add your API key using /key serp YOUR_API_KEY");
+        console.error("SerpAPI key is missing");
+        toast({
+          title: "Clé API manquante",
+          description: "Veuillez configurer votre clé SerpAPI avec /key serp VOTRE_CLE_API",
+          variant: "destructive"
+        });
+        return [];
       }
       
-      const serpParams = {
+      const url = 'https://serpapi.com/search.json';
+      
+      console.log("SerpAPI request parameters:", {
         q: query,
-        api_key: apiKeys.serpApi,
+        api_key: apiKeys.serpApi ? "Key exists (hidden)" : "No key",
+        engine: 'google',
         google_domain: "google.fr",
         gl: "fr",
         hl: "fr",
-        num: 8,
-        output: "json"
-      };
-      
-      const searchParams = new URLSearchParams();
-      for (const [key, value] of Object.entries(serpParams)) {
-        searchParams.append(key, value.toString());
-      }
-      
-      const serpUrl = `${SERP_API_URL}?${searchParams.toString()}`;
-      console.log("SerpAPI URL:", serpUrl);
-      
-      const response = await fetch(serpUrl);
-      const responseStatus = response.status;
-      let responseText;
-      
-      try {
-        responseText = await response.text();
-        console.log("SerpAPI raw response:", responseText.substring(0, 500) + "...");
-      } catch (textError) {
-        console.error("Failed to get response text:", textError);
-        responseText = "Could not retrieve response text";
-      }
-      
-      if (!response.ok) {
-        console.error(`SerpAPI Error (${responseStatus}):`, responseText);
-        
-        let errorMessage = "La recherche web a échoué. ";
-        
-        if (responseStatus === 401) {
-          errorMessage += "Votre clé API SerpAPI est invalide ou a expiré.";
-        } else if (responseStatus === 429) {
-          errorMessage += "Vous avez atteint votre limite de requêtes SerpAPI.";
-        } else {
-          errorMessage += "Veuillez vérifier votre clé API ou réessayer plus tard.";
-        }
-        
-        toast({
-          title: `Erreur SerpAPI (${responseStatus})`,
-          description: errorMessage,
-          variant: "destructive"
-        });
-        
-        throw new Error(`SerpAPI failed with status ${responseStatus}: ${responseText}`);
-      }
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error("Failed to parse SerpAPI response:", parseError);
-        toast({
-          title: "Erreur de format SerpAPI",
-          description: "La réponse de SerpAPI n'était pas au format JSON attendu.",
-          variant: "destructive"
-        });
-        throw new Error("Invalid JSON from SerpAPI");
-      }
-      
-      console.log("SerpAPI search results:", data);
-      
-      const sources: SourceReference[] = [];
-      
-      if (data.organic_results && data.organic_results.length > 0) {
-        data.organic_results.slice(0, 8).forEach((result: any, index: number) => {
-          sources.push({
-            id: index + 1,
-            title: result.title || "Source inconnue",
-            url: result.link || "#",
-            snippet: result.snippet || "Pas de description disponible"
-          });
-        });
-      } else if (data.error) {
-        console.error("SerpAPI returned an error:", data.error);
-        toast({
-          title: "Erreur SerpAPI",
-          description: data.error,
-          variant: "destructive"
-        });
-        throw new Error(`SerpAPI error: ${data.error}`);
-      } else {
-        console.warn("SerpAPI returned no organic results");
-        toast({
-          title: "Aucun résultat",
-          description: "SerpAPI n'a retourné aucun résultat pour cette recherche.",
-          variant: "default"
-        });
-      }
-      
-      console.log("Formatted SerpAPI sources:", sources);
-      return sources;
-    } catch (error) {
-      console.error("Error during multi-source web search:", error);
-      
-      toast({
-        title: "Erreur de recherche",
-        description: error instanceof Error ? error.message : "La recherche web a échoué. Veuillez vérifier votre connexion et réessayer.",
-        variant: "destructive"
+        num: 8
       });
       
+      try {
+        const response = await axios.get(url, {
+          params: {
+            q: query,
+            api_key: apiKeys.serpApi,
+            engine: 'google',
+            google_domain: "google.fr",
+            gl: "fr",  // Pays : France
+            hl: "fr",  // Langue : français
+            num: 8     // Nombre de résultats
+          }
+        });
+        
+        console.log("SerpAPI response status:", response.status);
+        console.log("SerpAPI response data preview:", 
+          JSON.stringify(response.data).substring(0, 500) + "...");
+        
+        const sources: SourceReference[] = [];
+        
+        if (response.data.organic_results && response.data.organic_results.length > 0) {
+          console.log(`Found ${response.data.organic_results.length} organic results`);
+          
+          response.data.organic_results.forEach((result: any, index: number) => {
+            sources.push({
+              id: index + 1,
+              title: result.title || "Source inconnue",
+              url: result.link || "#",
+              snippet: result.snippet || "Pas de description disponible"
+            });
+          });
+        } else {
+          console.warn("No organic results found in SerpAPI response");
+          toast({
+            title: "Aucun résultat",
+            description: "La recherche n'a retourné aucun résultat pertinent.",
+            variant: "default"
+          });
+        }
+        
+        console.log("Formatted sources:", sources);
+        return sources;
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error("SerpAPI Axios error:", error.message);
+          console.error("Response data:", error.response?.data);
+          console.error("Response status:", error.response?.status);
+          
+          let errorMessage = "La recherche web a échoué. ";
+          
+          if (error.response?.status === 401) {
+            errorMessage += "Votre clé API SerpAPI est invalide ou a expiré.";
+          } else if (error.response?.status === 429) {
+            errorMessage += "Vous avez atteint votre limite de requêtes SerpAPI.";
+          } else {
+            errorMessage += `Erreur: ${error.response?.data?.error || error.message}`;
+          }
+          
+          toast({
+            title: `Erreur SerpAPI (${error.response?.status || 'inconnu'})`,
+            description: errorMessage,
+            variant: "destructive"
+          });
+        } else {
+          console.error("Non-Axios error during SerpAPI search:", error);
+          toast({
+            title: "Erreur de recherche",
+            description: "Une erreur s'est produite lors de la recherche. Veuillez réessayer.",
+            variant: "destructive"
+          });
+        }
+        return [];
+      }
+      
+    } catch (generalError) {
+      console.error("General error in performWebSearch:", generalError);
+      toast({
+        title: "Erreur inattendue",
+        description: "Une erreur inattendue s'est produite. Veuillez réessayer plus tard.",
+        variant: "destructive"
+      });
       return [];
     }
   };
 
   const fetchImage = async (query: string): Promise<string | null> => {
     try {
-      console.log("Searching for images with enhanced API:", query);
+      console.log("Searching for images with SerpAPI:", query);
       
       if (!apiKeys.serpApi) {
         console.error("SerpAPI key is missing for image search");
@@ -398,47 +300,49 @@ export const ChatContainer = () => {
         return null;
       }
       
-      const serpParams = {
-        q: query + " haute qualité",
-        api_key: apiKeys.serpApi,
-        tbm: "isch",
-        google_domain: "google.fr",
-        gl: "fr",
-        hl: "fr",
-        num: 5,
-        output: "json"
-      };
+      const url = 'https://serpapi.com/search.json';
       
-      const searchParams = new URLSearchParams();
-      for (const [key, value] of Object.entries(serpParams)) {
-        searchParams.append(key, value.toString());
-      }
-      
-      const response = await fetch(`${SERP_API_URL}?${searchParams.toString()}`);
-
-      if (!response.ok) {
-        console.error(`Enhanced Image Search API Error: ${response.status}`);
-        const errorText = await response.text();
-        console.error("Image search error details:", errorText);
+      try {
+        const response = await axios.get(url, {
+          params: {
+            q: query + " haute qualité",
+            api_key: apiKeys.serpApi,
+            engine: 'google_images',
+            hl: 'fr',
+            gl: 'fr',
+            num: 5
+          }
+        });
+        
+        console.log("SerpAPI image search response status:", response.status);
+        
+        const images = response.data.images_results || [];
+        if (images.length > 0) {
+          console.log(`Found ${images.length} images in search results`);
+          
+          const highQualityImages = images.filter((img: any) => 
+            img.original && img.original.height > 400 && img.original.width > 400
+          );
+          
+          return highQualityImages.length > 0 
+            ? highQualityImages[0].original.link || highQualityImages[0].link
+            : (images[0].original ? images[0].original.link : images[0].link);
+        }
+        
+        console.warn("No images found in SerpAPI response");
+        return null;
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error("SerpAPI image search error:", error.message);
+          console.error("Response data:", error.response?.data);
+          console.error("Response status:", error.response?.status);
+        } else {
+          console.error("Non-Axios error during image search:", error);
+        }
         return null;
       }
-
-      const data = await response.json();
-      console.log("Enhanced image search results:", data);
-      
-      const images = data.images_results || [];
-      if (images.length > 0) {
-        const highQualityImages = images.filter((img: any) => 
-          img.original && img.original.height > 400 && img.original.width > 400
-        );
-        
-        return highQualityImages.length > 0 
-          ? highQualityImages[0].original.link || highQualityImages[0].link
-          : (images[0].original ? images[0].original.link : images[0].link);
-      }
-      return null;
-    } catch (error) {
-      console.error("Error during enhanced image search:", error);
+    } catch (generalError) {
+      console.error("General error in fetchImage:", generalError);
       return null;
     }
   };

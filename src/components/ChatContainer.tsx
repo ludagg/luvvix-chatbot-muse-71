@@ -33,7 +33,7 @@ const INITIAL_MESSAGES: Message[] = [
 const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
 const SERP_API_KEY = "00cdc35836508e3559df7a87a14bd3401fd26e0dd6a4afc6b1fabf054d026db6"; 
-const SERP_API_URL = "https://serpapi.com/search.json";
+const SERP_API_URL = "https://serpapi.com/search";
 const BRIGHTDATA_API_KEY = "brd-customer-hl_a4fafc73-zone-luvvix:lrxxshdpwp1i";
 const BRIGHTDATA_SEARCH_URL = "https://api.brightdata.com/dca/search";
 
@@ -215,6 +215,8 @@ export const ChatContainer = () => {
           }
         } else {
           console.warn("Google Search API failed with status:", googleResponse.status);
+          const errorData = await googleResponse.text();
+          console.error("Google Search error details:", errorData);
         }
       } catch (googleError) {
         console.error("Google search failed, trying BrightData:", googleError);
@@ -259,47 +261,111 @@ export const ChatContainer = () => {
           }
         } else {
           console.warn("BrightData API failed with status:", brightDataResponse.status);
+          const errorData = await brightDataResponse.text();
+          console.error("BrightData error details:", errorData);
         }
       } catch (brightDataError) {
         console.error("BrightData search failed, falling back to SerpAPI:", brightDataError);
       }
       
-      const searchParams = new URLSearchParams({
+      console.log("Attempting SerpAPI search with key:", apiKeys.serpApi ? "Key exists" : "No key");
+      
+      if (!apiKeys.serpApi) {
+        throw new Error("SerpAPI key is missing. Please add your API key using /key serp YOUR_API_KEY");
+      }
+      
+      const serpParams = {
         q: query,
         api_key: apiKeys.serpApi,
-        num: "8",
+        google_domain: "google.fr",
         gl: "fr",
         hl: "fr",
-      });
+        num: 8,
+        output: "json"
+      };
       
-      const response = await fetch(`${SERP_API_URL}?${searchParams.toString()}`);
-
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(serpParams)) {
+        searchParams.append(key, value.toString());
+      }
+      
+      const serpUrl = `${SERP_API_URL}?${searchParams.toString()}`;
+      console.log("SerpAPI URL:", serpUrl);
+      
+      const response = await fetch(serpUrl);
+      const responseStatus = response.status;
+      let responseText;
+      
+      try {
+        responseText = await response.text();
+        console.log("SerpAPI raw response:", responseText.substring(0, 500) + "...");
+      } catch (textError) {
+        console.error("Failed to get response text:", textError);
+        responseText = "Could not retrieve response text";
+      }
+      
       if (!response.ok) {
-        console.error(`SerpAPI Error: ${response.status}`);
+        console.error(`SerpAPI Error (${responseStatus}):`, responseText);
+        
+        let errorMessage = "La recherche web a échoué. ";
+        
+        if (responseStatus === 401) {
+          errorMessage += "Votre clé API SerpAPI est invalide ou a expiré.";
+        } else if (responseStatus === 429) {
+          errorMessage += "Vous avez atteint votre limite de requêtes SerpAPI.";
+        } else {
+          errorMessage += "Veuillez vérifier votre clé API ou réessayer plus tard.";
+        }
         
         toast({
-          title: "Erreur de recherche",
-          description: "La recherche web a échoué. Veuillez vérifier votre clé API ou réessayer plus tard.",
+          title: `Erreur SerpAPI (${responseStatus})`,
+          description: errorMessage,
           variant: "destructive"
         });
         
-        return [];
+        throw new Error(`SerpAPI failed with status ${responseStatus}: ${responseText}`);
       }
-
-      const data = await response.json();
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("Failed to parse SerpAPI response:", parseError);
+        toast({
+          title: "Erreur de format SerpAPI",
+          description: "La réponse de SerpAPI n'était pas au format JSON attendu.",
+          variant: "destructive"
+        });
+        throw new Error("Invalid JSON from SerpAPI");
+      }
+      
       console.log("SerpAPI search results:", data);
       
-      const organicResults = data.organic_results || [];
       const sources: SourceReference[] = [];
       
-      if (organicResults.length > 0) {
-        organicResults.slice(0, 8).forEach((result: any, index: number) => {
+      if (data.organic_results && data.organic_results.length > 0) {
+        data.organic_results.slice(0, 8).forEach((result: any, index: number) => {
           sources.push({
             id: index + 1,
             title: result.title || "Source inconnue",
             url: result.link || "#",
             snippet: result.snippet || "Pas de description disponible"
           });
+        });
+      } else if (data.error) {
+        console.error("SerpAPI returned an error:", data.error);
+        toast({
+          title: "Erreur SerpAPI",
+          description: data.error,
+          variant: "destructive"
+        });
+        throw new Error(`SerpAPI error: ${data.error}`);
+      } else {
+        console.warn("SerpAPI returned no organic results");
+        toast({
+          title: "Aucun résultat",
+          description: "SerpAPI n'a retourné aucun résultat pour cette recherche.",
+          variant: "warning"
         });
       }
       
@@ -310,7 +376,7 @@ export const ChatContainer = () => {
       
       toast({
         title: "Erreur de recherche",
-        description: "La recherche web a échoué. Veuillez vérifier votre connexion et réessayer.",
+        description: error instanceof Error ? error.message : "La recherche web a échoué. Veuillez vérifier votre connexion et réessayer.",
         variant: "destructive"
       });
       
@@ -322,19 +388,38 @@ export const ChatContainer = () => {
     try {
       console.log("Searching for images with enhanced API:", query);
       
-      const searchParams = new URLSearchParams({
+      if (!apiKeys.serpApi) {
+        console.error("SerpAPI key is missing for image search");
+        toast({
+          title: "Clé API manquante",
+          description: "Veuillez configurer votre clé SerpAPI avec /key serp VOTRE_CLE_API",
+          variant: "destructive"
+        });
+        return null;
+      }
+      
+      const serpParams = {
         q: query + " haute qualité",
-        api_key: SERP_API_KEY,
+        api_key: apiKeys.serpApi,
         tbm: "isch",
-        num: "5",
+        google_domain: "google.fr",
         gl: "fr",
         hl: "fr",
-      });
+        num: 5,
+        output: "json"
+      };
+      
+      const searchParams = new URLSearchParams();
+      for (const [key, value] of Object.entries(serpParams)) {
+        searchParams.append(key, value.toString());
+      }
       
       const response = await fetch(`${SERP_API_URL}?${searchParams.toString()}`);
 
       if (!response.ok) {
         console.error(`Enhanced Image Search API Error: ${response.status}`);
+        const errorText = await response.text();
+        console.error("Image search error details:", errorText);
         return null;
       }
 
@@ -348,8 +433,8 @@ export const ChatContainer = () => {
         );
         
         return highQualityImages.length > 0 
-          ? highQualityImages[0].original 
-          : images[0].original;
+          ? highQualityImages[0].original.link || highQualityImages[0].link
+          : (images[0].original ? images[0].original.link : images[0].link);
       }
       return null;
     } catch (error) {
@@ -500,7 +585,7 @@ export const ChatContainer = () => {
               Suis ces étapes avec une réflexion approfondie :
               1. Comprendre la question: Reformule la question avec tes propres mots pour en saisir la véritable essence et les interrogations sous-jacentes.
               2. Identifier les concepts clés: Liste et analyse les concepts et termes importants liés à cette question.
-              3. Évaluer différentes perspectives: Considère plusieurs angles d'approche possibles, en incluant des perspectives contradictoires.
+              3. Évaluer différentes perspectives: Considères plusieurs angles d'approche possibles, en incluant des perspectives contradictoires.
               4. Analyser les implications: Réfléchis aux conséquences logiques, aux ramifications et aux considérations éthiques si pertinent.
               5. Explorer la profondeur: Cherche les nuances, les subtilités et les connexions non évidentes liées à cette question.
               6. Plan de réponse: Prépare un plan détaillé pour une réponse structurée et approfondie.

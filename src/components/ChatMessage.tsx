@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -119,18 +118,15 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
               a: ({ node, ...props }) => (
                 <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" />
               ),
-              code: ({ node, className, children, ...props }) => {
-                if (props.className === undefined && !className) {
-                  // This is an inline code block
+              code: ({ node, ...props }) => {
+                if (!props.className) {
                   return (
-                    <code className={cn("bg-muted px-1 py-0.5 rounded text-sm font-mono", className)} {...props}>
-                      {children}
-                    </code>
+                    <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono" {...props} />
                   );
                 }
                 
-                const codeContent = String(children).replace(/\n$/, '');
-                const language = className ? className.replace('language-', '') : '';
+                const codeContent = String(props.children).replace(/\n$/, '');
+                const language = props.className ? props.className.replace('language-', '') : '';
                 const codeBlockId = `code-${message.id}-${language}-${codeContent.length}`;
                 
                 return (
@@ -148,7 +144,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
                         {isCodeBlockCopied[codeBlockId] ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                       </Button>
                     </div>
-                    <pre className={cn("p-4 overflow-x-auto bg-muted/40 rounded-b-md text-sm font-mono", className)}>
+                    <pre className="p-4 overflow-x-auto bg-muted/40 rounded-b-md text-sm font-mono">
                       <code>{codeContent}</code>
                     </pre>
                   </div>

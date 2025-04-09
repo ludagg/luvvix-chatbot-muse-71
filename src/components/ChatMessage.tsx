@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { Check, Copy, ThumbsDown, ThumbsUp, RefreshCw, BookOpenCheck, Globe, BrainCircuit, Code, CodeSquare, Lightbulb, Info } from "lucide-react";
+import { Check, Copy, ThumbsDown, ThumbsUp, RefreshCw, BookOpenCheck, Globe, BrainCircuit, Code, CodeSquare, Lightbulb, Info, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -136,6 +137,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
                         {language || 'Code'}
                       </div>
                       <Button
+                        type="button"
                         size="icon"
                         variant="ghost"
                         className="h-6 w-6"
@@ -211,16 +213,29 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
                 <Tooltip>
                   <TooltipTrigger>
                     <Badge 
-                      variant="outline" 
+                      variant={countSources() > 0 ? "outline" : "destructive"}
                       className="px-1.5 gap-1 hover:bg-accent cursor-help"
-                      onClick={() => setShowSourcesDialog(true)}
+                      onClick={() => countSources() > 0 && setShowSourcesDialog(true)}
                     >
-                      <Globe className="h-3 w-3" />
-                      <span>{countSources()}</span>
+                      {countSources() > 0 ? (
+                        <>
+                          <Globe className="h-3 w-3" />
+                          <span>{countSources()}</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertTriangle className="h-3 w-3" />
+                          <span>0</span>
+                        </>
+                      )}
                     </Badge>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Recherche web avec {countSources()} sources</p>
+                    {countSources() > 0 ? (
+                      <p>Recherche web avec {countSources()} sources</p>
+                    ) : (
+                      <p>Recherche web activée mais aucune source trouvée. Vérifiez votre API key.</p>
+                    )}
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

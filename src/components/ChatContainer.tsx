@@ -85,6 +85,13 @@ export const ChatContainer = () => {
   const [useAdvancedReasoning, setUseAdvancedReasoning] = useState(false);
   const [useLuvviXThink, setUseLuvviXThink] = useState(false);
   const [useWebSearch, setUseWebSearch] = useState(false);
+  const [apiKeys, setApiKeys] = useState({
+    serpApi: SERP_API_KEY,
+    googleSearch: GOOGLE_SEARCH_API_KEY,
+    brightData: BRIGHTDATA_API_KEY,
+  });
+  
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -174,7 +181,7 @@ export const ChatContainer = () => {
       
       try {
         const googleParams = new URLSearchParams({
-          key: GOOGLE_SEARCH_API_KEY,
+          key: apiKeys.googleSearch,
           cx: GOOGLE_SEARCH_ENGINE_ID,
           q: query,
           num: "8",
@@ -201,8 +208,13 @@ export const ChatContainer = () => {
             });
             
             console.log("Formatted Google sources:", sources);
-            return sources;
+            
+            if (sources.length > 0) {
+              return sources;
+            }
           }
+        } else {
+          console.warn("Google Search API failed with status:", googleResponse.status);
         }
       } catch (googleError) {
         console.error("Google search failed, trying BrightData:", googleError);
@@ -213,7 +225,7 @@ export const ChatContainer = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${BRIGHTDATA_API_KEY}`
+            'Authorization': `Bearer ${apiKeys.brightData}`
           },
           body: JSON.stringify({
             search_query: query,
@@ -240,8 +252,13 @@ export const ChatContainer = () => {
             });
             
             console.log("Formatted BrightData sources:", sources);
-            return sources;
+            
+            if (sources.length > 0) {
+              return sources;
+            }
           }
+        } else {
+          console.warn("BrightData API failed with status:", brightDataResponse.status);
         }
       } catch (brightDataError) {
         console.error("BrightData search failed, falling back to SerpAPI:", brightDataError);
@@ -249,7 +266,7 @@ export const ChatContainer = () => {
       
       const searchParams = new URLSearchParams({
         q: query,
-        api_key: SERP_API_KEY,
+        api_key: apiKeys.serpApi,
         num: "8",
         gl: "fr",
         hl: "fr",
@@ -258,7 +275,14 @@ export const ChatContainer = () => {
       const response = await fetch(`${SERP_API_URL}?${searchParams.toString()}`);
 
       if (!response.ok) {
-        console.error(`Search API Error: ${response.status}`);
+        console.error(`SerpAPI Error: ${response.status}`);
+        
+        toast({
+          title: "Erreur de recherche",
+          description: "La recherche web a échoué. Veuillez vérifier votre clé API ou réessayer plus tard.",
+          variant: "destructive"
+        });
+        
         return [];
       }
 
@@ -283,6 +307,13 @@ export const ChatContainer = () => {
       return sources;
     } catch (error) {
       console.error("Error during multi-source web search:", error);
+      
+      toast({
+        title: "Erreur de recherche",
+        description: "La recherche web a échoué. Veuillez vérifier votre connexion et réessayer.",
+        variant: "destructive"
+      });
+      
       return [];
     }
   };
@@ -383,6 +414,36 @@ export const ChatContainer = () => {
   const handleSendMessage = async (content: string) => {
     setShouldAutoScroll(true);
     
+    if (content.startsWith("/key ")) {
+      const parts = content.split(" ");
+      if (parts.length >= 3) {
+        const service = parts[1].toLowerCase();
+        const key = parts[2];
+        
+        if (service === "serp" || service === "serpapi") {
+          setApiKeys(prev => ({ ...prev, serpApi: key }));
+          toast({
+            title: "Clé API mise à jour",
+            description: "Votre clé SerpAPI a été mise à jour avec succès.",
+          });
+        } else if (service === "google" || service === "googlesearch") {
+          setApiKeys(prev => ({ ...prev, googleSearch: key }));
+          toast({
+            title: "Clé API mise à jour",
+            description: "Votre clé Google Search a été mise à jour avec succès.",
+          });
+        } else if (service === "bright" || service === "brightdata") {
+          setApiKeys(prev => ({ ...prev, brightData: key }));
+          toast({
+            title: "Clé API mise à jour",
+            description: "Votre clé BrightData a été mise à jour avec succès.",
+          });
+        }
+        
+        return;
+      }
+    }
+    
     const userMessage: Message = {
       id: nanoid(),
       role: "user",
@@ -433,19 +494,20 @@ export const ChatContainer = () => {
           role: "user",
           parts: [
             {
-              text: `Tu es LuvviXThink, un processus de réflexion préliminaire. 
+              text: `Tu es LuvviXThink, un processus de réflexion préliminaire de très haut niveau. 
               Je vais te donner une question et tu vas l'analyser en profondeur pour toi-même, sans donner encore la réponse finale.
               
-              Suis ces étapes:
-              1. Comprendre la question: Reformule la question avec tes propres mots pour en saisir l'essence.
-              2. Identifier les concepts clés: Liste les concepts et termes importants liés à cette question.
-              3. Évaluer différentes perspectives: Considère plusieurs angles d'approche possibles.
-              4. Analyser les implications: Réfléchis aux conséquences logiques et aux ramifications.
-              5. Plan de réponse: Prépare un plan pour une réponse structurée.
+              Suis ces étapes avec une réflexion approfondie :
+              1. Comprendre la question: Reformule la question avec tes propres mots pour en saisir la véritable essence et les interrogations sous-jacentes.
+              2. Identifier les concepts clés: Liste et analyse les concepts et termes importants liés à cette question.
+              3. Évaluer différentes perspectives: Considère plusieurs angles d'approche possibles, en incluant des perspectives contradictoires.
+              4. Analyser les implications: Réfléchis aux conséquences logiques, aux ramifications et aux considérations éthiques si pertinent.
+              5. Explorer la profondeur: Cherche les nuances, les subtilités et les connexions non évidentes liées à cette question.
+              6. Plan de réponse: Prépare un plan détaillé pour une réponse structurée et approfondie.
               
               Question de l'utilisateur: "${content}"
               
-              Réponds uniquement avec ton processus de réflexion interne, comme si tu prenais des notes pour toi-même.`
+              Réponds avec ton processus de réflexion interne détaillé, comme si tu prenais des notes très approfondies pour toi-même. Utilise un langage philosophique et analytique de haut niveau.`
             }
           ]
         };
@@ -461,7 +523,7 @@ export const ChatContainer = () => {
               temperature: 0.2,
               topK: 40,
               topP: 0.8,
-              maxOutputTokens: 1024,
+              maxOutputTokens: 1200,
             },
           }),
         });
@@ -484,13 +546,15 @@ export const ChatContainer = () => {
       
       Ta réponse doit être structurée, factuelle, et approfondie tout en restant accessible.`;
 
-      const luvvixThinkInstructions = `
-      Je vais d'abord partager mon processus de réflexion préliminaire LuvviXThink sur cette question, puis te donner ma réponse complète:
+      const luvvixThinkInstructions = luvvixThinkResponse ? `
+      IMPORTANT: Tu dois intégrer complètement mon processus de réflexion LuvviXThink dans ta réponse finale - ne te contente pas de copier/coller, mais utilise-le pour construire une réponse plus profonde et nuancée.
       
-      **Processus de réflexion LuvviXThink:**
-      ${luvvixThinkResponse || "Analyse préliminaire non disponible"}
+      Voici mon analyse préliminaire LuvviXThink que tu dois intégrer et développer :
       
-      **Ma réponse complète:**`;
+      ${luvvixThinkResponse}
+      
+      Ta réponse DOIT montrer l'influence claire de cette analyse approfondie. Reformule et développe ces concepts dans ta réponse complète, avec un niveau d'analyse plus sophistiqué que d'habitude.` 
+      : "Tu dois fournir une réponse très approfondie et sophistiquée à cette question.";
 
       const systemMessage = {
         role: "user",
@@ -536,6 +600,9 @@ export const ChatContainer = () => {
         parts: [{ text: content }],
       });
 
+      const temperature = useLuvviXThink ? 0.5 : (useAdvancedReasoning ? 0.7 : 1.0);
+      const maxOutputTokens = useLuvviXThink ? 1800 : (useAdvancedReasoning ? 1500 : 1024);
+
       const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
         method: "POST",
         headers: {
@@ -544,10 +611,10 @@ export const ChatContainer = () => {
         body: JSON.stringify({
           contents: conversationHistory,
           generationConfig: {
-            temperature: useAdvancedReasoning || useLuvviXThink ? 0.7 : 1.0,
+            temperature: temperature,
             topK: 50,
             topP: 0.9,
-            maxOutputTokens: useAdvancedReasoning || useLuvviXThink ? 1500 : 1024,
+            maxOutputTokens: maxOutputTokens,
           },
         }),
       });
@@ -885,6 +952,16 @@ export const ChatContainer = () => {
     setUseWebSearch(!useWebSearch);
   };
 
+  const updateApiKey = (service: string, key: string) => {
+    if (service === 'serp') {
+      setApiKeys(prev => ({ ...prev, serpApi: key }));
+    } else if (service === 'google') {
+      setApiKeys(prev => ({ ...prev, googleSearch: key }));
+    } else if (service === 'bright') {
+      setApiKeys(prev => ({ ...prev, brightData: key }));
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">      
       <div 
@@ -933,6 +1010,13 @@ export const ChatContainer = () => {
                 onToggleLuvviXThink={toggleLuvviXThink}
                 onToggleWebSearch={toggleWebSearch}
               />
+              
+              {useWebSearch && (
+                <div className="text-xs text-center mt-2 text-muted-foreground">
+                  <p>Pour configurer vos clés API, tapez <code>/key [service] [clé]</code> (ex: "/key serp votre_clé_api")</p>
+                  <p>Services supportés: serp, google, bright</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

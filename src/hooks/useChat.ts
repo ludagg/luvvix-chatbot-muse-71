@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { nanoid } from "nanoid";
 import { Message, SourceReference } from "@/components/ChatMessage";
@@ -492,7 +491,7 @@ export const useChat = (initialMessages: Message[]) => {
   const toggleLuvviXThink = () => {
     setUseLuvviXThink(!useLuvviXThink);
     if (!useLuvviXThink) {
-      setUseAdvancedReasoning(false);
+      setUseAdvancedReasoning(true);
     }
   };
 

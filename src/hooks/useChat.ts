@@ -3,8 +3,7 @@ import { nanoid } from "nanoid";
 import { Message, SourceReference } from "@/components/ChatMessage";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useWebSearch } from "./useWebSearch";
-import { formatSourceCitations } from "@/utils/formatters";
+import * as WebSearchHook from "./useWebSearch";
 
 const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
@@ -35,7 +34,7 @@ export const useChat = (initialMessages: Message[]) => {
     saveCurrentConversation,
     isPro
   } = useAuth();
-  const { searchWeb, searchImage } = useWebSearch();
+  const { searchWeb, searchImage } = WebSearchHook.useWebSearch();
   
   const scrollToBottom = () => {
     if (messagesEndRef.current) {

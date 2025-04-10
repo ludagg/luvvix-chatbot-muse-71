@@ -33,7 +33,7 @@ export const useChat = (initialMessages: Message[]) => {
     user, 
     currentConversationId, 
     saveCurrentConversation,
-    isPro = false,
+    isPro
   } = useAuth();
   const { searchWeb, searchImage } = useWebSearch();
   

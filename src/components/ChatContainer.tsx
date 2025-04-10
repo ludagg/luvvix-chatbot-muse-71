@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, Message, SourceReference } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
@@ -33,15 +34,8 @@ const INITIAL_MESSAGES: Message[] = [
 
 const GEMINI_API_KEY = "AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
-const SERP_API_KEY = "00cdc35836508e3559df7a87a14bd3401fd26e0dd6a4afc6b1fabf054d026db6"; 
-const SERP_API_URL = "https://serpapi.com/search";
-const BRIGHTDATA_API_KEY = "brd-customer-hl_a4fafc73-zone-luvvix:lrxxshdpwp1i";
-const BRIGHTDATA_SEARCH_URL = "https://api.brightdata.com/dca/search";
 
-const GOOGLE_SEARCH_API_KEY = "AIzaSyDvNGx_B_JV1tZZH2q-d63DXMpJZ_J6mDw";
-const GOOGLE_SEARCH_ENGINE_ID = "c32b4afa82f1648c4";
-const GOOGLE_SEARCH_URL = "https://www.googleapis.com/customsearch/v1";
-
+// Fonction pour formater les citations de sources
 const formatSourceCitations = (content: string, sources: SourceReference[]): string => {
   let formattedContent = content;
   
@@ -86,14 +80,7 @@ export const ChatContainer = () => {
   const [useAdvancedReasoning, setUseAdvancedReasoning] = useState(false);
   const [useLuvviXThink, setUseLuvviXThink] = useState(false);
   const [useWebSearch, setUseWebSearch] = useState(false);
-  const [apiKeys, setApiKeys] = useState({
-    serpApi: SERP_API_KEY,
-    googleSearch: GOOGLE_SEARCH_API_KEY,
-    brightData: BRIGHTDATA_API_KEY,
-  });
   
-  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
-
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -178,92 +165,61 @@ export const ChatContainer = () => {
 
   const performWebSearch = async (query: string): Promise<SourceReference[]> => {
     try {
-      console.log("Performing web search with SerpAPI for:", query);
+      console.log("Performing web search with DuckDuckGo for:", query);
       
-      if (!apiKeys.serpApi) {
-        console.error("SerpAPI key is missing");
-        toast({
-          title: "Clé API manquante",
-          description: "Veuillez configurer votre clé SerpAPI avec /key serp VOTRE_CLE_API",
-          variant: "destructive"
-        });
-        return [];
-      }
-      
-      const url = 'https://serpapi.com/search.json';
-      
-      console.log("SerpAPI request parameters:", {
-        q: query,
-        api_key: apiKeys.serpApi ? "Key exists (hidden)" : "No key",
-        engine: 'duckduckgo',
-        gl: "fr",
-        hl: "fr",
-        num: 8
-      });
+      // Utilisation de l'API gratuite de DuckDuckGo
+      const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&pretty=1`;
       
       try {
-        const response = await axios.get(url, {
-          params: {
-            q: query,
-            api_key: apiKeys.serpApi,
-            engine: 'duckduckgo',
-            gl: "fr",  // Pays : France
-            hl: "fr",  // Langue : français
-            num: 8     // Nombre de résultats
-          }
-        });
+        const response = await axios.get(url);
         
-        console.log("SerpAPI response status:", response.status);
-        console.log("SerpAPI response data preview:", 
+        console.log("DuckDuckGo response status:", response.status);
+        console.log("DuckDuckGo response data preview:", 
           JSON.stringify(response.data).substring(0, 500) + "...");
         
         const sources: SourceReference[] = [];
         
-        if (response.data.organic_results && response.data.organic_results.length > 0) {
-          console.log(`Found ${response.data.organic_results.length} organic results`);
-          
-          response.data.organic_results.forEach((result: any, index: number) => {
-            sources.push({
-              id: index + 1,
-              title: result.title || "Source inconnue",
-              url: result.link || "#",
-              snippet: result.snippet || "Pas de description disponible"
-            });
+        // Traitement des résultats abstracts (réponses principales)
+        if (response.data.AbstractText) {
+          sources.push({
+            id: 1,
+            title: response.data.AbstractSource || "DuckDuckGo Abstract",
+            url: response.data.AbstractURL || "#",
+            snippet: response.data.AbstractText || "Pas de description disponible"
           });
-        } else {
-          console.warn("No organic results found in SerpAPI response");
-          toast({
-            title: "Aucun résultat",
-            description: "La recherche n'a retourné aucun résultat pertinent.",
-            variant: "default"
+        }
+        
+        // Traitement des résultats liés (Related Topics)
+        if (response.data.RelatedTopics && response.data.RelatedTopics.length > 0) {
+          console.log(`Found ${response.data.RelatedTopics.length} related topics`);
+          
+          response.data.RelatedTopics.forEach((topic: any, index: number) => {
+            if (topic.Text && !topic.Topics) { // Exclure les catégories
+              sources.push({
+                id: sources.length + 1,
+                title: topic.Text.substring(0, 50) || "Sujet lié",
+                url: topic.FirstURL || "#",
+                snippet: topic.Text || "Pas de description disponible"
+              });
+            }
           });
         }
         
         console.log("Formatted sources:", sources);
-        return sources;
+        return sources.slice(0, 8); // Limiter à 8 résultats
       } catch (error) {
         if (axios.isAxiosError(error)) {
-          console.error("SerpAPI Axios error:", error.message);
+          console.error("DuckDuckGo API error:", error.message);
           console.error("Response data:", error.response?.data);
           console.error("Response status:", error.response?.status);
           
-          let errorMessage = "La recherche web a échoué. ";
-          
-          if (error.response?.status === 401) {
-            errorMessage += "Votre clé API SerpAPI est invalide ou a expiré.";
-          } else if (error.response?.status === 429) {
-            errorMessage += "Vous avez atteint votre limite de requêtes SerpAPI.";
-          } else {
-            errorMessage += `Erreur: ${error.response?.data?.error || error.message}`;
-          }
-          
           toast({
-            title: `Erreur SerpAPI (${error.response?.status || 'inconnu'})`,
-            description: errorMessage,
+            title: `Erreur de recherche (${error.response?.status || 'inconnu'})`,
+            description: `La recherche web a échoué. Erreur: ${error.response?.data?.error || error.message}`,
             variant: "destructive"
           });
         } else {
-          console.error("Non-Axios error during SerpAPI search:", error);
+          console.error("Non-Axios error during DuckDuckGo search:", error);
           toast({
             title: "Erreur de recherche",
             description: "Une erreur s'est produite lors de la recherche. Veuillez réessayer.",
@@ -286,59 +242,13 @@ export const ChatContainer = () => {
 
   const fetchImage = async (query: string): Promise<string | null> => {
     try {
-      console.log("Searching for images with SerpAPI:", query);
+      console.log("Searching for images:", query);
       
-      if (!apiKeys.serpApi) {
-        console.error("SerpAPI key is missing for image search");
-        toast({
-          title: "Clé API manquante",
-          description: "Veuillez configurer votre clé SerpAPI avec /key serp VOTRE_CLE_API",
-          variant: "destructive"
-        });
-        return null;
-      }
+      // Pour l'instant, aucune API gratuite fiable pour les images
+      // On pourrait intégrer une API comme Unsplash ou Pexels ici
+      console.log("Image search not implemented without API key");
+      return null;
       
-      const url = 'https://serpapi.com/search.json';
-      
-      try {
-        const response = await axios.get(url, {
-          params: {
-            q: query + " haute qualité",
-            api_key: apiKeys.serpApi,
-            engine: 'duckduckgo_images',
-            hl: 'fr',
-            gl: 'fr',
-            num: 5
-          }
-        });
-        
-        console.log("SerpAPI image search response status:", response.status);
-        
-        const images = response.data.images_results || [];
-        if (images.length > 0) {
-          console.log(`Found ${images.length} images in search results`);
-          
-          const highQualityImages = images.filter((img: any) => 
-            img.original && img.original.height > 400 && img.original.width > 400
-          );
-          
-          return highQualityImages.length > 0 
-            ? highQualityImages[0].original.link || highQualityImages[0].link
-            : (images[0].original ? images[0].original.link : images[0].link);
-        }
-        
-        console.warn("No images found in SerpAPI response");
-        return null;
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          console.error("SerpAPI image search error:", error.message);
-          console.error("Response data:", error.response?.data);
-          console.error("Response status:", error.response?.status);
-        } else {
-          console.error("Non-Axios error during image search:", error);
-        }
-        return null;
-      }
     } catch (generalError) {
       console.error("General error in fetchImage:", generalError);
       return null;
@@ -400,36 +310,6 @@ export const ChatContainer = () => {
 
   const handleSendMessage = async (content: string) => {
     setShouldAutoScroll(true);
-    
-    if (content.startsWith("/key ")) {
-      const parts = content.split(" ");
-      if (parts.length >= 3) {
-        const service = parts[1].toLowerCase();
-        const key = parts[2];
-        
-        if (service === "serp" || service === "serpapi") {
-          setApiKeys(prev => ({ ...prev, serpApi: key }));
-          toast({
-            title: "Clé API mise à jour",
-            description: "Votre clé SerpAPI a été mise à jour avec succès.",
-          });
-        } else if (service === "google" || service === "googlesearch") {
-          setApiKeys(prev => ({ ...prev, googleSearch: key }));
-          toast({
-            title: "Clé API mise à jour",
-            description: "Votre clé Google Search a été mise à jour avec succès.",
-          });
-        } else if (service === "bright" || service === "brightdata") {
-          setApiKeys(prev => ({ ...prev, brightData: key }));
-          toast({
-            title: "Clé API mise à jour",
-            description: "Votre clé BrightData a été mise à jour avec succès.",
-          });
-        }
-        
-        return;
-      }
-    }
     
     const userMessage: Message = {
       id: nanoid(),
@@ -890,10 +770,6 @@ export const ChatContainer = () => {
         saveCurrentConversation(finalMessages as any);
       }
       
-      toast({
-        title: "Réponse régénérée",
-        description: "Une nouvelle réponse a été générée avec succès.",
-      });
     } catch (error) {
       console.error("Erreur lors de la régénération :", error);
       toast({
@@ -937,16 +813,6 @@ export const ChatContainer = () => {
 
   const toggleWebSearch = () => {
     setUseWebSearch(!useWebSearch);
-  };
-
-  const updateApiKey = (service: string, key: string) => {
-    if (service === 'serp') {
-      setApiKeys(prev => ({ ...prev, serpApi: key }));
-    } else if (service === 'google') {
-      setApiKeys(prev => ({ ...prev, googleSearch: key }));
-    } else if (service === 'bright') {
-      setApiKeys(prev => ({ ...prev, brightData: key }));
-    }
   };
 
   return (
@@ -997,13 +863,6 @@ export const ChatContainer = () => {
                 onToggleLuvviXThink={toggleLuvviXThink}
                 onToggleWebSearch={toggleWebSearch}
               />
-              
-              {useWebSearch && (
-                <div className="text-xs text-center mt-2 text-muted-foreground">
-                  <p>Pour configurer vos clés API, tapez <code>/key [service] [clé]</code> (ex: "/key serp votre_clé_api")</p>
-                  <p>Services supportés: serp, google, bright</p>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -1011,3 +870,4 @@ export const ChatContainer = () => {
     </div>
   );
 };
+

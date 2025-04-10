@@ -195,8 +195,7 @@ export const ChatContainer = () => {
       console.log("SerpAPI request parameters:", {
         q: query,
         api_key: apiKeys.serpApi ? "Key exists (hidden)" : "No key",
-        engine: 'google',
-        google_domain: "google.fr",
+        engine: 'duckduckgo',
         gl: "fr",
         hl: "fr",
         num: 8
@@ -207,8 +206,7 @@ export const ChatContainer = () => {
           params: {
             q: query,
             api_key: apiKeys.serpApi,
-            engine: 'google',
-            google_domain: "google.fr",
+            engine: 'duckduckgo',
             gl: "fr",  // Pays : France
             hl: "fr",  // Langue : français
             num: 8     // Nombre de résultats
@@ -307,7 +305,7 @@ export const ChatContainer = () => {
           params: {
             q: query + " haute qualité",
             api_key: apiKeys.serpApi,
-            engine: 'google_images',
+            engine: 'duckduckgo_images',
             hl: 'fr',
             gl: 'fr',
             num: 5

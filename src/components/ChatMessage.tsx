@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { Check, Copy, ThumbsDown, ThumbsUp, RefreshCw, BookOpenCheck, Globe, BrainCircuit, Code, CodeSquare, Lightbulb, Info, AlertTriangle } from "lucide-react";
+import { Check, Copy, ThumbsDown, ThumbsUp, RefreshCw, BookOpenCheck, Globe, BrainCircuit, Code, CodeSquare, Lightbulb, Info, AlertTriangle, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -48,6 +48,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
   const { user } = useAuth();
   const [showSourcesDialog, setShowSourcesDialog] = useState(false);
   const [isCodeBlockCopied, setIsCodeBlockCopied] = useState<Record<string, boolean>>({});
+  const hasRealSources = message.sourceReferences?.some(source => !source.title.includes("Résultat de recherche")) || false;
 
   useEffect(() => {
     if (isCopied) {
@@ -86,6 +87,17 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
     }, 2000);
   };
 
+  // Fonction pour rendre les liens des sources plus descriptifs
+  const getSourceDisplayTitle = (source: SourceReference): string => {
+    if (source.title.includes("Résultat de recherche")) {
+      const searchTerm = source.title.match(/pour (.+)$/);
+      if (searchTerm && searchTerm[1]) {
+        return searchTerm[1];
+      }
+    }
+    return source.title;
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -117,7 +129,10 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
             rehypePlugins={[rehypeKatex]}
             components={{
               a: ({ node, ...props }) => (
-                <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline" />
+                <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1" >
+                  {props.children}
+                  <ExternalLink className="h-3 w-3 inline" />
+                </a>
               ),
               code: ({ node, ...props }) => {
                 if (!props.className) {
@@ -170,6 +185,41 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
           >
             {message.content}
           </ReactMarkdown>
+          
+          {/* Affichage des sources moderne directement dans le message */}
+          {message.role === "assistant" && message.sourceReferences && message.sourceReferences.length > 0 && (
+            <div className="mt-4 pt-2 border-t border-border/30">
+              <div className="flex items-center gap-1.5 mb-2 text-sm font-medium text-muted-foreground">
+                <Globe className="h-4 w-4" />
+                <span>Sources</span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-xs h-6 px-2 hover:bg-muted" 
+                  onClick={() => setShowSourcesDialog(true)}
+                >
+                  Voir tout
+                </Button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {message.sourceReferences.slice(0, 4).map(source => (
+                  <a
+                    key={source.id}
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-sm text-primary hover:underline p-1.5 rounded-md hover:bg-primary/5 transition-colors duration-200"
+                  >
+                    <span className="w-5 h-5 flex items-center justify-center bg-primary/10 rounded text-xs text-primary font-medium">
+                      {source.id}
+                    </span>
+                    <span className="truncate">{getSourceDisplayTitle(source)}</span>
+                    <ExternalLink className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
@@ -213,7 +263,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
                 <Tooltip>
                   <TooltipTrigger>
                     <Badge 
-                      variant={countSources() > 0 ? "outline" : "destructive"}
+                      variant={countSources() > 0 ? (hasRealSources ? "default" : "outline") : "destructive"}
                       className="px-1.5 gap-1 hover:bg-accent cursor-help"
                       onClick={() => countSources() > 0 && setShowSourcesDialog(true)}
                     >
@@ -347,18 +397,24 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
           <ScrollArea className="max-h-[70vh] pr-4">
             <div className="space-y-4">
               {message.sourceReferences?.map((source) => (
-                <div key={source.id} className="border border-border/40 rounded-lg p-3 bg-muted/30">
-                  <h3 className="font-medium text-base mb-1">{source.title}</h3>
+                <div key={source.id} className="border border-border/40 rounded-lg p-3 bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <h3 className="font-medium text-base mb-1 flex items-center gap-1.5">
+                    <span className="w-6 h-6 flex items-center justify-center bg-primary/10 rounded-full text-xs text-primary font-medium">
+                      {source.id}
+                    </span>
+                    {getSourceDisplayTitle(source)}
+                  </h3>
                   <a 
                     href={source.url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline break-all mb-2 inline-block"
+                    className="text-xs text-primary hover:underline break-all mb-2 inline-flex items-center gap-1"
                   >
                     {source.url}
+                    <ExternalLink className="h-3 w-3" />
                   </a>
                   {source.snippet && (
-                    <p className="text-sm text-muted-foreground mt-2">{source.snippet}</p>
+                    <p className="text-sm text-muted-foreground mt-2 border-t border-border/30 pt-2">{source.snippet}</p>
                   )}
                 </div>
               ))}

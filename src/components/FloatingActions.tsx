@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ImageUploader } from "@/components/ImageUploader";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { Message } from "@/components/ChatMessage";
-import { FilePdf } from "lucide-react";
+import { FileText } from "lucide-react"; // Changed from FilePdf to FileText which is available
 import { createPDF } from "@/utils/pdfUtils";
 
 interface FloatingActionsProps {

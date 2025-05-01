@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Check, Copy, ThumbsDown, ThumbsUp, RefreshCw, BookOpenCheck, 
   Globe, BrainCircuit, Code, CodeSquare, Lightbulb, 
-  Info, AlertTriangle, ExternalLink, FilePdf, Printer
+  Info, AlertTriangle, ExternalLink, FileText, Printer 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -323,7 +323,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
                       onClick={handleExportPDF}
                       disabled={isPdfGenerating}
                     >
-                      <FilePdf className="h-3.5 w-3.5" />
+                      <FileText className="h-3.5 w-3.5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>

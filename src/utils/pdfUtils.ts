@@ -1,5 +1,5 @@
 
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf"; // Updated import syntax
 import html2canvas from "html2canvas";
 
 /**

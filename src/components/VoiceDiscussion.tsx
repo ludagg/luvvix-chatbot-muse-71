@@ -35,9 +35,10 @@ export const VoiceDiscussion = ({ onVoiceInput, onAutoSubmit = false, className 
       recognition.interimResults = true;
       recognition.lang = 'fr-FR';
       
-      recognition.onstart = () => {
+      // Utiliser addEventListener au lieu de onstart
+      recognition.addEventListener('start', () => {
         setIsListening(true);
-      };
+      });
       
       recognition.onresult = (event) => {
         const currentTranscript = Array.from(event.results)

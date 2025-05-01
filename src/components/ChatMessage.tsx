@@ -8,11 +8,13 @@ import { motion } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import rehypeKatex from "rehype-katex";
 import remarkMath from "remark-math";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import 'katex/dist/katex.min.css';
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatMarkdownTables } from "@/utils/formatters";
 
 export interface SourceReference {
   id: number | string;
@@ -49,6 +51,9 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
   const [showSourcesDialog, setShowSourcesDialog] = useState(false);
   const [isCodeBlockCopied, setIsCodeBlockCopied] = useState<Record<string, boolean>>({});
   const hasRealSources = message.sourceReferences?.some(source => !source.title.includes("Résultat de recherche")) || false;
+  
+  // Préparation du contenu avec tableaux bien formatés
+  const formattedContent = message.content ? formatMarkdownTables(message.content) : "";
 
   useEffect(() => {
     if (isCopied) {
@@ -171,19 +176,18 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
                 <img {...props} className="rounded-lg w-auto max-w-full h-auto object-cover my-4" alt={props.alt || "Image"} />
               ),
               table: ({ node, ...props }) => (
-                <div className="overflow-x-auto my-4">
-                  <table className="border-collapse w-full" {...props} />
+                <div className="overflow-x-auto my-4 border border-border rounded-lg">
+                  <Table {...props} className="w-full" />
                 </div>
               ),
-              th: ({ node, ...props }) => (
-                <th className="border border-border bg-muted px-4 py-2 text-left" {...props} />
-              ),
-              td: ({ node, ...props }) => (
-                <td className="border border-border px-4 py-2" {...props} />
-              ),
+              thead: ({ node, ...props }) => <TableHeader {...props} />,
+              tbody: ({ node, ...props }) => <TableBody {...props} />,
+              tr: ({ node, ...props }) => <TableRow {...props} />,
+              th: ({ node, ...props }) => <TableHead {...props} className="bg-muted/50 font-medium py-2 px-4 text-left" />,
+              td: ({ node, ...props }) => <TableCell {...props} className="py-2 px-4" />
             }}
           >
-            {message.content}
+            {formattedContent}
           </ReactMarkdown>
           
           {/* Affichage des sources moderne directement dans le message */}

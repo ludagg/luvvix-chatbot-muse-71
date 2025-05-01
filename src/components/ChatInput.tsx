@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { SendIcon, Mic, MicOff, Smile, Paperclip, Image as ImageIcon, X, Brain, Search, BrainCircuit, Globe, Lightbulb, HeartPulse, MemoryStick } from "lucide-react";
@@ -27,6 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { VoiceDiscussion } from "@/components/VoiceDiscussion";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -234,6 +234,15 @@ export const ChatInput = ({
       textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`;
     }
   }, [message]);
+  
+  // Ajout d'une fonction pour gérer l'entrée vocale
+  const handleVoiceInput = (transcript: string) => {
+    setMessage(transcript);
+    // Focus sur le textarea après la transcription
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  };
 
   return (
     <motion.form
@@ -458,19 +467,11 @@ export const ChatInput = ({
               exit={{ opacity: 0, scale: 0.8 }}
               className="flex pr-3 pl-2 gap-1"
             >
-              <Button
-                type="button"
-                size="icon"
-                variant={isListening ? "default" : "ghost"}
-                className={cn(
-                  "h-8 w-8 transition-all",
-                  isListening ? "bg-red-500 hover:bg-red-600 text-white" : "text-muted-foreground hover:text-foreground"
-                )}
-                onClick={toggleListening}
-                disabled={isLoading}
-              >
-                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-              </Button>
+              <VoiceDiscussion 
+                onVoiceInput={handleVoiceInput}
+                className="h-8 w-8"
+              />
+              
               <Button
                 type="submit"
                 size="icon"
@@ -486,17 +487,6 @@ export const ChatInput = ({
           )}
         </AnimatePresence>
       </div>
-      
-      {isListening && (
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
-          className="absolute -top-8 left-0 right-0 text-center text-xs text-red-500 font-medium"
-        >
-          Écoute en cours... Parlez maintenant
-        </motion.div>
-      )}
     </motion.form>
   );
 };

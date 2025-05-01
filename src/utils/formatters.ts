@@ -19,8 +19,11 @@ export const formatSourceCitations = (content: string, sources: SourceReference[
     );
   });
   
+  // Vérifier si le contenu se termine par une signature LuvviX
+  const hasSignature = /\n\n\*— LuvviX.*?\*$/g.test(formattedContent);
+  
   // Éviter d'ajouter les sources en double à la fin
-  if (sources.length > 0 && !formattedContent.includes("Sources:")) {
+  if (sources.length > 0 && !formattedContent.includes("Sources:") && !formattedContent.includes("**Sources:**")) {
     // Supprimons la signature si elle existe pour éviter la duplication
     formattedContent = formattedContent.replace(/\n\n\*— LuvviX.*?\*$/g, '');
     
@@ -38,7 +41,36 @@ export const formatSourceCitations = (content: string, sources: SourceReference[
       }
       formattedContent += `${source.id}. [${displayTitle}](${source.url})\n`;
     });
+    
+    // Réajouter la signature si elle existait
+    if (hasSignature) {
+      formattedContent += "\n\n*— LuvviX, votre assistant IA amical 🤖*";
+    }
   }
   
   return formattedContent;
+};
+
+/**
+ * Formate un tableau Markdown pour un affichage correct
+ * @param content Le contenu à formater
+ * @returns Le contenu avec les tableaux formatés correctement
+ */
+export const formatMarkdownTables = (content: string): string => {
+  // Cette fonction s'assure que les tableaux Markdown sont bien formatés
+  // pour être correctement rendus par le convertisseur Markdown
+  
+  // Recherche tous les tableaux dans le contenu (lignes commençant par |)
+  const tablePattern = /(\|[^\n]+\|\n\|(?:\s*:?-+:?\s*\|)+\n(?:\|[^\n]+\|\n)+)/g;
+  
+  return content.replace(tablePattern, (table) => {
+    // Assure-toi qu'il y a des sauts de ligne avant et après le tableau
+    if (!table.startsWith('\n')) {
+      table = '\n' + table;
+    }
+    if (!table.endsWith('\n\n')) {
+      table = table + '\n';
+    }
+    return table;
+  });
 };

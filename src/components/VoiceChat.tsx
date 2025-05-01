@@ -5,18 +5,23 @@ import { Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { speakText, cleanTextForSpeech } from "@/utils/speechUtils";
+import { Message } from "@/components/ChatMessage";
 
 interface VoiceChatProps {
   onVoiceStart?: () => void;
   onVoiceEnd?: (transcript: string) => void;
   onSpeaking?: (isListening: boolean) => void;
+  lastMessage?: Message | null;
 }
 
-export const VoiceChat = ({ onVoiceStart, onVoiceEnd, onSpeaking }: VoiceChatProps) => {
+export const VoiceChat = ({ onVoiceStart, onVoiceEnd, onSpeaking, lastMessage }: VoiceChatProps) => {
   const [isListening, setIsListening] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState("");
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const stopSpeakingRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
@@ -71,13 +76,50 @@ export const VoiceChat = ({ onVoiceStart, onVoiceEnd, onSpeaking }: VoiceChatPro
           recognitionRef.current.stop();
         }
       }
+      
+      if (stopSpeakingRef.current) {
+        stopSpeakingRef.current();
+        stopSpeakingRef.current = null;
+      }
     };
   }, [onVoiceStart, onVoiceEnd, onSpeaking, transcript, isListening]);
+
+  // Effet pour lire à haute voix le dernier message de l'assistant
+  useEffect(() => {
+    if (lastMessage && lastMessage.role === "assistant" && !isMuted && !isListening) {
+      // Arrêter toute lecture en cours
+      if (stopSpeakingRef.current) {
+        stopSpeakingRef.current();
+        stopSpeakingRef.current = null;
+      }
+      
+      // Nettoyer le texte pour la synthèse vocale
+      const textToSpeak = cleanTextForSpeech(lastMessage.content);
+      
+      // Lancer la synthèse vocale
+      setIsSpeaking(true);
+      stopSpeakingRef.current = speakText(textToSpeak);
+      
+      // Gérer la fin de la lecture
+      const utterance = new SpeechSynthesisUtterance();
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        stopSpeakingRef.current = null;
+      };
+    }
+  }, [lastMessage, isMuted]);
 
   const toggleListening = () => {
     if (!recognitionRef.current) {
       toast.error("La reconnaissance vocale n'est pas supportée par votre navigateur.");
       return;
+    }
+    
+    // Arrêter la synthèse vocale si elle est en cours
+    if (stopSpeakingRef.current) {
+      stopSpeakingRef.current();
+      stopSpeakingRef.current = null;
+      setIsSpeaking(false);
     }
     
     if (isListening) {
@@ -94,8 +136,14 @@ export const VoiceChat = ({ onVoiceStart, onVoiceEnd, onSpeaking }: VoiceChatPro
   };
 
   const toggleMute = () => {
+    // Arrêter la lecture en cours si on active le mode muet
+    if (!isMuted && stopSpeakingRef.current) {
+      stopSpeakingRef.current();
+      stopSpeakingRef.current = null;
+      setIsSpeaking(false);
+    }
+    
     setIsMuted(!isMuted);
-    // Dans une implémentation réelle, vous connecteriez ceci à votre logique de sortie audio
     toast.info(isMuted ? "Son activé" : "Son désactivé");
   };
 
@@ -118,8 +166,11 @@ export const VoiceChat = ({ onVoiceStart, onVoiceEnd, onSpeaking }: VoiceChatPro
         <Button
           type="button"
           size="icon"
-          variant="outline"
-          className="h-10 w-10 rounded-full shadow-md"
+          variant={isSpeaking && !isMuted ? "default" : "outline"}
+          className={cn(
+            "h-10 w-10 rounded-full shadow-md",
+            isSpeaking && !isMuted ? "bg-primary text-primary-foreground" : ""
+          )}
           onClick={toggleMute}
         >
           {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
@@ -144,6 +195,23 @@ export const VoiceChat = ({ onVoiceStart, onVoiceEnd, onSpeaking }: VoiceChatPro
             {transcript && (
               <p className="text-xs mt-1 max-w-[200px] truncate">{transcript}</p>
             )}
+          </motion.div>
+        )}
+        
+        {isSpeaking && !isMuted && !isListening && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-background/90 backdrop-blur-sm border border-primary/20 rounded-full px-3 py-1.5 shadow-lg"
+          >
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+              </span>
+              <p className="text-xs font-medium">Lecture en cours...</p>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

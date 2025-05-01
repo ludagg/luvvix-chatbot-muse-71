@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChatContainer } from "@/components/ChatContainer";
@@ -56,6 +57,7 @@ const Index = () => {
   const [error, setError] = useState("");
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
   const { toast } = useToast();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
@@ -157,6 +159,8 @@ const Index = () => {
         onOpenProfile={handleOpenProfile}
         isSidebarOpen={isSidebarOpen}
         setIsSidebarOpen={setIsSidebarOpen}
+        isVoiceMode={isVoiceModeActive}
+        setIsVoiceMode={setIsVoiceModeActive}
       />
       
       <main className="flex flex-col flex-grow relative z-10 overflow-hidden pt-16">
@@ -182,7 +186,7 @@ const Index = () => {
 
         <div className="flex-1 h-full w-full max-w-5xl mx-auto px-2 md:px-4 pb-2">
           <div className="h-full flex flex-col bg-gradient-to-b from-background/50 via-background/80 to-background rounded-xl md:rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
-            <ChatContainer />
+            <ChatContainer isVoiceModeActive={isVoiceModeActive} />
           </div>
         </div>
       </main>

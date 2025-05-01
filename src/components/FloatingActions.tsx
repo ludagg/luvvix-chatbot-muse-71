@@ -10,15 +10,17 @@ interface FloatingActionsProps {
   onVoiceInput?: (text: string) => void;
   scrollToTop?: () => void;
   lastMessage?: Message | null;
+  isVoiceModeActive?: boolean;
 }
 
 export const FloatingActions = ({ 
   onOpenImageUploader, 
   onVoiceInput, 
   scrollToTop, 
-  lastMessage 
+  lastMessage,
+  isVoiceModeActive = false
 }: FloatingActionsProps) => {
-  const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
+  const [isVoiceAssistantActive, setIsVoiceAssistantActive] = useState(false);
 
   const handleVoiceInput = (transcript: string) => {
     if (transcript.trim() && onVoiceInput) {
@@ -31,8 +33,8 @@ export const FloatingActions = ({
       {/* Voice Assistant */}
       <VoiceAssistant 
         onVoiceInput={handleVoiceInput}
-        onToggleVoiceMode={setIsVoiceModeActive}
-        isVoiceModeActive={isVoiceModeActive}
+        onToggleVoiceMode={setIsVoiceAssistantActive}
+        isVoiceModeActive={isVoiceModeActive || isVoiceAssistantActive}
         lastMessage={lastMessage}
       />
     </div>

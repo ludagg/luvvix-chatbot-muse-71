@@ -1,5 +1,7 @@
 
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ImageUploader } from "@/components/ImageUploader";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { Message } from "@/components/ChatMessage";
 
@@ -8,17 +10,15 @@ interface FloatingActionsProps {
   onVoiceInput?: (text: string) => void;
   scrollToTop?: () => void;
   lastMessage?: Message | null;
-  isVoiceModeActive?: boolean;
 }
 
 export const FloatingActions = ({ 
   onOpenImageUploader, 
   onVoiceInput, 
   scrollToTop, 
-  lastMessage,
-  isVoiceModeActive = false
+  lastMessage 
 }: FloatingActionsProps) => {
-  const [isVoiceAssistantActive, setIsVoiceAssistantActive] = useState(false);
+  const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
 
   const handleVoiceInput = (transcript: string) => {
     if (transcript.trim() && onVoiceInput) {
@@ -31,8 +31,8 @@ export const FloatingActions = ({
       {/* Voice Assistant */}
       <VoiceAssistant 
         onVoiceInput={handleVoiceInput}
-        onToggleVoiceMode={setIsVoiceAssistantActive}
-        isVoiceModeActive={isVoiceModeActive || isVoiceAssistantActive}
+        onToggleVoiceMode={setIsVoiceModeActive}
+        isVoiceModeActive={isVoiceModeActive}
         lastMessage={lastMessage}
       />
     </div>

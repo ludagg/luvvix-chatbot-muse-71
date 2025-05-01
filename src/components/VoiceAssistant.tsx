@@ -251,11 +251,13 @@ export const VoiceAssistant = ({
             
             <div className="flex items-start gap-2 mt-1.5">
               <Avatar className="h-6 w-6">
-                {user?.photoURL ? (
-                  <AvatarImage src={user.photoURL} alt={user.displayName || ""} />
+                {user?.displayName ? (
+                  <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                    {user.displayName.charAt(0) || "U"}
+                  </AvatarFallback>
                 ) : (
                   <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                    {user?.displayName?.charAt(0) || "U"}
+                    {"U"}
                   </AvatarFallback>
                 )}
               </Avatar>

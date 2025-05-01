@@ -6,16 +6,22 @@ import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { Message } from "@/components/ChatMessage";
 
 interface FloatingActionsProps {
-  onOpenImageUploader: () => void;
-  onVoiceInput: (text: string) => void;
+  onOpenImageUploader?: () => void;
+  onVoiceInput?: (text: string) => void;
+  scrollToTop?: () => void;
   lastMessage?: Message | null;
 }
 
-export const FloatingActions = ({ onOpenImageUploader, onVoiceInput, lastMessage }: FloatingActionsProps) => {
+export const FloatingActions = ({ 
+  onOpenImageUploader, 
+  onVoiceInput, 
+  scrollToTop, 
+  lastMessage 
+}: FloatingActionsProps) => {
   const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
 
   const handleVoiceInput = (transcript: string) => {
-    if (transcript.trim()) {
+    if (transcript.trim() && onVoiceInput) {
       onVoiceInput(transcript);
     }
   };

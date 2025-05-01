@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { ImageUploader } from "@/components/ImageUploader";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { Message } from "@/components/ChatMessage";
+import { FilePdf } from "lucide-react";
+import { createPDF } from "@/utils/pdfUtils";
 
 interface FloatingActionsProps {
   onOpenImageUploader?: () => void;

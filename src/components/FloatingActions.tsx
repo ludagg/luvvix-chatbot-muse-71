@@ -1,7 +1,5 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { ImageUploader } from "@/components/ImageUploader";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { Message } from "@/components/ChatMessage";
 

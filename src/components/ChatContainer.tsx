@@ -1,55 +1,78 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Loader2, ImagePlus, ArrowUp } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { ChatMessage } from "@/components/ChatMessage";
 import { cn } from "@/lib/utils";
-import { useCompletion } from "ai/react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ImageUploader } from "@/components/ImageUploader";
 import { FloatingActions } from "@/components/FloatingActions";
+import { nanoid } from "nanoid";
+
+// Define the Message type to match what ChatMessage expects
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
 
 interface ChatContainerProps {
   isVoiceModeActive?: boolean;
 }
 
 export const ChatContainer = ({ isVoiceModeActive = false }: ChatContainerProps) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isImageUploaderOpen, setIsImageUploaderOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [completion, setCompletion] = useState("");
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
   const [isUserScrolling, setIsUserScrolling] = useState(false);
 
-  const {
-    completion,
-    input: prompt,
-    setInput: setPrompt,
-    handleInputChange,
-    handleSubmit,
-    isLoading,
-  } = useCompletion({
-    api: "/api/completion",
-    onFinish: (completion) => {
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          role: "assistant",
-          content: completion,
-        },
-      ]);
-    },
-  });
+  // Simple implementation to replace useCompletion from ai/react
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
 
-  useEffect(() => {
-    setPrompt(input);
-  }, [input, setPrompt]);
+    // Add user message
+    const userMessage: Message = {
+      id: nanoid(),
+      role: "user",
+      content: input,
+      timestamp: new Date(),
+    };
+    
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setIsLoading(true);
 
-  const handleVoiceInput = (text: string) => {
-    setInput(text);
+    // Simulate API call delay (in a real app, this would be an actual API call)
+    setTimeout(() => {
+      // Mock response from AI
+      const botResponse = `This is a simulated response to: "${input}"`;
+      
+      // Create assistant message
+      const assistantMessage: Message = {
+        id: nanoid(),
+        role: "assistant",
+        content: botResponse,
+        timestamp: new Date(),
+      };
+      
+      setCompletion(botResponse);
+      setMessages((prev) => [...prev, assistantMessage]);
+      setIsLoading(false);
+    }, 1500);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
   };
 
   const scrollToBottom = () => {
@@ -82,23 +105,8 @@ export const ChatContainer = ({ isVoiceModeActive = false }: ChatContainerProps)
     }
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!prompt.trim()) {
-      return;
-    }
-
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      {
-        role: "user",
-        content: prompt,
-      },
-    ]);
-
-    handleSubmit(e);
-    setInput("");
+  const handleVoiceInput = (text: string) => {
+    setInput(text);
   };
 
   const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
@@ -120,14 +128,19 @@ export const ChatContainer = ({ isVoiceModeActive = false }: ChatContainerProps)
       >
         {messages.map((message, index) => (
           <ChatMessage
-            key={index}
+            key={message.id}
             message={message}
             isLast={index === messages.length - 1}
           />
         ))}
         {isLoading && (
           <ChatMessage
-            message={{ role: "assistant", content: completion }}
+            message={{
+              id: "loading",
+              role: "assistant",
+              content: completion,
+              timestamp: new Date(),
+            }}
             isLoading
           />
         )}
@@ -141,15 +154,12 @@ export const ChatContainer = ({ isVoiceModeActive = false }: ChatContainerProps)
           lastMessage={messages.length > 0 ? messages[messages.length - 1] : null}
           isVoiceModeActive={isVoiceModeActive}
         />
-        <form onSubmit={handleFormSubmit} className="relative">
+        <form onSubmit={handleSubmit} className="relative">
           <Input
             type="text"
             placeholder="Écrivez votre message ici..."
             value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              handleInputChange(e);
-            }}
+            onChange={handleInputChange}
             className="rounded-full py-2 pr-20 bg-secondary/80 backdrop-blur-sm"
             disabled={isLoading}
           />

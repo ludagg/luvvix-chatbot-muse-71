@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatMarkdownTables } from "@/utils/formatters";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export interface SourceReference {
   id: number | string;
@@ -109,24 +110,20 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
       className={cn(
-        "w-full flex gap-3",
+        "w-full flex",
         message.role === "user" ? "flex-row-reverse" : "flex-row"
       )}
     >
-      <div className={cn(
-        "w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center",
-        message.role === "user" ? "bg-primary/20 text-primary" : "bg-primary text-primary-foreground"
-      )}>
-        {message.role === "user" ? (
-          user?.displayName?.charAt(0).toUpperCase() || "U"
-        ) : (
-          "L"
-        )}
-      </div>
+      {/* Afficher l'avatar uniquement pour l'utilisateur */}
+      {message.role === "user" && (
+        <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center bg-primary/20 text-primary ml-3">
+          {user?.displayName?.charAt(0).toUpperCase() || "U"}
+        </div>
+      )}
       
       <div className={cn(
-        "bg-muted/40 backdrop-blur-sm p-4 rounded-lg max-w-[85%]",
-        message.role === "user" ? "rounded-tr-none" : "rounded-tl-none"
+        "bg-muted/40 backdrop-blur-sm p-4 rounded-lg",
+        message.role === "user" ? "rounded-tr-none max-w-[75%]" : "rounded-tl-none max-w-[90%] w-full md:max-w-[85%]"
       )}>
         <div ref={contentRef} className="prose prose-sm dark:prose-invert max-w-none break-words">
           <ReactMarkdown

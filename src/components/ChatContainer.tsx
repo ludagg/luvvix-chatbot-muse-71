@@ -12,12 +12,7 @@ import { FloatingActions } from "@/components/FloatingActions";
 import { nanoid } from "nanoid";
 
 // Define the Message type to match what ChatMessage expects
-interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
+import { Message } from "@/components/ChatMessage";
 
 interface ChatContainerProps {
   isVoiceModeActive?: boolean;
@@ -89,7 +84,12 @@ export const ChatContainer = ({ isVoiceModeActive = false }: ChatContainerProps)
     }
   }, [messages, isUserScrolling]);
 
-  const handleImageUpload = (imageUrl: string) => {
+  // Fix the ImageUploader onImageUpload prop type mismatch
+  // Convert the File to a URL string when the image is uploaded
+  const handleImageUpload = (file: File) => {
+    // Create an object URL for the file
+    const imageUrl = URL.createObjectURL(file);
+    
     if (imageUrl) {
       setInput((prevInput) => prevInput + `\n![Image](${imageUrl})`);
       toast({
@@ -141,7 +141,7 @@ export const ChatContainer = ({ isVoiceModeActive = false }: ChatContainerProps)
               content: completion,
               timestamp: new Date(),
             }}
-            isLoading
+            isLoading={true}
           />
         )}
         <div ref={bottomRef} />

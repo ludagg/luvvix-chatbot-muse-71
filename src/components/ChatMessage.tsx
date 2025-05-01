@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -40,11 +39,12 @@ export interface Message {
 interface ChatMessageProps {
   message: Message;
   isLast?: boolean;
+  isLoading?: boolean;  // Added isLoading prop
   onRegenerate?: (messageId: string) => void;
   onFeedback?: (messageId: string, feedback: "positive" | "negative") => void;
 }
 
-export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback }: ChatMessageProps) {
+export function ChatMessage({ message, isLast = false, isLoading = false, onRegenerate, onFeedback }: ChatMessageProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<"positive" | "negative" | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -126,66 +126,75 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
         message.role === "user" ? "rounded-tr-none max-w-[75%]" : "rounded-tl-none max-w-[90%] w-full md:max-w-[85%]"
       )}>
         <div ref={contentRef} className="prose prose-sm dark:prose-invert max-w-none break-words">
-          <ReactMarkdown
-            remarkPlugins={[remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-            components={{
-              a: ({ node, ...props }) => (
-                <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1" >
-                  {props.children}
-                  <ExternalLink className="h-3 w-3 inline" />
-                </a>
-              ),
-              code: ({ node, ...props }) => {
-                if (!props.className) {
+          {isLoading ? (
+            <div className="flex items-center space-x-2">
+              <div className="h-4 w-4 rounded-full bg-primary/30 animate-pulse"></div>
+              <div className="h-4 w-4 rounded-full bg-primary/30 animate-pulse delay-150"></div>
+              <div className="h-4 w-4 rounded-full bg-primary/30 animate-pulse delay-300"></div>
+              <span className="text-sm text-muted-foreground ml-1">Génération en cours...</span>
+            </div>
+          ) : (
+            <ReactMarkdown
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+              components={{
+                a: ({ node, ...props }) => (
+                  <a {...props} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1" >
+                    {props.children}
+                    <ExternalLink className="h-3 w-3 inline" />
+                  </a>
+                ),
+                code: ({ node, ...props }) => {
+                  if (!props.className) {
+                    return (
+                      <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono" {...props} />
+                    );
+                  }
+                  
+                  const codeContent = String(props.children).replace(/\n$/, '');
+                  const language = props.className ? props.className.replace('language-', '') : '';
+                  const codeBlockId = `code-${message.id}-${language}-${codeContent.length}`;
+                  
                   return (
-                    <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono" {...props} />
-                  );
-                }
-                
-                const codeContent = String(props.children).replace(/\n$/, '');
-                const language = props.className ? props.className.replace('language-', '') : '';
-                const codeBlockId = `code-${message.id}-${language}-${codeContent.length}`;
-                
-                return (
-                  <div className="relative mt-4 mb-4">
-                    <div className="flex items-center justify-between px-4 py-1.5 bg-muted/80 border-b border-border/50 rounded-t-md">
-                      <div className="text-xs font-medium text-muted-foreground">
-                        {language || 'Code'}
+                    <div className="relative mt-4 mb-4">
+                      <div className="flex items-center justify-between px-4 py-1.5 bg-muted/80 border-b border-border/50 rounded-t-md">
+                        <div className="text-xs font-medium text-muted-foreground">
+                          {language || 'Code'}
+                        </div>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={() => handleCodeBlockCopy(codeContent, codeBlockId)}
+                        >
+                          {isCodeBlockCopied[codeBlockId] ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        </Button>
                       </div>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
-                        onClick={() => handleCodeBlockCopy(codeContent, codeBlockId)}
-                      >
-                        {isCodeBlockCopied[codeBlockId] ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                      </Button>
+                      <pre className="p-4 overflow-x-auto bg-muted/40 rounded-b-md text-sm font-mono">
+                        <code>{codeContent}</code>
+                      </pre>
                     </div>
-                    <pre className="p-4 overflow-x-auto bg-muted/40 rounded-b-md text-sm font-mono">
-                      <code>{codeContent}</code>
-                    </pre>
+                  );
+                },
+                img: ({ node, ...props }) => (
+                  <img {...props} className="rounded-lg w-auto max-w-full h-auto object-cover my-4" alt={props.alt || "Image"} />
+                ),
+                table: ({ node, ...props }) => (
+                  <div className="overflow-x-auto my-4 border border-border rounded-lg">
+                    <Table {...props} className="w-full" />
                   </div>
-                );
-              },
-              img: ({ node, ...props }) => (
-                <img {...props} className="rounded-lg w-auto max-w-full h-auto object-cover my-4" alt={props.alt || "Image"} />
-              ),
-              table: ({ node, ...props }) => (
-                <div className="overflow-x-auto my-4 border border-border rounded-lg">
-                  <Table {...props} className="w-full" />
-                </div>
-              ),
-              thead: ({ node, ...props }) => <TableHeader {...props} />,
-              tbody: ({ node, ...props }) => <TableBody {...props} />,
-              tr: ({ node, ...props }) => <TableRow {...props} />,
-              th: ({ node, ...props }) => <TableHead {...props} className="bg-muted/50 font-medium py-2 px-4 text-left" />,
-              td: ({ node, ...props }) => <TableCell {...props} className="py-2 px-4" />
-            }}
-          >
-            {formattedContent}
-          </ReactMarkdown>
+                ),
+                thead: ({ node, ...props }) => <TableHeader {...props} />,
+                tbody: ({ node, ...props }) => <TableBody {...props} />,
+                tr: ({ node, ...props }) => <TableRow {...props} />,
+                th: ({ node, ...props }) => <TableHead {...props} className="bg-muted/50 font-medium py-2 px-4 text-left" />,
+                td: ({ node, ...props }) => <TableCell {...props} className="py-2 px-4" />
+              }}
+            >
+              {formattedContent}
+            </ReactMarkdown>
+          )}
           
           {/* Affichage des sources moderne directement dans le message */}
           {message.role === "assistant" && message.sourceReferences && message.sourceReferences.length > 0 && (
@@ -209,7 +218,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
                     href={source.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-sm text-primary hover:underline p-1.5 rounded-md hover:bg-primary/5 transition-colors duration-200"
+                    className="flex items-center gap-1 text-sm text-primary hover:underline p-1.5 rounded-md hover:bg-primary/5 transition-colors"
                   >
                     <span className="w-5 h-5 flex items-center justify-center bg-primary/10 rounded text-xs text-primary font-medium">
                       {source.id}

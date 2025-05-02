@@ -1,10 +1,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ImageUploader } from "@/components/ImageUploader";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { Message } from "@/components/ChatMessage";
-import { FileText } from "lucide-react"; // Changed from FilePdf to FileText which is available
+import { FileText, Download } from "lucide-react";
 import { createPDF } from "@/utils/pdfUtils";
 import { toast } from "sonner";
 
@@ -42,7 +41,7 @@ export const FloatingActions = ({
       
       if (messageElement) {
         // Trouver l'élément de contenu dans le message
-        const contentElement = messageElement.querySelector('.message-content');
+        const contentElement = messageElement.querySelector('.prose');
         if (contentElement) {
           await createPDF(
             contentElement as HTMLElement,
@@ -52,6 +51,7 @@ export const FloatingActions = ({
           toast.success("PDF exporté avec succès");
         } else {
           toast.error("Impossible de trouver le contenu du message");
+          console.error("Élément de contenu non trouvé:", messageElement);
         }
       }
     } catch (error) {
@@ -73,7 +73,11 @@ export const FloatingActions = ({
           onClick={handleExportPDF}
           disabled={isPdfExporting}
         >
-          <FileText className={`h-5 w-5 ${isPdfExporting ? 'animate-pulse' : ''}`} />
+          {isPdfExporting ? (
+            <FileText className="h-5 w-5 animate-pulse" />
+          ) : (
+            <Download className="h-5 w-5" />
+          )}
           <span className="sr-only">Exporter en PDF</span>
         </Button>
       )}

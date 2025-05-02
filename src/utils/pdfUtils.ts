@@ -107,5 +107,6 @@ export async function createPDF(
     
   } catch (error) {
     console.error("Erreur lors de la génération du PDF:", error);
+    throw error; // Remonter l'erreur pour la gestion dans les composants
   }
 }

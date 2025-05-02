@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { Message } from "@/components/ChatMessage";
-import { FileText, Download, FileWord } from "lucide-react";
+import { FileText, Download, FileBadge } from "lucide-react";
 import { createPDF, createWordDoc } from "@/utils/pdfUtils";
 import { toast } from "sonner";
 import { 
@@ -116,7 +116,7 @@ export const FloatingActions = ({
               {isExporting === "pdf" ? (
                 <FileText className="h-5 w-5 animate-pulse" />
               ) : isExporting === "word" ? (
-                <FileWord className="h-5 w-5 animate-pulse" />
+                <FileBadge className="h-5 w-5 animate-pulse" />
               ) : (
                 <Download className="h-5 w-5" />
               )}
@@ -129,7 +129,7 @@ export const FloatingActions = ({
               <span>Exporter en PDF</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleExportWord} className="cursor-pointer flex items-center gap-2">
-              <FileWord className="h-4 w-4" />
+              <FileBadge className="h-4 w-4" />
               <span>Exporter en Word</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

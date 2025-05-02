@@ -1,5 +1,5 @@
 
-import { jsPDF } from "jspdf"; // Utiliser l'import avec accolades
+import { jsPDF } from "jspdf"; 
 import html2canvas from "html2canvas";
 import { Document, Packer, Paragraph, HeadingLevel, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';

@@ -1,10 +1,11 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { 
   Check, Copy, ThumbsDown, ThumbsUp, RefreshCw, BookOpenCheck, 
   Globe, BrainCircuit, Code, CodeSquare, Lightbulb, 
-  Info, AlertTriangle, ExternalLink, FileText, Printer 
+  Info, AlertTriangle, ExternalLink
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -19,7 +20,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatMarkdownTables } from "@/utils/formatters";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { createPDF } from "@/utils/pdfUtils";
 
 export interface SourceReference {
   id: number | string;
@@ -56,7 +56,6 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
   const [showSourcesDialog, setShowSourcesDialog] = useState(false);
   const [isCodeBlockCopied, setIsCodeBlockCopied] = useState<Record<string, boolean>>({});
   const hasRealSources = message.sourceReferences?.some(source => !source.title.includes("Résultat de recherche")) || false;
-  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
   
   // Préparation du contenu avec tableaux bien formatés
   const formattedContent = message.content ? formatMarkdownTables(message.content) : "";
@@ -109,18 +108,6 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
     return source.title;
   };
 
-  // Fonction pour générer le PDF
-  const handleExportPDF = async () => {
-    if (!contentRef.current) return;
-    
-    setIsPdfGenerating(true);
-    try {
-      await createPDF(contentRef.current, message.id, message.timestamp);
-    } finally {
-      setIsPdfGenerating(false);
-    }
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -130,6 +117,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
         "w-full flex",
         message.role === "user" ? "flex-row-reverse" : "flex-row"
       )}
+      id={message.id}
     >
       {/* Afficher l'avatar uniquement pour l'utilisateur */}
       {message.role === "user" && (
@@ -311,28 +299,6 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
           </div>
           
           <div className="flex items-center gap-1">
-            {/* Export PDF button - only for assistant messages */}
-            {message.role === "assistant" && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                      onClick={handleExportPDF}
-                      disabled={isPdfGenerating}
-                    >
-                      <FileText className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{isPdfGenerating ? "Génération du PDF..." : "Exporter en PDF"}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            
             {message.role === "assistant" && isLast && onRegenerate && (
               <TooltipProvider>
                 <Tooltip>

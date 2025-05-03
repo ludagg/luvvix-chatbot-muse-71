@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { useCrossAuth } from "@/contexts/CrossAuthContext";
+import { useAuth } from "@/contexts/AuthContext"; // Add import for AuthContext
 import { ChatContainer } from "@/components/ChatContainer";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,7 +28,13 @@ const profileSchema = z.object({
 });
 
 const Index = () => {
-  const { user, login, logout, isLoading, isPro = false } = useCrossAuth();
+  // Try CrossAuth first, then fallback to standard Auth
+  const crossAuth = useCrossAuth();
+  const standardAuth = useAuth();
+  
+  // Use CrossAuth if available, otherwise use standard Auth
+  const { user, login, logout, isLoading, isPro = false } = crossAuth || standardAuth;
+  
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);

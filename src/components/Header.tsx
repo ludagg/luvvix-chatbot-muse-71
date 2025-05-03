@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { useCrossAuth } from "@/contexts/CrossAuthContext";
+import { useAuth } from "@/contexts/AuthContext"; // Add import for AuthContext
 import { motion } from "framer-motion";
 import { LogOut, Settings, User, Globe, Search, Menu, Sparkles } from "lucide-react";
 import {
@@ -30,7 +31,13 @@ interface HeaderProps {
 }
 
 export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarOpen }: HeaderProps) => {
-  const { user, logout, isPro = false, isLoading } = useCrossAuth();
+  // Try CrossAuth first, then fallback to standard Auth
+  const crossAuth = useCrossAuth();
+  const standardAuth = useAuth();
+  
+  // Use CrossAuth if available, otherwise use standard Auth
+  const { user, logout, isPro = false, isLoading } = crossAuth || standardAuth;
+  
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
   const isWorldPage = location.pathname === "/world";

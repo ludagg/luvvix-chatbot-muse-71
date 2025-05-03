@@ -1,7 +1,9 @@
+
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCrossAuth } from '@/contexts/CrossAuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Loader2, MessageSquarePlus, Trash2 } from 'lucide-react';
 import { 
@@ -19,6 +21,11 @@ interface ConversationSelectorProps {
 }
 
 export function ConversationSelector({ closeMenu }: ConversationSelectorProps) {
+  // Try CrossAuth first, then fallback to standard Auth
+  const crossAuth = useCrossAuth();
+  const standardAuth = useAuth();
+  
+  // Use CrossAuth if available, otherwise use standard Auth
   const { 
     user, 
     conversations, 
@@ -27,7 +34,7 @@ export function ConversationSelector({ closeMenu }: ConversationSelectorProps) {
     createNewConversation,
     deleteConversation,
     updateConversationTitle 
-  } = useAuth();
+  } = crossAuth || standardAuth;
   
   const [isCreating, setIsCreating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

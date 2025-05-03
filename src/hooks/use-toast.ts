@@ -1,191 +1,169 @@
-import * as React from "react"
 
-import type {
-  ToastActionElement,
-  ToastProps,
-} from "@/components/ui/toast"
+// Importing from React directly
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { Cross2Icon } from "@radix-ui/react-icons";
+import { cn } from "@/lib/utils";
 
-const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
-
-type ToasterToast = ToastProps & {
-  id: string
-  title?: React.ReactNode
-  description?: React.ReactNode
-  action?: ToastActionElement
-}
-
-const actionTypes = {
-  ADD_TOAST: "ADD_TOAST",
-  UPDATE_TOAST: "UPDATE_TOAST",
-  DISMISS_TOAST: "DISMISS_TOAST",
-  REMOVE_TOAST: "REMOVE_TOAST",
-} as const
-
-let count = 0
-
-function genId() {
-  count = (count + 1) % Number.MAX_SAFE_INTEGER
-  return count.toString()
-}
-
-type ActionType = typeof actionTypes
-
-type Action =
-  | {
-      type: ActionType["ADD_TOAST"]
-      toast: ToasterToast
-    }
-  | {
-      type: ActionType["UPDATE_TOAST"]
-      toast: Partial<ToasterToast>
-    }
-  | {
-      type: ActionType["DISMISS_TOAST"]
-      toastId?: ToasterToast["id"]
-    }
-  | {
-      type: ActionType["REMOVE_TOAST"]
-      toastId?: ToasterToast["id"]
-    }
-
-interface State {
-  toasts: ToasterToast[]
-}
-
-const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
-
-const addToRemoveQueue = (toastId: string) => {
-  if (toastTimeouts.has(toastId)) {
-    return
-  }
-
-  const timeout = setTimeout(() => {
-    toastTimeouts.delete(toastId)
-    dispatch({
-      type: "REMOVE_TOAST",
-      toastId: toastId,
-    })
-  }, TOAST_REMOVE_DELAY)
-
-  toastTimeouts.set(toastId, timeout)
-}
-
-export const reducer = (state: State, action: Action): State => {
-  switch (action.type) {
-    case "ADD_TOAST":
-      return {
-        ...state,
-        toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
-      }
-
-    case "UPDATE_TOAST":
-      return {
-        ...state,
-        toasts: state.toasts.map((t) =>
-          t.id === action.toast.id ? { ...t, ...action.toast } : t
-        ),
-      }
-
-    case "DISMISS_TOAST": {
-      const { toastId } = action
-
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
-      if (toastId) {
-        addToRemoveQueue(toastId)
-      } else {
-        state.toasts.forEach((toast) => {
-          addToRemoveQueue(toast.id)
-        })
-      }
-
-      return {
-        ...state,
-        toasts: state.toasts.map((t) =>
-          t.id === toastId || toastId === undefined
-            ? {
-                ...t,
-                open: false,
-              }
-            : t
-        ),
-      }
-    }
-    case "REMOVE_TOAST":
-      if (action.toastId === undefined) {
-        return {
-          ...state,
-          toasts: [],
-        }
-      }
-      return {
-        ...state,
-        toasts: state.toasts.filter((t) => t.id !== action.toastId),
-      }
-  }
-}
-
-const listeners: Array<(state: State) => void> = []
-
-let memoryState: State = { toasts: [] }
-
-function dispatch(action: Action) {
-  memoryState = reducer(memoryState, action)
-  listeners.forEach((listener) => {
-    listener(memoryState)
-  })
-}
-
-type Toast = Omit<ToasterToast, "id">
-
-function toast({ ...props }: Toast) {
-  const id = genId()
-
-  const update = (props: ToasterToast) =>
-    dispatch({
-      type: "UPDATE_TOAST",
-      toast: { ...props, id },
-    })
-  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
-
-  dispatch({
-    type: "ADD_TOAST",
-    toast: {
-      ...props,
-      id,
-      open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss()
+const toastVariants = cva(
+  "group pointer-events-auto relative flex w-full items-center justify-between space-x-2 overflow-hidden rounded-md border p-4 pr-6 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full",
+  {
+    variants: {
+      variant: {
+        default: "border bg-background text-foreground",
+        destructive:
+          "destructive group border-destructive bg-destructive text-destructive-foreground",
       },
     },
-  })
-
-  return {
-    id: id,
-    dismiss,
-    update,
+    defaultVariants: {
+      variant: "default",
+    },
   }
-}
+);
+
+type ToastProps = React.ComponentPropsWithoutRef<"div"> &
+  VariantProps<typeof toastVariants> & {
+    title?: React.ReactNode;
+    description?: React.ReactNode;
+    action?: React.ReactNode;
+    onClose?: () => void;
+  };
+
+const Toast = React.forwardRef<React.ElementRef<"div">, ToastProps>(
+  ({ className, variant, title, description, action, onClose, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn(toastVariants({ variant }), className)}
+        {...props}
+      >
+        <div className="grid gap-1">
+          {title && <div className="text-sm font-semibold">{title}</div>}
+          {description && (
+            <div className="text-sm opacity-90">{description}</div>
+          )}
+        </div>
+        {action}
+        <button
+          className="absolute right-1 top-1 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+          onClick={onClose}
+        >
+          <Cross2Icon className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </button>
+      </div>
+    );
+  }
+);
+Toast.displayName = "Toast";
+
+type ToastActionElement = React.ReactElement<{
+  onClick?: () => void;
+}>;
+
+const ToastAction = React.forwardRef<
+  React.ElementRef<"button">,
+  React.ComponentPropsWithoutRef<"button">
+>(({ className, ...props }, ref) => (
+  <button
+    ref={ref}
+    className={cn(
+      "inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium transition-colors hover:bg-secondary focus:outline-none focus:ring-1 focus:ring-ring disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-muted/40 group-[.destructive]:hover:border-destructive/30 group-[.destructive]:hover:bg-destructive group-[.destructive]:hover:text-destructive-foreground group-[.destructive]:focus:ring-destructive",
+      className
+    )}
+    {...props}
+  />
+));
+ToastAction.displayName = "ToastAction";
+
+type ToastViewport = React.ComponentPropsWithoutRef<"ol">;
+
+const ToastViewport = React.forwardRef<
+  React.ElementRef<"ol">,
+  ToastViewport
+>(({ className, ...props }, ref) => (
+  <ol
+    ref={ref}
+    className={cn(
+      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      className
+    )}
+    {...props}
+  />
+));
+ToastViewport.displayName = "ToastViewport";
+
+// Create react context for toast
+type ToastProviderProps = {
+  children: React.ReactNode;
+  swipeDirection?: "right" | "left" | "up" | "down";
+  swipeThreshold?: number;
+  label?: string;
+};
+
+type Toast = {
+  id: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  action?: ToastActionElement;
+  variant?: "default" | "destructive";
+};
+
+const ToastContext = React.createContext<{
+  toasts: Toast[];
+  addToast: (toast: Omit<Toast, "id">) => void;
+  removeToast: (id: string) => void;
+  updateToast: (id: string, toast: Partial<Omit<Toast, "id">>) => void;
+}>({
+  toasts: [],
+  addToast: () => {},
+  removeToast: () => {},
+  updateToast: () => {},
+});
 
 function useToast() {
-  const [state, setState] = React.useState<State>(memoryState)
+  const context = React.useContext(ToastContext);
 
-  React.useEffect(() => {
-    listeners.push(setState)
-    return () => {
-      const index = listeners.indexOf(setState)
-      if (index > -1) {
-        listeners.splice(index, 1)
-      }
-    }
-  }, [state])
+  if (!context) {
+    throw new Error("useToast must be used within a ToastProvider");
+  }
 
   return {
-    ...state,
-    toast,
-    dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
-  }
+    toast: (props: Omit<Toast, "id">) => {
+      context.addToast(props);
+    },
+    dismiss: (id: string) => {
+      context.removeToast(id);
+    },
+    update: (id: string, props: Partial<Omit<Toast, "id">>) => {
+      context.updateToast(id, props);
+    },
+  };
 }
 
-export { useToast, toast }
+// Simple utility for toast
+const toast = {
+  default: (props: Omit<Toast, "id" | "variant">) => {
+    const { addToast } = React.useContext(ToastContext);
+    if (addToast) {
+      addToast({ ...props, variant: "default" });
+    }
+  },
+  destructive: (props: Omit<Toast, "id" | "variant">) => {
+    const { addToast } = React.useContext(ToastContext);
+    if (addToast) {
+      addToast({ ...props, variant: "destructive" });
+    }
+  },
+};
+
+export {
+  type ToastProps,
+  type ToastActionElement,
+  Toast,
+  ToastAction,
+  ToastViewport,
+  ToastContext,
+  useToast,
+  toast,
+};

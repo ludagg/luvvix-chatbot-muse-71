@@ -22,7 +22,7 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  const [theme, setTheme] = useLocalStorage<Theme>('theme', 'dark');
+  const [theme, setTheme] = useLocalStorage<Theme>("theme", "dark");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -30,14 +30,14 @@ const App = () => {
     
     // Apply the saved theme
     const root = document.documentElement;
-    root.classList.remove('light', 'dark', 'theme-purple', 'theme-blue', 'theme-green');
+    root.classList.remove("light", "dark", "theme-purple", "theme-blue", "theme-green");
     
-    if (theme === 'purple') {
-      root.classList.add('dark', 'theme-purple');
-    } else if (theme === 'blue') {
-      root.classList.add('dark', 'theme-blue');
-    } else if (theme === 'green') {
-      root.classList.add('dark', 'theme-green');
+    if (theme === "purple") {
+      root.classList.add("dark", "theme-purple");
+    } else if (theme === "blue") {
+      root.classList.add("dark", "theme-blue");
+    } else if (theme === "green") {
+      root.classList.add("dark", "theme-green");
     } else {
       root.classList.add(theme);
     }
@@ -48,19 +48,19 @@ const App = () => {
     // Smooth scroll function
     const handleAnchorClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      const anchor = target.closest('a');
+      const anchor = target.closest("a");
       
-      if (anchor && anchor.hash && anchor.hash.startsWith('#') && anchor.href.includes(window.location.pathname)) {
+      if (anchor && anchor.hash && anchor.hash.startsWith("#") && anchor.href.includes(window.location.pathname)) {
         e.preventDefault();
         const targetElement = document.querySelector(anchor.hash);
         if (targetElement) {
-          targetElement.scrollIntoView({ behavior: 'smooth' });
+          targetElement.scrollIntoView({ behavior: "smooth" });
         }
       }
     };
 
-    document.addEventListener('click', handleAnchorClick);
-    return () => document.removeEventListener('click', handleAnchorClick);
+    document.addEventListener("click", handleAnchorClick);
+    return () => document.removeEventListener("click", handleAnchorClick);
   }, []);
 
   if (!mounted) return null; // Wait until theme is determined
@@ -69,8 +69,6 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <CrossAuthProvider>
-          <Toaster />
-          <Sonner />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -78,6 +76,8 @@ const App = () => {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          <Toaster />
+          <Sonner />
         </CrossAuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

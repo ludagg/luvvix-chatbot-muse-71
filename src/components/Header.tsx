@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useCrossAuth } from "@/contexts/CrossAuthContext";
 import { motion } from "framer-motion";
 import { LogOut, Settings, User, Globe, Search, Menu, Sparkles } from "lucide-react";
 import {
@@ -30,7 +30,7 @@ interface HeaderProps {
 }
 
 export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarOpen }: HeaderProps) => {
-  const { user, logout, isPro = false } = useAuth();
+  const { user, logout, isPro = false, isLoading } = useCrossAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
   const isWorldPage = location.pathname === "/world";
@@ -39,7 +39,7 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await logout();
+      logout();
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -132,7 +132,7 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
                 >
                   <Avatar className="h-8 w-8 select-none">
                     <AvatarFallback className="bg-primary/20 text-foreground text-xs">
-                      {getInitials(user.displayName || "User")}
+                      {getInitials(user.full_name || "User")}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -141,7 +141,7 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                      <span>{user.displayName}</span>
+                      <span>{user.full_name}</span>
                       {isPro && <ProBadge size="sm" />}
                     </div>
                     <span className="text-xs text-muted-foreground">{user.email}</span>
@@ -189,9 +189,16 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
               size="sm"
               onClick={() => onOpenAuth("login")}
               className="gap-2"
+              disabled={isLoading}
             >
-              <User className="h-4 w-4" />
-              Connexion
+              {isLoading ? (
+                <span className="animate-pulse">Chargement...</span>
+              ) : (
+                <>
+                  <User className="h-4 w-4" />
+                  Se connecter avec LuvviX ID
+                </>
+              )}
             </Button>
           )}
         </div>

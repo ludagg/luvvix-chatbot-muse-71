@@ -2,7 +2,7 @@
 // Importing from React directly
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { X } from "lucide-react"; // Replace Cross2Icon with X from lucide-react
+import { X } from "lucide-react"; // Use X from lucide-react
 import { cn } from "@/lib/utils";
 
 const toastVariants = cva(
@@ -56,6 +56,41 @@ const Toast = React.forwardRef<React.ElementRef<"div">, ToastProps>(
   }
 );
 Toast.displayName = "Toast";
+
+// Create components for ToastTitle, ToastDescription, and ToastClose
+const ToastTitle = React.forwardRef<
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div">
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("text-sm font-semibold", className)} {...props} />
+));
+ToastTitle.displayName = "ToastTitle";
+
+const ToastDescription = React.forwardRef<
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div">
+>(({ className, ...props }, ref) => (
+  <div ref={ref} className={cn("text-sm opacity-90", className)} {...props} />
+));
+ToastDescription.displayName = "ToastDescription";
+
+const ToastClose = React.forwardRef<
+  React.ElementRef<"button">,
+  React.ComponentPropsWithoutRef<"button">
+>(({ className, ...props }, ref) => (
+  <button
+    ref={ref}
+    className={cn(
+      "absolute right-1 top-1 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100",
+      className
+    )}
+    {...props}
+  >
+    <X className="h-4 w-4" />
+    <span className="sr-only">Close</span>
+  </button>
+));
+ToastClose.displayName = "ToastClose";
 
 type ToastActionElement = React.ReactElement<{
   onClick?: () => void;
@@ -198,6 +233,10 @@ export {
   ToastAction,
   ToastViewport,
   ToastContext,
+  // Export the new components
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
   useToast,
   toast,
 };

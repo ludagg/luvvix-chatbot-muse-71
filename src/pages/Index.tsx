@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useCrossAuth } from "@/contexts/CrossAuthContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -55,12 +56,28 @@ const Index = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { toast } = useToast();
 
+  // Safely access user properties, handling both user types
+  const getUserMetadata = (key: string) => {
+    if (!user) return "";
+    
+    if ('user_metadata' in user) {
+      return user.user_metadata?.[key] || "";
+    } else {
+      return (user as any)[key] || "";
+    }
+  };
+  
+  const getUserName = () => {
+    if (!user) return "";
+    return user.full_name || (user as any).displayName || "";
+  };
+
   const profileForm = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      full_name: user?.full_name || user?.displayName || "",
-      bio: user?.user_metadata?.bio || "",
-      website: user?.user_metadata?.website || "",
+      full_name: getUserName(),
+      bio: getUserMetadata('bio'),
+      website: getUserMetadata('website'),
     },
   });
 
@@ -92,9 +109,9 @@ const Index = () => {
   const handleOpenProfile = () => {
     if (user) {
       profileForm.reset({
-        full_name: user.full_name || user.displayName || "",
-        bio: user.user_metadata?.bio || "",
-        website: user.user_metadata?.website || "",
+        full_name: getUserName(),
+        bio: getUserMetadata('bio'),
+        website: getUserMetadata('website'),
       });
       setIsProfileDialogOpen(true);
     }

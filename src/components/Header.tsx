@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useCrossAuth } from "@/contexts/CrossAuthContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -70,7 +69,8 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
     window.open("https://www.bing.com", "_blank");
   };
 
-  const displayName = user?.full_name || user?.displayName || "User";
+  // Get the display name safely from either user type
+  const displayName = user?.full_name || (user as any)?.displayName || "User";
 
   return (
     <motion.header

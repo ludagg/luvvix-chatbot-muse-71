@@ -5,12 +5,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CrossAuthProvider } from "./contexts/CrossAuthContext";
-import { AuthProvider } from "./contexts/AuthContext"; // Keep the original AuthProvider
+import { AuthProvider } from "./contexts/AuthContext";
 import { useEffect, useState } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { useLocalStorage } from "./hooks/use-local-storage";
 import { Theme } from "./components/ThemeToggle";
+import { ToastProvider } from "@/hooks/use-toast"; // Add ToastProvider import
 
 // Create the query client
 const queryClient = new QueryClient({
@@ -71,15 +72,17 @@ const App = () => {
       <TooltipProvider>
         <AuthProvider>
           <CrossAuthProvider>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-            <Toaster />
-            <Sonner />
+            <ToastProvider> {/* Add ToastProvider to wrap the app */}
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+              <Toaster />
+              <Sonner />
+            </ToastProvider>
           </CrossAuthProvider>
         </AuthProvider>
       </TooltipProvider>

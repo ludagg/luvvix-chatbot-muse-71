@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { useCrossAuth } from "@/contexts/CrossAuthContext";
-import { useAuth } from "@/contexts/AuthContext"; // Add import for AuthContext
+import { useAuth } from "@/contexts/AuthContext";
 import { ChatContainer } from "@/components/ChatContainer";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -33,7 +32,20 @@ const Index = () => {
   const standardAuth = useAuth();
   
   // Use CrossAuth if available, otherwise use standard Auth
-  const { user, login, logout, isLoading, isPro = false } = crossAuth || standardAuth;
+  const { user, isPro = false, isLoading } = crossAuth || standardAuth;
+  
+  // Get login function that matches the expected parameters
+  const login = async () => {
+    if (crossAuth) {
+      return crossAuth.login();
+    } else if (standardAuth) {
+      // For demo purposes, we'll use dummy values
+      return standardAuth.login("demo@example.com", "password");
+    }
+  };
+  
+  // Get logout function
+  const logout = crossAuth?.logout || standardAuth?.logout;
   
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
@@ -46,7 +58,7 @@ const Index = () => {
   const profileForm = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      full_name: user?.full_name || "",
+      full_name: user?.full_name || user?.displayName || "",
       bio: user?.user_metadata?.bio || "",
       website: user?.user_metadata?.website || "",
     },
@@ -80,7 +92,7 @@ const Index = () => {
   const handleOpenProfile = () => {
     if (user) {
       profileForm.reset({
-        full_name: user.full_name || "",
+        full_name: user.full_name || user.displayName || "",
         bio: user.user_metadata?.bio || "",
         website: user.user_metadata?.website || "",
       });

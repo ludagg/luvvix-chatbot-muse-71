@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useCrossAuth } from "@/contexts/CrossAuthContext";
-import { useAuth } from "@/contexts/AuthContext"; // Add import for AuthContext
+import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { LogOut, Settings, User, Globe, Search, Menu, Sparkles } from "lucide-react";
 import {
@@ -36,7 +36,10 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
   const standardAuth = useAuth();
   
   // Use CrossAuth if available, otherwise use standard Auth
-  const { user, logout, isPro = false, isLoading } = crossAuth || standardAuth;
+  const { user, isPro = false, isLoading } = crossAuth || standardAuth;
+  
+  // Get logout function that fits regardless of auth system used
+  const logout = crossAuth?.logout || standardAuth?.logout;
   
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
@@ -66,6 +69,8 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
     // Open a new tab with a search engine (using Bing for its API integration possibilities)
     window.open("https://www.bing.com", "_blank");
   };
+
+  const displayName = user?.full_name || user?.displayName || "User";
 
   return (
     <motion.header
@@ -139,7 +144,7 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
                 >
                   <Avatar className="h-8 w-8 select-none">
                     <AvatarFallback className="bg-primary/20 text-foreground text-xs">
-                      {getInitials(user.full_name || "User")}
+                      {getInitials(displayName)}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -148,7 +153,7 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                      <span>{user.full_name}</span>
+                      <span>{displayName}</span>
                       {isPro && <ProBadge size="sm" />}
                     </div>
                     <span className="text-xs text-muted-foreground">{user.email}</span>

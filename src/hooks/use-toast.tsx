@@ -2,7 +2,7 @@
 // Importing from React directly
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Cross2Icon } from "@radix-ui/react-icons";
+import { X } from "lucide-react"; // Replace Cross2Icon with X from lucide-react
 import { cn } from "@/lib/utils";
 
 const toastVariants = cva(
@@ -48,7 +48,7 @@ const Toast = React.forwardRef<React.ElementRef<"div">, ToastProps>(
           className="absolute right-1 top-1 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
           onClick={onClose}
         >
-          <Cross2Icon className="h-4 w-4" />
+          <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </button>
       </div>
@@ -121,6 +121,39 @@ const ToastContext = React.createContext<{
   updateToast: () => {},
 });
 
+// Create a ToastProvider component
+export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
+  const [toasts, setToasts] = React.useState<Toast[]>([]);
+
+  const addToast = React.useCallback((toast: Omit<Toast, "id">) => {
+    setToasts((prev) => [
+      ...prev,
+      { id: Math.random().toString(36).substr(2, 9), ...toast },
+    ]);
+  }, []);
+
+  const removeToast = React.useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
+  const updateToast = React.useCallback(
+    (id: string, toast: Partial<Omit<Toast, "id">>) => {
+      setToasts((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, ...toast } : t))
+      );
+    },
+    []
+  );
+
+  return (
+    <ToastContext.Provider
+      value={{ toasts, addToast, removeToast, updateToast }}
+    >
+      {children}
+    </ToastContext.Provider>
+  );
+};
+
 function useToast() {
   const context = React.useContext(ToastContext);
 
@@ -129,6 +162,7 @@ function useToast() {
   }
 
   return {
+    toasts: context.toasts,
     toast: (props: Omit<Toast, "id">) => {
       context.addToast(props);
     },

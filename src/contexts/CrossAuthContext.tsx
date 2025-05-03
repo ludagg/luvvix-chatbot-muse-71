@@ -1,9 +1,8 @@
-
 import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
 import { useCrossAppAuth, LuvviXUser } from "@/hooks/use-cross-app-auth";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import { nanoid } from "nanoid";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 // Type pour une conversation
 export interface Conversation {
@@ -112,9 +111,17 @@ export const CrossAuthProvider: React.FC<CrossAuthProviderProps> = ({ children }
   const login = async () => {
     try {
       await luvvixLogin();
-      toast.success('Connexion réussie');
+      toast({
+        title: "Connexion réussie",
+        description: "Bienvenue sur LuvviX Chat!",
+        variant: "default"
+      });
     } catch (error) {
-      toast.error('Erreur de connexion');
+      toast({
+        title: "Erreur de connexion",
+        description: "Impossible de se connecter à LuvviX ID",
+        variant: "destructive"
+      });
       throw error;
     }
   };
@@ -124,9 +131,17 @@ export const CrossAuthProvider: React.FC<CrossAuthProviderProps> = ({ children }
     try {
       luvvixLogout();
       setCurrentConversationId(null);
-      toast.success('Déconnexion réussie');
+      toast({
+        title: "Déconnexion réussie",
+        description: "Vous êtes maintenant déconnecté",
+        variant: "default"
+      });
     } catch (error) {
-      toast.error('Erreur lors de la déconnexion');
+      toast({
+        title: "Erreur lors de la déconnexion",
+        description: "Un problème est survenu lors de la déconnexion",
+        variant: "destructive"
+      });
     }
   };
 

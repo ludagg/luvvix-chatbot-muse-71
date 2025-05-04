@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
@@ -154,6 +155,23 @@ function toast({ ...props }: Toast) {
     update,
   };
 }
+
+// Add convenience methods for different toast types
+toast.error = (title: string, description?: string) => {
+  return toast({ title, description, variant: "destructive" });
+};
+
+toast.success = (title: string, description?: string) => {
+  return toast({ title, description });
+};
+
+toast.info = (title: string, description?: string) => {
+  return toast({ title, description });
+};
+
+toast.warning = (title: string, description?: string) => {
+  return toast({ title, description, variant: "default" });
+};
 
 function useToast() {
   const [state, setState] = useState<State>(memoryState);

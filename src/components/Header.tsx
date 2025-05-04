@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -77,8 +78,10 @@ export function Header({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
   };
   
   const handleVoiceAnalysisComplete = (result: string) => {
-    toast.info("Analyse d'image complétée");
-    // Ici vous pourriez ajouter le résultat à la conversation
+    toast({
+      title: "Analyse d'image complétée",
+      description: result
+    });
   };
   
   const toggleMute = () => {
@@ -134,14 +137,7 @@ export function Header({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Avatar className="h-8 w-8 cursor-pointer border">
-                  {user.photoURL ? (
-                    <>
-                      <AvatarImage src={user.photoURL} alt={user.displayName || "Utilisateur"} />
-                      <AvatarFallback>{getInitials(user)}</AvatarFallback>
-                    </>
-                  ) : (
-                    <AvatarFallback>{getInitials(user)}</AvatarFallback>
-                  )}
+                  <AvatarFallback>{getInitials(user)}</AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

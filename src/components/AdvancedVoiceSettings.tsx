@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Volume2, VolumeX, Settings, ChevronDown, ChevronUp, Mic, Waveform } from 'lucide-react';
+import { Volume2, VolumeX, Settings, ChevronDown, ChevronUp, Mic, AudioWaveform } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -256,7 +256,7 @@ export const AdvancedVoiceSettings = ({ isMuted, onToggleMute }: AdvancedVoiceSe
                 </div>
                 
                 <div className="flex items-center gap-2 p-2 rounded-md bg-primary/10">
-                  <Waveform className="h-4 w-4 text-primary" />
+                  <AudioWaveform className="h-4 w-4 text-primary" />
                   <p className="text-xs text-muted-foreground">
                     Les voix haute qualité sont disponibles avec l'abonnement Pro
                   </p>

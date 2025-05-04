@@ -11,6 +11,9 @@ import NotFound from "./pages/NotFound";
 import { useLocalStorage } from "./hooks/use-local-storage";
 import { Theme } from "./components/ThemeToggle";
 import { DialogProvider } from "./contexts/DialogContext";
+import { KeyboardShortcutsEnhanced } from "./components/KeyboardShortcutsEnhanced";
+import { CommandPalette } from "./components/CommandPalette";
+import { OfflineMode } from "./components/OfflineMode";
 
 // Create the query client
 const queryClient = new QueryClient({
@@ -88,6 +91,10 @@ const App = () => {
           <DialogProvider>
             <Toaster />
             <Sonner />
+            <OfflineMode />
+            <KeyboardShortcutsEnhanced />
+            <CommandPalette />
+            
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />

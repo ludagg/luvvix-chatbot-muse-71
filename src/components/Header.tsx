@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,6 +17,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { DiscussionsMenu } from "@/components/DiscussionsMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ConversationSearch } from "@/components/ConversationSearch";
+import { ThemeCustomizer } from "@/components/ThemeCustomizer";
+import { AccessibilityPanel } from "@/components/AccessibilityPanel";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 // Ajouter ces importations
 import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";

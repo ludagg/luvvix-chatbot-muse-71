@@ -101,3 +101,126 @@ export const enhanceMarkdownFormatting = (content: string): string => {
     
   return enhancedContent;
 };
+
+/**
+ * Améliore l'accessibilité du contenu Markdown
+ * @param content Le contenu à rendre accessible
+ * @returns Le contenu avec des attributs d'accessibilité améliorés
+ */
+export const enhanceAccessibility = (content: string): string => {
+  let accessibleContent = content;
+  
+  // Ajouter des attributs alt aux images qui n'en ont pas
+  accessibleContent = accessibleContent.replace(
+    /!\[(.*?)\]\((.*?)\)/g, 
+    (match, altText, url) => {
+      if (!altText) {
+        return `![Description de l'image](${url})`;
+      }
+      return match;
+    }
+  );
+  
+  // Améliorer les tableaux avec des attributs pour les lecteurs d'écran
+  accessibleContent = accessibleContent.replace(
+    /(\|[^\n]+\|\n\|(?:\s*:?-+:?\s*\|)+\n(?:\|[^\n]+\|\n)+)/g,
+    (table) => {
+      return `<div role="table" aria-label="Tableau de données">${table}</div>`;
+    }
+  );
+  
+  return accessibleContent;
+};
+
+/**
+ * Ajoute des raccourcis de formatage au texte
+ * @param text Le texte à modifier
+ * @param format Le format à appliquer
+ * @returns Le texte avec le formatage appliqué
+ */
+export const applyFormatting = (text: string, format: string): string => {
+  // Récupérer la sélection de texte actuelle ou utiliser le texte complet
+  const selection = window.getSelection();
+  const selectedText = selection?.toString() || "";
+  
+  // Si du texte est sélectionné, on applique le formatage uniquement à cette partie
+  if (selectedText && text.includes(selectedText)) {
+    let formattedText = "";
+    
+    switch (format) {
+      case "bold":
+        formattedText = `**${selectedText}**`;
+        break;
+      case "italic":
+        formattedText = `*${selectedText}*`;
+        break;
+      case "bullet":
+        formattedText = selectedText.split('\n')
+          .map(line => `- ${line}`)
+          .join('\n');
+        break;
+      case "number":
+        formattedText = selectedText.split('\n')
+          .map((line, i) => `${i+1}. ${line}`)
+          .join('\n');
+        break;
+      case "h1":
+        formattedText = `# ${selectedText}`;
+        break;
+      case "h2":
+        formattedText = `## ${selectedText}`;
+        break;
+      case "code":
+        formattedText = `\`\`\`\n${selectedText}\n\`\`\``;
+        break;
+      case "link":
+        formattedText = `[${selectedText}](url)`;
+        break;
+      case "quote":
+        formattedText = selectedText.split('\n')
+          .map(line => `> ${line}`)
+          .join('\n');
+        break;
+      default:
+        formattedText = selectedText;
+    }
+    
+    return text.replace(selectedText, formattedText);
+  }
+  
+  // Si aucune sélection, ajout d'un modèle au curseur
+  switch (format) {
+    case "bold":
+      return text + "**texte en gras**";
+    case "italic":
+      return text + "*texte en italique*";
+    case "bullet":
+      return text + "\n- Élément de liste à puces";
+    case "number":
+      return text + "\n1. Premier élément\n2. Deuxième élément";
+    case "h1":
+      return text + "\n# Titre de niveau 1";
+    case "h2":
+      return text + "\n## Titre de niveau 2";
+    case "code":
+      return text + "\n```\ncode\n```";
+    case "link":
+      return text + "[texte du lien](url)";
+    case "quote":
+      return text + "\n> Citation";
+    default:
+      return text;
+  }
+};
+
+/**
+ * Nettoie les caractères spéciaux dans une chaîne pour les URL ou les noms de fichiers
+ * @param str La chaîne à nettoyer
+ * @returns La chaîne nettoyée
+ */
+export const sanitizeString = (str: string): string => {
+  return str
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+};

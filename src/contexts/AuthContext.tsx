@@ -6,12 +6,8 @@ export interface User {
   id: string;
   email: string;
   displayName?: string;
-  full_name?: string;  // Add this to match LuvviXUser
   age?: number;
   country?: string;
-  user_metadata?: Record<string, any>;  // Add this to match LuvviXUser
-  app_metadata?: Record<string, any>;  // Add this to match LuvviXUser
-  avatar_url?: string;  // Add this to match LuvviXUser
 }
 
 export interface Conversation {
@@ -97,29 +93,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       const { password: _, ...userWithoutPassword } = existingUser;
-      
-      // Add necessary fields to match LuvviXUser
-      const userWithMetadata = {
-        ...userWithoutPassword,
-        full_name: userWithoutPassword.displayName || "User",
-        user_metadata: {
-          bio: userWithoutPassword.bio || "",
-          website: userWithoutPassword.website || "",
-          preferences: { theme: "dark" }
-        },
-        app_metadata: {
-          roles: ["user"]
-        }
-      };
-      
-      setUser(userWithMetadata);
+      setUser(userWithoutPassword);
       
       if (email.includes("pro") || email.includes("premium")) {
         setProStatus(true);
       }
       
       const userConversations = conversations.filter(
-        (conv) => conv.id.startsWith(userWithMetadata.id)
+        (conv) => conv.id.startsWith(userWithoutPassword.id)
       );
       
       if (userConversations.length > 0) {
@@ -158,25 +139,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
       
-      const userId = nanoid();
       const newUser = {
-        id: userId,
+        id: nanoid(),
         email,
         password,
         displayName,
         age,
         country,
         createdAt: new Date(),
-        // Add fields to match LuvviXUser
-        full_name: displayName || "User",
-        user_metadata: {
-          bio: "",
-          website: "",
-          preferences: { theme: "dark" }
-        },
-        app_metadata: {
-          roles: ["user"]
-        }
       };
       
       users.push(newUser);

@@ -1,91 +1,114 @@
-
 import { useState } from "react";
-import { useCrossAuth } from "@/contexts/CrossAuthContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChatContainer } from "@/components/ChatContainer";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, User, Paintbrush, Star } from "lucide-react";
+import { Menu, User, Settings, LogOut, Star, Paintbrush } from "lucide-react";
 import { ConversationSelector } from "@/components/ConversationSelector";
+import { DiscussionsMenu } from "@/components/DiscussionsMenu";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { ProFeatures } from "@/components/ProFeatures";
 import { ProBadge } from "@/components/ProBadge";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 import { Header } from "@/components/Header";
-import { Input } from "@/components/ui/input";
 
-// Schéma pour le profil
+const loginSchema = z.object({
+  email: z.string().email({ message: "Adresse email invalide" }),
+  password: z.string().min(6, { message: "Mot de passe doit contenir au moins 6 caractères" }),
+});
+
+const registerSchema = z.object({
+  email: z.string().email({ message: "Adresse email invalide" }),
+  password: z.string().min(6, { message: "Mot de passe doit contenir au moins 6 caractères" }),
+  displayName: z.string().min(2, { message: "Prénom requis" }),
+  age: z.coerce.number().min(13, { message: "Vous devez avoir au moins 13 ans" }).max(120, { message: "Âge invalide" }),
+  country: z.string().min(2, { message: "Pays requis" }),
+});
+
 const profileSchema = z.object({
-  full_name: z.string().min(2, { message: "Le nom complet est requis" }),
-  bio: z.string().optional(),
-  website: z.string().url({ message: "URL invalide" }).optional().or(z.literal('')),
+  displayName: z.string().min(2, { message: "Prénom requis" }),
+  age: z.coerce.number().min(13, { message: "Vous devez avoir au moins 13 ans" }).max(120, { message: "Âge invalide" }),
+  country: z.string().min(2, { message: "Pays requis" }),
 });
 
 const Index = () => {
-  // Try CrossAuth first, then fallback to standard Auth
-  const crossAuth = useCrossAuth();
-  const standardAuth = useAuth();
-  
-  // Use CrossAuth if available, otherwise use standard Auth
-  const { user, isPro = false, isLoading } = crossAuth || standardAuth;
-  
-  // Get login function that matches the expected parameters
-  const login = async () => {
-    if (crossAuth) {
-      return crossAuth.login();
-    } else if (standardAuth) {
-      // For demo purposes, we'll use dummy values
-      return standardAuth.login("demo@example.com", "password");
-    }
-  };
-  
-  // Get logout function
-  const logout = crossAuth?.logout || standardAuth?.logout;
-  
+  const { user, login, register, logout, isLoading, isPro = false } = useAuth();
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { toast } = useToast();
 
-  // Safely access user properties, handling both user types
-  const getUserMetadata = (key: string) => {
-    if (!user) return "";
-    
-    if ('user_metadata' in user) {
-      return user.user_metadata?.[key] || "";
-    } else {
-      return (user as any)[key] || "";
-    }
-  };
-  
-  const getUserName = () => {
-    if (!user) return "";
-    return user.full_name || (user as any).displayName || "";
-  };
+  const loginForm = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const registerForm = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      displayName: "",
+      age: undefined,
+      country: "",
+    },
+  });
 
   const profileForm = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      full_name: getUserName(),
-      bio: getUserMetadata('bio'),
-      website: getUserMetadata('website'),
+      displayName: user?.displayName || "",
+      age: user?.age || undefined,
+      country: user?.country || "",
     },
   });
 
-  const handleLogin = async () => {
+  const handleLogin = async (values: z.infer<typeof loginSchema>) => {
     setError("");
     try {
-      await login();
+      await login(values.email, values.password);
       setIsAuthDialogOpen(false);
+      loginForm.reset();
+    } catch (err: any) {
+      setError(err.message || "Une erreur est survenue");
+    }
+  };
+
+  const handleRegister = async (values: z.infer<typeof registerSchema>) => {
+    setError("");
+    try {
+      await register(
+        values.email, 
+        values.password, 
+        values.displayName, 
+        values.age, 
+        values.country
+      );
+      setIsAuthDialogOpen(false);
+      registerForm.reset();
     } catch (err: any) {
       setError(err.message || "Une erreur est survenue");
     }
@@ -94,14 +117,16 @@ const Index = () => {
   const handleUpdateProfile = async (values: z.infer<typeof profileSchema>) => {
     setError("");
     console.log("Update profile with:", values);
-    toast({
-      title: "Profil mis à jour",
-      description: "Vos informations ont été mises à jour avec succès",
-    });
     setIsProfileDialogOpen(false);
+    profileForm.reset({
+      displayName: values.displayName,
+      age: values.age,
+      country: values.country,
+    });
   };
 
   const handleOpenAuth = (mode: "login" | "register") => {
+    setAuthMode(mode);
     setIsAuthDialogOpen(true);
     setError("");
   };
@@ -109,9 +134,9 @@ const Index = () => {
   const handleOpenProfile = () => {
     if (user) {
       profileForm.reset({
-        full_name: getUserName(),
-        bio: getUserMetadata('bio'),
-        website: getUserMetadata('website'),
+        displayName: user.displayName || "",
+        age: user.age || undefined,
+        country: user.country || "",
       });
       setIsProfileDialogOpen(true);
     }
@@ -138,11 +163,18 @@ const Index = () => {
         {!user && (
           <div className="text-center mt-4 mb-2 px-4 md:mb-4">
             <p className="text-muted-foreground mb-3 md:mb-4 text-sm md:text-base">
-              Connectez-vous avec LuvviX ID pour sauvegarder vos discussions
+              Connectez-vous pour sauvegarder vos discussions
             </p>
             <div className="flex justify-center gap-3 md:gap-4">
-              <Button size={isMobile ? "sm" : "default"} onClick={handleLogin} disabled={isLoading}>
-                {isLoading ? "Chargement..." : "Se connecter avec LuvviX ID"}
+              <Button size={isMobile ? "sm" : "default"} onClick={() => handleOpenAuth("login")}>
+                Se connecter
+              </Button>
+              <Button 
+                variant="outline" 
+                size={isMobile ? "sm" : "default"} 
+                onClick={() => handleOpenAuth("register")}
+              >
+                S'inscrire
               </Button>
             </div>
           </div>
@@ -161,34 +193,167 @@ const Index = () => {
         <DialogContent className="sm:max-w-[425px] p-4 md:p-6">
           <DialogHeader>
             <DialogTitle>
-              Connexion avec LuvviX ID
+              {authMode === "login" ? "Connexion" : "Inscription"}
             </DialogTitle>
             <DialogDescription>
-              Connectez-vous avec LuvviX ID pour accéder à tous les services LuvviX
+              {authMode === "login" 
+                ? "Entrez vos identifiants pour vous connecter" 
+                : "Créez un compte pour sauvegarder vos discussions"}
             </DialogDescription>
           </DialogHeader>
           
-          {error && (
-            <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
-              {error}
-            </div>
-          )}
-          
-          <div className="flex flex-col items-center justify-center space-y-4 py-4">
-            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
-              <User className="h-8 w-8 text-primary" />
-            </div>
-            <p className="text-center text-sm text-muted-foreground">
-              En vous connectant, vous acceptez nos conditions d'utilisation et notre politique de confidentialité.
-            </p>
-            <Button 
-              onClick={handleLogin} 
-              className="w-full" 
-              disabled={isLoading}
-            >
-              {isLoading ? "Connexion..." : "Se connecter avec LuvviX ID"}
-            </Button>
-          </div>
+          <Tabs defaultValue={authMode} className="w-full" onValueChange={(v) => setAuthMode(v as "login" | "register")}>
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="login">Connexion</TabsTrigger>
+              <TabsTrigger value="register">Inscription</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="login" className="space-y-4 mt-2">
+              {error && (
+                <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+                  {error}
+                </div>
+              )}
+              
+              <Form {...loginForm}>
+                <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                  <FormField
+                    control={loginForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="exemple@email.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={loginForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mot de passe</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Chargement..." : "Se connecter"}
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+            
+            <TabsContent value="register" className="space-y-4 mt-2">
+              {error && (
+                <div className="bg-destructive/15 text-destructive text-sm p-3 rounded-md">
+                  {error}
+                </div>
+              )}
+              
+              <Form {...registerForm}>
+                <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                  <FormField
+                    control={registerForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="exemple@email.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={registerForm.control}
+                    name="displayName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prénom</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Votre prénom" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={registerForm.control}
+                      name="age"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Âge</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              placeholder="25" 
+                              min={13}
+                              max={120}
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={registerForm.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Pays</FormLabel>
+                          <FormControl>
+                            <Input placeholder="France" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  
+                  <FormField
+                    control={registerForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mot de passe</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Chargement..." : "S'inscrire"}
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
       
@@ -211,45 +376,53 @@ const Index = () => {
             <form onSubmit={profileForm.handleSubmit(handleUpdateProfile)} className="space-y-4">
               <FormField
                 control={profileForm.control}
-                name="full_name"
+                name="displayName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nom complet</FormLabel>
+                    <FormLabel>Prénom</FormLabel>
                     <FormControl>
-                      <Input placeholder="Votre nom complet" {...field} />
+                      <Input placeholder="Votre prénom" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               
-              <FormField
-                control={profileForm.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bio</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Quelques mots à propos de vous" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={profileForm.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Site web</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://votre-site.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={profileForm.control}
+                  name="age"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Âge</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="25" 
+                          min={13}
+                          max={120}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={profileForm.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pays</FormLabel>
+                      <FormControl>
+                        <Input placeholder="France" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               
               <Button 
                 type="submit" 

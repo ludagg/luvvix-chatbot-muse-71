@@ -1,5 +1,5 @@
+
 import { useState } from "react";
-import { useCrossAuth } from "@/contexts/CrossAuthContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
 import { LogOut, Settings, User, Globe, Search, Menu, Sparkles } from "lucide-react";
@@ -30,16 +30,7 @@ interface HeaderProps {
 }
 
 export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarOpen }: HeaderProps) => {
-  // Try CrossAuth first, then fallback to standard Auth
-  const crossAuth = useCrossAuth();
-  const standardAuth = useAuth();
-  
-  // Use CrossAuth if available, otherwise use standard Auth
-  const { user, isPro = false, isLoading } = crossAuth || standardAuth;
-  
-  // Get logout function that fits regardless of auth system used
-  const logout = crossAuth?.logout || standardAuth?.logout;
-  
+  const { user, logout, isPro = false } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
   const isWorldPage = location.pathname === "/world";
@@ -48,7 +39,7 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      logout();
+      await logout();
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -68,9 +59,6 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
     // Open a new tab with a search engine (using Bing for its API integration possibilities)
     window.open("https://www.bing.com", "_blank");
   };
-
-  // Get the display name safely from either user type
-  const displayName = user?.full_name || (user as any)?.displayName || "User";
 
   return (
     <motion.header
@@ -144,7 +132,7 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
                 >
                   <Avatar className="h-8 w-8 select-none">
                     <AvatarFallback className="bg-primary/20 text-foreground text-xs">
-                      {getInitials(displayName)}
+                      {getInitials(user.displayName || "User")}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -153,7 +141,7 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
                 <DropdownMenuLabel>
                   <div className="flex flex-col">
                     <div className="flex items-center gap-2">
-                      <span>{displayName}</span>
+                      <span>{user.displayName}</span>
                       {isPro && <ProBadge size="sm" />}
                     </div>
                     <span className="text-xs text-muted-foreground">{user.email}</span>
@@ -201,16 +189,9 @@ export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
               size="sm"
               onClick={() => onOpenAuth("login")}
               className="gap-2"
-              disabled={isLoading}
             >
-              {isLoading ? (
-                <span className="animate-pulse">Chargement...</span>
-              ) : (
-                <>
-                  <User className="h-4 w-4" />
-                  Se connecter avec LuvviX ID
-                </>
-              )}
+              <User className="h-4 w-4" />
+              Connexion
             </Button>
           )}
         </div>

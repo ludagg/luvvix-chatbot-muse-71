@@ -4,14 +4,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { CrossAuthProvider } from "./contexts/CrossAuthContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { useEffect, useState } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { useLocalStorage } from "./hooks/use-local-storage";
 import { Theme } from "./components/ThemeToggle";
-import { ToastProvider } from "@/hooks/use-toast"; // Add ToastProvider import
 
 // Create the query client
 const queryClient = new QueryClient({
@@ -24,7 +22,7 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  const [theme, setTheme] = useLocalStorage<Theme>("theme", "dark");
+  const [theme, setTheme] = useLocalStorage<Theme>('theme', 'dark');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -32,14 +30,14 @@ const App = () => {
     
     // Apply the saved theme
     const root = document.documentElement;
-    root.classList.remove("light", "dark", "theme-purple", "theme-blue", "theme-green");
+    root.classList.remove('light', 'dark', 'theme-purple', 'theme-blue', 'theme-green');
     
-    if (theme === "purple") {
-      root.classList.add("dark", "theme-purple");
-    } else if (theme === "blue") {
-      root.classList.add("dark", "theme-blue");
-    } else if (theme === "green") {
-      root.classList.add("dark", "theme-green");
+    if (theme === 'purple') {
+      root.classList.add('dark', 'theme-purple');
+    } else if (theme === 'blue') {
+      root.classList.add('dark', 'theme-blue');
+    } else if (theme === 'green') {
+      root.classList.add('dark', 'theme-green');
     } else {
       root.classList.add(theme);
     }
@@ -50,19 +48,19 @@ const App = () => {
     // Smooth scroll function
     const handleAnchorClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      const anchor = target.closest("a");
+      const anchor = target.closest('a');
       
-      if (anchor && anchor.hash && anchor.hash.startsWith("#") && anchor.href.includes(window.location.pathname)) {
+      if (anchor && anchor.hash && anchor.hash.startsWith('#') && anchor.href.includes(window.location.pathname)) {
         e.preventDefault();
         const targetElement = document.querySelector(anchor.hash);
         if (targetElement) {
-          targetElement.scrollIntoView({ behavior: "smooth" });
+          targetElement.scrollIntoView({ behavior: 'smooth' });
         }
       }
     };
 
-    document.addEventListener("click", handleAnchorClick);
-    return () => document.removeEventListener("click", handleAnchorClick);
+    document.addEventListener('click', handleAnchorClick);
+    return () => document.removeEventListener('click', handleAnchorClick);
   }, []);
 
   if (!mounted) return null; // Wait until theme is determined
@@ -71,19 +69,15 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <CrossAuthProvider>
-            <ToastProvider> {/* Add ToastProvider to wrap the app */}
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
-              <Toaster />
-              <Sonner />
-            </ToastProvider>
-          </CrossAuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

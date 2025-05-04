@@ -1,6 +1,14 @@
 
 // Import directly from the hooks folder to avoid circular dependency
-import { useToast, ToastProvider, Toast, ToastClose, ToastTitle, ToastDescription, ToastViewport } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Toast,
+  ToastClose,
+  ToastDescription,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
+} from "@/components/ui/toast";
 
 export function Toaster() {
   const { toasts } = useToast();

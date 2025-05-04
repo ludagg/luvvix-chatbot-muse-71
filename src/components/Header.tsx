@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
-import { Menu, User, Settings, LogOut, Star, Paintbrush } from "lucide-react";
+import { Menu, User, Settings, LogOut, Star, Paintbrush, HelpCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -122,6 +123,14 @@ export function Header({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarO
         </div>
         
         <div className="flex items-center gap-1 md:gap-2">
+          {/* Ajout du lien d'aide */}
+          <Link to="/aide">
+            <Button variant="ghost" size="icon">
+              <HelpCircle className="h-4 w-4" />
+              <span className="sr-only">Aide</span>
+            </Button>
+          </Link>
+          
           {/* Nouvelles fonctionnalités */}
           <VisionAnalysis onAnalysisComplete={handleVoiceAnalysisComplete} />
           

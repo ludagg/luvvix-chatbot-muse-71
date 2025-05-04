@@ -1,55 +1,66 @@
+
 import { useState, useEffect } from 'react';
 
-export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
-  // Get from local storage then
-  // parse stored json or return initialValue
-  const readValue = (): T => {
-    // Prevent build error "window is undefined" but keep working
-    if (typeof window === 'undefined') {
-      return initialValue;
-    }
-
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? (JSON.parse(item) as T) : initialValue;
-    } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
-      return initialValue;
-    }
-  };
-
+export function useLocalStorage<T>(key: string, initialValue: T) {
   // State to store our value
-  // Pass initial state function to useState so logic is only executed once
-  const [storedValue, setStoredValue] = useState<T>(readValue);
-
-  // Return a wrapped version of useState's setter function that ...
-  // ... persists the new value to localStorage.
-  const setValue = (value: T) => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
     try {
-      // Allow value to be a function so we have the same API as useState
+      // Get from local storage by key
+      const item = window.localStorage.getItem(key);
+      // Parse stored json or if none return initialValue
+      if (item === null) {
+        return initialValue;
+      }
+      
+      try {
+        return JSON.parse(item);
+      } catch (error) {
+        // If the item is not JSON (like a string), return it directly
+        return item as unknown as T;
+      }
+    } catch (error) {
+      // If error also return initialValue
+      console.warn('Error reading localStorage key "' + key + '":', error);
+      return initialValue;
+    }
+  });
+
+  // Return a wrapped version of useState's setter function that persists the new value to localStorage
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      // Allow value to be a function so we have same API as useState
       const valueToStore =
         value instanceof Function ? value(storedValue) : value;
-      // Save to local storage
-      window.localStorage.setItem(key, JSON.stringify(valueToStore));
       // Save state
       setStoredValue(valueToStore);
+      // Save to local storage
+      if (typeof valueToStore === 'string') {
+        window.localStorage.setItem(key, valueToStore);
+      } else {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      }
     } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error);
+      console.warn('Error setting localStorage key "' + key + '":', error);
     }
   };
 
+  // Update local storage when window is visible again (for syncing between tabs)
   useEffect(() => {
-    const handleStorageChange = () => {
-      setStoredValue(readValue());
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === key && event.newValue !== null) {
+        try {
+          const newValue = JSON.parse(event.newValue);
+          setStoredValue(newValue);
+        } catch (error) {
+          // If it's not JSON, set it directly
+          setStoredValue(event.newValue as unknown as T);
+        }
+      }
     };
 
-    // this only works for other documents, not the current one
     window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [key]);
 
-  return [storedValue, setValue];
+  return [storedValue, setValue] as const;
 }

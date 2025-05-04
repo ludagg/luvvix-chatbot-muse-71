@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/command";
 import { useDialogContext } from "@/contexts/DialogContext";
 import { useToast } from "@/hooks/use-toast";
+import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface CommandAction {
   id: string;
@@ -153,6 +154,10 @@ export function CommandPalette() {
       open={isCommandPaletteOpen}
       onOpenChange={setCommandPaletteOpen}
     >
+      <DialogTitle className="sr-only">Palette de commandes</DialogTitle>
+      <DialogDescription className="sr-only">
+        Recherchez et exécutez des commandes dans l'application
+      </DialogDescription>
       <CommandInput
         placeholder="Tapez une commande ou recherchez..."
         value={search}

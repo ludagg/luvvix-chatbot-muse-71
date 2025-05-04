@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { useEffect, useState } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import Help from "./pages/Help";
 import { useLocalStorage } from "./hooks/use-local-storage";
 import { Theme } from "./components/ThemeToggle";
 import { DialogProvider } from "./contexts/DialogContext";
@@ -98,6 +99,7 @@ const App = () => {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/aide" element={<Help />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

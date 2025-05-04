@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { 
   Check, Copy, ThumbsDown, ThumbsUp, RefreshCw, BookOpenCheck, 
   Globe, BrainCircuit, Code, CodeSquare, Lightbulb, 
-  Info, AlertTriangle, ExternalLink
+  Info, AlertTriangle, ExternalLink,
+  ListOrdered, List, Heading1, Heading2, Heading3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -56,6 +57,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
   const [showSourcesDialog, setShowSourcesDialog] = useState(false);
   const [isCodeBlockCopied, setIsCodeBlockCopied] = useState<Record<string, boolean>>({});
   const hasRealSources = message.sourceReferences?.some(source => !source.title.includes("Résultat de recherche")) || false;
+  const [showFormatButtons, setShowFormatButtons] = useState(false);
   
   // Préparation du contenu avec tableaux bien formatés
   const formattedContent = message.content ? formatMarkdownTables(message.content) : "";
@@ -128,8 +130,78 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
       
       <div className={cn(
         "bg-muted/40 backdrop-blur-sm p-4 rounded-lg",
-        message.role === "user" ? "rounded-tr-none max-w-[75%]" : "rounded-tl-none max-w-[90%] w-full md:max-w-[85%]"
+        message.role === "user" ? "rounded-tr-none max-w-[75%]" : "rounded-tl-none max-w-[95%] w-full md:max-w-[90%]"
       )}>
+        {/* Ajout des boutons de formatage pour l'assistant */}
+        {message.role === "assistant" && showFormatButtons && (
+          <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border/20">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <Heading1 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Grand titre</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <Heading2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Titre moyen</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <Heading3 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Petit titre</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <List className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Liste à puces</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <ListOrdered className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Liste numérotée</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        )}
+        
         <div ref={contentRef} className="prose prose-sm dark:prose-invert max-w-none break-words">
           <ReactMarkdown
             remarkPlugins={[remarkMath]}
@@ -140,6 +212,30 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
                   {props.children}
                   <ExternalLink className="h-3 w-3 inline" />
                 </a>
+              ),
+              h1: ({ node, ...props }) => (
+                <h1 {...props} className="text-2xl font-bold mt-6 mb-4 text-gradient" />
+              ),
+              h2: ({ node, ...props }) => (
+                <h2 {...props} className="text-xl font-bold mt-5 mb-3" />
+              ),
+              h3: ({ node, ...props }) => (
+                <h3 {...props} className="text-lg font-bold mt-4 mb-2" />
+              ),
+              h4: ({ node, ...props }) => (
+                <h4 {...props} className="text-base font-semibold mt-3 mb-2" />
+              ),
+              ul: ({ node, ...props }) => (
+                <ul {...props} className="list-disc pl-6 my-4 space-y-2" />
+              ),
+              ol: ({ node, ...props }) => (
+                <ol {...props} className="list-decimal pl-6 my-4 space-y-2" />
+              ),
+              li: ({ node, ...props }) => (
+                <li {...props} className="mb-1" />
+              ),
+              blockquote: ({ node, ...props }) => (
+                <blockquote {...props} className="border-l-4 border-primary/30 pl-4 italic my-4" />
               ),
               code: ({ node, ...props }) => {
                 if (!props.className) {
@@ -299,6 +395,26 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
           </div>
           
           <div className="flex items-center gap-1">
+            {message.role === "assistant" && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                      onClick={() => setShowFormatButtons(!showFormatButtons)}
+                    >
+                      <Heading2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Options de formatage</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            
             {message.role === "assistant" && isLast && onRegenerate && (
               <TooltipProvider>
                 <Tooltip>

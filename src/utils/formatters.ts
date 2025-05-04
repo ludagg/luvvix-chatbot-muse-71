@@ -63,7 +63,7 @@ export const formatMarkdownTables = (content: string): string => {
   // Recherche tous les tableaux dans le contenu (lignes commençant par |)
   const tablePattern = /(\|[^\n]+\|\n\|(?:\s*:?-+:?\s*\|)+\n(?:\|[^\n]+\|\n)+)/g;
   
-  return content.replace(tablePattern, (table) => {
+  let formattedContent = content.replace(tablePattern, (table) => {
     // Assure-toi qu'il y a des sauts de ligne avant et après le tableau
     if (!table.startsWith('\n')) {
       table = '\n' + table;
@@ -73,4 +73,31 @@ export const formatMarkdownTables = (content: string): string => {
     }
     return table;
   });
+  
+  // Ajouter une meilleure prise en charge pour les listes et titres
+  formattedContent = formattedContent
+    // S'assurer que les titres ont un espace après le #
+    .replace(/^(#{1,6})([^\s#])/gm, '$1 $2')
+    // S'assurer que les listes ont un espace après le tiret ou l'astérisque
+    .replace(/^(\s*[-*])([^\s])/gm, '$1 $2')
+    // S'assurer que les listes numérotées ont un espace après le nombre
+    .replace(/^(\s*\d+\.)([^\s])/gm, '$1 $2');
+  
+  return formattedContent;
+};
+
+/**
+ * Enrichit le contenu Markdown avec des styles avancés
+ * @param content Le contenu à enrichir
+ * @returns Le contenu enrichi avec des styles avancés
+ */
+export const enhanceMarkdownFormatting = (content: string): string => {
+  // Ajout de classes pour les titres et listes
+  let enhancedContent = content
+    // Mettre en valeur les titres de premier niveau
+    .replace(/^# (.+)$/gm, '# $1 {.text-gradient}')
+    // Ajouter des styles aux listes
+    .replace(/^(\s*[-*] .+)$/gm, '$1 {.list-item-styled}');
+    
+  return enhancedContent;
 };

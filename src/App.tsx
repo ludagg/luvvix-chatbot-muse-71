@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { useLocalStorage } from "./hooks/use-local-storage";
 import { Theme } from "./components/ThemeToggle";
+import { DialogProvider } from "./contexts/DialogContext";
 
 // Create the query client
 const queryClient = new QueryClient({
@@ -63,21 +64,38 @@ const App = () => {
     return () => document.removeEventListener('click', handleAnchorClick);
   }, []);
 
+  // Ajout d'un gestionnaire de touches globales
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Exemple : Ctrl+/ pour afficher l'aide des raccourcis
+      if (e.ctrlKey && e.key === '/') {
+        e.preventDefault();
+        // Cette action serait remplacée par l'ouverture d'une boîte de dialogue d'aide
+        console.log('Afficher l\'aide des raccourcis');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   if (!mounted) return null; // Wait until theme is determined
 
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+          <DialogProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </DialogProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

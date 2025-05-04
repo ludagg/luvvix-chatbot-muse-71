@@ -1,201 +1,197 @@
-
 import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { motion } from "framer-motion";
-import { LogOut, Settings, User, Globe, Search, Menu, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "./ThemeToggle";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { ConversationSelector } from "@/components/ConversationSelector";
+import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
+import { Menu, User, Settings, LogOut, Star, Paintbrush } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { DiscussionsMenu } from "@/components/DiscussionsMenu";
-import { ProBadge } from "@/components/ProBadge";
-import { Dispatch, SetStateAction } from "react";
-import { Link, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+// Ajouter ces importations
+import { KeyboardShortcuts } from "@/components/KeyboardShortcuts";
+import { VisionAnalysis } from "@/components/VisionAnalysis";
+import { ShareOptions } from "@/components/ShareOptions";
+import { AdvancedVoiceSettings } from "@/components/AdvancedVoiceSettings";
 
 interface HeaderProps {
   onOpenAuth: (mode: "login" | "register") => void;
   onOpenProfile: () => void;
   isSidebarOpen: boolean;
-  setIsSidebarOpen: Dispatch<SetStateAction<boolean>>;
+  setIsSidebarOpen: (open: boolean) => void;
 }
 
-export const Header = ({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarOpen }: HeaderProps) => {
-  const { user, logout, isPro = false } = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const location = useLocation();
-  const isWorldPage = location.pathname === "/world";
-  const isMobile = useIsMobile();
+function getInitials(user: any) {
+  if (!user || !user.displayName) return "XX";
+  const nameParts = user.displayName.split(" ");
+  const initials = nameParts
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+  return initials;
+}
 
+export function Header({ onOpenAuth, onOpenProfile, isSidebarOpen, setIsSidebarOpen }: HeaderProps) {
+  const { user, logout, isPro = false } = useAuth();
+  const { toast } = useToast();
+  const isMobile = useIsMobile();
+  const [isMuted, setIsMuted] = useState(false);
+  
   const handleLogout = async () => {
-    setIsLoggingOut(true);
     try {
       await logout();
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      setIsLoggingOut(false);
+      toast({
+        title: "Déconnexion réussie",
+        description: "Vous avez été déconnecté avec succès",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur de déconnexion",
+        description: error.message || "Une erreur est survenue lors de la déconnexion",
+        variant: "destructive",
+      });
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase();
+  const handleOpenSettings = () => {
+    toast({
+      title: "Paramètres",
+      description: "Les paramètres seront disponibles prochainement",
+    });
   };
 
-  const handleWebSearchClick = () => {
-    // Open a new tab with a search engine (using Bing for its API integration possibilities)
-    window.open("https://www.bing.com", "_blank");
+  const handleProUpgrade = () => {
+    toast({
+      title: "Bientôt disponible",
+      description: "La version Pro sera disponible prochainement. Restez à l'écoute !",
+    });
   };
-
+  
+  const handleVoiceAnalysisComplete = (result: string) => {
+    toast.info("Analyse d'image complétée");
+    // Ici vous pourriez ajouter le résultat à la conversation
+  };
+  
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
+  
   return (
-    <motion.header
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="fixed top-0 left-0 right-0 z-20 bg-gradient-to-b from-background/90 to-background/70 backdrop-blur-md border-b border-border/30 py-3"
-    >
-      <div className="container max-w-5xl mx-auto px-4 flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+    <header className="fixed top-0 left-0 right-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+      <div className="flex items-center justify-between h-14 px-4 md:px-6 max-w-5xl mx-auto">
+        <div className="flex items-center gap-2">
+          <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-foreground">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setIsSidebarOpen(true)}
+              >
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <div className="p-4 h-full">
-                <ConversationSelector closeMenu={() => setIsSidebarOpen(false)} />
-              </div>
+            <SheetContent side="left" className="w-[300px] p-0">
+              <DiscussionsMenu />
             </SheetContent>
           </Sheet>
-          <span className="text-lg font-bold tracking-tight text-gradient">
-            LuvviX
-          </span>
-          {isPro ? (
-            <ProBadge className="ml-0" />
-          ) : (
-            <span className="text-xs font-medium px-1.5 py-0.5 bg-primary/10 text-primary rounded-md">
-              Beta
-            </span>
-          )}
+          
+          <Link to="/" className="flex items-center gap-2">
+            <span className="font-semibold text-lg hidden md:block">LuvviX</span>
+          </Link>
+          
+          {/* Nouvelle section de raccourcis clavier */}
+          <div className="hidden md:flex items-center ml-4">
+            <KeyboardShortcuts />
+          </div>
         </div>
-
-        <div className="flex items-center gap-2">
+        
+        <div className="flex items-center gap-1 md:gap-2">
+          {/* Nouvelles fonctionnalités */}
+          <VisionAnalysis onAnalysisComplete={handleVoiceAnalysisComplete} />
+          
+          <ShareOptions 
+            content="Exemple de contenu à partager depuis LuvviX. Ceci est une démonstration des capacités de partage avancées."
+          />
+          
+          <AdvancedVoiceSettings 
+            isMuted={isMuted}
+            onToggleMute={toggleMute}
+          />
+          
           <ThemeToggle />
-          
-          {/* World button - visible on desktop */}
-          {!isMobile && (
-            <Button
-              variant={isWorldPage ? "default" : "outline"}
-              size="sm"
-              asChild
-              className={`gap-1 text-xs h-8 ${isWorldPage ? '' : 'border-primary/30 hover:bg-primary/10'} hidden md:flex`}
-            >
-              <Link to={isWorldPage ? "/" : "/world"}>
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>{isWorldPage ? "Chat" : "World"}</span>
-              </Link>
-            </Button>
-          )}
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleWebSearchClick}
-            className="gap-1 text-xs h-8 border-primary/30 hover:bg-primary/10 hidden md:flex"
-          >
-            <Search className="h-3.5 w-3.5" />
-            <span>Recherche</span>
-          </Button>
-          <DiscussionsMenu />
           
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative rounded-full h-8 w-8 bg-primary/10"
-                >
-                  <Avatar className="h-8 w-8 select-none">
-                    <AvatarFallback className="bg-primary/20 text-foreground text-xs">
-                      {getInitials(user.displayName || "User")}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
+                <Avatar className="h-8 w-8 cursor-pointer border">
+                  {user.photoURL ? (
+                    <>
+                      <AvatarImage src={user.photoURL} alt={user.displayName || "Utilisateur"} />
+                      <AvatarFallback>{getInitials(user)}</AvatarFallback>
+                    </>
+                  ) : (
+                    <AvatarFallback>{getInitials(user)}</AvatarFallback>
+                  )}
+                </Avatar>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-2">
-                      <span>{user.displayName}</span>
-                      {isPro && <ProBadge size="sm" />}
-                    </div>
-                    <span className="text-xs text-muted-foreground">{user.email}</span>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer flex items-center" onClick={onOpenProfile}>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+                <DropdownMenuItem onClick={onOpenProfile}>
                   <User className="mr-2 h-4 w-4" />
-                  <span>Profil</span>
+                  <span>Profile</span>
                 </DropdownMenuItem>
-                {/* World button - For mobile only */}
-                {isMobile && (
-                  <DropdownMenuItem asChild className="cursor-pointer flex items-center">
-                    <Link to={isWorldPage ? "/" : "/world"}>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      <span>{isWorldPage ? "Chat" : "World"}</span>
-                    </Link>
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem 
-                  className="cursor-pointer flex items-center"
-                  onClick={handleWebSearchClick}
-                >
-                  <Globe className="mr-2 h-4 w-4" />
-                  <span>Recherche web</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer flex items-center">
+                <DropdownMenuItem onClick={handleOpenSettings}>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Paramètres</span>
                 </DropdownMenuItem>
+                {isPro ? (
+                  <DropdownMenuItem>
+                    <Star className="mr-2 h-4 w-4 text-amber-500 fill-amber-500" />
+                    <span>Pro - Gérer</span>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={handleProUpgrade}>
+                    <Star className="mr-2 h-4 w-4" />
+                    <span>Passer à Pro</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  disabled={isLoggingOut}
-                  onClick={handleLogout}
-                  className="cursor-pointer flex items-center text-destructive focus:text-destructive"
-                >
+                <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>{isLoggingOut ? "Déconnexion..." : "Déconnexion"}</span>
+                  <span>Déconnexion</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => onOpenAuth("login")}
-              className="gap-2"
-            >
-              <User className="h-4 w-4" />
-              Connexion
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="sm" className="h-8">
+                  <User className="h-4 w-4 mr-2" />
+                  <span>Compte</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => onOpenAuth("login")}>
+                  Se connecter
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onOpenAuth("register")}>
+                  S'inscrire
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
-    </motion.header>
+    </header>
   );
-};
+}

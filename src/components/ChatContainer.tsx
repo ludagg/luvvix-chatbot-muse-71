@@ -1,10 +1,10 @@
+
 import { useState, useRef, useEffect } from "react";
 import { ChatMessage, SourceReference } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { nanoid } from "nanoid";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { SuggestedQuestions } from "./SuggestedQuestions";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "./ui/button";
 import { Menu } from "lucide-react";
@@ -16,15 +16,7 @@ import { formatSourceCitations } from "@/utils/formatters";
 import { MathFunctionCreator } from "./MathFunctionCreator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Message } from "@/types/message";
-
-const SAMPLE_QUESTIONS = [
-  "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",
-  "Comment puis-je améliorer ma productivité au quotidien ?",
-  "Quelles sont les dernières tendances technologiques à surveiller ?",
-  "Comment fonctionne la blockchain et les cryptomonnaies ?",
-  "Quels sont les meilleurs livres de développement personnel à lire ?",
-  "Montre-moi le graphique de la fonction sin(x)"
-];
+import * as math from 'mathjs';
 
 const INITIAL_MESSAGES: Message[] = [
   {
@@ -42,7 +34,6 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemi
 export const ChatContainer = () => {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [isLoading, setIsLoading] = useState(false);
-  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
@@ -110,39 +101,15 @@ export const ChatContainer = () => {
   }, []);
 
   useEffect(() => {
-    if (messages.length <= 1 || suggestedQuestions.length === 0) {
-      const randomQuestions = [...SAMPLE_QUESTIONS]
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 3);
-      setSuggestedQuestions(randomQuestions);
-    }
-  }, [messages.length, suggestedQuestions.length]);
-
-  useEffect(() => {
     if (user && currentConversationId) {
       const currentConv = conversations.find(c => c.id === currentConversationId);
       if (currentConv) {
         setMessages(currentConv.messages as Message[]);
-        
-        if (currentConv.messages.length <= 1) {
-          const randomQuestions = [...SAMPLE_QUESTIONS]
-            .sort(() => 0.5 - Math.random())
-            .slice(0, 3);
-          setSuggestedQuestions(randomQuestions);
-        }
       } else {
         setMessages(INITIAL_MESSAGES);
-        const randomQuestions = [...SAMPLE_QUESTIONS]
-          .sort(() => 0.5 - Math.random())
-          .slice(0, 3);
-        setSuggestedQuestions(randomQuestions);
       }
     } else if (!user) {
       setMessages(INITIAL_MESSAGES);
-      const randomQuestions = [...SAMPLE_QUESTIONS]
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 3);
-      setSuggestedQuestions(randomQuestions);
     }
   }, [currentConversationId, conversations, user]);
 
@@ -291,67 +258,91 @@ export const ChatContainer = () => {
     }
   };
 
-  const generateSuggestedQuestions = async (assistantResponse: string) => {
-    try {
-      const systemMessage = {
-        role: "user",
-        parts: [
-          {
-            text: `Basé sur cette réponse, génère 3 questions de suivi pertinentes que l'utilisateur pourrait poser. Renvoie uniquement les questions séparées par un pipe (|). Exemple: "Question 1?|Question 2?|Question 3?". Réponse: "${assistantResponse.substring(0, 500)}..."`,
-          },
-        ],
-      };
-
-      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [systemMessage],
-          generationConfig: {
-            temperature: 1.0,
-            topK: 50,
-            topP: 0.9,
-            maxOutputTokens: 256,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+  // Fonction qui extrait et parse les fonctions mathématiques du texte
+  const extractMathFunctions = (text: string): { fn: string, label: string, color: string }[] => {
+    // Modèles pour détecter les fonctions mathématiques
+    const patterns = [
+      // Motifs typiques pour des fonctions: y=f(x), f(x)=..., y=...
+      /[yf]\s*\(x\)\s*=\s*([^,;]+)/gi,
+      /[y]\s*=\s*([^,;]+)/gi,
+      // Détecter directement les fonctions mathématiques
+      /(sin|cos|tan|exp|log|ln|sqrt|abs)\s*\([^)]*\)/gi,
+      // Expression avec x
+      /([+-]?\s*\d*\.?\d*\s*\*?\s*x\^?\d*)/gi
+    ];
+    
+    const foundFunctions: Set<string> = new Set();
+    
+    // Parcourir tous les motifs
+    patterns.forEach(pattern => {
+      let match;
+      while ((match = pattern.exec(text)) !== null) {
+        if (match[1] && !match[1].trim().startsWith('(x)')) {
+          foundFunctions.add(match[1].trim());
+        } else if (match[0]) {
+          foundFunctions.add(match[0].trim());
+        }
       }
-
-      const data = await response.json();
-      const suggestions = data.candidates[0]?.content?.parts[0]?.text || "";
-      
-      const questionArray = suggestions.split("|").map(q => q.trim()).filter(Boolean).slice(0, 3);
-      
-      if (questionArray.length > 0) {
-        setSuggestedQuestions(questionArray);
-      } else {
-        const randomQuestions = [...SAMPLE_QUESTIONS]
-          .sort(() => 0.5 - Math.random())
-          .slice(0, 3);
-        setSuggestedQuestions(randomQuestions);
+    });
+    
+    // Si aucune fonction n'est trouvée, essayons de récupérer n'importe quelle expression avec x
+    if (foundFunctions.size === 0) {
+      const xMatch = /[-+]?[^=]*x[^=,;]*/gi.exec(text);
+      if (xMatch && xMatch[0]) {
+        foundFunctions.add(xMatch[0].trim());
       }
-    } catch (error) {
-      console.error("Error generating suggestions:", error);
-      const randomQuestions = [...SAMPLE_QUESTIONS]
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 3);
-      setSuggestedQuestions(randomQuestions);
     }
+    
+    // Couleurs par défaut pour les graphiques
+    const DEFAULT_COLORS = [
+      '#8B5CF6', // Purple
+      '#F97316', // Orange
+      '#0EA5E9', // Blue
+      '#10B981', // Green
+      '#EF4444', // Red
+      '#F59E0B', // Amber
+    ];
+    
+    // Convertir les fonctions trouvées en format attendu
+    const functions = [...foundFunctions].map((fn, index) => {
+      // Nettoyer la fonction (supprimer "y=" ou "f(x)=" s'ils sont présents)
+      let cleanFn = fn.replace(/^[yf]\s*(\(x\))?\s*=\s*/, '');
+      
+      // Vérifier si la fonction est valide en essayant de l'évaluer
+      try {
+        math.evaluate(cleanFn, { x: 1 });
+      } catch (e) {
+        console.warn(`Invalid function expression: ${cleanFn}, using default`);
+        cleanFn = 'x'; // Fonction par défaut si invalide
+      }
+      
+      return {
+        fn: cleanFn,
+        label: `f${index + 1}(x) = ${cleanFn}`,
+        color: DEFAULT_COLORS[index % DEFAULT_COLORS.length]
+      };
+    });
+    
+    return functions.length > 0 ? functions : [
+      { fn: 'x', label: 'f(x) = x', color: DEFAULT_COLORS[0] }
+    ];
   };
 
+  // Détecte si le message demande de tracer une courbe/graphique
   const checkIfMathFunctionRequested = (content: string): boolean => {
-    const result = content.toLowerCase().match(/trac(e|er)|graph(e|ique)|fonction|courbe|math(s|ématique)/);
-    return !!result; // Convert to boolean
+    const mathTerms = [
+      'trac[eé]', 'graph[ei]', 'fonct', 'courb', 'math[sé]', 'dessin',
+      'plot', 'visualis', 'représent', 'affich', 'montr', 'calcul'
+    ];
+    
+    const mathTermsRegex = new RegExp(mathTerms.join('|'), 'i');
+    return mathTermsRegex.test(content);
   };
   
+  // Vérifie si le texte contient une expression mathématique
   const checkIfHasGraphSyntax = (content: string): boolean => {
-    const result = content.toLowerCase().match(/((sin|cos|tan|log|exp|x\^2|\*x|\+x|x\+|x\-|\-x|x\/|\/x|sqrt)\b)|(\bf\(x\))/);
-    return !!result; // Convert to boolean
+    // Expressions pour détecter une formule mathématique
+    return /([yf]=|[yf]\(x\)=|sin|cos|tan|log|exp|x\^|[+\-*/]x|x[+\-*/]|sqrt)/.test(content);
   };
 
   const handleSendMessage = async (content: string) => {
@@ -469,6 +460,31 @@ export const ChatContainer = () => {
       Ta réponse DOIT montrer l'influence claire de cette analyse approfondie. Reformule et développe ces concepts dans ta réponse complète, avec un niveau d'analyse plus sophistiqué que d'habitude.` 
       : "Tu dois fournir une réponse très approfondie et sophistiquée à cette question.";
 
+      // Instructions spéciales pour les fonctions mathématiques
+      const mathFunctionRequested = checkIfMathFunctionRequested(content);
+      const hasGraph = mathFunctionRequested && checkIfHasGraphSyntax(content);
+      
+      let mathInstructions = "";
+      let extractedFunctions = [];
+      
+      if (hasGraph) {
+        extractedFunctions = extractMathFunctions(content);
+        
+        mathInstructions = `
+        J'ai détecté que tu demandes de tracer une fonction mathématique. J'ai extrait la ou les fonctions suivantes:
+        ${extractedFunctions.map(f => `- ${f.label}`).join('\n')}
+        
+        Je vais tracer ces fonctions pour toi. Si ce ne sont pas les bonnes fonctions, dis-moi plus précisément quelle fonction tu veux tracer.
+        
+        Pour les fonctions mathématiques, je peux utiliser les opérations suivantes:
+        - Opérations de base: +, -, *, /, ^ (puissance)
+        - Fonctions trigonométriques: sin(x), cos(x), tan(x)
+        - Fonctions logarithmiques et exponentielles: log(x), exp(x), ln(x)
+        - Autres fonctions: abs(x), sqrt(x)
+        
+        Explique clairement le comportement de ces fonctions dans ta réponse.`;
+      }
+
       const systemMessage = {
         role: "user",
         parts: [
@@ -480,6 +496,7 @@ export const ChatContainer = () => {
             ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}
             ${useAdvancedReasoning ? advancedReasoningInstructions : ''}
             ${useLuvviXThink ? luvvixThinkInstructions : ''}
+            ${hasGraph ? mathInstructions : ''}
             ${sources.length > 0 ? `Voici des résultats de recherche récents qui pourraient être pertinents pour répondre à la question de l'utilisateur:\n\n${sources.map(source => `[${source.id}] ${source.title}\n${source.url}\n${source.snippet}\n\n`).join("")}\n\nPour citer une source dans ta réponse, utilise [cite:X] où X est le numéro de la source (de 1 à ${sources.length}). Cite les sources après chaque fait ou affirmation pour montrer d'où vient l'information. IMPORTANT: Tu DOIS citer au moins 3-4 sources différentes dans ta réponse pour montrer que tu as bien fait des recherches.` : ''}
             ${imageUrl ? `J'ai trouvé une image pertinente pour illustrer ta réponse: ${imageUrl}\nIntègre cette image dans ta réponse si c'est pertinent en utilisant la syntaxe markdown: ![Description](${imageUrl})` : ''}
             
@@ -545,18 +562,13 @@ export const ChatContainer = () => {
         ? formatSourceCitations(aiResponse, sources)
         : aiResponse;
 
-      const mathFunctionRequested = checkIfMathFunctionRequested(content);
-      const hasGraph = mathFunctionRequested && checkIfHasGraphSyntax(content);
-      
+      // Si une fonction mathématique est demandée, créer les paramètres appropriés
       const graphParams = hasGraph ? {
-        functions: [
-          { fn: 'sin(x)', label: 'sin(x)', color: '#8B5CF6' },
-          { fn: 'cos(x)', label: 'cos(x)', color: '#F97316' }
-        ],
+        functions: extractedFunctions,
         xRange: [-10, 10] as [number, number],
         xLabel: 'x',
         yLabel: 'y',
-        title: 'Fonctions trigonométriques'
+        title: 'Fonction mathématique'
       } : undefined;
       
       let assistantMessage: Message = {
@@ -577,8 +589,6 @@ export const ChatContainer = () => {
 
       const finalMessages = [...updatedMessages, assistantMessage];
       setMessages(finalMessages);
-
-      generateSuggestedQuestions(aiResponse);
 
       if (user && currentConversationId) {
         saveCurrentConversation(finalMessages as any);
@@ -608,13 +618,6 @@ export const ChatContainer = () => {
       
       if (user && currentConversationId) {
         saveCurrentConversation(finalMessages as any);
-      }
-      
-      if (suggestedQuestions.length === 0) {
-        const randomQuestions = [...SAMPLE_QUESTIONS]
-          .sort(() => 0.5 - Math.random())
-          .slice(0, 3);
-        setSuggestedQuestions(randomQuestions);
       }
     } finally {
       setIsLoading(false);
@@ -758,6 +761,28 @@ export const ChatContainer = () => {
         }
       }
       
+      // Vérifier si une fonction mathématique est demandée
+      const mathFunctionRequested = checkIfMathFunctionRequested(userMessage.content);
+      const hasGraph = mathFunctionRequested && checkIfHasGraphSyntax(userMessage.content);
+      let mathInstructions = "";
+      let extractedFunctions = [];
+      
+      if (hasGraph) {
+        extractedFunctions = extractMathFunctions(userMessage.content);
+        
+        mathInstructions = `
+        J'ai détecté que tu demandes de tracer une fonction mathématique. J'ai extrait la ou les fonctions suivantes:
+        ${extractedFunctions.map(f => `- ${f.label}`).join('\n')}
+        
+        Je vais tracer ces fonctions pour toi. Si ce ne sont pas les bonnes fonctions, dis-moi plus précisément quelle fonction tu veux tracer.
+        
+        Pour les fonctions mathématiques, je peux utiliser les opérations suivantes:
+        - Opérations de base: +, -, *, /, ^ (puissance)
+        - Fonctions trigonométriques: sin(x), cos(x), tan(x)
+        - Fonctions logarithmiques et exponentielles: log(x), exp(x), ln(x)
+        - Autres fonctions: abs(x), sqrt(x)`;
+      }
+      
       const systemMessage = {
         role: "user",
         parts: [
@@ -768,18 +793,13 @@ export const ChatContainer = () => {
             Tu dois toujours parler avec un ton chaleureux, engageant et encourager les utilisateurs. Ajoute une touche d'humour ou de motivation quand c'est pertinent.
             ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}
             ${useAdvancedReasoning ? `Utilise le raisonnement avancé pour répondre aux questions. Analyse étape par étape, explore différents angles, présente des arguments pour et contre, et ajoute une section de synthèse.` : ''}
+            ${hasGraph ? mathInstructions : ''}
             ${sources.length > 0 ? `${searchResults}\n\nPour citer une source dans ta réponse, utilise [cite:X] où X est le numéro de la source (de 1 à ${sources.length}). Cite les sources après chaque fait ou affirmation pour montrer d'où vient l'information. IMPORTANT: Tu DOIS citer au moins 3-4 sources différentes dans ta réponse pour montrer que tu as bien fait des recherches.` : ''}
             ${imageUrl ? `J'ai trouvé une image pertinente pour illustrer ta réponse: ${imageUrl}\nIntègre cette image dans ta réponse si c'est pertinent en utilisant la syntaxe markdown: ![Description](${imageUrl})` : ''}
             
             Nouvelles fonctionnalités de formatage disponibles:
             1. Tu peux utiliser LaTeX pour les formules mathématiques en les entourant de $ pour l'inline ou $$ pour les blocs.
-            2. Tu peux créer des tableaux en Markdown avec la syntaxe standard des tableaux.
-            
-            Exemple de tableau:
-            | Colonne 1 | Colonne 2 | Colonne 3 |
-            |-----------|-----------|-----------|
-            | Donnée 1  | Donnée 2  | Donnée 3  |
-            | Exemple A | Exemple B | Exemple C |`,
+            2. Tu peux créer des tableaux en Markdown avec la syntaxe standard des tableaux.`,
           },
         ],
       };
@@ -828,18 +848,13 @@ export const ChatContainer = () => {
         ? formatSourceCitations(aiResponse, sources)
         : aiResponse;
 
-      const mathFunctionRequested = checkIfMathFunctionRequested(userMessage.content);
-      const hasGraph = mathFunctionRequested && checkIfHasGraphSyntax(userMessage.content);
-      
+      // Si une fonction mathématique est demandée, créer les paramètres appropriés
       const graphParams = hasGraph ? {
-        functions: [
-          { fn: 'sin(x)', label: 'sin(x)', color: '#8B5CF6' },
-          { fn: 'cos(x)', label: 'cos(x)', color: '#F97316' }
-        ],
+        functions: extractedFunctions,
         xRange: [-10, 10] as [number, number],
         xLabel: 'x',
         yLabel: 'y',
-        title: 'Fonctions trigonométriques'
+        title: 'Fonction mathématique'
       } : undefined;
 
       let assistantMessage: Message = {
@@ -860,8 +875,6 @@ export const ChatContainer = () => {
 
       const finalMessages = [...updatedMessages, assistantMessage];
       setMessages(finalMessages);
-
-      generateSuggestedQuestions(aiResponse);
 
       if (user && currentConversationId) {
         saveCurrentConversation(finalMessages as any);
@@ -964,15 +977,6 @@ export const ChatContainer = () => {
       </Dialog>
       
       <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-background to-background/70 pt-6 pb-4">
-        {!isLoading && messages.length > 0 && messages[messages.length - 1].role === "assistant" && (
-          <div className="px-4 sm:px-6 mb-2">
-            <SuggestedQuestions
-              questions={suggestedQuestions}
-              onQuestionClick={handleSendMessage}
-            />
-          </div>
-        )}
-        
         <ChatInput
           onSendMessage={handleSendMessage}
           onSendImage={handleSendImage}

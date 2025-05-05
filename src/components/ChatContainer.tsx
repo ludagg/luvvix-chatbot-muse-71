@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ChatMessage, Message, SourceReference } from "./ChatMessage";
+import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { nanoid } from "nanoid";
 import { useToast } from "@/hooks/use-toast";
@@ -13,13 +13,18 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { FloatingActions } from "./FloatingActions";
 import axios from "axios";
 import { formatSourceCitations } from "@/utils/formatters";
+import { MathFunctionCreator } from "./MathFunctionCreator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Message } from "@/types/message";
+import { SourceReference } from "./ChatMessage";
 
 const SAMPLE_QUESTIONS = [
   "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",
   "Comment puis-je améliorer ma productivité au quotidien ?",
   "Quelles sont les dernières tendances technologiques à surveiller ?",
   "Comment fonctionne la blockchain et les cryptomonnaies ?",
-  "Quels sont les meilleurs livres de développement personnel à lire ?"
+  "Quels sont les meilleurs livres de développement personnel à lire ?",
+  "Montre-moi le graphique de la fonction sin(x)"
 ];
 
 const INITIAL_MESSAGES: Message[] = [
@@ -58,6 +63,7 @@ export const ChatContainer = () => {
   const [useAdvancedReasoning, setUseAdvancedReasoning] = useState(false);
   const [useLuvviXThink, setUseLuvviXThink] = useState(false);
   const [useWebSearch, setUseWebSearch] = useState(false);
+  const [showMathCreator, setShowMathCreator] = useState(false);
   
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -530,7 +536,23 @@ export const ChatContainer = () => {
         ? formatSourceCitations(aiResponse, sources)
         : aiResponse;
 
-      const assistantMessage: Message = {
+      // Vérifier si l'utilisateur demande un graphique de fonction mathématique
+      const mathFunctionRequested = content.toLowerCase().match(/trac(e|er)|graph(e|ique)|fonction|courbe|math(s|ématique)/);
+      
+      const hasGraph = mathFunctionRequested && content.toLowerCase().match(/((sin|cos|tan|log|exp|x\^2|\*x|\+x|x\+|x\-|\-x|x\/|\/x|sqrt)\b)|(\bf\(x\))/);
+      
+      const graphParams = hasGraph ? {
+        functions: [
+          { fn: 'sin(x)', label: 'sin(x)', color: '#8B5CF6' },
+          { fn: 'cos(x)', label: 'cos(x)', color: '#F97316' }
+        ],
+        xRange: [-10, 10],
+        xLabel: 'x',
+        yLabel: 'y',
+        title: 'Fonctions trigonométriques'
+      } : undefined;
+      
+      let assistantMessage: Message = {
         id: nanoid(),
         role: "assistant",
         content:
@@ -540,7 +562,10 @@ export const ChatContainer = () => {
         useAdvancedReasoning: useAdvancedReasoning,
         useLuvviXThink: useLuvviXThink,
         useWebSearch: useWebSearch,
-        sourceReferences: sources.length > 0 ? sources : undefined
+        sourceReferences: sources.length > 0 ? sources : undefined,
+        hasGraph: hasGraph,
+        graphType: hasGraph ? 'function' : undefined,
+        graphParams: graphParams
       };
 
       const finalMessages = [...updatedMessages, assistantMessage];
@@ -587,6 +612,19 @@ export const ChatContainer = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleAddMathGraph = (graphMessage: Message) => {
+    setMessages([...messages, graphMessage]);
+    setShowMathCreator(false);
+    
+    if (user && currentConversationId) {
+      saveCurrentConversation([...messages, graphMessage] as any);
+    }
+    
+    setTimeout(() => {
+      scrollToBottom();
+    }, 100);
   };
 
   const handleSendImage = async (file: File) => {
@@ -758,146 +796,3 @@ export const ChatContainer = () => {
         },
         body: JSON.stringify({
           contents: conversationHistory,
-          generationConfig: {
-            temperature: useAdvancedReasoning ? 0.7 : 1.0,
-            topK: 50,
-            topP: 0.9,
-            maxOutputTokens: useAdvancedReasoning ? 1500 : 1024,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const aiResponse =
-        data.candidates[0]?.content?.parts[0]?.text ||
-        "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
-
-      const formattedResponse = sources.length > 0 
-        ? formatSourceCitations(aiResponse, sources)
-        : aiResponse;
-
-      const assistantMessage: Message = {
-        id: nanoid(),
-        role: "assistant",
-        content:
-          formattedResponse +
-          "\n\n*— LuvviX, votre assistant IA amical 🤖*",
-        timestamp: new Date(),
-        useAdvancedReasoning: useAdvancedReasoning,
-        useWebSearch: useWebSearch,
-        sourceReferences: sources.length > 0 ? sources : undefined
-      };
-
-      const finalMessages = [...updatedMessages, assistantMessage];
-      setMessages(finalMessages);
-
-      generateSuggestedQuestions(aiResponse);
-
-      if (user && currentConversationId) {
-        saveCurrentConversation(finalMessages as any);
-      }
-      
-    } catch (error) {
-      console.error("Erreur lors de la régénération :", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de régénérer la réponse. Veuillez réessayer.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-      setIsRegenerating(false);
-    }
-  };
-
-  const handleFeedback = (messageId: string, feedback: "positive" | "negative") => {
-    console.log(`Feedback ${feedback} for message ${messageId}`);
-    
-    toast({
-      title: feedback === "positive" ? "Merci pour votre retour positif!" : "Nous prenons note de votre feedback",
-      description: "Votre avis nous aide à améliorer LuvviX AI.",
-    });
-  };
-
-  const handleSuggestedQuestionClick = (question: string) => {
-    setShouldAutoScroll(true);
-    handleSendMessage(question);
-  };
-
-  const toggleAdvancedReasoning = () => {
-    setUseAdvancedReasoning(!useAdvancedReasoning);
-    if (!useAdvancedReasoning) {
-      setUseLuvviXThink(false);
-    }
-  };
-  
-  const toggleLuvviXThink = () => {
-    setUseLuvviXThink(!useLuvviXThink);
-    if (!useLuvviXThink) {
-      setUseAdvancedReasoning(false);
-    }
-  };
-
-  const toggleWebSearch = () => {
-    setUseWebSearch(!useWebSearch);
-  };
-
-  return (
-    <div className="flex flex-col h-full">      
-      <div 
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-28"
-      >
-        <div className="space-y-4 md:space-y-6 mb-2">
-          {messages.map((message, index) => (
-            <ChatMessage
-              key={message.id}
-              message={message}
-              isLast={index === messages.length - 1 && message.role === "assistant"}
-              onRegenerate={handleRegenerate}
-              onFeedback={handleFeedback}
-            />
-          ))}
-          
-          {messages.length > 0 && suggestedQuestions.length > 0 && (
-            <div className="mt-4">
-              <SuggestedQuestions 
-                questions={suggestedQuestions} 
-                onQuestionClick={handleSuggestedQuestionClick} 
-              />
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      <FloatingActions scrollToTop={scrollToTop} />
-
-      <div className="fixed bottom-0 left-0 right-0 z-10">
-        <div className="max-w-5xl mx-auto w-full px-2 md:px-4">
-          <div className="bg-gradient-to-t from-background via-background to-background/80 pt-6 pb-4 border-t border-primary/10 backdrop-blur-sm">
-            <div className="px-3 md:px-6">
-              <ChatInput 
-                onSendMessage={handleSendMessage}
-                onSendImage={handleSendImage} 
-                isLoading={isLoading}
-                isPro={isPro}
-                useAdvancedReasoning={useAdvancedReasoning}
-                useLuvviXThink={useLuvviXThink}
-                useWebSearch={useWebSearch}
-                onToggleAdvancedReasoning={toggleAdvancedReasoning}
-                onToggleLuvviXThink={toggleLuvviXThink}
-                onToggleWebSearch={toggleWebSearch}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};

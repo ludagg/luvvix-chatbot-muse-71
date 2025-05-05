@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatMarkdownTables } from "@/utils/formatters";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MathFunctionChart } from "@/components/MathFunctionChart";
+import { Message } from "@/types/message";
 
 export interface SourceReference {
   id: number | string;
@@ -199,6 +200,13 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback 
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+          </div>
+        )}
+        
+        {/* Affichage du graphique si présent */}
+        {message.hasGraph && message.graphParams && (
+          <div className="mb-4">
+            <MathFunctionChart params={message.graphParams} />
           </div>
         )}
         

@@ -487,7 +487,7 @@ export const ChatContainer = () => {
       
       Ta réponse doit être structurée, factuelle, et approfondie tout en restant accessible.`;
 
-      const luvvixThinkInstructions = luvviXThinkResponse ? `
+      const luvvixThinkInstructions = luvvixThinkResponse ? `
       IMPORTANT: Tu dois intégrer complètement mon processus de réflexion LuvviXThink dans ta réponse finale - ne te contente pas de copier/coller, mais utilise-le pour construire une réponse plus profonde et nuancée.
       
       Voici mon analyse préliminaire LuvviXThink que tu dois intégrer et développer :
@@ -804,4 +804,89 @@ export const ChatContainer = () => {
           generationConfig: {
             temperature: useAdvancedReasoning ? 0.7 : 1.0,
             topK: 50,
-            topP
+            topP: 0.9,
+            maxOutputTokens: useAdvancedReasoning ? 1500 : 1024,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse =
+        data.candidates[0]?.content?.parts[0]?.text ||
+        "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
+
+      const formattedResponse = sources.length > 0
+        ? formatSourceCitations(aiResponse, sources)
+        : aiResponse;
+
+      const assistantMessage: Message = {
+        id: nanoid(),
+        role: "assistant",
+        content:
+          formattedResponse +
+          "\n\n*— LuvviX, votre assistant IA amical 🤖*",
+        timestamp: new Date(),
+        useAdvancedReasoning: useAdvancedReasoning,
+        useLuvviXThink: false,
+        useWebSearch: useWebSearch,
+        sourceReferences: sources.length > 0 ? sources : undefined
+      };
+
+      const finalMessages = [...updatedMessages, assistantMessage];
+      setMessages(finalMessages);
+
+      generateSuggestedQuestions(aiResponse);
+
+      if (user && currentConversationId) {
+        saveCurrentConversation(finalMessages as any);
+      }
+      
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+    } catch (error) {
+      console.error("Erreur API Gemini :", error);
+      toast({
+        title: "Erreur",
+        description:
+          "Impossible de communiquer avec l'API Gemini. Veuillez réessayer.",
+        variant: "destructive",
+      });
+
+      const errorMessage: Message = {
+        id: nanoid(),
+        role: "assistant",
+        content:
+          "Désolé, j'ai rencontré un problème de connexion. Veuillez réessayer plus tard.",
+        timestamp: new Date(),
+      };
+      const finalMessages = [...updatedMessages, errorMessage];
+      setMessages(finalMessages);
+      
+      if (user && currentConversationId) {
+        saveCurrentConversation(finalMessages as any);
+      }
+      
+      setTimeout(() => {
+        setIsRegenerating(false);
+      }, 100);
+      
+    } finally {
+      setIsLoading(false);
+      setIsRegenerating(false);
+    }
+  };
+
+  // TODO: Implement UI components rendering here
+  // This comment serves as a placeholder for rendering logic
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Main content would go here */}
+    </div>
+  );
+};

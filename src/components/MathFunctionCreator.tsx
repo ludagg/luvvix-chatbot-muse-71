@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,8 +77,8 @@ export function MathFunctionCreator({ onAddGraph }: MathFunctionCreatorProps) {
       graphType: 'function',
       graphParams: {
         functions: functions.map(({ fn, label, color }) => ({ fn, label, color })),
-        xRange: [xMin, xMax],
-        yRange: autoScale ? undefined : (yMin !== undefined && yMax !== undefined ? [yMin, yMax] : undefined),
+        xRange: [xMin, xMax] as [number, number], // Explicit type assertion
+        yRange: autoScale ? undefined : (yMin !== undefined && yMax !== undefined ? [yMin, yMax] as [number, number] : undefined),
         xLabel,
         yLabel,
         title,
@@ -104,8 +103,8 @@ export function MathFunctionCreator({ onAddGraph }: MathFunctionCreatorProps) {
 
   const functionPreview = {
     functions: functions.map(({ fn, label, color }) => ({ fn, label, color })),
-    xRange: [xMin, xMax],
-    yRange: autoScale ? undefined : (yMin !== undefined && yMax !== undefined ? [yMin, yMax] : undefined),
+    xRange: [xMin, xMax] as [number, number], // Explicit type assertion
+    yRange: autoScale ? undefined : (yMin !== undefined && yMax !== undefined ? [yMin, yMax] as [number, number] : undefined),
     xLabel,
     yLabel,
     title,

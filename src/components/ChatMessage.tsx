@@ -30,27 +30,15 @@ export interface SourceReference {
   snippet?: string;
 }
 
-export interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  useAdvancedReasoning?: boolean;
-  useLuvviXThink?: boolean;
-  useWebSearch?: boolean;
-  sourceReferences?: SourceReference[];
-  sentimentAnalysis?: string;
-  contextMemory?: string;
-}
-
 interface ChatMessageProps {
   message: Message;
   isLast?: boolean;
   onRegenerate?: (messageId: string) => void;
   onFeedback?: (messageId: string, feedback: "positive" | "negative") => void;
+  isLoading?: boolean; // Add this prop to match usage in ChatContainer
 }
 
-export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback }: ChatMessageProps) {
+export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback, isLoading }: ChatMessageProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [feedbackGiven, setFeedbackGiven] = useState<"positive" | "negative" | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);

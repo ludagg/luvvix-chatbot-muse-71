@@ -1,0 +1,36 @@
+
+import { Message } from "./message";
+import { Dispatch, SetStateAction } from "react";
+import { File } from "@/types/file";
+
+// Extend ChatInput props
+declare module "@/components/ChatInput" {
+  export interface ChatInputProps {
+    onSendMessage: (content: string) => Promise<void>;
+    onSendImage: (file: File) => Promise<void>;
+    isLoading: boolean;
+    onCreateMathGraph?: () => void;
+  }
+}
+
+// Extend FloatingActions props
+declare module "@/components/FloatingActions" {
+  export interface FloatingActionsProps {
+    scrollToTop: () => void;
+    scrollToBottom: () => void;
+    showScrollToTop: boolean;
+    setUseAdvancedReasoning: Dispatch<SetStateAction<boolean>>;
+    useAdvancedReasoning: boolean;
+    setUseLuvviXThink: Dispatch<SetStateAction<boolean>>;
+    useLuvviXThink: boolean;
+    setUseWebSearch: Dispatch<SetStateAction<boolean>>;
+    useWebSearch: boolean;
+  }
+}
+
+// Extend ConversationSelector props
+declare module "@/components/ConversationSelector" {
+  export interface ConversationSelectorProps {
+    onSelect?: () => void;
+  }
+}

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from "react";
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
@@ -16,11 +15,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  FunctionIcon, 
-  BarChartIcon, 
-  PieChartIcon, 
-  ScatterChartIcon,
-  AreaChartIcon
+  FunctionSquare, 
+  BarChart as BarChartIcon, 
+  PieChart as PieChartIcon, 
+  LineChart as LineChartIcon,
+  AreaChart as AreaChartIcon
 } from "lucide-react";
 
 // Types pour les différents types de graphiques
@@ -328,7 +327,7 @@ export const VisualizationDemo = () => {
       <Tabs defaultValue="function" className="w-full">
         <TabsList className="grid grid-cols-5">
           <TabsTrigger value="function" className="flex items-center gap-2">
-            <FunctionIcon /> Fonctions
+            <FunctionSquare /> Fonctions
           </TabsTrigger>
           <TabsTrigger value="bar" className="flex items-center gap-2">
             <BarChartIcon /> Histogrammes
@@ -340,7 +339,7 @@ export const VisualizationDemo = () => {
             <LineChartIcon /> Linéaires
           </TabsTrigger>
           <TabsTrigger value="scatter" className="flex items-center gap-2">
-            <ScatterChartIcon /> Nuage de points
+            <ScatterChart /> Nuage de points
           </TabsTrigger>
         </TabsList>
         

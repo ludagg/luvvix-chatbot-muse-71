@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, Volume2, VolumeX } from "lucide-react";
@@ -6,7 +5,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { speakText, cleanTextForSpeech } from "@/utils/speechUtils";
-import { Message } from "@/components/ChatMessage";
+import { Message } from "@/types/message";
 
 interface VoiceChatProps {
   onVoiceStart?: () => void;

@@ -1,7 +1,8 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
-import { Message } from "@/components/ChatMessage";
+import { Message } from "@/types/message";
 import { FileText, Download, FileBadge } from "lucide-react";
 import { createPDF, createWordDoc } from "@/utils/pdfUtils";
 import { toast } from "sonner";

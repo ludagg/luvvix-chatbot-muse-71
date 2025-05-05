@@ -16,7 +16,7 @@ import { formatSourceCitations } from "@/utils/formatters";
 import { MathFunctionCreator } from "./MathFunctionCreator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Message } from "@/types/message";
-import { SourceReference } from "./ChatMessage";
+import { SourceReference } from "@/components/ChatMessage";
 
 const SAMPLE_QUESTIONS = [
   "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",
@@ -914,7 +914,7 @@ export const ChatContainer = () => {
         </SheetTrigger>
         <SheetContent side="left" className="p-0">
           <ConversationSelector
-            onSelect={() => setIsMenuOpen(false)}
+            closeMenu={() => setIsMenuOpen(false)}
           />
         </SheetContent>
       </Sheet>
@@ -979,6 +979,12 @@ export const ChatContainer = () => {
           onSendImage={handleSendImage}
           isLoading={isLoading}
           onCreateMathGraph={() => setShowMathCreator(true)}
+          useAdvancedReasoning={useAdvancedReasoning}
+          useLuvviXThink={useLuvviXThink}
+          useWebSearch={useWebSearch}
+          onToggleAdvancedReasoning={() => setUseAdvancedReasoning(prev => !prev)}
+          onToggleLuvviXThink={() => setUseLuvviXThink(prev => !prev)}
+          onToggleWebSearch={() => setUseWebSearch(prev => !prev)}
         />
         
         <FloatingActions
@@ -991,6 +997,7 @@ export const ChatContainer = () => {
           useLuvviXThink={useLuvviXThink}
           setUseWebSearch={setUseWebSearch}
           useWebSearch={useWebSearch}
+          lastMessage={messages.length > 0 ? messages[messages.length - 1] : null}
         />
       </div>
     </div>

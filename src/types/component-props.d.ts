@@ -10,6 +10,17 @@ declare module "@/components/ChatInput" {
     onSendImage: (file: File) => Promise<void>;
     isLoading: boolean;
     onCreateMathGraph?: () => void;
+    useAdvancedReasoning?: boolean;
+    useLuvviXThink?: boolean;
+    useWebSearch?: boolean;
+    useSentimentAnalysis?: boolean;
+    useContextMemory?: boolean;
+    onToggleAdvancedReasoning?: () => void;
+    onToggleLuvviXThink?: () => void;
+    onToggleWebSearch?: () => void;
+    onToggleSentimentAnalysis?: () => void;
+    onToggleContextMemory?: () => void;
+    isPro?: boolean;
   }
 }
 
@@ -25,6 +36,9 @@ declare module "@/components/FloatingActions" {
     useLuvviXThink: boolean;
     setUseWebSearch: Dispatch<SetStateAction<boolean>>;
     useWebSearch: boolean;
+    onOpenImageUploader?: () => void;
+    onVoiceInput?: (text: string) => void;
+    lastMessage?: Message | null;
   }
 }
 
@@ -32,6 +46,7 @@ declare module "@/components/FloatingActions" {
 declare module "@/components/ConversationSelector" {
   export interface ConversationSelectorProps {
     onSelect?: () => void;
+    closeMenu?: () => void;
   }
 }
 
@@ -47,5 +62,14 @@ declare module "@/components/ChatMessage" {
   export interface ChatMessageProps {
     message: Message;
     onRegenerate?: (messageId: string) => void;
+    isLoading?: boolean;
+  }
+  
+  export interface SourceReference {
+    id: number;
+    title: string;
+    url: string;
+    snippet: string;
   }
 }
+

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
-import { Message } from "@/components/ChatMessage";
+import { Message } from "@/types/message";
 import { speakText, cleanTextForSpeech } from "@/utils/speechUtils";
 
 interface VoiceAssistantProps {

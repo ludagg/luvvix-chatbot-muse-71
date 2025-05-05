@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   LineChart,
@@ -39,9 +38,11 @@ import {
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D", "#D53E4F", "#66C2A5"];
 
+type ChartType = "function" | "bar" | "pie" | "line" | "scatter";
+
 interface MathVisualizationProps {
   initialExpression?: string;
-  initialType?: "function" | "bar" | "pie" | "line" | "scatter";
+  initialType?: ChartType;
   initialParams?: any;
 }
 
@@ -50,7 +51,7 @@ export const MathVisualization: React.FC<MathVisualizationProps> = ({
   initialType = "function",
   initialParams = {},
 }) => {
-  const [activeTab, setActiveTab] = useState(initialType);
+  const [activeTab, setActiveTab] = useState<ChartType>(initialType);
   const [expression, setExpression] = useState(initialExpression);
   const [xMin, setXMin] = useState(initialParams.xMin || -10);
   const [xMax, setXMax] = useState(initialParams.xMax || 10);
@@ -108,7 +109,7 @@ export const MathVisualization: React.FC<MathVisualizationProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={(value: ChartType) => setActiveTab(value)} className="w-full">
           <TabsList className="w-full grid grid-cols-5">
             <TabsTrigger value="function" className="flex items-center gap-2">
               <FunctionIcon className="w-4 h-4" />

@@ -794,4 +794,205 @@ export const ChatContainer = () => {
       
       conversationHistory.push({
         role: "user",
-        parts: [{ text: userMessage.
+        parts: [{ text: userMessage.content }],
+      });
+      
+      const temperature = useLuvviXThink ? 0.5 : (useAdvancedReasoning ? 0.7 : 1.0);
+      const maxOutputTokens = useLuvviXThink ? 1800 : (useAdvancedReasoning ? 1500 : 1024);
+
+      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: conversationHistory,
+          generationConfig: {
+            temperature: temperature,
+            topK: 50,
+            topP: 0.9,
+            maxOutputTokens: maxOutputTokens,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse =
+        data.candidates[0]?.content?.parts[0]?.text ||
+        "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
+
+      const formattedResponse = sources.length > 0 
+        ? formatSourceCitations(aiResponse, sources)
+        : aiResponse;
+
+      const mathFunctionRequested = checkIfMathFunctionRequested(userMessage.content);
+      const hasGraph = mathFunctionRequested && checkIfHasGraphSyntax(userMessage.content);
+      
+      const graphParams = hasGraph ? {
+        functions: [
+          { fn: 'sin(x)', label: 'sin(x)', color: '#8B5CF6' },
+          { fn: 'cos(x)', label: 'cos(x)', color: '#F97316' }
+        ],
+        xRange: [-10, 10] as [number, number],
+        xLabel: 'x',
+        yLabel: 'y',
+        title: 'Fonctions trigonométriques'
+      } : undefined;
+
+      let assistantMessage: Message = {
+        id: nanoid(),
+        role: "assistant",
+        content:
+          formattedResponse +
+          "\n\n*— LuvviX, votre assistant IA amical 🤖*",
+        timestamp: new Date(),
+        useAdvancedReasoning: useAdvancedReasoning,
+        useLuvviXThink: useLuvviXThink,
+        useWebSearch: useWebSearch,
+        sourceReferences: sources.length > 0 ? sources : undefined,
+        hasGraph: hasGraph,
+        graphType: hasGraph ? 'function' : undefined,
+        graphParams: graphParams
+      };
+
+      const finalMessages = [...updatedMessages, assistantMessage];
+      setMessages(finalMessages);
+
+      generateSuggestedQuestions(aiResponse);
+
+      if (user && currentConversationId) {
+        saveCurrentConversation(finalMessages as any);
+      }
+      
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+    } catch (error) {
+      console.error("Erreur API Gemini :", error);
+      toast({
+        title: "Erreur",
+        description:
+          "Impossible de communiquer avec l'API Gemini. Veuillez réessayer.",
+        variant: "destructive",
+      });
+
+      const errorMessage: Message = {
+        id: nanoid(),
+        role: "assistant",
+        content:
+          "Désolé, j'ai rencontré un problème de connexion. Veuillez réessayer plus tard.",
+        timestamp: new Date(),
+      };
+      
+      const finalMessages = [...updatedMessages, errorMessage];
+      setMessages(finalMessages);
+      
+      if (user && currentConversationId) {
+        saveCurrentConversation(finalMessages as any);
+      }
+    } finally {
+      setIsLoading(false);
+      setIsRegenerating(false);
+    }
+  };
+
+  return (
+    <div className="relative flex flex-col h-screen bg-background overflow-hidden">
+      <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-4 left-4 md:hidden z-10"
+          >
+            <Menu />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="p-0">
+          <ConversationSelector
+            onSelect={() => setIsMenuOpen(false)}
+          />
+        </SheetContent>
+      </Sheet>
+      
+      <div className="flex-1 flex overflow-hidden">
+        {!isMobile && (
+          <div className="w-72 border-r border-border hidden md:block overflow-y-auto">
+            <ConversationSelector />
+          </div>
+        )}
+        
+        <div
+          ref={chatContainerRef}
+          className="flex-1 overflow-y-auto pb-32 pt-4 px-4 sm:px-6"
+        >
+          {messages.map((message, index) => (
+            <ChatMessage
+              key={message.id}
+              message={message}
+              onRegenerate={message.role === "assistant" ? handleRegenerate : undefined}
+            />
+          ))}
+          
+          {isLoading && (
+            <div className="flex items-center space-x-2 p-4 rounded-lg bg-accent/10 mb-4">
+              <div className="animate-pulse w-2 h-2 rounded-full bg-primary" />
+              <div className="animate-pulse w-2 h-2 rounded-full bg-primary delay-150" />
+              <div className="animate-pulse w-2 h-2 rounded-full bg-primary delay-300" />
+              <span className="ml-2 text-sm text-muted-foreground">
+                LuvviX réfléchit...
+              </span>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      <Dialog open={showMathCreator} onOpenChange={setShowMathCreator}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Créer un graphique</DialogTitle>
+          </DialogHeader>
+          <MathFunctionCreator
+            onSubmit={handleAddMathGraph}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-background to-background/70 pt-6 pb-4">
+        {!isLoading && messages.length > 0 && messages[messages.length - 1].role === "assistant" && (
+          <div className="px-4 sm:px-6 mb-2">
+            <SuggestedQuestions
+              questions={suggestedQuestions}
+              onQuestionClick={handleSendMessage}
+            />
+          </div>
+        )}
+        
+        <ChatInput
+          onSendMessage={handleSendMessage}
+          onSendImage={handleSendImage}
+          isLoading={isLoading}
+          onCreateMathGraph={() => setShowMathCreator(true)}
+        />
+        
+        <FloatingActions
+          scrollToTop={scrollToTop}
+          scrollToBottom={scrollToBottom}
+          showScrollToTop={!shouldAutoScroll}
+          setUseAdvancedReasoning={setUseAdvancedReasoning}
+          useAdvancedReasoning={useAdvancedReasoning}
+          setUseLuvviXThink={setUseLuvviXThink}
+          useLuvviXThink={useLuvviXThink}
+          setUseWebSearch={setUseWebSearch}
+          useWebSearch={useWebSearch}
+        />
+      </div>
+    </div>
+  );
+};

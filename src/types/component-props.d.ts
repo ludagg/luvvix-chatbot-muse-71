@@ -34,3 +34,18 @@ declare module "@/components/ConversationSelector" {
     onSelect?: () => void;
   }
 }
+
+// Extend MathFunctionCreator props
+declare module "@/components/MathFunctionCreator" {
+  export interface MathFunctionCreatorProps {
+    onSubmit: (graphMessage: Message) => void;
+  }
+}
+
+// Extend ChatMessage props
+declare module "@/components/ChatMessage" {
+  export interface ChatMessageProps {
+    message: Message;
+    onRegenerate?: (messageId: string) => void;
+  }
+}

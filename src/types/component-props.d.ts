@@ -9,7 +9,7 @@ declare module "@/components/ChatInput" {
     onSendMessage: (content: string) => Promise<void>;
     onSendImage: (file: File) => Promise<void>;
     isLoading: boolean;
-    onCreateMathGraph?: () => void;
+    onCreateMathGraph: () => void;
     useAdvancedReasoning?: boolean;
     useLuvviXThink?: boolean;
     useWebSearch?: boolean;

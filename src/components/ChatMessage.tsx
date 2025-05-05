@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import {
   Check, Copy, ThumbsDown, ThumbsUp, RefreshCw, BookOpenCheck, 
   Globe, BrainCircuit, Code, CodeSquare, Lightbulb, 
   Info, AlertTriangle, ExternalLink,
-  ListOrdered, List, Heading1, Heading2, Heading3
+  ListOrdered, List, Heading1, Heading2, Heading3, Table2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -35,7 +36,7 @@ interface ChatMessageProps {
   isLast?: boolean;
   onRegenerate?: (messageId: string) => void;
   onFeedback?: (messageId: string, feedback: "positive" | "negative") => void;
-  isLoading?: boolean; // Add this prop to match usage in ChatContainer
+  isLoading?: boolean;
 }
 
 export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback, isLoading }: ChatMessageProps) {
@@ -123,7 +124,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
       )}>
         {/* Ajout des boutons de formatage pour l'assistant */}
         {message.role === "assistant" && showFormatButtons && (
-          <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border/20">
+          <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border/20 overflow-x-auto">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -185,6 +186,19 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Liste numérotée</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <Table2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Tableau</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

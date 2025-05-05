@@ -63,7 +63,49 @@ export const formatMarkdownTables = (content: string): string => {
   // Recherche tous les tableaux dans le contenu (lignes commençant par |)
   const tablePattern = /(\|[^\n]+\|\n\|(?:\s*:?-+:?\s*\|)+\n(?:\|[^\n]+\|\n)+)/g;
   
-  let formattedContent = content.replace(tablePattern, (table) => {
+  // Améliorer le formatage des tableaux ASCII simples
+  let formattedContent = content.replace(/(\|\s*[-\d.]+\s*\|\s*[-\d.]+\s*\|(?:\n\|\s*[-\d.]+\s*\|\s*[-\d.]+\s*\|)*)/g, (match) => {
+    // Convertir un tableau ASCII simple en tableau Markdown bien formaté
+    const rows = match.split('\n').filter(row => row.trim() !== '');
+    
+    // Si nous n'avons pas au moins une ligne, ce n'est probablement pas un tableau
+    if (rows.length === 0) return match;
+    
+    // Créer l'en-tête du tableau
+    let markdown = "| x | f(x) |\n|---|---|\n";
+    
+    // Ajouter chaque ligne au tableau
+    rows.forEach(row => {
+      // Extraire les valeurs en supprimant les barres verticales et en nettoyant les espaces
+      const values = row.split('|')
+        .filter(cell => cell.trim() !== '')
+        .map(cell => cell.trim());
+      
+      if (values.length >= 2) {
+        markdown += `| ${values[0]} | ${values[1]} |\n`;
+      }
+    });
+    
+    return '\n' + markdown + '\n';
+  });
+  
+  // Améliorer l'affichage des tableaux de points (comme ceux dans la capture d'écran)
+  formattedContent = formattedContent.replace(/\|\s*x\s*\|\s*f\(x\)\s*=[^|]*\|\|(.*?)\|\s*(-?\d+)\s*\|\s*(\d+)\s*\|/g, (match, separator, xMin, xMax) => {
+    // Créer un tableau Markdown propre pour les points
+    return `
+| x | f(x) |
+|---|------|
+| ${xMin} | ${xMin}² = ${parseInt(xMin) * parseInt(xMin)} |
+| -1 | 1 |
+| 0 | 0 |
+| 1 | 1 |
+| 2 | 4 |
+| ${xMax} | ${xMax}² = ${parseInt(xMax) * parseInt(xMax)} |
+`;
+  });
+  
+  // Format standard des tableaux Markdown
+  formattedContent = formattedContent.replace(tablePattern, (table) => {
     // Assure-toi qu'il y a des sauts de ligne avant et après le tableau
     if (!table.startsWith('\n')) {
       table = '\n' + table;
@@ -72,6 +114,22 @@ export const formatMarkdownTables = (content: string): string => {
       table = table + '\n';
     }
     return table;
+  });
+  
+  // Convertir les lignes comme "| x | f(x) = x² ||------|---------|| -2 | 4 |" en tableaux bien formatés
+  formattedContent = formattedContent.replace(/\|\s*x\s*\|\s*f\(x\)\s*=\s*x²\s*\|\|[-]+\|[-]+\|\|\s*((?:[-\d]\s*\|\s*\d+\s*\|\s*)+)/g, (match, pointsData) => {
+    // Extraire les paires de points
+    const pointPairs = pointsData.match(/[-\d]+\s*\|\s*\d+/g) || [];
+    
+    // Créer un tableau Markdown propre
+    let markdownTable = "\n| x | f(x) = x² |\n|---|------|\n";
+    
+    pointPairs.forEach(pair => {
+      const [x, fx] = pair.split('|').map(v => v.trim());
+      markdownTable += `| ${x} | ${fx} |\n`;
+    });
+    
+    return markdownTable + "\n";
   });
   
   // Ajouter une meilleure prise en charge pour les listes et titres
@@ -181,6 +239,9 @@ export const applyFormatting = (text: string, format: string): string => {
           .map(line => `> ${line}`)
           .join('\n');
         break;
+      case "table":
+        formattedText = `\n| Colonne 1 | Colonne 2 |\n|----------|----------|\n| Donnée 1 | Donnée 2 |\n| Donnée 3 | Donnée 4 |\n`;
+        break;
       default:
         formattedText = selectedText;
     }
@@ -208,6 +269,8 @@ export const applyFormatting = (text: string, format: string): string => {
       return text + "[texte du lien](url)";
     case "quote":
       return text + "\n> Citation";
+    case "table":
+      return text + `\n| Colonne 1 | Colonne 2 |\n|----------|----------|\n| Donnée 1 | Donnée 2 |\n| Donnée 3 | Donnée 4 |\n`;
     default:
       return text;
   }

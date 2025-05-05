@@ -44,6 +44,16 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     }
   };
 
+  // Remove item from local storage
+  const removeItem = () => {
+    try {
+      window.localStorage.removeItem(key);
+      setStoredValue(initialValue);
+    } catch (error) {
+      console.warn('Error removing localStorage key "' + key + '":', error);
+    }
+  };
+
   // Update local storage when window is visible again (for syncing between tabs)
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
@@ -62,5 +72,5 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [key]);
 
-  return [storedValue, setValue] as const;
+  return [storedValue, setValue, removeItem] as const;
 }

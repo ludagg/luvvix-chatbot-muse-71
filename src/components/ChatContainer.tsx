@@ -13,6 +13,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { FloatingActions } from "./FloatingActions";
 import axios from "axios";
 import { formatSourceCitations } from "@/utils/formatters";
+import { parseGraphRequest } from "@/utils/mathUtils";
+import { MathVisualization } from "./MathVisualization";
 
 const SAMPLE_QUESTIONS = [
   "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",
@@ -58,6 +60,11 @@ export const ChatContainer = () => {
   const [useAdvancedReasoning, setUseAdvancedReasoning] = useState(false);
   const [useLuvviXThink, setUseLuvviXThink] = useState(false);
   const [useWebSearch, setUseWebSearch] = useState(false);
+  const [graphRequest, setGraphRequest] = useState<{
+    type: "function" | "bar" | "pie" | "line" | "scatter" | null;
+    params: any;
+    expression?: string;
+  } | null>(null);
   
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -356,6 +363,42 @@ export const ChatContainer = () => {
       saveCurrentConversation(updatedMessages as any);
     }
 
+    // Vérifier si le message demande de tracer un graphique
+    const graphInfo = parseGraphRequest(content);
+    if (graphInfo.type) {
+      console.log("Demande de graphique détectée:", graphInfo.type, graphInfo.params);
+      setGraphRequest({
+        type: graphInfo.type,
+        params: graphInfo.params,
+        expression: graphInfo.params?.expression
+      });
+      
+      const assistantMessage: Message = {
+        id: nanoid(),
+        role: "assistant",
+        content: `Voici le graphique que vous avez demandé${graphInfo.type === 'function' ? ` pour la fonction f(x) = ${graphInfo.params.expression}` : ''}.`,
+        timestamp: new Date(),
+        hasGraph: true,
+        graphType: graphInfo.type,
+        graphParams: graphInfo.params
+      };
+      
+      const finalMessages = [...updatedMessages, assistantMessage];
+      setMessages(finalMessages);
+      
+      if (user && currentConversationId) {
+        saveCurrentConversation(finalMessages as any);
+      }
+      
+      // Générer de nouvelles questions suggérées
+      const suggestionsPrompt = graphInfo.type === 'function' 
+        ? `Fonction mathématique ${graphInfo.params.expression}`
+        : `Visualisation de données de type ${graphInfo.type}`;
+      generateSuggestedQuestions(suggestionsPrompt);
+      
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -444,7 +487,7 @@ export const ChatContainer = () => {
       
       Ta réponse doit être structurée, factuelle, et approfondie tout en restant accessible.`;
 
-      const luvvixThinkInstructions = luvvixThinkResponse ? `
+      const luvvixThinkInstructions = luvviXThinkResponse ? `
       IMPORTANT: Tu dois intégrer complètement mon processus de réflexion LuvviXThink dans ta réponse finale - ne te contente pas de copier/coller, mais utilise-le pour construire une réponse plus profonde et nuancée.
       
       Voici mon analyse préliminaire LuvviXThink que tu dois intégrer et développer :
@@ -761,143 +804,4 @@ export const ChatContainer = () => {
           generationConfig: {
             temperature: useAdvancedReasoning ? 0.7 : 1.0,
             topK: 50,
-            topP: 0.9,
-            maxOutputTokens: useAdvancedReasoning ? 1500 : 1024,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const aiResponse =
-        data.candidates[0]?.content?.parts[0]?.text ||
-        "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
-
-      const formattedResponse = sources.length > 0 
-        ? formatSourceCitations(aiResponse, sources)
-        : aiResponse;
-
-      const assistantMessage: Message = {
-        id: nanoid(),
-        role: "assistant",
-        content:
-          formattedResponse +
-          "\n\n*— LuvviX, votre assistant IA amical 🤖*",
-        timestamp: new Date(),
-        useAdvancedReasoning: useAdvancedReasoning,
-        useWebSearch: useWebSearch,
-        sourceReferences: sources.length > 0 ? sources : undefined
-      };
-
-      const finalMessages = [...updatedMessages, assistantMessage];
-      setMessages(finalMessages);
-
-      generateSuggestedQuestions(aiResponse);
-
-      if (user && currentConversationId) {
-        saveCurrentConversation(finalMessages as any);
-      }
-      
-    } catch (error) {
-      console.error("Erreur lors de la régénération :", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de régénérer la réponse. Veuillez réessayer.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-      setIsRegenerating(false);
-    }
-  };
-
-  const handleFeedback = (messageId: string, feedback: "positive" | "negative") => {
-    console.log(`Feedback ${feedback} for message ${messageId}`);
-    
-    toast({
-      title: feedback === "positive" ? "Merci pour votre retour positif!" : "Nous prenons note de votre feedback",
-      description: "Votre avis nous aide à améliorer LuvviX AI.",
-    });
-  };
-
-  const handleSuggestedQuestionClick = (question: string) => {
-    setShouldAutoScroll(true);
-    handleSendMessage(question);
-  };
-
-  const toggleAdvancedReasoning = () => {
-    setUseAdvancedReasoning(!useAdvancedReasoning);
-    if (!useAdvancedReasoning) {
-      setUseLuvviXThink(false);
-    }
-  };
-  
-  const toggleLuvviXThink = () => {
-    setUseLuvviXThink(!useLuvviXThink);
-    if (!useLuvviXThink) {
-      setUseAdvancedReasoning(false);
-    }
-  };
-
-  const toggleWebSearch = () => {
-    setUseWebSearch(!useWebSearch);
-  };
-
-  return (
-    <div className="flex flex-col h-full">      
-      <div 
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-28"
-      >
-        <div className="space-y-4 md:space-y-6 mb-2">
-          {messages.map((message, index) => (
-            <ChatMessage
-              key={message.id}
-              message={message}
-              isLast={index === messages.length - 1 && message.role === "assistant"}
-              onRegenerate={handleRegenerate}
-              onFeedback={handleFeedback}
-            />
-          ))}
-          
-          {messages.length > 0 && suggestedQuestions.length > 0 && (
-            <div className="mt-4">
-              <SuggestedQuestions 
-                questions={suggestedQuestions} 
-                onQuestionClick={handleSuggestedQuestionClick} 
-              />
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
-
-      <FloatingActions scrollToTop={scrollToTop} />
-
-      <div className="fixed bottom-0 left-0 right-0 z-10">
-        <div className="max-w-5xl mx-auto w-full px-2 md:px-4">
-          <div className="bg-gradient-to-t from-background via-background to-background/80 pt-6 pb-4 border-t border-primary/10 backdrop-blur-sm">
-            <div className="px-3 md:px-6">
-              <ChatInput 
-                onSendMessage={handleSendMessage}
-                onSendImage={handleSendImage} 
-                isLoading={isLoading}
-                isPro={isPro}
-                useAdvancedReasoning={useAdvancedReasoning}
-                useLuvviXThink={useLuvviXThink}
-                useWebSearch={useWebSearch}
-                onToggleAdvancedReasoning={toggleAdvancedReasoning}
-                onToggleLuvviXThink={toggleLuvviXThink}
-                onToggleWebSearch={toggleWebSearch}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+            topP

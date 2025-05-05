@@ -13,6 +13,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { FloatingActions } from "./FloatingActions";
 import axios from "axios";
 import { formatSourceCitations } from "@/utils/formatters";
+import { parseVisualizationRequest, containsVisualizationRequest } from "@/utils/graphParser";
+import { VisualizationConfig, MathVisualization } from "./MathVisualization";
 
 const SAMPLE_QUESTIONS = [
   "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",
@@ -58,6 +60,7 @@ export const ChatContainer = () => {
   const [useAdvancedReasoning, setUseAdvancedReasoning] = useState(false);
   const [useLuvviXThink, setUseLuvviXThink] = useState(false);
   const [useWebSearch, setUseWebSearch] = useState(false);
+  const [pendingVisualization, setPendingVisualization] = useState<VisualizationConfig | null>(null);
   
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -342,6 +345,10 @@ export const ChatContainer = () => {
   const handleSendMessage = async (content: string) => {
     setShouldAutoScroll(true);
     
+    // Check if this is a visualization request
+    const isVisualizationRequest = containsVisualizationRequest(content);
+    const visualizationConfig = isVisualizationRequest ? parseVisualizationRequest(content) : null;
+    
     const userMessage: Message = {
       id: nanoid(),
       role: "user",
@@ -357,6 +364,58 @@ export const ChatContainer = () => {
     }
 
     setIsLoading(true);
+
+    // If this is a visualization request that we can handle directly
+    if (visualizationConfig) {
+      setPendingVisualization(visualizationConfig);
+      
+      setTimeout(() => {
+        const visualizationType = visualizationConfig.type === 'function' 
+          ? 'fonction mathématique'
+          : (visualizationConfig.config as any).type === 'pie' 
+            ? 'diagramme circulaire' 
+            : (visualizationConfig.config as any).type === 'bar'
+              ? 'diagramme en barres'
+              : (visualizationConfig.config as any).type === 'line'
+                ? 'graphique linéaire' 
+                : (visualizationConfig.config as any).type === 'scatter'
+                  ? 'nuage de points'
+                  : 'visualisation';
+        
+        const visualizationMessage: Message = {
+          id: nanoid(),
+          role: "assistant",
+          content: `Voici le ${visualizationType} que j'ai généré selon votre demande :`,
+          timestamp: new Date(),
+          visualization: visualizationConfig
+        };
+        
+        const finalMessages = [...updatedMessages, visualizationMessage];
+        setMessages(finalMessages);
+        
+        if (user && currentConversationId) {
+          saveCurrentConversation(finalMessages as any);
+        }
+        
+        // Generate questions related to data visualization
+        const suggestionsList = [
+          "Peux-tu modifier l'échelle du graphique ?",
+          "Peux-tu me montrer ces données sous forme de " + 
+            (visualizationType === 'diagramme en barres' ? "graphique linéaire" : 
+             visualizationType === 'diagramme circulaire' ? "diagramme en barres" : 
+             "diagramme circulaire"),
+          "Comment interpréter cette visualisation ?",
+          "Peux-tu ajouter une deuxième fonction sur le même graphique ?",
+          "Peux-tu me montrer la dérivée de cette fonction ?"
+        ];
+        
+        setSuggestedQuestions(suggestionsList);
+        setPendingVisualization(null);
+        setIsLoading(false);
+      }, 1000);
+      
+      return;
+    }
 
     try {
       let sources: SourceReference[] = [];
@@ -454,6 +513,14 @@ export const ChatContainer = () => {
       Ta réponse DOIT montrer l'influence claire de cette analyse approfondie. Reformule et développe ces concepts dans ta réponse complète, avec un niveau d'analyse plus sophistiqué que d'habitude.` 
       : "Tu dois fournir une réponse très approfondie et sophistiquée à cette question.";
 
+      const mathInstructions = `
+      Pour les demandes de visualisation mathématique:
+      - Si l'utilisateur demande de tracer une fonction ou un graphique, tu dois suggérer une syntaxe appropriée.
+      - Pour les fonctions mathématiques: "Trace la fonction f(x) = sin(x) sur [-π, π]"
+      - Pour les données: "Crée un diagramme en barres des ventes: janvier 100, février 150, mars 200"
+      - Explique que l'utilisateur peut demander différents types de graphiques: fonctions, barres, camembert, lignes, nuage de points.
+      `;
+
       const systemMessage = {
         role: "user",
         parts: [
@@ -465,6 +532,7 @@ export const ChatContainer = () => {
             ${user?.displayName ? `Appelle l'utilisateur par son prénom "${user.displayName}" de temps en temps pour une expérience plus personnelle.` : ''}
             ${useAdvancedReasoning ? advancedReasoningInstructions : ''}
             ${useLuvviXThink ? luvvixThinkInstructions : ''}
+            ${mathInstructions}
             ${sources.length > 0 ? `Voici des résultats de recherche récents qui pourraient être pertinents pour répondre à la question de l'utilisateur:\n\n${sources.map(source => `[${source.id}] ${source.title}\n${source.url}\n${source.snippet}\n\n`).join("")}\n\nPour citer une source dans ta réponse, utilise [cite:X] où X est le numéro de la source (de 1 à ${sources.length}). Cite les sources après chaque fait ou affirmation pour montrer d'où vient l'information. IMPORTANT: Tu DOIS citer au moins 3-4 sources différentes dans ta réponse pour montrer que tu as bien fait des recherches.` : ''}
             ${imageUrl ? `J'ai trouvé une image pertinente pour illustrer ta réponse: ${imageUrl}\nIntègre cette image dans ta réponse si c'est pertinent en utilisant la syntaxe markdown: ![Description](${imageUrl})` : ''}
             
@@ -854,13 +922,19 @@ export const ChatContainer = () => {
       >
         <div className="space-y-4 md:space-y-6 mb-2">
           {messages.map((message, index) => (
-            <ChatMessage
-              key={message.id}
-              message={message}
-              isLast={index === messages.length - 1 && message.role === "assistant"}
-              onRegenerate={handleRegenerate}
-              onFeedback={handleFeedback}
-            />
+            <div key={message.id}>
+              <ChatMessage
+                message={message}
+                isLast={index === messages.length - 1 && message.role === "assistant"}
+                onRegenerate={handleRegenerate}
+                onFeedback={handleFeedback}
+              />
+              {message.visualization && (
+                <div className="mt-4 mb-6 p-4 border rounded-lg bg-card">
+                  <MathVisualization config={message.visualization} />
+                </div>
+              )}
+            </div>
           ))}
           
           {messages.length > 0 && suggestedQuestions.length > 0 && (
@@ -885,7 +959,7 @@ export const ChatContainer = () => {
               <ChatInput 
                 onSendMessage={handleSendMessage}
                 onSendImage={handleSendImage} 
-                isLoading={isLoading}
+                isLoading={isLoading || pendingVisualization !== null}
                 isPro={isPro}
                 useAdvancedReasoning={useAdvancedReasoning}
                 useLuvviXThink={useLuvviXThink}

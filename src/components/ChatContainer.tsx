@@ -796,3 +796,216 @@ export const ChatContainer = () => {
         },
         body: JSON.stringify({
           contents: conversationHistory,
+          generationConfig: {
+            temperature: useAdvancedReasoning ? 0.7 : 1.0,
+            topK: 50,
+            topP: 0.9,
+            maxOutputTokens: useAdvancedReasoning ? 1500 : 1024,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse =
+        data.candidates[0]?.content?.parts[0]?.text ||
+        "Oups ! Je n'ai pas pu générer une réponse. Veuillez réessayer.";
+
+      const formattedResponse = sources.length > 0
+        ? formatSourceCitations(aiResponse, sources)
+        : aiResponse;
+
+      const mathFunctionRequested = userMessage.content.toLowerCase().match(/trac(e|er)|graph(e|ique)|fonction|courbe|math(s|ématique)/);
+      
+      const hasGraph = mathFunctionRequested && userMessage.content.toLowerCase().match(/((sin|cos|tan|log|exp|x\^2|\*x|\+x|x\+|x\-|\-x|x\/|\/x|sqrt)\b)|(\bf\(x\))/);
+      
+      const graphParams = hasGraph ? {
+        functions: [
+          { fn: 'sin(x)', label: 'sin(x)', color: '#8B5CF6' },
+          { fn: 'cos(x)', label: 'cos(x)', color: '#F97316' }
+        ],
+        xRange: [-10, 10],
+        xLabel: 'x',
+        yLabel: 'y',
+        title: 'Fonctions trigonométriques'
+      } : undefined;
+
+      let assistantMessage: Message = {
+        id: nanoid(),
+        role: "assistant",
+        content:
+          formattedResponse +
+          "\n\n*— LuvviX, votre assistant IA amical 🤖*",
+        timestamp: new Date(),
+        useAdvancedReasoning: useAdvancedReasoning,
+        useLuvviXThink: useLuvviXThink,
+        useWebSearch: useWebSearch,
+        sourceReferences: sources.length > 0 ? sources : undefined,
+        hasGraph: hasGraph,
+        graphType: hasGraph ? 'function' : undefined,
+        graphParams: graphParams
+      };
+
+      const finalMessages = [...updatedMessages, assistantMessage];
+      setMessages(finalMessages);
+      
+      generateSuggestedQuestions(aiResponse);
+      
+      if (user && currentConversationId) {
+        saveCurrentConversation(finalMessages as any);
+      }
+      
+      setTimeout(() => {
+        scrollToBottom();
+      }, 100);
+    } catch (error) {
+      console.error("Erreur API Gemini :", error);
+      toast({
+        title: "Erreur",
+        description:
+          "Impossible de communiquer avec l'API Gemini. Veuillez réessayer.",
+        variant: "destructive",
+      });
+      
+      const errorMessage: Message = {
+        id: nanoid(),
+        role: "assistant",
+        content:
+          "Désolé, j'ai rencontré un problème de connexion lors de la régénération. Veuillez réessayer plus tard.",
+        timestamp: new Date(),
+      };
+      
+      const finalMessages = [...updatedMessages, errorMessage];
+      setMessages(finalMessages);
+      
+      if (user && currentConversationId) {
+        saveCurrentConversation(finalMessages as any);
+      }
+    } finally {
+      setIsLoading(false);
+      setIsRegenerating(false);
+    }
+  };
+
+  // Render functions and layout components
+  const renderChatHeader = () => (
+    <div className="flex justify-between items-center py-3 px-4 border-b">
+      <div className="flex items-center gap-2">
+        {isMobile && (
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72">
+              <ConversationSelector onSelect={() => setIsMenuOpen(false)} />
+            </SheetContent>
+          </Sheet>
+        )}
+        <h1 className="text-xl font-semibold">LuvviX AI</h1>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            if (currentConversationId) {
+              createNewConversation();
+            } else {
+              setMessages(INITIAL_MESSAGES);
+              const randomQuestions = [...SAMPLE_QUESTIONS]
+                .sort(() => 0.5 - Math.random())
+                .slice(0, 3);
+              setSuggestedQuestions(randomQuestions);
+            }
+          }}
+        >
+          Nouvelle Discussion
+        </Button>
+        {/* You can add more buttons here, like settings, etc. */}
+      </div>
+    </div>
+  );
+  
+  return (
+    <div className="flex h-full">
+      {!isMobile && (
+        <div className="w-72 border-r h-full bg-muted/30">
+          <ConversationSelector />
+        </div>
+      )}
+      
+      <div className="flex-1 flex flex-col h-full">
+        {renderChatHeader()}
+        
+        <div 
+          ref={chatContainerRef}
+          className="flex-1 overflow-y-auto p-4 space-y-4"
+        >
+          {messages.map((message) => (
+            <ChatMessage
+              key={message.id}
+              message={message}
+              onRegenerate={message.role === "assistant" ? handleRegenerate : undefined}
+            />
+          ))}
+          
+          {isLoading && (
+            <ChatMessage
+              message={{
+                id: "loading",
+                role: "assistant",
+                content: "Réflexion en cours...",
+                timestamp: new Date(),
+              }}
+              isLoading={true}
+            />
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
+        
+        <div className="p-4 border-t">
+          {messages.length > 1 && !isLoading && (
+            <SuggestedQuestions
+              questions={suggestedQuestions}
+              onQuestionClick={handleSendMessage}
+            />
+          )}
+          
+          <Dialog open={showMathCreator} onOpenChange={setShowMathCreator}>
+            <DialogContent className="sm:max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>Créer un Graphique Mathématique</DialogTitle>
+              </DialogHeader>
+              <MathFunctionCreator onSubmit={handleAddMathGraph} />
+            </DialogContent>
+          </Dialog>
+          
+          <ChatInput 
+            onSendMessage={handleSendMessage} 
+            onSendImage={handleSendImage}
+            isLoading={isLoading}
+            onCreateMathGraph={() => setShowMathCreator(true)}
+          />
+          
+          <FloatingActions 
+            onScrollToTop={scrollToTop}
+            onScrollToBottom={scrollToBottom}
+            showScrollToTop={shouldAutoScroll === false}
+            setUseAdvancedReasoning={setUseAdvancedReasoning}
+            useAdvancedReasoning={useAdvancedReasoning}
+            setUseLuvviXThink={setUseLuvviXThink}
+            useLuvviXThink={useLuvviXThink}
+            setUseWebSearch={setUseWebSearch}
+            useWebSearch={useWebSearch}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};

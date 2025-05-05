@@ -66,10 +66,9 @@ declare module "@/components/ChatMessage" {
   }
   
   export interface SourceReference {
-    id: number;
+    id: number | string;
     title: string;
     url: string;
-    snippet: string;
+    snippet?: string;
   }
 }
-

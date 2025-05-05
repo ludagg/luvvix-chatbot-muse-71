@@ -28,11 +28,7 @@ const DEFAULT_COLORS = [
   '#EC4899', // Pink
 ];
 
-interface MathFunctionCreatorProps {
-  onAddGraph: (message: Message) => void;
-}
-
-export function MathFunctionCreator({ onAddGraph }: MathFunctionCreatorProps) {
+export function MathFunctionCreator({ onSubmit }: { onSubmit: (message: Message) => void }) {
   const [title, setTitle] = useState('Fonction mathématique');
   const [xLabel, setXLabel] = useState('x');
   const [yLabel, setYLabel] = useState('y');
@@ -85,7 +81,7 @@ export function MathFunctionCreator({ onAddGraph }: MathFunctionCreatorProps) {
       }
     };
     
-    onAddGraph(graphMessage);
+    onSubmit(graphMessage);
   };
 
   const exampleFunctions = [

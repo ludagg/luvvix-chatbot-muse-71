@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { ChatMessage } from "./ChatMessage";
+import { ChatMessage, SourceReference } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { nanoid } from "nanoid";
 import { useToast } from "@/hooks/use-toast";
@@ -14,9 +14,8 @@ import { FloatingActions } from "./FloatingActions";
 import axios from "axios";
 import { formatSourceCitations } from "@/utils/formatters";
 import { MathFunctionCreator } from "./MathFunctionCreator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Message } from "@/types/message";
-import { SourceReference } from "@/components/ChatMessage";
 
 const SAMPLE_QUESTIONS = [
   "Quelle est la différence entre l'intelligence artificielle et l'apprentissage automatique ?",

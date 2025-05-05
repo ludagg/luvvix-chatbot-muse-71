@@ -306,7 +306,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                     href={source.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-sm text-primary hover:underline p-1.5 rounded-md hover:bg-primary/5 transition-colors duration-200"
+                    className="flex items-center gap-1 text-sm text-primary hover:underline p-1.5 rounded-md hover:bg-primary/5 transition-colors"
                   >
                     <span className="w-5 h-5 flex items-center justify-center bg-primary/10 rounded text-xs text-primary font-medium">
                       {source.id}

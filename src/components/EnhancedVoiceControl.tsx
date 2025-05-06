@@ -1,7 +1,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { MicVocal, MicVocalOff, Volume2, VolumeX, Play, Headphones, Radio } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, Play, Headphones, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -59,10 +59,10 @@ export function EnhancedVoiceControl({
       recognition.interimResults = true;
       recognition.lang = 'fr-FR';
       
-      recognition.onstart = () => {
+      recognition.addEventListener('start', () => {
         setIsListening(true);
         if (onVoiceStart) onVoiceStart();
-      };
+      });
       
       recognition.onresult = (event) => {
         const currentTranscript = Array.from(event.results)
@@ -199,8 +199,8 @@ export function EnhancedVoiceControl({
           aria-label={isListening ? "Arrêter l'écoute" : "Commencer l'écoute"}
         >
           {isListening ? 
-            <MicVocalOff size={iconSizes[size]} /> : 
-            <MicVocal size={iconSizes[size]} />}
+            <MicOff size={iconSizes[size]} /> : 
+            <Mic size={iconSizes[size]} />}
         </Button>
         
         <Button

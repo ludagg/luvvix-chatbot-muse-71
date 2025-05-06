@@ -1,95 +1,94 @@
+/**
+ * Clean text content to make it more suitable for speech synthesis
+ * by removing markdown syntax, code blocks, and other non-spoken content
+ */
+export function cleanTextForSpeech(content: string): string {
+  if (!content) return '';
+  
+  // Remove code blocks
+  let cleanedContent = content.replace(/```[\s\S]*?```/g, 'code omitted ');
+  
+  // Remove inline code
+  cleanedContent = cleanedContent.replace(/`([^`]+)`/g, '$1');
+  
+  // Remove markdown links but keep the text
+  cleanedContent = cleanedContent.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  
+  // Remove markdown headings syntax
+  cleanedContent = cleanedContent.replace(/#{1,6}\s+/g, '');
+  
+  // Remove markdown bold/italic
+  cleanedContent = cleanedContent.replace(/(\*\*|__)(.*?)\1/g, '$2');
+  cleanedContent = cleanedContent.replace(/(\*|_)(.*?)\1/g, '$2');
+  
+  // Remove HTML tags
+  cleanedContent = cleanedContent.replace(/<[^>]*>/g, '');
+  
+  // Remove LaTeX equations
+  cleanedContent = cleanedContent.replace(/\$\$(.*?)\$\$/g, 'équation mathématique omise');
+  cleanedContent = cleanedContent.replace(/\$(.*?)\$/g, 'équation mathématique omise');
+  
+  // Remove horizontal rules
+  cleanedContent = cleanedContent.replace(/---/g, '');
+  
+  // Remove image descriptions
+  cleanedContent = cleanedContent.replace(/!\[([^\]]*)\]\([^)]+\)/g, '');
+  
+  // Remove citation syntax like [cite:1]
+  cleanedContent = cleanedContent.replace(/\[cite:\d+\]/g, '');
+  
+  // Add pauses after paragraphs for better speech rhythm
+  cleanedContent = cleanedContent.replace(/\.\s+/g, '. ');
+  cleanedContent = cleanedContent.replace(/\n{2,}/g, '. ');
+  
+  // Remove excessive spaces
+  cleanedContent = cleanedContent.replace(/\s+/g, ' ');
+  
+  return cleanedContent.trim();
+}
 
 /**
- * Lit un texte à voix haute en utilisant l'API Speech Synthesis
- * @param text Le texte à lire
- * @param lang La langue de lecture (défaut: fr-FR)
- * @param rate La vitesse de lecture (défaut: 1)
- * @param pitch La hauteur de la voix (défaut: 1)
- * @returns Une fonction pour arrêter la lecture
+ * Speak text using Web Speech API
+ * @returns A function that can be called to stop speaking
  */
-export const speakText = (text: string, lang = 'fr-FR', rate = 1, pitch = 1): (() => void) => {
-  // Vérifier si l'API est disponible
-  if (!('speechSynthesis' in window)) {
-    console.error('La synthèse vocale n\'est pas supportée par ce navigateur.');
-    return () => {};
-  }
-
-  // Arrêter toute lecture en cours
+export function speakText(text: string): () => void {
+  if (!text || !window.speechSynthesis) return () => {};
+  
+  // Cancel any ongoing speech
   window.speechSynthesis.cancel();
-
-  // Créer une nouvelle instance de SpeechSynthesisUtterance
+  
   const utterance = new SpeechSynthesisUtterance(text);
   
-  // Configurer les paramètres
-  utterance.lang = lang;
-  utterance.rate = rate;
-  utterance.pitch = pitch;
-  
-  // Trouver la meilleure voix disponible pour la langue
+  // Try to set French voice if available
   const voices = window.speechSynthesis.getVoices();
-  const voicesForLanguage = voices.filter(voice => voice.lang.startsWith(lang.split('-')[0]));
+  const frenchVoice = voices.find(voice => voice.lang.includes('fr'));
   
-  if (voicesForLanguage.length > 0) {
-    // Préférer une voix féminine si disponible
-    const femaleVoice = voicesForLanguage.find(voice => voice.name.includes('female') || voice.name.includes('Female'));
-    utterance.voice = femaleVoice || voicesForLanguage[0];
+  if (frenchVoice) {
+    utterance.voice = frenchVoice;
   }
-
-  // Lancer la lecture
+  
+  utterance.lang = 'fr-FR';
+  utterance.rate = 1.1;  // Slightly faster than normal
+  utterance.pitch = 1.0; // Normal pitch
+  
   window.speechSynthesis.speak(utterance);
   
-  // Fonction pour arrêter la lecture
   return () => {
     window.speechSynthesis.cancel();
   };
-};
+}
 
 /**
- * Nettoie le texte Markdown pour la synthèse vocale
- * @param markdown Le texte Markdown à nettoyer
- * @returns Le texte nettoyé
+ * Get available speech synthesis voices
  */
-export const cleanTextForSpeech = (markdown: string): string => {
-  let text = markdown;
-  
-  // Supprimer les sections de code
-  text = text.replace(/```[\s\S]*?```/g, "code supprimé pour la synthèse vocale. ");
-  
-  // Supprimer les liens Markdown mais garder le texte
-  text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
-  
-  // Supprimer les images
-  text = text.replace(/!\[([^\]]*)\]\([^)]+\)/g, "");
-  
-  // Remplacer les titres par du texte simple
-  text = text.replace(/#+\s+(.*?)$/gm, "$1. ");
-  
-  // Supprimer les formatages gras et italiques
-  text = text.replace(/(\*\*|__)(.*?)\1/g, "$2");
-  text = text.replace(/(\*|_)(.*?)\1/g, "$2");
-  
-  // Supprimer les listes à puces et numérotées
-  text = text.replace(/^\s*[-*+]\s+(.*?)$/gm, "$1. ");
-  text = text.replace(/^\s*\d+\.\s+(.*?)$/gm, "$1. ");
-  
-  // Supprimer les tableaux
-  text = text.replace(/^\|.*\|$/gm, "");
-  text = text.replace(/^[|:-]+$/gm, "");
-  
-  // Supprimer les sections "Sources:" et tout ce qui suit
-  text = text.replace(/\n\n\*?Sources:[\s\S]*$/i, "");
-  
-  // Supprimer la signature LuvviX
-  text = text.replace(/\n\n\*— LuvviX.*?\*$/g, "");
-  
-  // Remplacer les sauts de ligne multiples par un seul
-  text = text.replace(/\n{2,}/g, ". ");
-  
-  // Remplacer les sauts de ligne simples par des espaces
-  text = text.replace(/\n/g, " ");
-  
-  // Supprimer les espaces multiples
-  text = text.replace(/\s{2,}/g, " ");
-  
-  return text.trim();
-};
+export function getAvailableVoices(): SpeechSynthesisVoice[] {
+  if (!window.speechSynthesis) return [];
+  return window.speechSynthesis.getVoices();
+}
+
+/**
+ * Check if speech recognition is supported by the browser
+ */
+export function isSpeechRecognitionSupported(): boolean {
+  return 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
+}

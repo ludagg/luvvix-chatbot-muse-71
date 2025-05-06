@@ -19,10 +19,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatMarkdownTables } from "@/utils/formatters";
+import { formatMarkdownTables } from "@/utils/formatMarkdownTables";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MathFunctionChart } from "@/components/MathFunctionChart";
 import { Message } from "@/types/message";
+import { ChatMessageCodePreview } from "./ChatMessageCodePreview";
 
 export interface SourceReference {
   id: number | string;
@@ -45,8 +46,6 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
   const contentRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const [showSourcesDialog, setShowSourcesDialog] = useState(false);
-  const [isCodeBlockCopied, setIsCodeBlockCopied] = useState<Record<string, boolean>>({});
-  const hasRealSources = message.sourceReferences?.some(source => !source.title.includes("Résultat de recherche")) || false;
   const [showFormatButtons, setShowFormatButtons] = useState(false);
   
   // Préparation du contenu avec tableaux bien formatés
@@ -80,14 +79,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
     return message.sourceReferences?.length || 0;
   };
   
-  const handleCodeBlockCopy = (codeContent: string, index: string) => {
-    navigator.clipboard.writeText(codeContent);
-    setIsCodeBlockCopied(prev => ({ ...prev, [index]: true }));
-    
-    setTimeout(() => {
-      setIsCodeBlockCopied(prev => ({ ...prev, [index]: false }));
-    }, 2000);
-  };
+  const hasRealSources = message.sourceReferences?.some(source => !source.title.includes("Résultat de recherche")) || false;
 
   // Fonction pour rendre les liens des sources plus descriptifs
   const getSourceDisplayTitle = (source: SourceReference): string => {
@@ -237,25 +229,11 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                 const codeBlockId = `code-${message.id}-${language}-${codeContent.length}`;
                 
                 return (
-                  <div className="relative mt-3 mb-3 rounded-lg overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-1.5 bg-muted/80 border-b border-border/30">
-                      <div className="text-xs font-medium text-muted-foreground">
-                        {language || 'Code'}
-                      </div>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 rounded-full"
-                        onClick={() => handleCodeBlockCopy(codeContent, codeBlockId)}
-                      >
-                        {isCodeBlockCopied[codeBlockId] ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                      </Button>
-                    </div>
-                    <pre className="p-3 overflow-x-auto bg-muted/40 text-sm font-mono">
-                      <code>{codeContent}</code>
-                    </pre>
-                  </div>
+                  <ChatMessageCodePreview
+                    codeContent={codeContent}
+                    language={language}
+                    codeBlockId={codeBlockId}
+                  />
                 );
               },
               img: ({ node, ...props }) => (

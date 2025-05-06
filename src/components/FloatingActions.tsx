@@ -1,11 +1,12 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { VoiceAssistant } from "@/components/VoiceAssistant";
+import { EnhancedVoiceControl } from "@/components/EnhancedVoiceControl";
 import { Message } from "@/types/message";
-import { FileText, Download, FileBadge } from "lucide-react";
+import { FileText, Download, FileBadge, ScrollText, ArrowUp } from "lucide-react";
 import { createPDF, createWordDoc } from "@/utils/pdfUtils";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -17,16 +18,31 @@ interface FloatingActionsProps {
   onOpenImageUploader?: () => void;
   onVoiceInput?: (text: string) => void;
   scrollToTop?: () => void;
+  scrollToBottom?: () => void;
+  showScrollToTop?: boolean;
   lastMessage?: Message | null;
+  setUseAdvancedReasoning?: React.Dispatch<React.SetStateAction<boolean>>;
+  useAdvancedReasoning?: boolean;
+  setUseLuvviXThink?: React.Dispatch<React.SetStateAction<boolean>>;
+  useLuvviXThink?: boolean;
+  setUseWebSearch?: React.Dispatch<React.SetStateAction<boolean>>;
+  useWebSearch?: boolean;
 }
 
 export const FloatingActions = ({ 
   onOpenImageUploader, 
   onVoiceInput, 
   scrollToTop, 
-  lastMessage 
+  scrollToBottom,
+  showScrollToTop,
+  lastMessage,
+  setUseAdvancedReasoning,
+  useAdvancedReasoning,
+  setUseLuvviXThink,
+  useLuvviXThink,
+  setUseWebSearch,
+  useWebSearch
 }: FloatingActionsProps) => {
-  const [isVoiceModeActive, setIsVoiceModeActive] = useState(false);
   const [isExporting, setIsExporting] = useState<"pdf" | "word" | null>(null);
 
   const handleVoiceInput = (transcript: string) => {
@@ -57,7 +73,6 @@ export const FloatingActions = ({
           toast.success("PDF exporté avec succès");
         } else {
           toast.error("Impossible de trouver le contenu du message");
-          console.error("Élément de contenu non trouvé:", messageElement);
         }
       }
     } catch (error) {
@@ -90,7 +105,6 @@ export const FloatingActions = ({
           toast.success("Document Word exporté avec succès");
         } else {
           toast.error("Impossible de trouver le contenu du message");
-          console.error("Élément de contenu non trouvé:", messageElement);
         }
       }
     } catch (error) {
@@ -102,7 +116,28 @@ export const FloatingActions = ({
   };
 
   return (
-    <div className="fixed bottom-20 md:bottom-24 right-4 md:right-8 z-30 flex flex-col gap-4 items-end">
+    <div className="fixed bottom-20 right-4 z-30 flex flex-col gap-3 items-end">
+      {/* Scroll to Top Button */}
+      <AnimatePresence>
+        {showScrollToTop && scrollToTop && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+          >
+            <Button
+              variant="outline"
+              size="icon"
+              className="bg-background/80 border border-border/50 backdrop-blur-sm shadow-md hover:bg-background/90 rounded-full"
+              onClick={scrollToTop}
+            >
+              <ArrowUp className="h-5 w-5" />
+              <span className="sr-only">Remonter au début</span>
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Export Document Button */}
       {lastMessage && lastMessage.role === "assistant" && (
         <DropdownMenu>
@@ -110,7 +145,7 @@ export const FloatingActions = ({
             <Button
               variant="outline"
               size="icon"
-              className="bg-background/80 border border-border/50 backdrop-blur-sm shadow-md hover:bg-background/90"
+              className="bg-background/80 border border-border/50 backdrop-blur-sm shadow-md hover:bg-background/90 rounded-full"
               disabled={isExporting !== null}
             >
               {isExporting === "pdf" ? (
@@ -118,7 +153,7 @@ export const FloatingActions = ({
               ) : isExporting === "word" ? (
                 <FileBadge className="h-5 w-5 animate-pulse" />
               ) : (
-                <Download className="h-5 w-5" />
+                <ScrollText className="h-5 w-5" />
               )}
               <span className="sr-only">Exporter le document</span>
             </Button>
@@ -136,13 +171,14 @@ export const FloatingActions = ({
         </DropdownMenu>
       )}
       
-      {/* Voice Assistant */}
-      <VoiceAssistant 
-        onVoiceInput={handleVoiceInput}
-        onToggleVoiceMode={setIsVoiceModeActive}
-        isVoiceModeActive={isVoiceModeActive}
+      {/* Enhanced Voice Control */}
+      <EnhancedVoiceControl 
+        onVoiceEnd={handleVoiceInput}
         lastMessage={lastMessage}
+        position="inline"
+        variant="primary"
+        size="md"
       />
     </div>
   );
-};
+}

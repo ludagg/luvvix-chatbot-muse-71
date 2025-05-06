@@ -15,7 +15,7 @@ import { DialogProvider } from "./contexts/DialogContext";
 import { KeyboardShortcutsEnhanced } from "./components/KeyboardShortcutsEnhanced";
 import { CommandPalette } from "./components/CommandPalette";
 import { OfflineMode } from "./components/OfflineMode";
-import { VoiceChatControl } from "./components/VoiceChatControl";
+import { EnhancedVoiceControl } from "./components/EnhancedVoiceControl";
 import { NotificationCenter } from "./components/NotificationCenter";
 
 // Create the query client
@@ -93,7 +93,7 @@ const App = () => {
         <AuthProvider>
           <DialogProvider>
             <Toaster />
-            <Sonner />
+            <Sonner position="top-right" closeButton className="z-50" />
             <OfflineMode />
             <KeyboardShortcutsEnhanced />
             <CommandPalette />

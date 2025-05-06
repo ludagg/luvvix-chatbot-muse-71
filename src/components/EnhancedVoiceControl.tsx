@@ -185,7 +185,7 @@ export function EnhancedVoiceControl({
         const activeElement = document.activeElement;
         const isInputActive = activeElement instanceof HTMLInputElement || 
                              activeElement instanceof HTMLTextAreaElement || 
-                             activeElement?.isContentEditable;
+                             (activeElement && activeElement.hasAttribute('contenteditable'));
                              
         if (!isInputActive) {
           e.preventDefault();

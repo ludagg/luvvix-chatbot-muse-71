@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Bell, Check, Trash, X } from "lucide-react";
+import { Bell, Check, Trash, X, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Popover,
@@ -27,9 +27,8 @@ export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
-  // Simulation de la réception de notifications (à connecter à un service réel dans une implémentation complète)
+  // Load existing notifications from localStorage on component mount
   useEffect(() => {
-    // Charger les notifications existantes depuis le localStorage
     const savedNotifications = localStorage.getItem("notifications");
     if (savedNotifications) {
       const parsedNotifications = JSON.parse(savedNotifications);
@@ -37,7 +36,7 @@ export function NotificationCenter() {
       setUnreadCount(parsedNotifications.filter((n: Notification) => !n.read).length);
     }
 
-    // Simuler l'arrivée d'une notification après un délai
+    // Simulate a welcome notification if no notifications exist
     const timer = setTimeout(() => {
       if (notifications.length < 1) {
         addNotification({
@@ -51,7 +50,7 @@ export function NotificationCenter() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Mettre à jour le stockage local à chaque changement de notifications
+  // Update localStorage and unread count when notifications change
   useEffect(() => {
     localStorage.setItem("notifications", JSON.stringify(notifications));
     setUnreadCount(notifications.filter(n => !n.read).length);
@@ -77,7 +76,7 @@ export function NotificationCenter() {
 
     setNotifications(prev => [newNotification, ...prev]);
     
-    // Afficher également un toast pour les nouvelles notifications
+    // Also show a toast for new notifications
     toast({
       title,
       description: message,
@@ -116,26 +115,24 @@ export function NotificationCenter() {
     const diffDays = Math.round(diffMs / 86400000);
 
     if (diffMins < 60) {
-      return `Il y a ${diffMins} min`;
+      return `${diffMins} min`;
     } else if (diffHours < 24) {
-      return `Il y a ${diffHours} h`;
+      return `${diffHours} h`;
     } else {
-      return `Il y a ${diffDays} j`;
+      return `${diffDays} j`;
     }
   };
 
-  const getTypeStyles = (type: string) => {
-    switch (type) {
-      case "info":
-        return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300";
+  const getTypeIcon = (type: string) => {
+    switch(type) {
       case "warning":
-        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300";
+        return <Badge variant="warning" className="h-6 w-6 rounded-full p-1"><Info className="h-4 w-4" /></Badge>;
       case "success":
-        return "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300";
+        return <Badge variant="success" className="h-6 w-6 rounded-full p-1"><Check className="h-4 w-4" /></Badge>;
       case "error":
-        return "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300";
+        return <Badge variant="destructive" className="h-6 w-6 rounded-full p-1"><X className="h-4 w-4" /></Badge>;
       default:
-        return "bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300";
+        return <Badge variant="secondary" className="h-6 w-6 rounded-full p-1"><Info className="h-4 w-4" /></Badge>;
     }
   };
 
@@ -147,11 +144,11 @@ export function NotificationCenter() {
           size="icon"
           className="relative h-9 w-9 rounded-full"
         >
-          <Bell className="h-4 w-4" />
+          <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 min-w-[1.25rem] px-1"
+              className="absolute -top-1 -right-1 h-4 min-w-[1rem] px-1 flex items-center justify-center text-[10px]"
             >
               {unreadCount}
             </Badge>
@@ -159,36 +156,36 @@ export function NotificationCenter() {
           <span className="sr-only">Notifications</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 p-0">
-        <div className="flex items-center justify-between border-b p-3">
-          <h3 className="font-medium">Notifications</h3>
+      <PopoverContent align="end" alignOffset={-5} className="w-[320px] p-0 rounded-xl border-border/30">
+        <div className="flex items-center justify-between border-b border-border/10 p-3">
+          <h3 className="font-medium text-sm">Notifications</h3>
           <div className="flex gap-1">
             {notifications.length > 0 && (
               <>
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-7 w-7" 
+                  className="h-7 w-7 rounded-full" 
                   onClick={markAllAsRead}
                 >
                   <Check className="h-3.5 w-3.5" />
-                  <span className="sr-only">Marquer tout comme lu</span>
+                  <span className="sr-only">Tout marquer comme lu</span>
                 </Button>
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="h-7 w-7" 
+                  className="h-7 w-7 rounded-full" 
                   onClick={clearAllNotifications}
                 >
                   <Trash className="h-3.5 w-3.5" />
-                  <span className="sr-only">Supprimer tout</span>
+                  <span className="sr-only">Tout supprimer</span>
                 </Button>
               </>
             )}
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-7 w-7" 
+              className="h-7 w-7 rounded-full" 
               onClick={() => setIsOpen(false)}
             >
               <X className="h-3.5 w-3.5" />
@@ -196,65 +193,73 @@ export function NotificationCenter() {
             </Button>
           </div>
         </div>
-        <div className="max-h-80 overflow-y-auto">
+        <div className="max-h-[70vh] overflow-y-auto">
           <AnimatePresence>
             {notifications.length > 0 ? (
-              notifications.map(notification => (
-                <motion.div
-                  key={notification.id}
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className={cn(
-                    "p-3 border-b relative",
-                    !notification.read && "bg-muted/50"
-                  )}
-                >
-                  <div className="flex justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <span 
-                          className={cn(
-                            "inline-block w-2 h-2 rounded-full mr-2",
-                            notification.type === "info" && "bg-blue-500",
-                            notification.type === "warning" && "bg-yellow-500",
-                            notification.type === "success" && "bg-green-500",
-                            notification.type === "error" && "bg-red-500"
-                          )}
-                        />
-                        <h4 className="font-medium text-sm">{notification.title}</h4>
+              <div className="py-1">
+                {notifications.map(notification => (
+                  <motion.div
+                    key={notification.id}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className={cn(
+                      "px-3 py-2 hover:bg-muted/50 transition-colors",
+                      !notification.read && "bg-primary/5"
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-1">
+                        {getTypeIcon(notification.type)}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
-                      <div className="text-[10px] text-muted-foreground mt-1">
-                        {formatTime(notification.timestamp)}
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-sm truncate">{notification.title}</h4>
+                          <span className="text-[10px] text-muted-foreground ml-2 whitespace-nowrap">
+                            {formatTime(notification.timestamp)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notification.message}</p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1 ml-1 flex-shrink-0">
+                        {!notification.read && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 rounded-full" 
+                            onClick={() => markAsRead(notification.id)}
+                          >
+                            <Check className="h-3 w-3" />
+                            <span className="sr-only">Marquer comme lu</span>
+                          </Button>
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-6 w-6 rounded-full" 
+                          onClick={() => deleteNotification(notification.id)}
+                        >
+                          <Trash className="h-3 w-3" />
+                          <span className="sr-only">Supprimer</span>
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-1 ml-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6" 
-                        onClick={() => markAsRead(notification.id)}
-                      >
-                        <Check className="h-3 w-3" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6" 
-                        onClick={() => deleteNotification(notification.id)}
-                      >
-                        <Trash className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))
+                  </motion.div>
+                ))}
+              </div>
             ) : (
-              <div className="p-8 text-center">
+              <div className="py-10 text-center">
+                <div className="mx-auto w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                  <Bell className="h-6 w-6 text-muted-foreground/70" />
+                </div>
                 <p className="text-muted-foreground text-sm">
                   Aucune notification
+                </p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Les notifications apparaîtront ici
                 </p>
               </div>
             )}

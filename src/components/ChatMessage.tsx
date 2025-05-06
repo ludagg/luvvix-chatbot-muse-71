@@ -102,112 +102,90 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
+      transition={{ duration: 0.3 }}
       className={cn(
-        "w-full flex",
-        message.role === "user" ? "flex-row-reverse" : "flex-row"
+        "w-full flex mb-1", // Added less margin between messages
+        message.role === "user" ? "justify-end" : "justify-start"
       )}
       id={message.id}
     >
-      {/* Afficher l'avatar uniquement pour l'utilisateur */}
-      {message.role === "user" && (
-        <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center bg-primary/20 text-primary ml-3">
-          {user?.displayName?.charAt(0).toUpperCase() || "U"}
+      {/* Avatar for assistant messages */}
+      {message.role === "assistant" && (
+        <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-primary/20 text-primary mr-2 mt-1">
+          <span className="font-semibold text-xs">AI</span>
         </div>
       )}
       
       <div className={cn(
-        "bg-muted/40 backdrop-blur-sm p-4 rounded-lg",
-        message.role === "user" ? "rounded-tr-none max-w-[75%]" : "rounded-tl-none max-w-[95%] w-full md:max-w-[90%]"
+        "backdrop-blur-sm p-3 rounded-2xl max-w-[85%] md:max-w-[75%]", // More rounded corners
+        message.role === "user" 
+          ? "bg-primary/10 text-foreground rounded-tr-sm ml-6" // User message styling
+          : "bg-muted/40 rounded-tl-sm" // AI message styling
       )}>
-        {/* Ajout des boutons de formatage pour l'assistant */}
+        {/* Feature buttons in a more modern dropdown style */}
         {message.role === "assistant" && showFormatButtons && (
-          <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border/20 overflow-x-auto">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <Heading1 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Grand titre</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <Heading2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Titre moyen</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <Heading3 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Petit titre</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <List className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Liste à puces</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <ListOrdered className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Liste numérotée</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7">
-                    <Table2 className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Tableau</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border/10 overflow-x-auto">
+            <div className="flex flex-wrap gap-1 justify-center">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 rounded-full">
+                      <Heading1 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Titre principal</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 rounded-full">
+                      <Heading2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Sous-titre</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 rounded-full">
+                      <List className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Liste à puces</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 w-7 rounded-full">
+                      <Table2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Tableau</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         )}
         
-        {/* Affichage du graphique si présent */}
+        {/* Graph visualization if present */}
         {message.hasGraph && message.graphParams && (
-          <div className="mb-4">
+          <div className="mb-3 rounded-lg overflow-hidden">
             <MathFunctionChart params={message.graphParams} />
           </div>
         )}
@@ -236,21 +214,21 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                 <h4 {...props} className="text-base font-semibold mt-3 mb-2" />
               ),
               ul: ({ node, ...props }) => (
-                <ul {...props} className="list-disc pl-6 my-4 space-y-2" />
+                <ul {...props} className="list-disc pl-6 my-3 space-y-1.5" />
               ),
               ol: ({ node, ...props }) => (
-                <ol {...props} className="list-decimal pl-6 my-4 space-y-2" />
+                <ol {...props} className="list-decimal pl-6 my-3 space-y-1.5" />
               ),
               li: ({ node, ...props }) => (
-                <li {...props} className="mb-1" />
+                <li {...props} className="mb-0.5" />
               ),
               blockquote: ({ node, ...props }) => (
-                <blockquote {...props} className="border-l-4 border-primary/30 pl-4 italic my-4" />
+                <blockquote {...props} className="border-l-4 border-primary/30 pl-4 italic my-3" />
               ),
               code: ({ node, ...props }) => {
                 if (!props.className) {
                   return (
-                    <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono" {...props} />
+                    <code className="bg-muted/80 px-1 py-0.5 rounded text-sm font-mono" {...props} />
                   );
                 }
                 
@@ -259,32 +237,32 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                 const codeBlockId = `code-${message.id}-${language}-${codeContent.length}`;
                 
                 return (
-                  <div className="relative mt-4 mb-4">
-                    <div className="flex items-center justify-between px-4 py-1.5 bg-muted/80 border-b border-border/50 rounded-t-md">
+                  <div className="relative mt-3 mb-3 rounded-lg overflow-hidden">
+                    <div className="flex items-center justify-between px-3 py-1.5 bg-muted/80 border-b border-border/30">
                       <div className="text-xs font-medium text-muted-foreground">
                         {language || 'Code'}
                       </div>
                       <Button
                         type="button"
-                        size="icon"
+                        size="sm"
                         variant="ghost"
-                        className="h-6 w-6"
+                        className="h-6 w-6 rounded-full"
                         onClick={() => handleCodeBlockCopy(codeContent, codeBlockId)}
                       >
-                        {isCodeBlockCopied[codeBlockId] ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        {isCodeBlockCopied[codeBlockId] ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                       </Button>
                     </div>
-                    <pre className="p-4 overflow-x-auto bg-muted/40 rounded-b-md text-sm font-mono">
+                    <pre className="p-3 overflow-x-auto bg-muted/40 text-sm font-mono">
                       <code>{codeContent}</code>
                     </pre>
                   </div>
                 );
               },
               img: ({ node, ...props }) => (
-                <img {...props} className="rounded-lg w-auto max-w-full h-auto object-cover my-4" alt={props.alt || "Image"} />
+                <img {...props} className="rounded-lg w-auto max-w-full h-auto object-cover my-3" alt={props.alt || "Image"} />
               ),
               table: ({ node, ...props }) => (
-                <div className="overflow-x-auto my-4 border border-border rounded-lg">
+                <div className="overflow-x-auto my-3 border border-border/40 rounded-lg">
                   <Table {...props} className="w-full" />
                 </div>
               ),
@@ -298,131 +276,120 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
             {formattedContent}
           </ReactMarkdown>
           
-          {/* Affichage des sources moderne directement dans le message */}
+          {/* Modern source display */}
           {message.role === "assistant" && message.sourceReferences && message.sourceReferences.length > 0 && (
-            <div className="mt-4 pt-2 border-t border-border/30">
-              <div className="flex items-center gap-1.5 mb-2 text-sm font-medium text-muted-foreground">
-                <Globe className="h-4 w-4" />
-                <span>Sources</span>
+            <div className="mt-3 pt-2 border-t border-border/10">
+              <div className="flex items-center gap-1.5 mb-1.5 text-xs font-medium text-muted-foreground">
+                <Globe className="h-3.5 w-3.5" />
+                <span>Sources ({message.sourceReferences.length})</span>
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="text-xs h-6 px-2 hover:bg-muted" 
+                  className="text-xs h-5 px-1.5 rounded-full hover:bg-muted/60" 
                   onClick={() => setShowSourcesDialog(true)}
                 >
-                  Voir tout
+                  <span className="text-primary text-xs">Voir</span>
                 </Button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {message.sourceReferences.slice(0, 4).map(source => (
+              <div className="flex flex-wrap gap-1.5">
+                {message.sourceReferences.slice(0, 3).map(source => (
                   <a
                     key={source.id}
                     href={source.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-sm text-primary hover:underline p-1.5 rounded-md hover:bg-primary/5 transition-colors"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline py-0.5 px-2 rounded-full bg-primary/5 hover:bg-primary/10 transition-colors"
                   >
-                    <span className="w-5 h-5 flex items-center justify-center bg-primary/10 rounded text-xs text-primary font-medium">
-                      {source.id}
-                    </span>
-                    <span className="truncate">{getSourceDisplayTitle(source)}</span>
-                    <ExternalLink className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+                    <span>{getSourceDisplayTitle(source)}</span>
+                    <ExternalLink className="h-2.5 w-2.5 flex-shrink-0" />
                   </a>
                 ))}
+                {message.sourceReferences.length > 3 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs h-5 px-2 rounded-full hover:bg-primary/5"
+                    onClick={() => setShowSourcesDialog(true)}
+                  >
+                    <span className="text-primary text-xs">+{message.sourceReferences.length - 3}</span>
+                  </Button>
+                )}
               </div>
             </div>
           )}
         </div>
         
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/20">
+        <div className="flex items-center justify-between mt-1 pt-1 border-t border-border/10">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">
-              {new Date(message.timestamp).toLocaleTimeString()}
+            <span className="text-[10px] text-muted-foreground">
+              {new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
             </span>
             
-            {message.role === "assistant" && message.useAdvancedReasoning && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Badge variant="outline" className="px-1.5 gap-1 hover:bg-accent cursor-help">
-                      <BrainCircuit className="h-3 w-3" />
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Raisonnement avancé</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            
-            {message.role === "assistant" && message.useLuvviXThink && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Badge variant="outline" className="px-1.5 gap-1 hover:bg-accent cursor-help">
-                      <Lightbulb className="h-3 w-3" />
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Réflexion approfondie LuvviXThink</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            
-            {message.role === "assistant" && message.useWebSearch && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Badge 
-                      variant={countSources() > 0 ? (hasRealSources ? "default" : "outline") : "destructive"}
-                      className="px-1.5 gap-1 hover:bg-accent cursor-help"
-                      onClick={() => countSources() > 0 && setShowSourcesDialog(true)}
-                    >
-                      {countSources() > 0 ? (
-                        <>
-                          <Globe className="h-3 w-3" />
-                          <span>{countSources()}</span>
-                        </>
-                      ) : (
-                        <>
-                          <AlertTriangle className="h-3 w-3" />
-                          <span>0</span>
-                        </>
-                      )}
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {countSources() > 0 ? (
-                      <p>Recherche web avec {countSources()} sources</p>
-                    ) : (
-                      <p>Recherche web activée mais aucune source trouvée. Vérifiez votre API key.</p>
-                    )}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+            {/* Feature badges in a cleaner, more modern style */}
+            <div className="flex gap-1">
+              {message.role === "assistant" && message.useAdvancedReasoning && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Badge variant="outline" className="px-1 py-0 h-4 gap-0.5 hover:bg-accent/30 cursor-help">
+                        <BrainCircuit className="h-2.5 w-2.5" />
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Raisonnement avancé</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              
+              {message.role === "assistant" && message.useLuvviXThink && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Badge variant="outline" className="px-1 py-0 h-4 gap-0.5 hover:bg-accent/30 cursor-help">
+                        <Lightbulb className="h-2.5 w-2.5" />
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Réflexion LuvviXThink</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              
+              {message.role === "assistant" && message.useWebSearch && countSources() > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Badge 
+                        variant={hasRealSources ? "default" : "outline"}
+                        className="px-1 py-0 h-4 gap-0.5 hover:bg-accent/30 cursor-help"
+                        onClick={() => setShowSourcesDialog(true)}
+                      >
+                        <Globe className="h-2.5 w-2.5" />
+                        <span className="text-[9px]">{countSources()}</span>
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{countSources()} sources trouvées</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
           </div>
           
           <div className="flex items-center gap-1">
+            {/* Modern messaging controls */}
             {message.role === "assistant" && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                      onClick={() => setShowFormatButtons(!showFormatButtons)}
-                    >
-                      <Heading2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Options de formatage</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 rounded-full text-muted-foreground hover:text-foreground"
+                onClick={() => setShowFormatButtons(!showFormatButtons)}
+              >
+                <Heading2 className="h-3 w-3" />
+              </Button>
             )}
             
             {message.role === "assistant" && isLast && onRegenerate && (
@@ -431,15 +398,15 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                      size="sm"
+                      className="h-6 w-6 rounded-full text-muted-foreground hover:text-foreground"
                       onClick={() => onRegenerate(message.id)}
                     >
-                      <RefreshCw className="h-3.5 w-3.5" />
+                      <RefreshCw className="h-3 w-3" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Régénérer la réponse</p>
+                    <p>Régénérer</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -450,15 +417,15 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    size="sm"
+                    className="h-6 w-6 rounded-full text-muted-foreground hover:text-foreground"
                     onClick={handleCopy}
                   >
-                    {isCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{isCopied ? "Copié !" : "Copier"}</p>
+                  <p>{isCopied ? "Copié" : "Copier"}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -470,9 +437,9 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         className={cn(
-                          "h-7 w-7",
+                          "h-6 w-6 rounded-full",
                           feedbackGiven === "positive"
                             ? "text-green-500"
                             : "text-muted-foreground hover:text-green-500"
@@ -480,11 +447,11 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                         onClick={() => handleFeedback("positive")}
                         disabled={feedbackGiven !== null}
                       >
-                        <ThumbsUp className="h-3.5 w-3.5" />
+                        <ThumbsUp className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Cette réponse était utile</p>
+                      <p>Utile</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -494,9 +461,9 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="icon"
+                        size="sm"
                         className={cn(
-                          "h-7 w-7",
+                          "h-6 w-6 rounded-full",
                           feedbackGiven === "negative"
                             ? "text-red-500"
                             : "text-muted-foreground hover:text-red-500"
@@ -504,11 +471,11 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                         onClick={() => handleFeedback("negative")}
                         disabled={feedbackGiven !== null}
                       >
-                        <ThumbsDown className="h-3.5 w-3.5" />
+                        <ThumbsDown className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Cette réponse n'était pas utile</p>
+                      <p>Pas utile</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -518,35 +485,45 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
         </div>
       </div>
       
+      {/* Avatar for user messages */}
+      {message.role === "user" && (
+        <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-primary/10 text-primary ml-2 mt-1">
+          {user?.displayName?.charAt(0).toUpperCase() || "U"}
+        </div>
+      )}
+      
+      {/* Modern source dialog */}
       <Dialog open={showSourcesDialog} onOpenChange={setShowSourcesDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BookOpenCheck className="h-5 w-5" />
+        <DialogContent className="sm:max-w-[500px] p-0 gap-0 rounded-xl overflow-hidden">
+          <DialogHeader className="p-4 pb-2 border-b border-border/10">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Globe className="h-4 w-4" />
               Sources utilisées
             </DialogTitle>
           </DialogHeader>
-          <ScrollArea className="max-h-[70vh] pr-4">
-            <div className="space-y-4">
+          <ScrollArea className="max-h-[60vh] p-4">
+            <div className="space-y-3">
               {message.sourceReferences?.map((source) => (
-                <div key={source.id} className="border border-border/40 rounded-lg p-3 bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <h3 className="font-medium text-base mb-1 flex items-center gap-1.5">
-                    <span className="w-6 h-6 flex items-center justify-center bg-primary/10 rounded-full text-xs text-primary font-medium">
+                <div key={source.id} className="border border-border/20 rounded-lg p-3 bg-muted/20 hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="w-5 h-5 flex items-center justify-center bg-primary/10 rounded-full text-xs text-primary font-medium">
                       {source.id}
                     </span>
-                    {getSourceDisplayTitle(source)}
-                  </h3>
+                    <h3 className="font-medium text-sm">
+                      {getSourceDisplayTitle(source)}
+                    </h3>
+                  </div>
                   <a 
                     href={source.url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="text-xs text-primary hover:underline break-all mb-2 inline-flex items-center gap-1"
+                    className="text-xs text-primary hover:underline break-all mb-1.5 inline-flex items-center gap-1"
                   >
-                    {source.url}
-                    <ExternalLink className="h-3 w-3" />
+                    {source.url.length > 60 ? `${source.url.substring(0, 60)}...` : source.url}
+                    <ExternalLink className="h-2.5 w-2.5" />
                   </a>
                   {source.snippet && (
-                    <p className="text-sm text-muted-foreground mt-2 border-t border-border/30 pt-2">{source.snippet}</p>
+                    <p className="text-xs text-muted-foreground mt-1.5 border-t border-border/20 pt-1.5 line-clamp-3">{source.snippet}</p>
                   )}
                 </div>
               ))}

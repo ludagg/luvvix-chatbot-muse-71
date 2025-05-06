@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { EnhancedVoiceControl } from "@/components/EnhancedVoiceControl";
 import { Message } from "@/types/message";
 import { FileText, Download, FileBadge, ScrollText, ArrowUp } from "lucide-react";
 import { createPDF, createWordDoc } from "@/utils/pdfUtils";
@@ -44,12 +43,6 @@ export const FloatingActions = ({
   useWebSearch
 }: FloatingActionsProps) => {
   const [isExporting, setIsExporting] = useState<"pdf" | "word" | null>(null);
-
-  const handleVoiceInput = (transcript: string) => {
-    if (transcript.trim() && onVoiceInput) {
-      onVoiceInput(transcript);
-    }
-  };
 
   const handleExportPDF = async () => {
     if (!lastMessage || lastMessage.role !== "assistant" || !document.getElementById(lastMessage.id)) {
@@ -170,15 +163,6 @@ export const FloatingActions = ({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      
-      {/* Enhanced Voice Control */}
-      <EnhancedVoiceControl 
-        onVoiceEnd={handleVoiceInput}
-        lastMessage={lastMessage}
-        position="inline"
-        variant="primary"
-        size="md"
-      />
     </div>
   );
 }

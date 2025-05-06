@@ -15,7 +15,6 @@ import { DialogProvider } from "./contexts/DialogContext";
 import { KeyboardShortcutsEnhanced } from "./components/KeyboardShortcutsEnhanced";
 import { CommandPalette } from "./components/CommandPalette";
 import { OfflineMode } from "./components/OfflineMode";
-import { EnhancedVoiceControl } from "./components/EnhancedVoiceControl";
 import { NotificationCenter } from "./components/NotificationCenter";
 
 // Create the query client
@@ -70,13 +69,12 @@ const App = () => {
     return () => document.removeEventListener('click', handleAnchorClick);
   }, []);
 
-  // Ajout d'un gestionnaire de touches globales
+  // Ajout d'un gestionnaire de touches globales pour l'aide aux raccourcis clavier
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Exemple : Ctrl+/ pour afficher l'aide des raccourcis
+      // Ctrl+/ pour afficher l'aide des raccourcis
       if (e.ctrlKey && e.key === '/') {
         e.preventDefault();
-        // Cette action serait remplacée par l'ouverture d'une boîte de dialogue d'aide
         console.log('Afficher l\'aide des raccourcis');
       }
     };
@@ -84,6 +82,29 @@ const App = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Affichage d'une info-bulle sur le raccourci espace dès le premier chargement
+  useEffect(() => {
+    // On vérifie si c'est la première visite pour éviter de montrer la notification à chaque fois
+    const hasSeenVoiceTip = localStorage.getItem('hasSeenVoiceTip');
+    
+    if (!hasSeenVoiceTip) {
+      // On utilise setTimeout pour s'assurer que tout est chargé
+      const timer = setTimeout(() => {
+        const toast = document.querySelector('.sonner-toast');
+        if (!toast) {  // Si aucun toast n'est déjà affiché
+          import('sonner').then(({ toast }) => {
+            toast.info("Astuce : Appuyez sur la touche Espace pour activer le mode vocal", {
+              duration: 5000,
+            });
+          });
+        }
+        localStorage.setItem('hasSeenVoiceTip', 'true');
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [mounted]);
 
   if (!mounted) return null; // Wait until theme is determined
 

@@ -1,6 +1,7 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { SendIcon, Mic, MicOff, Smile, Paperclip, Image as ImageIcon, X, Brain, Search, BrainCircuit, Globe, Lightbulb, HeartPulse, MemoryStick } from "lucide-react";
+import { SendIcon, Smile, Image as ImageIcon, X, Brain, Search, BrainCircuit, Globe, Lightbulb, HeartPulse, MemoryStick } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +28,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { VoiceDiscussion } from "@/components/VoiceDiscussion";
+import { EnhancedVoiceControl } from "@/components/EnhancedVoiceControl";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -43,6 +45,7 @@ interface ChatInputProps {
   onToggleWebSearch: () => void;
   onToggleSentimentAnalysis?: () => void;
   onToggleContextMemory?: () => void;
+  onCreateMathGraph?: () => void;
 }
 
 export const ChatInput = ({ 
@@ -59,10 +62,10 @@ export const ChatInput = ({
   onToggleLuvviXThink,
   onToggleWebSearch,
   onToggleSentimentAnalysis,
-  onToggleContextMemory
+  onToggleContextMemory,
+  onCreateMathGraph
 }: ChatInputProps) => {
   const [message, setMessage] = useState("");
-  const [isListening, setIsListening] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -70,77 +73,6 @@ export const ChatInput = ({
   const { toast } = useToast();
   const isMobile = useIsMobile();
   
-  const [recognitionInstance, setRecognitionInstance] = useState<SpeechRecognition | null>(null);
-
-  useEffect(() => {
-    if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'fr-FR';
-      
-      recognition.onresult = (event) => {
-        const transcript = Array.from(event.results)
-          .map(result => result[0])
-          .map(result => result.transcript)
-          .join('');
-        
-        setMessage(transcript);
-      };
-      
-      recognition.onend = () => {
-        setIsListening(false);
-      };
-      
-      recognition.onerror = (event) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
-        toast({
-          title: "Erreur de reconnaissance vocale",
-          description: "Impossible d'utiliser le microphone. Veuillez vérifier les autorisations.",
-          variant: "destructive"
-        });
-      };
-      
-      setRecognitionInstance(recognition);
-    } else {
-      toast({
-        title: "Fonctionnalité non supportée",
-        description: "La reconnaissance vocale n'est pas supportée par votre navigateur.",
-        variant: "destructive"
-      });
-    }
-    
-    return () => {
-      if (recognitionInstance) {
-        recognitionInstance.stop();
-      }
-    };
-  }, [toast]);
-
-  const toggleListening = () => {
-    if (!recognitionInstance) return;
-    
-    if (isListening) {
-      recognitionInstance.stop();
-      setIsListening(false);
-    } else {
-      try {
-        recognitionInstance.start();
-        setIsListening(true);
-      } catch (error) {
-        console.error('Speech recognition error:', error);
-        toast({
-          title: "Erreur de reconnaissance vocale",
-          description: "Impossible de démarrer la reconnaissance vocale.",
-          variant: "destructive"
-        });
-      }
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -154,11 +86,6 @@ export const ChatInput = ({
     if (message.trim() && !isLoading) {
       onSendMessage(message);
       setMessage("");
-      
-      if (isListening && recognitionInstance) {
-        recognitionInstance.stop();
-        setIsListening(false);
-      }
     }
   };
 
@@ -235,10 +162,10 @@ export const ChatInput = ({
     }
   }, [message]);
   
-  // Ajout d'une fonction pour gérer l'entrée vocale
+  // Handle voice input
   const handleVoiceInput = (transcript: string) => {
     setMessage(transcript);
-    // Focus sur le textarea après la transcription
+    // Focus on the textarea after the transcription
     if (textareaRef.current) {
       textareaRef.current.focus();
     }
@@ -467,9 +394,10 @@ export const ChatInput = ({
               exit={{ opacity: 0, scale: 0.8 }}
               className="flex pr-3 pl-2 gap-1"
             >
-              <VoiceDiscussion 
-                onVoiceInput={handleVoiceInput}
-                className="h-8 w-8"
+              <EnhancedVoiceControl
+                onVoiceEnd={handleVoiceInput}
+                position="input"
+                showTooltip={false}
               />
               
               <Button

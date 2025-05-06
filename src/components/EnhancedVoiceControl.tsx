@@ -9,15 +9,17 @@ import { speakText, cleanTextForSpeech } from "@/utils/speechUtils";
 import { Message } from "@/types/message";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface EnhancedVoiceControlProps {
   onVoiceStart?: () => void;
   onVoiceEnd?: (transcript: string) => void;
   lastMessage?: Message | null;
   className?: string;
-  position?: "floating" | "inline" | "fixed";
+  position?: "floating" | "inline" | "fixed" | "input";
   size?: "sm" | "md" | "lg";
   variant?: "primary" | "secondary" | "minimal";
+  showTooltip?: boolean;
 }
 
 export function EnhancedVoiceControl({ 
@@ -27,7 +29,8 @@ export function EnhancedVoiceControl({
   className,
   position = "floating",
   size = "md",
-  variant = "primary"
+  variant = "primary",
+  showTooltip = true
 }: EnhancedVoiceControlProps) {
   const [isListening, setIsListening] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -159,7 +162,7 @@ export function EnhancedVoiceControl({
     }
   };
 
-  // Effect pour lire le dernier message de l'assistant
+  // Effect for reading the last assistant message
   useEffect(() => {
     if (lastMessage && lastMessage.role === "assistant" && !isMuted && !isListening) {
       const textToSpeak = cleanTextForSpeech(lastMessage.content);
@@ -174,34 +177,79 @@ export function EnhancedVoiceControl({
     }
   }, [lastMessage, isMuted]);
 
-  return (
-    <div className={cn(
-      "relative",
-      position === "floating" && "fixed bottom-28 right-4 z-50",
-      position === "fixed" && "fixed bottom-4 right-4 z-50",
-      className
-    )}>
-      <div className={cn(
-        "flex items-center gap-2",
-        variant === "primary" && "bg-primary/10 backdrop-blur-sm p-3 rounded-full shadow-lg border border-primary/20",
-        variant === "secondary" && "bg-muted/50 p-2 rounded-full shadow-md"
-      )}>
+  // Listen for spacebar press to toggle speech recognition
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only activate when pressing spacebar alone and not in an input or textarea
+      if (e.code === 'Space' && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+        const activeElement = document.activeElement;
+        const isInputActive = activeElement instanceof HTMLInputElement || 
+                             activeElement instanceof HTMLTextAreaElement || 
+                             activeElement?.isContentEditable;
+                             
+        if (!isInputActive) {
+          e.preventDefault();
+          toggleListening();
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isListening]);
+
+  // Render different UI based on position prop
+  const renderVoiceControl = () => {
+    if (position === "input") {
+      return (
         <Button
           type="button"
           size="icon"
-          variant={isListening ? "destructive" : (variant === "minimal" ? "outline" : "secondary")}
+          variant={isListening ? "destructive" : "ghost"}
           className={cn(
-            buttonSizes[size],
-            "rounded-full shadow-md transition-all",
+            "h-8 w-8 rounded-full transition-all",
             isListening && "animate-pulse"
           )}
           onClick={toggleListening}
           aria-label={isListening ? "Arrêter l'écoute" : "Commencer l'écoute"}
         >
           {isListening ? 
-            <MicOff size={iconSizes[size]} /> : 
-            <Mic size={iconSizes[size]} />}
+            <MicOff size={16} /> : 
+            <Mic size={16} />
+          }
         </Button>
+      );
+    }
+    
+    return (
+      <div className={cn(
+        "flex items-center gap-2",
+        variant === "primary" && "bg-primary/10 backdrop-blur-sm p-3 rounded-full shadow-lg border border-primary/20",
+        variant === "secondary" && "bg-muted/50 p-2 rounded-full shadow-md"
+      )}>
+        <TooltipProvider>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                size="icon"
+                variant={isListening ? "destructive" : (variant === "minimal" ? "outline" : "secondary")}
+                className={cn(
+                  buttonSizes[size],
+                  "rounded-full shadow-md transition-all",
+                  isListening && "animate-pulse"
+                )}
+                onClick={toggleListening}
+                aria-label={isListening ? "Arrêter l'écoute" : "Commencer l'écoute"}
+              >
+                {isListening ? 
+                  <MicOff size={iconSizes[size]} /> : 
+                  <Mic size={iconSizes[size]} />}
+              </Button>
+            </TooltipTrigger>
+            {showTooltip && <TooltipContent>Appuyez sur Espace pour activer</TooltipContent>}
+          </Tooltip>
+        </TooltipProvider>
         
         <Button
           type="button"
@@ -235,6 +283,17 @@ export function EnhancedVoiceControl({
           </Button>
         )}
       </div>
+    );
+  };
+
+  return (
+    <div className={cn(
+      "relative",
+      position === "floating" && "fixed bottom-28 right-4 z-50",
+      position === "fixed" && "fixed bottom-4 right-4 z-50",
+      className
+    )}>
+      {renderVoiceControl()}
       
       <AnimatePresence>
         {isListening && (

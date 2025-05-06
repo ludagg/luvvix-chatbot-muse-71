@@ -1,18 +1,33 @@
 
-import { Dispatch, ReactNode, SetStateAction } from "react";
 import { Message } from "./message";
 
 export interface ChatInputProps {
-  onSendMessage: (content: string) => Promise<void>;
-  onSendImage: (file: File) => Promise<void>;
-  isLoading: boolean;
-  onCreateMathGraph?: () => void;
+  onSendMessage: (message: string) => void;
+  onSendImage?: (file: File) => void;
+  isLoading?: boolean;
+  isPro?: boolean;
   useAdvancedReasoning: boolean;
-  onToggleAdvancedReasoning: () => void;
   useLuvviXThink: boolean;
-  onToggleLuvviXThink: () => void;
   useWebSearch: boolean;
+  useSentimentAnalysis?: boolean;
+  useContextMemory?: boolean;
+  onToggleAdvancedReasoning: () => void;
+  onToggleLuvviXThink: () => void;
   onToggleWebSearch: () => void;
+  onToggleSentimentAnalysis?: () => void;
+  onToggleContextMemory?: () => void;
+  onCreateMathGraph?: () => void;
+}
+
+export interface EnhancedVoiceControlProps {
+  onVoiceStart?: () => void;
+  onVoiceEnd?: (transcript: string) => void;
+  lastMessage?: Message | null;
+  className?: string;
+  position?: "floating" | "inline" | "fixed" | "input";
+  size?: "sm" | "md" | "lg";
+  variant?: "primary" | "secondary" | "minimal";
+  showTooltip?: boolean;
 }
 
 export interface FloatingActionsProps {
@@ -22,34 +37,10 @@ export interface FloatingActionsProps {
   scrollToBottom?: () => void;
   showScrollToTop?: boolean;
   lastMessage?: Message | null;
-  setUseAdvancedReasoning?: Dispatch<SetStateAction<boolean>>;
+  setUseAdvancedReasoning?: React.Dispatch<React.SetStateAction<boolean>>;
   useAdvancedReasoning?: boolean;
-  setUseLuvviXThink?: Dispatch<SetStateAction<boolean>>;
+  setUseLuvviXThink?: React.Dispatch<React.SetStateAction<boolean>>;
   useLuvviXThink?: boolean;
-  setUseWebSearch?: Dispatch<SetStateAction<boolean>>;
+  setUseWebSearch?: React.Dispatch<React.SetStateAction<boolean>>;
   useWebSearch?: boolean;
-}
-
-export interface VoiceChatProps {
-  onVoiceStart?: () => void;
-  onVoiceEnd?: (transcript: string) => void;
-  onSpeaking?: (isListening: boolean) => void;
-  lastMessage?: Message | null;
-  className?: string;
-}
-
-export interface VoiceControlProps {
-  isActive: boolean;
-  onToggle: () => void;
-  position?: "floating" | "inline" | "fixed";
-  className?: string;
-  size?: "sm" | "md" | "lg";
-  onVoiceInput?: (text: string) => void;
-  lastMessage?: Message | null;
-}
-
-export interface CodePreviewProps {
-  code: string;
-  language: string;
-  showPreview?: boolean;
 }

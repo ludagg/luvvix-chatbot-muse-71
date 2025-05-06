@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChatContainer } from "@/components/ChatContainer";
@@ -180,7 +181,7 @@ const Index = () => {
           </div>
         )}
 
-        <div className="flex-1 h-full w-full max-w-5xl mx-auto px-2 md:px-4 pb-2">
+        <div className="flex-1 h-full w-full max-w-[98%] lg:max-w-6xl mx-auto px-1 md:px-2 pb-2">
           <div className="h-full flex flex-col bg-gradient-to-b from-background/50 via-background/80 to-background rounded-xl md:rounded-2xl shadow-lg border border-primary/10 overflow-hidden">
             <ChatContainer />
           </div>

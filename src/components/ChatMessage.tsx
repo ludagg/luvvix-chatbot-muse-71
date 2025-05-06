@@ -98,7 +98,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        "w-full flex mb-1", // Added less margin between messages
+        "w-full flex mb-1 px-1 md:px-3", // Ajout des marges horizontales pour élargir la zone de discussion
         message.role === "user" ? "justify-end" : "justify-start"
       )}
       id={message.id}
@@ -111,7 +111,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
       )}
       
       <div className={cn(
-        "backdrop-blur-sm p-3 rounded-2xl max-w-[85%] md:max-w-[75%]", // More rounded corners
+        "backdrop-blur-sm p-3 rounded-2xl max-w-[90%] md:max-w-[85%]", // Augmentation de la largeur maximale du message
         message.role === "user" 
           ? "bg-primary/10 text-foreground rounded-tr-sm ml-6" // User message styling
           : "bg-muted/40 rounded-tl-sm" // AI message styling
@@ -357,20 +357,40 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
             </div>
           </div>
           
-          <div className="flex items-center gap-1">
-            {/* Modern messaging controls */}
-            {message.role === "assistant" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 rounded-full text-muted-foreground hover:text-foreground"
-                onClick={() => setShowFormatButtons(!showFormatButtons)}
-              >
-                <Heading2 className="h-3 w-3" />
-              </Button>
-            )}
-            
-            {message.role === "assistant" && isLast && onRegenerate && (
+          <div className="flex items-center gap-1 relative z-10">
+            {/* Modern messaging controls - Réorganisés pour éviter le chevauchement */}
+            <div className="flex items-center space-x-1">
+              {message.role === "assistant" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 rounded-full text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowFormatButtons(!showFormatButtons)}
+                >
+                  <Heading2 className="h-3 w-3" />
+                </Button>
+              )}
+              
+              {message.role === "assistant" && isLast && onRegenerate && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 rounded-full text-muted-foreground hover:text-foreground"
+                        onClick={() => onRegenerate(message.id)}
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Régénérer</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -378,38 +398,20 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 rounded-full text-muted-foreground hover:text-foreground"
-                      onClick={() => onRegenerate(message.id)}
+                      onClick={handleCopy}
                     >
-                      <RefreshCw className="h-3 w-3" />
+                      {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Régénérer</p>
+                    <p>{isCopied ? "Copié" : "Copier"}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            )}
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 rounded-full text-muted-foreground hover:text-foreground"
-                    onClick={handleCopy}
-                  >
-                    {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{isCopied ? "Copié" : "Copier"}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            </div>
             
             {message.role === "assistant" && isLast && onFeedback && (
-              <>
+              <div className="flex items-center space-x-1 ml-1">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -457,7 +459,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              </>
+              </div>
             )}
           </div>
         </div>

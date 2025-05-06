@@ -126,9 +126,9 @@ export function NotificationCenter() {
   const getTypeIcon = (type: string) => {
     switch(type) {
       case "warning":
-        return <Badge variant="warning" className="h-6 w-6 rounded-full p-1"><Info className="h-4 w-4" /></Badge>;
+        return <Badge variant="outline" className="h-6 w-6 rounded-full p-1 border-yellow-500 bg-yellow-500/10"><Info className="h-4 w-4 text-yellow-500" /></Badge>;
       case "success":
-        return <Badge variant="success" className="h-6 w-6 rounded-full p-1"><Check className="h-4 w-4" /></Badge>;
+        return <Badge variant="outline" className="h-6 w-6 rounded-full p-1 border-green-500 bg-green-500/10"><Check className="h-4 w-4 text-green-500" /></Badge>;
       case "error":
         return <Badge variant="destructive" className="h-6 w-6 rounded-full p-1"><X className="h-4 w-4" /></Badge>;
       default:

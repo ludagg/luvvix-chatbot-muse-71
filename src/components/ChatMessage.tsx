@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
   const [showSourcesDialog, setShowSourcesDialog] = useState(false);
   const [showFormatButtons, setShowFormatButtons] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [showActionsBar, setShowActionsBar] = useState(false);
+  const [showActionsBar, setShowActionsBar] = useState(true); // Toujours afficher les options
   
   // Préparation du contenu avec tableaux bien formatés
   const formattedContent = message.content ? formatMarkdownTables(message.content) : "";
@@ -162,24 +163,17 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
         message.role === "user" ? "justify-end" : "justify-start"
       )}
       id={message.id}
-      onMouseEnter={() => message.role === "assistant" && setShowActionsBar(true)}
-      onMouseLeave={() => message.role === "assistant" && setShowActionsBar(false)}
     >
-      {/* Avatar for assistant messages */}
-      {message.role === "assistant" && (
-        <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-primary/20 text-primary mr-2 mt-1">
-          <span className="font-semibold text-xs">AI</span>
-        </div>
-      )}
+      {/* No avatar for assistant messages */}
       
       <div className={cn(
-        "backdrop-blur-sm p-3 rounded-2xl max-w-[94%] md:max-w-[88%]", // Augmentation de la largeur maximale du message
+        "backdrop-blur-sm p-3 rounded-2xl",
         message.role === "user" 
-          ? "bg-primary/10 text-foreground rounded-tr-sm ml-6" // User message styling
-          : "bg-muted/40 rounded-tl-sm relative group" // AI message styling
+          ? "bg-primary/10 text-foreground rounded-tr-sm ml-6 max-w-[94%] md:max-w-[88%]" // User message styling
+          : "bg-muted/40 rounded-tl-sm relative group w-[96%] md:w-[92%]" // AI message styling, élargi vers la gauche
       )}>
-        {/* Floating action bar for assistant messages */}
-        {message.role === "assistant" && (showActionsBar || isBookmarked) && (
+        {/* Fixed action bar for assistant messages - always visible */}
+        {message.role === "assistant" && (
           <div className="absolute -top-10 right-2 bg-background/90 backdrop-blur-sm border border-border/30 rounded-full px-2 py-1.5 shadow-md z-10 flex items-center gap-1.5">
             {isLast && onRegenerate && (
               <TooltipProvider>
@@ -369,6 +363,23 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
         {message.hasGraph && message.graphParams && (
           <div className="mb-3 rounded-lg overflow-hidden">
             <MathFunctionChart params={message.graphParams} />
+          </div>
+        )}
+
+        {/* Generated image display if present */}
+        {message.generatedImage && (
+          <div className="mb-3 mt-2">
+            <div className="relative rounded-lg overflow-hidden border border-border/20">
+              <img 
+                src={message.generatedImage.url} 
+                alt="Image générée" 
+                className="w-full h-auto object-contain"
+              />
+            </div>
+            <div className="mt-2 text-xs text-muted-foreground">
+              <p><span className="font-medium">Prompt:</span> {message.generatedImage.prompt}</p>
+              <p><span className="font-medium">Modèle:</span> {message.generatedImage.model}</p>
+            </div>
           </div>
         )}
         

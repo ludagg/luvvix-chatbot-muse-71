@@ -3,8 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wand2, RefreshCw, Share2, Printer } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Image, RefreshCw, Share2, Printer } from "lucide-react";
 import { motion } from "framer-motion";
 import { 
   Select,
@@ -14,9 +13,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import axios from "axios";
 
 interface ImageGeneratorProps {
-  onImageGenerated?: (imageUrl: string) => void;
+  onImageGenerated?: (imageData: {
+    url: string;
+    prompt: string;
+    model: string;
+  }) => void;
 }
 
 interface Model {
@@ -29,7 +33,10 @@ export const ImageGenerator = ({ onImageGenerated }: ImageGeneratorProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>("runwayml/stable-diffusion-v1-5");
-  const { toast } = useToast();
+  const [generationDetails, setGenerationDetails] = useState<{
+    prompt: string;
+    model: string;
+  } | null>(null);
 
   // Liste des modèles disponibles
   const models: Model[] = [
@@ -40,60 +47,59 @@ export const ImageGenerator = ({ onImageGenerated }: ImageGeneratorProps) => {
 
   const generateImage = async () => {
     if (!prompt.trim()) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez entrer une description pour générer une image.",
-        variant: "destructive",
-      });
+      toast.error("Veuillez entrer une description pour générer une image.");
       return;
     }
 
     setIsGenerating(true);
     try {
-      // En production, vous utiliserez l'API Hugging Face ou une API proxy
-      // Pour la démo, nous utilisons toujours une image de placeholder
+      // Pour le moment, nous utilisons un API simulé avec une image placeholder
+      // Dans une implémentation réelle, vous utiliseriez l'API Hugging Face
+      const modelName = selectedModel.split("/")[1];
       const width = 512;
       const height = 512;
       
-      // Simuler un appel API avec délai différent selon le modèle
-      const delay = selectedModel === "runwayml/stable-diffusion-v1-5" ? 2000 : 
-                    selectedModel === "CompVis/stable-diffusion-v1-4" ? 1500 : 1800;
+      // Simuler un temps de génération différent selon le modèle
+      const delay = selectedModel === "runwayml/stable-diffusion-v1-5" ? 3000 : 
+                    selectedModel === "CompVis/stable-diffusion-v1-4" ? 2000 : 2500;
       
-      // Pour la démo, nous utilisons un placeholder d'image aléatoire
+      // Simuler l'appel API avec un placeholder
       const imageUrl = `https://picsum.photos/${width}/${height}?random=${Date.now()}`;
       
-      // Simuler l'API delay
+      // Simuler le délai de l'API
       await new Promise(resolve => setTimeout(resolve, delay));
       
       setGeneratedImage(imageUrl);
+      const details = {
+        url: imageUrl,
+        prompt: prompt,
+        model: selectedModel
+      };
+      
+      setGenerationDetails({
+        prompt: prompt,
+        model: selectedModel
+      });
+      
       if (onImageGenerated) {
-        onImageGenerated(imageUrl);
+        onImageGenerated(details);
       }
       
-      toast({
-        title: "Image générée",
-        description: `Votre image a été générée avec succès via ${selectedModel.split('/')[1]}.`,
-      });
+      toast.success(`Image générée avec succès via ${modelName}`);
     } catch (error) {
       console.error("Erreur lors de la génération de l'image:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de générer l'image. Veuillez réessayer.",
-        variant: "destructive",
-      });
+      toast.error("Impossible de générer l'image. Veuillez réessayer.");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  // Fonction pour régénérer l'image avec le même prompt
-  const regenerateImage = async () => {
+  const regenerateImage = () => {
     if (generatedImage) {
       generateImage();
     }
   };
 
-  // Fonction pour partager l'image
   const shareImage = () => {
     if (generatedImage && navigator.share) {
       navigator.share({
@@ -111,7 +117,6 @@ export const ImageGenerator = ({ onImageGenerated }: ImageGeneratorProps) => {
     }
   };
 
-  // Fonction pour imprimer l'image
   const printImage = () => {
     if (generatedImage) {
       const printWindow = window.open('', '_blank');
@@ -140,11 +145,7 @@ export const ImageGenerator = ({ onImageGenerated }: ImageGeneratorProps) => {
         `);
         printWindow.document.close();
       } else {
-        toast({
-          title: "Erreur",
-          description: "Impossible d'ouvrir la fenêtre d'impression. Vérifiez vos paramètres de navigateur.",
-          variant: "destructive",
-        });
+        toast.error("Impossible d'ouvrir la fenêtre d'impression.");
       }
     }
   };
@@ -189,7 +190,7 @@ export const ImageGenerator = ({ onImageGenerated }: ImageGeneratorProps) => {
                 </>
               ) : (
                 <>
-                  <Wand2 size={16} />
+                  <Image size={16} />
                   <span>Générer</span>
                 </>
               )}
@@ -243,9 +244,12 @@ export const ImageGenerator = ({ onImageGenerated }: ImageGeneratorProps) => {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Modèle utilisé: {models.find(m => m.id === selectedModel)?.name || selectedModel}
-              </p>
+              {generationDetails && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  <p><span className="font-medium">Prompt:</span> {generationDetails.prompt}</p>
+                  <p><span className="font-medium">Modèle:</span> {models.find(m => m.id === generationDetails.model)?.name || generationDetails.model}</p>
+                </div>
+              )}
             </motion.div>
           )}
         </div>

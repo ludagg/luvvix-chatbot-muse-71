@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { 
   Check, Copy, ThumbsDown, ThumbsUp, RefreshCw, BookOpenCheck, 
   Globe, BrainCircuit, Code, CodeSquare, Lightbulb, 
-  Info, AlertTriangle, ExternalLink,
-  ListOrdered, List, Heading1, Heading2, Heading3, Table2
+  Info, AlertTriangle, ExternalLink, Bookmark, BookmarkCheck,
+  ListOrdered, List, Heading1, Heading2, Heading3, Table2,
+  Share2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -24,6 +25,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MathFunctionChart } from "@/components/MathFunctionChart";
 import { Message } from "@/types/message";
 import { ChatMessageCodePreview } from "./ChatMessageCodePreview";
+import { ShareOptions } from "./ShareOptions";
+import { toast } from "sonner";
 
 export interface SourceReference {
   id: number | string;
@@ -47,6 +50,8 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
   const { user } = useAuth();
   const [showSourcesDialog, setShowSourcesDialog] = useState(false);
   const [showFormatButtons, setShowFormatButtons] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showActionsBar, setShowActionsBar] = useState(false);
   
   // Préparation du contenu avec tableaux bien formatés
   const formattedContent = message.content ? formatMarkdownTables(message.content) : "";
@@ -65,6 +70,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
       const text = contentRef.current.textContent || "";
       navigator.clipboard.writeText(text);
       setIsCopied(true);
+      toast.success("Message copié dans le presse-papiers");
     }
   };
 
@@ -72,6 +78,7 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
     if (onFeedback && !feedbackGiven) {
       onFeedback(message.id, type);
       setFeedbackGiven(type);
+      toast.success(type === "positive" ? "Merci pour votre retour positif" : "Merci pour votre retour négatif");
     }
   };
   
@@ -92,6 +99,11 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
     return source.title;
   };
 
+  const toggleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+    toast.success(isBookmarked ? "Message retiré des favoris" : "Message ajouté aux favoris");
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -102,6 +114,8 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
         message.role === "user" ? "justify-end" : "justify-start"
       )}
       id={message.id}
+      onMouseEnter={() => message.role === "assistant" && setShowActionsBar(true)}
+      onMouseLeave={() => message.role === "assistant" && setShowActionsBar(false)}
     >
       {/* Avatar for assistant messages */}
       {message.role === "assistant" && (
@@ -111,11 +125,119 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
       )}
       
       <div className={cn(
-        "backdrop-blur-sm p-3 rounded-2xl max-w-[90%] md:max-w-[85%]", // Augmentation de la largeur maximale du message
+        "backdrop-blur-sm p-3 rounded-2xl max-w-[94%] md:max-w-[88%]", // Augmentation de la largeur maximale du message
         message.role === "user" 
           ? "bg-primary/10 text-foreground rounded-tr-sm ml-6" // User message styling
-          : "bg-muted/40 rounded-tl-sm" // AI message styling
+          : "bg-muted/40 rounded-tl-sm relative group" // AI message styling
       )}>
+        {/* Floating action bar for assistant messages */}
+        {message.role === "assistant" && (showActionsBar || isBookmarked) && (
+          <div className="absolute -top-10 right-2 bg-background/90 backdrop-blur-sm border border-border/30 rounded-full px-2 py-1.5 shadow-md z-10 flex items-center gap-1.5">
+            {isLast && onRegenerate && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 rounded-full"
+                      onClick={() => onRegenerate(message.id)}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Régénérer</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 rounded-full"
+                    onClick={handleCopy}
+                  >
+                    {isCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isCopied ? "Copié" : "Copier"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "h-7 w-7 rounded-full",
+                      isBookmarked ? "text-primary" : ""
+                    )}
+                    onClick={toggleBookmark}
+                  >
+                    {isBookmarked ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isBookmarked ? "Retirer des favoris" : "Ajouter aux favoris"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            {isLast && message.content && (
+              <ShareOptions title="Message LuvviX" content={message.content} />
+            )}
+            
+            {isLast && onFeedback && !feedbackGiven && (
+              <div className="flex items-center gap-1">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 rounded-full text-muted-foreground hover:text-green-500"
+                        onClick={() => handleFeedback("positive")}
+                      >
+                        <ThumbsUp className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Utile</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 rounded-full text-muted-foreground hover:text-red-500"
+                        onClick={() => handleFeedback("negative")}
+                      >
+                        <ThumbsDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Pas utile</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+          </div>
+        )}
+        
         {/* Feature buttons in a more modern dropdown style */}
         {message.role === "assistant" && showFormatButtons && (
           <div className="flex items-center gap-1 mb-2 pb-2 border-b border-border/10 overflow-x-auto">
@@ -354,113 +476,13 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
                   </Tooltip>
                 </TooltipProvider>
               )}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-1 relative z-10">
-            {/* Modern messaging controls - Réorganisés pour éviter le chevauchement */}
-            <div className="flex items-center space-x-1">
-              {message.role === "assistant" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 rounded-full text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowFormatButtons(!showFormatButtons)}
-                >
-                  <Heading2 className="h-3 w-3" />
-                </Button>
-              )}
               
-              {message.role === "assistant" && isLast && onRegenerate && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 rounded-full text-muted-foreground hover:text-foreground"
-                        onClick={() => onRegenerate(message.id)}
-                      >
-                        <RefreshCw className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Régénérer</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+              {isBookmarked && (
+                <Badge className="px-1 py-0 h-4 gap-0.5 bg-primary/20 text-primary cursor-help">
+                  <BookmarkCheck className="h-2.5 w-2.5" />
+                </Badge>
               )}
-              
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 rounded-full text-muted-foreground hover:text-foreground"
-                      onClick={handleCopy}
-                    >
-                      {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{isCopied ? "Copié" : "Copier"}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </div>
-            
-            {message.role === "assistant" && isLast && onFeedback && (
-              <div className="flex items-center space-x-1 ml-1">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn(
-                          "h-6 w-6 rounded-full",
-                          feedbackGiven === "positive"
-                            ? "text-green-500"
-                            : "text-muted-foreground hover:text-green-500"
-                        )}
-                        onClick={() => handleFeedback("positive")}
-                        disabled={feedbackGiven !== null}
-                      >
-                        <ThumbsUp className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Utile</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn(
-                          "h-6 w-6 rounded-full",
-                          feedbackGiven === "negative"
-                            ? "text-red-500"
-                            : "text-muted-foreground hover:text-red-500"
-                        )}
-                        onClick={() => handleFeedback("negative")}
-                        disabled={feedbackGiven !== null}
-                      >
-                        <ThumbsDown className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Pas utile</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            )}
           </div>
         </div>
       </div>

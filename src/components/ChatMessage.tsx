@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import {
   Globe, BrainCircuit, Code, CodeSquare, Lightbulb, 
   Info, AlertTriangle, ExternalLink, Bookmark, BookmarkCheck,
   ListOrdered, List, Heading1, Heading2, Heading3, Table2,
-  Share2
+  Share2, Printer
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -104,6 +103,55 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
     toast.success(isBookmarked ? "Message retiré des favoris" : "Message ajouté aux favoris");
   };
 
+  // Fonction pour imprimer le message
+  const handlePrint = () => {
+    if (contentRef.current) {
+      const content = contentRef.current;
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Message LuvviX</title>
+              <style>
+                body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.5; }
+                pre { background: #f1f1f1; padding: 1rem; border-radius: 4px; overflow-x: auto; }
+                code { font-family: monospace; }
+                img { max-width: 100%; }
+                table { border-collapse: collapse; width: 100%; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #f2f2f2; }
+                .header { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #eee; }
+                .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #eee; font-size: 0.8rem; color: #666; }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <h1>Message LuvviX</h1>
+                <p>Date: ${new Date(message.timestamp).toLocaleString()}</p>
+              </div>
+              ${content.innerHTML}
+              <div class="footer">
+                <p>Généré par LuvviX AI</p>
+              </div>
+              <script>
+                window.onload = function() {
+                  setTimeout(() => {
+                    window.print();
+                    window.close();
+                  }, 500);
+                };
+              </script>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+      } else {
+        toast.error("Impossible d'ouvrir la fenêtre d'impression");
+      }
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -193,7 +241,27 @@ export function ChatMessage({ message, isLast = false, onRegenerate, onFeedback,
             </TooltipProvider>
             
             {isLast && message.content && (
-              <ShareOptions title="Message LuvviX" content={message.content} />
+              <>
+                <ShareOptions title="Message LuvviX" content={message.content} />
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 rounded-full"
+                        onClick={handlePrint}
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Imprimer</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </>
             )}
             
             {isLast && onFeedback && !feedbackGiven && (

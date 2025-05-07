@@ -26,4 +26,9 @@ export interface Message {
     yLabel?: string;
     title?: string;
   };
+  generatedImage?: {
+    url: string;
+    prompt: string;
+    model: string;
+  };
 }

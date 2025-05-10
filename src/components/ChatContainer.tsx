@@ -888,7 +888,7 @@ export const ChatContainer = () => {
       toast({
         title: "Erreur",
         description:
-          "Impossible de communiquer avec l'API Gemini. Veuillez réessayer.",
+          "Impossible de communiquer avec l'API LuvviX. Veuillez réessayer.",
         variant: "destructive",
       });
 

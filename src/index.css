@@ -148,6 +148,19 @@
   .hover-lift {
     @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
   }
+  
+  /* New scira-specific styles */
+  .scira-input {
+    @apply w-full bg-secondary/80 px-4 py-2 rounded-full border-none focus:ring-0 focus:outline-none text-foreground placeholder:text-muted-foreground;
+  }
+  
+  .scira-question-button {
+    @apply w-full bg-secondary/70 hover:bg-secondary/90 text-left px-4 py-3 rounded-full transition-all duration-200 text-base;
+  }
+  
+  .scira-icon-button {
+    @apply w-12 h-12 flex items-center justify-center rounded-full transition-colors;
+  }
 }
 
 /* Animation delay utilities */
@@ -157,4 +170,8 @@
 
 .animation-delay-4000 {
   animation-delay: 4000ms;
+}
+
+body {
+  @apply bg-black text-white min-h-screen;
 }

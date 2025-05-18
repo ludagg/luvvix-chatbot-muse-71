@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Sun, Moon, Palette } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import {
@@ -43,44 +43,17 @@ export function ThemeToggle() {
   if (!mounted) return null;
 
   return (
-    <div className="flex items-center gap-2">
-      <Toggle 
-        pressed={theme === 'light'} 
-        onPressedChange={toggleBasicTheme}
-        aria-label="Toggle basic theme"
-        className="h-8 w-8"
-      >
-        {theme === 'dark' || theme === 'purple' || theme === 'blue' || theme === 'green' ? (
-          <Sun className="h-4 w-4" />
-        ) : (
-          <Moon className="h-4 w-4" />
-        )}
-      </Toggle>
-      
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="icon" className="h-8 w-8">
-            <Palette className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setTheme('dark')}>
-            Sombre (Par défaut)
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme('light')}>
-            Clair
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme('purple')}>
-            Violet
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme('blue')}>
-            Bleu
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setTheme('green')}>
-            Vert
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <Toggle 
+      pressed={theme === 'light'} 
+      onPressedChange={toggleBasicTheme}
+      aria-label="Toggle theme"
+      className="h-8 w-8 rounded-full bg-gray-800"
+    >
+      {theme === 'dark' || theme === 'purple' || theme === 'blue' || theme === 'green' ? (
+        <Sun className="h-4 w-4" />
+      ) : (
+        <Moon className="h-4 w-4" />
+      )}
+    </Toggle>
   );
 }

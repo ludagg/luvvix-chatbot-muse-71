@@ -1,7 +1,7 @@
+
 #root {
-  max-width: 1280px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 2rem;
   text-align: center;
 }
 
@@ -39,4 +39,77 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Scira-specific styling */
+.scira-container {
+  padding: 0;
+  max-width: 100%;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.scira-chat-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.scira-welcome-heading {
+  font-size: 2rem;
+  font-weight: 500;
+  margin-bottom: 2rem;
+}
+
+.scira-message {
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 1rem;
+  max-width: 90%;
+}
+
+.scira-assistant-message {
+  background-color: #2a2a2a;
+  align-self: flex-start;
+  border-bottom-left-radius: 0;
+}
+
+.scira-user-message {
+  background-color: #0084ff;
+  align-self: flex-end;
+  border-bottom-right-radius: 0;
+}
+
+.scira-input-container {
+  position: relative;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  background-color: #1a1a1a;
+  border-top: 1px solid #333;
+}
+
+.scira-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 1.5rem;
+  background-color: #2a2a2a;
+  border: none;
+  color: white;
+}
+
+.scira-date-chip {
+  background-color: #2a2a2a;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem;
+  color: #999;
 }

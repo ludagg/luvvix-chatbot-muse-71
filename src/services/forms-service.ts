@@ -155,9 +155,30 @@ class FormsService {
         return data as FormQuestion;
       } else {
         // Create new question
+        // Ensure all required fields are provided
+        if (!question.form_id) {
+          throw new Error("form_id is required to create a question");
+        }
+        if (!question.question_text) {
+          throw new Error("question_text is required to create a question");
+        }
+        if (!question.question_type) {
+          throw new Error("question_type is required to create a question");
+        }
+        if (question.position === undefined) {
+          throw new Error("position is required to create a question");
+        }
+
         const newQuestion = {
           ...question,
-          id: uuidv4()
+          id: uuidv4(),
+          form_id: question.form_id,
+          question_text: question.question_text,
+          question_type: question.question_type,
+          position: question.position,
+          required: question.required ?? false,
+          options: question.options ?? {},
+          description: question.description ?? null
         };
 
         const { data, error } = await supabase

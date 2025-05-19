@@ -18,6 +18,8 @@ import NewsPage from "./pages/NewsPage";
 import OAuth from "./pages/OAuth";
 import AdminPanel from "./pages/AdminPanel";
 import OAuthTest from "./pages/OAuthTest";
+import FormsPage from "./pages/FormsPage";
+import FormEditorPage from "./pages/FormEditorPage";
 
 // Configure le client de requête avec des paramètres optimisés
 const queryClient = new QueryClient({
@@ -71,6 +73,10 @@ const App = () => (
                     <AdminPanel />
                   </ProtectedRoute>
                 } />
+                {/* Ajout des nouvelles routes pour Forms */}
+                <Route path="/forms" element={<FormsPage />} />
+                <Route path="/forms/create" element={<FormEditorPage />} />
+                <Route path="/forms/edit/:formId" element={<FormEditorPage />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

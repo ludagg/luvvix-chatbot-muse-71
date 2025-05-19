@@ -10,10 +10,14 @@ import Careers from "@/components/Careers";
 import Testimonials from "@/components/Testimonials";
 import Footer from "@/components/Footer";
 import NewsPreview from "@/components/news/NewsPreview";
+import WeatherWidget from "@/components/weather/WeatherWidget";
 
 const Index = () => {
   return (
     <div className="min-h-screen">
+      <div className="fixed top-4 right-4 z-50">
+        <WeatherWidget />
+      </div>
       <Navbar />
       <Hero />
       <Ecosystem />

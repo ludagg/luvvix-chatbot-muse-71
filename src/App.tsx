@@ -21,6 +21,8 @@ import OAuthTest from "./pages/OAuthTest";
 import FormsPage from "./pages/FormsPage";
 import FormEditorPage from "./pages/FormEditorPage";
 import FormViewPage from "./pages/FormViewPage";
+import FormSettingsPage from "./pages/FormSettingsPage";
+import FormResponsesPage from "./pages/FormResponsesPage";
 
 // Configure le client de requête avec des paramètres optimisés
 const queryClient = new QueryClient({
@@ -80,6 +82,8 @@ const App = () => (
                 <Route path="/forms/create" element={<FormEditorPage />} />
                 <Route path="/forms/edit/:formId" element={<FormEditorPage />} />
                 <Route path="/forms/view/:formId" element={<FormViewPage />} />
+                <Route path="/forms/settings/:formId" element={<FormSettingsPage />} />
+                <Route path="/forms/responses/:formId" element={<FormResponsesPage />} />
                 
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />

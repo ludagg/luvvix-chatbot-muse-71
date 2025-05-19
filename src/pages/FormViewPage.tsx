@@ -13,13 +13,17 @@ import { FileText } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import formsService from "@/services/forms-service";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 const FormViewPage = () => {
   const { formId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [responderEmail, setResponderEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isAllowed, setIsAllowed] = useState(true);
+  const [notAllowedReason, setNotAllowedReason] = useState("");
 
   const { data: form, isLoading: isLoadingForm } = useQuery({
     queryKey: ["viewForm", formId],
@@ -32,6 +36,32 @@ const FormViewPage = () => {
     queryFn: () => formId ? formsService.getFormQuestions(formId) : [],
     enabled: !!formId,
   });
+  
+  useEffect(() => {
+    const checkSubmissionStatus = async () => {
+      if (formId && form) {
+        const { allowed, reason } = await formsService.checkSubmissionAllowed(formId);
+        setIsAllowed(allowed);
+        if (!allowed) {
+          setNotAllowedReason(reason);
+        }
+        
+        // Vérifier si l'authentification est requise
+        const requiresAuth = form.settings?.requiresAuth;
+        if (requiresAuth && !user) {
+          setIsAllowed(false);
+          setNotAllowedReason("Vous devez être connecté pour répondre à ce formulaire.");
+        }
+        
+        // Si l'utilisateur est connecté, pré-remplir l'email
+        if (user && user.email) {
+          setResponderEmail(user.email);
+        }
+      }
+    };
+    
+    checkSubmissionStatus();
+  }, [formId, form, user]);
 
   const submitFormMutation = useMutation({
     mutationFn: () => {
@@ -103,16 +133,29 @@ const FormViewPage = () => {
     );
   }
 
-  if (!form.published) {
+  if (!form.published || !isAllowed) {
     return (
       <div className="min-h-screen flex flex-col bg-gray-50">
         <Navbar />
         <main className="flex-grow container mx-auto px-4 py-8">
           <Card className="max-w-3xl mx-auto p-8 text-center">
             <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Formulaire non publié</h2>
-            <p className="text-gray-600 mb-6">Ce formulaire n'est pas encore disponible au public.</p>
-            <Button onClick={() => navigate("/forms")}>Retour aux formulaires</Button>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              {!form.published ? "Formulaire non publié" : "Formulaire non disponible"}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {!form.published 
+                ? "Ce formulaire n'est pas encore disponible au public."
+                : notAllowedReason || "Ce formulaire n'est plus disponible."}
+            </p>
+            {form.settings?.requiresAuth && !user && (
+              <Button onClick={() => navigate("/auth")} className="mb-4">
+                Se connecter
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => navigate("/forms")}>
+              Retour aux formulaires
+            </Button>
           </Card>
         </main>
         <Footer />
@@ -130,10 +173,24 @@ const FormViewPage = () => {
               <FileText className="h-10 w-10 text-green-600" />
             </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">Merci pour votre réponse !</h2>
-            <p className="text-gray-600 mb-6">Votre réponse a été enregistrée avec succès.</p>
+            <p className="text-gray-600 mb-6">
+              {form.settings?.confirmationMessage || "Votre réponse a été enregistrée avec succès."}
+            </p>
             <div className="space-x-4">
-              <Button variant="outline" onClick={() => window.location.reload()}>Soumettre une autre réponse</Button>
-              <Button onClick={() => navigate("/forms")}>Retour aux formulaires</Button>
+              {!form.settings?.redirectUrl && (
+                <Button variant="outline" onClick={() => window.location.reload()}>
+                  Soumettre une autre réponse
+                </Button>
+              )}
+              {form.settings?.redirectUrl ? (
+                <Button onClick={() => window.location.href = form.settings.redirectUrl!}>
+                  Continuer
+                </Button>
+              ) : (
+                <Button onClick={() => navigate("/forms")}>
+                  Retour aux formulaires
+                </Button>
+              )}
             </div>
           </Card>
         </main>
@@ -261,21 +318,24 @@ const FormViewPage = () => {
             </Card>
           ))}
           
-          <Card className="p-6 mb-4">
-            <label className="block text-sm font-medium text-gray-800 mb-2">
-              Votre adresse e-mail (optionnel)
-            </label>
-            <Input
-              type="email"
-              value={responderEmail}
-              onChange={(e) => setResponderEmail(e.target.value)}
-              placeholder="email@exemple.com"
-              className="w-full mb-4"
-            />
-            <p className="text-gray-500 text-sm">
-              Cette adresse e-mail ne sera utilisée que pour vous contacter au sujet de vos réponses au formulaire.
-            </p>
-          </Card>
+          {form.settings?.collectEmail !== false && (
+            <Card className="p-6 mb-4">
+              <label className="block text-sm font-medium text-gray-800 mb-2">
+                Votre adresse e-mail {user ? "(préremplie)" : "(optionnel)"}
+              </label>
+              <Input
+                type="email"
+                value={responderEmail}
+                onChange={(e) => setResponderEmail(e.target.value)}
+                placeholder="email@exemple.com"
+                className="w-full mb-4"
+                readOnly={!!user}
+              />
+              <p className="text-gray-500 text-sm">
+                Cette adresse e-mail ne sera utilisée que pour vous contacter au sujet de vos réponses au formulaire.
+              </p>
+            </Card>
+          )}
           
           <div className="flex justify-end mt-6">
             <Button 

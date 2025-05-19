@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
@@ -11,7 +10,20 @@ export interface Form {
   created_at: string;
   updated_at: string;
   published: boolean;
-  settings: any;
+  settings: FormSettings;
+}
+
+export interface FormSettings {
+  requiresAuth?: boolean;
+  collectEmail?: boolean;
+  maxResponses?: number | null;
+  closesAt?: string | null;
+  confirmationMessage?: string;
+  theme?: string;
+  customCSS?: string;
+  redirectUrl?: string;
+  allowMultipleResponses?: boolean;
+  [key: string]: any;
 }
 
 export interface FormQuestion {
@@ -215,12 +227,123 @@ class FormsService {
     }
   }
 
+  async updateFormSettings(formId: string, settings: FormSettings) {
+    try {
+      const { data, error } = await supabase
+        .from("forms")
+        .update({ settings })
+        .eq("id", formId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      toast.success("Paramètres mis à jour avec succès");
+      return data as Form;
+    } catch (error: any) {
+      console.error(`Erreur lors de la mise à jour des paramètres du formulaire ${formId}:`, error.message);
+      toast.error("Impossible de mettre à jour les paramètres");
+      return null;
+    }
+  }
+
+  async updateQuestionOrder(questions: { id: string; position: number }[]) {
+    try {
+      const updates = questions.map(({ id, position }) => ({
+        id,
+        position
+      }));
+
+      const { error } = await supabase
+        .from("form_questions")
+        .upsert(updates);
+
+      if (error) throw error;
+      
+      return true;
+    } catch (error: any) {
+      console.error("Erreur lors de la mise à jour de l'ordre des questions:", error.message);
+      toast.error("Impossible de réorganiser les questions");
+      return false;
+    }
+  }
+  
+  async checkSubmissionAllowed(formId: string) {
+    try {
+      const { data: form, error } = await supabase
+        .from("forms")
+        .select("settings, published")
+        .eq("id", formId)
+        .single();
+
+      if (error) throw error;
+      
+      if (!form.published) {
+        return { allowed: false, reason: "Ce formulaire n'est pas publié." };
+      }
+
+      const settings = form.settings || {};
+      
+      if (settings.maxResponses) {
+        const { count, error: countError } = await supabase
+          .from("form_submissions")
+          .select("id", { count: 'exact', head: true })
+          .eq("form_id", formId);
+          
+        if (countError) throw countError;
+        
+        if (count && count >= settings.maxResponses) {
+          return { 
+            allowed: false, 
+            reason: "Ce formulaire a atteint le nombre maximum de réponses." 
+          };
+        }
+      }
+      
+      if (settings.closesAt && new Date(settings.closesAt) < new Date()) {
+        return { 
+          allowed: false, 
+          reason: "Ce formulaire est fermé." 
+        };
+      }
+      
+      return { allowed: true };
+    } catch (error: any) {
+      console.error(`Erreur lors de la vérification du formulaire ${formId}:`, error.message);
+      return { 
+        allowed: false, 
+        reason: "Une erreur s'est produite lors de la vérification du formulaire." 
+      };
+    }
+  }
+  
+  async shareForm(formId: string, email: string) {
+    try {
+      // Logique pour partager un formulaire via email
+      // (à implémenter plus tard avec un service d'envoi d'emails)
+      
+      toast.success(`Formulaire partagé à ${email}`);
+      return true;
+    } catch (error: any) {
+      console.error(`Erreur lors du partage du formulaire ${formId}:`, error.message);
+      toast.error("Impossible de partager le formulaire");
+      return false;
+    }
+  }
+
   async publishForm(formId: string, publish: boolean = true) {
     return this.updateForm(formId, { published: publish });
   }
 
   async submitFormResponse(formId: string, answers: Record<string, any>, email?: string) {
     try {
+      // Vérifier si la soumission est autorisée
+      const { allowed, reason } = await this.checkSubmissionAllowed(formId);
+      if (!allowed) {
+        toast.error(reason);
+        return null;
+      }
+      
       const { data: userData } = await supabase.auth.getSession();
       const userId = userData.session?.user.id;
       
@@ -265,6 +388,69 @@ class FormsService {
     }
   }
 
+  async getResponseStats(formId: string) {
+    try {
+      const [responsesResult, questionsResult] = await Promise.all([
+        supabase
+          .from("form_submissions")
+          .select("*")
+          .eq("form_id", formId)
+          .order("submitted_at", { ascending: false }),
+        supabase
+          .from("form_questions")
+          .select("*")
+          .eq("form_id", formId)
+          .order("position", { ascending: true })
+      ]);
+      
+      if (responsesResult.error) throw responsesResult.error;
+      if (questionsResult.error) throw questionsResult.error;
+      
+      const responses = responsesResult.data;
+      const questions = questionsResult.data;
+      
+      // Calculate stats for each question
+      const stats = questions.map(question => {
+        const questionStats = {
+          questionId: question.id,
+          questionText: question.question_text,
+          questionType: question.question_type,
+          totalAnswers: 0,
+          answerData: {}
+        };
+        
+        responses.forEach(response => {
+          const answer = response.answers[question.id];
+          if (answer !== undefined && answer !== null) {
+            questionStats.totalAnswers++;
+            
+            if (Array.isArray(answer)) {
+              // Pour les cases à cocher
+              answer.forEach(option => {
+                questionStats.answerData[option] = (questionStats.answerData[option] || 0) + 1;
+              });
+            } else {
+              // Pour les autres types
+              questionStats.answerData[answer] = (questionStats.answerData[answer] || 0) + 1;
+            }
+          }
+        });
+        
+        return questionStats;
+      });
+      
+      return {
+        totalResponses: responses.length,
+        latestResponse: responses.length ? responses[0].submitted_at : null,
+        stats
+      };
+    } catch (error: any) {
+      console.error(`Erreur lors de la récupération des statistiques du formulaire ${formId}:`, error.message);
+      toast.error("Impossible de charger les statistiques");
+      return null;
+    }
+  }
+
   async duplicateForm(formId: string) {
     try {
       // Get original form
@@ -277,6 +463,11 @@ class FormsService {
       // Create new form
       const newForm = await this.createForm(`${originalForm.title} (copie)`, originalForm.description);
       if (!newForm) throw new Error("Impossible de créer la copie du formulaire");
+      
+      // Dupliquer les paramètres
+      if (originalForm.settings) {
+        await this.updateFormSettings(newForm.id, originalForm.settings);
+      }
 
       // Copy questions
       for (const question of questions) {

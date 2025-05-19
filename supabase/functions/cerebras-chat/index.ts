@@ -1,11 +1,17 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Create a Supabase client
+const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 serve(async (req) => {
   // Handle CORS
@@ -14,7 +20,7 @@ serve(async (req) => {
   }
 
   try {
-    const { conversation, systemPrompt, maxTokens } = await req.json();
+    const { conversation, systemPrompt, maxTokens, agentId } = await req.json();
     
     // Récupérer la clé API et la configuration depuis les secrets de Supabase
     const cerebrasApiKey = Deno.env.get('CEREBRAS_API_KEY') || '';
@@ -25,14 +31,36 @@ serve(async (req) => {
       throw new Error('Clé API Cerebras non configurée');
     }
 
+    let finalSystemPrompt = systemPrompt;
+    
+    // Si un agentId est fourni, rechercher le prompt système associé dans la base de données
+    if (agentId) {
+      const { data: agent, error } = await supabase
+        .from('ai_agents')
+        .select('system_prompt, name')
+        .eq('id', agentId)
+        .single();
+
+      if (error) {
+        throw new Error(`Erreur lors de la récupération de l'agent: ${error.message}`);
+      }
+
+      if (agent) {
+        finalSystemPrompt = agent.system_prompt;
+        
+        // Incrémenter le compteur de vues pour cet agent
+        await supabase.rpc('increment_agent_views', { agent_id: agentId });
+      }
+    }
+
     // Construire les messages pour l'API
     const messages = [];
     
     // Ajouter le message système s'il existe
-    if (systemPrompt) {
+    if (finalSystemPrompt) {
       messages.push({
         role: 'system',
-        content: systemPrompt
+        content: finalSystemPrompt
       });
     }
     

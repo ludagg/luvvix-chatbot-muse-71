@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, Newspaper } from "lucide-react";
+import { Menu, X, User, Newspaper, Bot, Sparkles } from "lucide-react";
 import { useAuth } from '@/hooks/useAuth';
 import WeatherWidget from './weather/WeatherWidget';
 import NewsNotification from './news/NewsNotification';
@@ -56,6 +56,12 @@ const Navbar = () => {
               <Link to="/news" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
                 <Newspaper className="w-4 h-4 mr-1" />
                 News
+              </Link>
+              {/* Add AI Studio link with highlight effect */}
+              <Link to="/ai-studio" className="text-sm font-medium flex items-center text-indigo-300 hover:text-indigo-200 transition-colors">
+                <Bot className="w-4 h-4 mr-1" />
+                AI Studio
+                <Sparkles className="w-3 h-3 ml-1 text-yellow-300" />
               </Link>
               <a href="#lab" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
                 Lab
@@ -130,6 +136,12 @@ const Navbar = () => {
               <Link to="/news" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
                 <Newspaper className="w-4 h-4 mr-1" />
                 News
+              </Link>
+              {/* Add AI Studio link with highlight effect in mobile menu */}
+              <Link to="/ai-studio" className="text-sm font-medium flex items-center text-indigo-300 hover:text-indigo-200 transition-colors">
+                <Bot className="w-4 h-4 mr-1" />
+                AI Studio
+                <Sparkles className="w-3 h-3 ml-1 text-yellow-300" />
               </Link>
               <a href="#lab" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
                 Lab

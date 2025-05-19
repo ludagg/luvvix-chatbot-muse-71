@@ -24,19 +24,34 @@ serve(async (req) => {
     // Récupérer les données envoyées dans la requête
     const { endpoint_url, api_key, model_name, provider } = await req.json();
     
-    if (!api_key) {
-      throw new Error('La clé API est requise');
+    // Si aucune clé API n'est fournie, utiliser celle qui existe déjà
+    let finalApiKey = api_key;
+    if (!finalApiKey) {
+      // Utiliser la clé par défaut "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv"
+      finalApiKey = "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv";
+      console.log("Utilisation de la clé API par défaut");
     }
 
     // Stocker la clé API comme secret dans les fonctions Edge
     const { error: secretError } = await supabase.rpc('set_edge_function_secret', {
       function_name: 'cerebras-chat',
       secret_name: 'CEREBRAS_API_KEY',
-      secret_value: api_key,
+      secret_value: finalApiKey,
     });
 
     if (secretError) {
       throw new Error(`Erreur lors de la configuration du secret CEREBRAS_API_KEY: ${secretError.message}`);
+    }
+
+    // Stocker la clé API pour la fonction d'embedding également
+    const { error: embedSecretError } = await supabase.rpc('set_edge_function_secret', {
+      function_name: 'cerebras-embed',
+      secret_name: 'CEREBRAS_API_KEY',
+      secret_value: finalApiKey,
+    });
+
+    if (embedSecretError) {
+      throw new Error(`Erreur lors de la configuration du secret CEREBRAS_API_KEY pour l'embedding: ${embedSecretError.message}`);
     }
 
     // Stocker l'URL de l'endpoint comme secret
@@ -50,6 +65,13 @@ serve(async (req) => {
       if (endpointError) {
         throw new Error(`Erreur lors de la configuration du secret CEREBRAS_ENDPOINT: ${endpointError.message}`);
       }
+      
+      // Configurer également pour la fonction d'embedding
+      await supabase.rpc('set_edge_function_secret', {
+        function_name: 'cerebras-embed',
+        secret_name: 'CEREBRAS_ENDPOINT',
+        secret_value: endpoint_url,
+      });
     }
 
     // Stocker le nom du modèle comme secret
@@ -63,6 +85,13 @@ serve(async (req) => {
       if (modelError) {
         throw new Error(`Erreur lors de la configuration du secret CEREBRAS_MODEL: ${modelError.message}`);
       }
+      
+      // Configurer également pour la fonction d'embedding
+      await supabase.rpc('set_edge_function_secret', {
+        function_name: 'cerebras-embed',
+        secret_name: 'CEREBRAS_MODEL',
+        secret_value: model_name,
+      });
     }
 
     return new Response(

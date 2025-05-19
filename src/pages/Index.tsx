@@ -16,20 +16,22 @@ import CeoSection from "@/components/CeoSection";
 
 const Index = () => {
   return (
-    <div className="min-h-screen pt-16">
+    <div className="min-h-screen">
       <Navbar />
-      <Hero />
-      <Ecosystem />
-      <FormsPromo />
-      <NewsPreview />
-      <Authentication />
-      <ProductDemos />
-      <DeveloperSection />
-      <LabSection />
-      <CeoSection />
-      <Careers />
-      <Testimonials />
-      <Footer />
+      <div className="pt-16"> {/* Added padding-top to prevent navbar overlap */}
+        <Hero />
+        <Ecosystem />
+        <FormsPromo />
+        <NewsPreview />
+        <Authentication />
+        <ProductDemos />
+        <DeveloperSection />
+        <LabSection />
+        <CeoSection />
+        <Careers />
+        <Testimonials />
+        <Footer />
+      </div>
     </div>
   );
 };

@@ -20,9 +20,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { FormQuestion } from "@/services/forms-service";
 
 interface QuestionType {
-  id: string;
+  id: FormQuestion["question_type"];
   label: string;
   icon: React.ReactNode;
   description: string;
@@ -30,7 +31,7 @@ interface QuestionType {
 
 interface QuestionCreatorProps {
   formId?: string;
-  onAddQuestion: (type: string) => Promise<void>;
+  onAddQuestion: (type: FormQuestion["question_type"]) => Promise<void>;
 }
 
 const QuestionCreator = ({ formId, onAddQuestion }: QuestionCreatorProps) => {
@@ -99,7 +100,7 @@ const QuestionCreator = ({ formId, onAddQuestion }: QuestionCreatorProps) => {
     }
   ];
   
-  const handleAddQuestion = async (type: string) => {
+  const handleAddQuestion = async (type: FormQuestion["question_type"]) => {
     if (!formId) return;
     
     setIsLoading(true);
@@ -149,7 +150,7 @@ const QuestionCreator = ({ formId, onAddQuestion }: QuestionCreatorProps) => {
             <DropdownMenuItem onClick={() => handleAddQuestion("text")}>
               Question avec logique conditionnelle
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAddQuestion("text")}>
+            <DropdownMenuItem onClick={() => handleAddQuestion("grid")}>
               Grille d'évaluation
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleAddQuestion("text")}>

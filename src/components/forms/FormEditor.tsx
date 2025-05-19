@@ -116,7 +116,8 @@ const FormEditor = ({ formId }: FormEditorProps) => {
     }
   };
 
-  const handleAddQuestion = async (questionType: string = "text") => {
+  // Fix: Make sure questionType is one of the allowed types in FormQuestion
+  const handleAddQuestion = async (questionType: FormQuestion["question_type"] = "text") => {
     if (!formId) {
       // Si pas de formId, créer un nouveau formulaire
       const newForm = await formsService.createForm(title, description);

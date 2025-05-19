@@ -10,8 +10,8 @@ const FormEditorPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-      {/* Ajout d'un div spacer pour compenser la hauteur de la navbar fixed */}
-      <div className="pt-20"></div>
+      {/* Adding more padding to account for the fixed navbar */}
+      <div className="pt-24"></div>
       <main className="flex-grow">
         <FormEditor formId={formId} />
       </main>

@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import NewsPreview from "@/components/news/NewsPreview";
 import WeatherWidget from "@/components/weather/WeatherWidget";
 import FormsPromo from "@/components/forms/FormsPromo";
+import CeoSection from "@/components/CeoSection";
 
 const Index = () => {
   return (
@@ -28,6 +29,7 @@ const Index = () => {
       <ProductDemos />
       <DeveloperSection />
       <LabSection />
+      <CeoSection />
       <Careers />
       <Testimonials />
       <Footer />

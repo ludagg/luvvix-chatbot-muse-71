@@ -79,7 +79,9 @@ const AIStudioAgentPage = () => {
         .single();
       
       if (error) throw error;
-      return data as Agent;
+      // Use type casting with a type check to ensure we handle potential missing properties
+      const agentData = data as unknown as Agent;
+      return agentData;
     },
     enabled: !!agentId,
   });

@@ -13,5 +13,9 @@
       "source": "/streammix/:path*",
       "destination": "https://luvvi-streammix.vercel.app/:path*"
     }
-  ]
+  ],
+  "cookies": {
+    "sourcePattern": ".",
+    "domain": ".luvix.it.com"
+  }
 }

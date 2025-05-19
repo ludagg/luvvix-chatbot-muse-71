@@ -1,3 +1,4 @@
+
 {
   "rewrites": [
     {
@@ -39,5 +40,9 @@
       ],
       "dest": "/forms/$1"
     }
-  ]
+  ],
+  "cookies": {
+    "sourcePattern": ".",
+    "domain": ".luvix.it.com"
+  }
 }

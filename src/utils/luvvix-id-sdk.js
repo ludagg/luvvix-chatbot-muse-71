@@ -1,7 +1,6 @@
-
 /**
  * LuvviX ID SDK - Client JavaScript library for LuvviX ID authentication system
- * Version: 1.1.0
+ * Version: 1.2.0
  * 
  * This SDK provides methods to easily integrate LuvviX ID authentication
  * into third-party applications.
@@ -15,6 +14,7 @@ export class LuvviXID {
    * @param {string} config.appName - Application name (must be one of 'main', 'pharmacy', 'streaming', 'chat')
    * @param {string} config.redirectUrl - URL to redirect to after authentication
    * @param {string} [config.apiBaseUrl] - Base URL of the LuvviX ID API (defaults to production)
+   * @param {string} [config.cookieDomain] - Domain for cookies (defaults to current domain)
    */
   constructor(config = {}) {
     // Validate required parameters
@@ -35,8 +35,11 @@ export class LuvviXID {
       apiBaseUrl: 'https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/auth-api',
       tokenStorageKey: 'luvvix_auth_token',
       appTokenStorageKey: `luvvix_app_token_${config.appName}`,
+      cookieDomain: config.cookieDomain || undefined, // Domaine de cookie partagé si fourni
       ...config
     };
+    
+    console.log(`LuvviX ID SDK initialized with cookieDomain: ${this.config.cookieDomain || 'default'}`);
   }
 
   /**
@@ -62,6 +65,14 @@ export class LuvviXID {
    */
   setToken(token) {
     localStorage.setItem(this.config.tokenStorageKey, token);
+    
+    // Si un domaine de cookie est spécifié, définir également un cookie pour le partage entre sous-domaines
+    if (this.config.cookieDomain) {
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30); // Cookie valide 30 jours
+      document.cookie = `luvvix_auth=${token}; expires=${expiryDate.toUTCString()}; domain=${this.config.cookieDomain}; path=/; secure; samesite=lax`;
+      console.log(`Set shared cookie for domain: ${this.config.cookieDomain}`);
+    }
   }
 
   /**
@@ -69,6 +80,12 @@ export class LuvviXID {
    */
   clearToken() {
     localStorage.removeItem(this.config.tokenStorageKey);
+    
+    // Si un domaine de cookie est spécifié, supprimer également le cookie partagé
+    if (this.config.cookieDomain) {
+      document.cookie = `luvvix_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=${this.config.cookieDomain}; path=/; secure; samesite=lax`;
+      console.log(`Cleared shared cookie for domain: ${this.config.cookieDomain}`);
+    }
   }
 
   /**
@@ -280,7 +297,7 @@ export class LuvviXID {
   }
   
   /**
-   * NOUVEAU: Obtenir un token d'accès spécifique à une application
+   * Obtenir un token d'accès spécifique à une application
    * @returns {Promise<string>} Token d'accès pour l'application
    */
   async getAppToken() {
@@ -332,12 +349,24 @@ export class LuvviXID {
   }
   
   /**
-   * NOUVEAU: Authentification silencieuse - Vérifie l'authentification sans redirection
+   * Authentification silencieuse - Vérifie l'authentification sans redirection
    * @returns {Promise<boolean>} True si l'utilisateur est authentifié
    */
   async checkSilentAuth() {
     const token = this.getToken();
     if (!token) {
+      // Vérifier s'il existe un cookie partagé et l'utiliser si disponible
+      if (this.config.cookieDomain) {
+        const cookies = document.cookie.split(';');
+        for (const cookie of cookies) {
+          const [name, value] = cookie.trim().split('=');
+          if (name === 'luvvix_auth' && value) {
+            console.log('Found shared auth cookie, using it for authentication');
+            this.setToken(value);
+            return await this.verifyToken(value);
+          }
+        }
+      }
       return false;
     }
     
@@ -351,7 +380,7 @@ export class LuvviXID {
   }
   
   /**
-   * NOUVEAU: Obtenir une URL de déconnexion globale
+   * Obtenir une URL de déconnexion globale
    * @returns {string} URL de déconnexion qui déconnectera l'utilisateur de toutes les applications
    */
   getLogoutUrl() {
@@ -359,7 +388,7 @@ export class LuvviXID {
   }
   
   /**
-   * NOUVEAU: Déconnexion globale (déconnecte l'utilisateur de toutes les applications LuvviX)
+   * Déconnexion globale (déconnecte l'utilisateur de toutes les applications LuvviX)
    */
   globalLogout() {
     this.clearToken();

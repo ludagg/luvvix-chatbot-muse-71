@@ -1,4 +1,3 @@
-
 import { LuvviXID } from "@/utils/luvvix-id-sdk";
 
 interface AuthOptions {
@@ -27,7 +26,8 @@ class AuthService {
       this.luvvixIdClient = new LuvviXID({
         appName: options.appName,
         redirectUrl: options.redirectUrl,
-        apiBaseUrl: options.apiBaseUrl
+        apiBaseUrl: options.apiBaseUrl,
+        cookieDomain: '.luvix.it.com' // Définir le domaine parent pour tous les cookies
       });
       
       // Vérifier l'authentification actuelle
@@ -36,7 +36,7 @@ class AuthService {
       // Mettre en place un listener pour les changements d'authentification dans d'autres onglets
       window.addEventListener('storage', this.handleStorageChange);
       
-      console.log(`LuvviX ID Auth Service initialized for app: ${options.appName}`);
+      console.log(`LuvviX ID Auth Service initialized for app: ${options.appName} with shared cookies`);
     } catch (error) {
       console.error('Error initializing AuthService:', error);
     }

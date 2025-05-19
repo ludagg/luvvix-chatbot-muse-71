@@ -1,7 +1,7 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Bot, Sparkles, Zap, Brain, Users } from "lucide-react";
-import { ArrowRight } from "lucide-react";
 
 const AIStudioPromo = () => {
   return (
@@ -9,7 +9,7 @@ const AIStudioPromo = () => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row items-center gap-12">
           <div className="flex-1 space-y-6">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-violet-500/20 text-white-300 text-sm font-medium">
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-violet-500/20 text-violet-300 text-sm font-medium">
               <Sparkles size={16} className="mr-2" /> Nouvelle fonctionnalité phare
             </div>
             
@@ -67,13 +67,11 @@ const AIStudioPromo = () => {
             <div className="flex flex-wrap gap-4">
               <Button 
                 size="lg"
-                variant="default"
-                className="bg-luvvix-purple hover:bg-luvvix-darkpurple"
+                className="bg-violet-600 hover:bg-violet-700 text-white"
                 asChild
               >
                 <Link to="/ai-studio">
-                  <ArrowRight className="mr-2 h-4 w-4" />
-                  Découvrir AI Studio
+                  Explorer AI Studio
                 </Link>
               </Button>
               <Button

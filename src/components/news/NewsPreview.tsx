@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -9,9 +10,9 @@ import { ExternalLink, ChevronRight, Newspaper, TrendingUp } from 'lucide-react'
 const NewsPreview: React.FC = () => {
   const navigate = useNavigate();
   
-  const { data: newsItems = [], isLoading, error } = useQuery({
+  const { data: newsItems, isLoading } = useQuery({
     queryKey: ['news-preview'],
-    queryFn: () => fetchLatestNews('all', undefined, undefined).catch(() => []),
+    queryFn: () => fetchLatestNews('all', undefined, undefined),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -44,10 +45,6 @@ const NewsPreview: React.FC = () => {
                 </CardContent>
               </Card>
             ))
-          ) : error ? (
-            <div className="col-span-3 text-center py-10">
-              <p className="text-muted-foreground">Impossible de charger les actualités. Veuillez réessayer plus tard.</p>
-            </div>
           ) : previewItems?.length ? (
             previewItems.map((item) => (
               <Card key={item.id} className="overflow-hidden transition-all duration-300 hover:shadow-md">

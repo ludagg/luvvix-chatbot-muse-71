@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,12 +19,9 @@ import {
   ThumbsUp,
   ThumbsDown,
   Share2,
-  MessageSquare,
-  Star,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import FavoriteButton from "@/components/ai-studio/FavoriteButton";
 
 interface Message {
   id: string;
@@ -212,7 +210,7 @@ const AIStudioChatPage = () => {
       
       <main className="flex-grow bg-slate-50 dark:bg-slate-900 flex flex-col">
         {/* Chat header */}
-        <header className="sticky top-0 z-10 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4">
+        <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4">
           <div className="container mx-auto flex items-center">
             <Button
               variant="ghost"
@@ -234,31 +232,22 @@ const AIStudioChatPage = () => {
                 </div>
               </div>
             ) : agent ? (
-              <div className="flex items-center justify-between flex-grow">
-                <div className="flex items-center">
-                  <Avatar className="mr-3 h-10 w-10 bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
-                    <AvatarFallback>
-                      {getAvatarForAgent()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h1 className="font-medium text-slate-900 dark:text-white">
-                      {agent.name}
-                    </h1>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {agent.personality === "expert" && "Expert"}
-                      {agent.personality === "friendly" && "Amical"}
-                      {agent.personality === "concise" && "Concis"}
-                      {agent.personality === "empathetic" && "Empathique"}
-                    </p>
-                  </div>
-                </div>
-                <div className="hidden md:flex items-center space-x-2">
-                  <Button variant="ghost" size="sm" className="text-slate-500">
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Partager
-                  </Button>
-                  <FavoriteButton agentId={agentId || ""} size="sm" />
+              <div className="flex items-center">
+                <Avatar className="mr-3 h-10 w-10 bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
+                  <AvatarFallback>
+                    {getAvatarForAgent()}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h1 className="font-medium text-slate-900 dark:text-white">
+                    {agent.name}
+                  </h1>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {agent.personality === "expert" && "Expert"}
+                    {agent.personality === "friendly" && "Amical"}
+                    {agent.personality === "concise" && "Concis"}
+                    {agent.personality === "empathetic" && "Empathique"}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -279,29 +268,6 @@ const AIStudioChatPage = () => {
         {/* Chat messages */}
         <div className="flex-grow overflow-y-auto p-4 md:p-6 space-y-6">
           <div className="container mx-auto max-w-3xl">
-            {agent && messages.length === 1 && (
-              <div className="bg-violet-50 dark:bg-violet-900/20 rounded-lg p-4 mb-6 border border-violet-100 dark:border-violet-800/40">
-                <h3 className="font-semibold text-violet-800 dark:text-violet-300 mb-2 flex items-center">
-                  <Bot className="h-5 w-5 mr-2" />
-                  À propos de {agent.name}
-                </h3>
-                <p className="text-violet-700 dark:text-violet-200 text-sm mb-2">
-                  {agent.objective}
-                </p>
-                <div className="flex items-center space-x-2 text-xs text-violet-600 dark:text-violet-300">
-                  <span className="flex items-center">
-                    <Star className="h-3.5 w-3.5 mr-1" />
-                    {(agent.rating || 0).toFixed(1)}
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center">
-                    <MessageSquare className="h-3.5 w-3.5 mr-1" />
-                    {agent.views || 0} vues
-                  </span>
-                </div>
-              </div>
-            )}
-            
             {messages.map((message) => (
               <div
                 key={message.id}
@@ -312,7 +278,7 @@ const AIStudioChatPage = () => {
                 <div
                   className={`flex max-w-[80%] md:max-w-[70%] ${
                     message.role === "user" ? "flex-row-reverse" : "flex-row"
-                  } group`}
+                  }`}
                 >
                   <div
                     className={`flex-shrink-0 ${
@@ -347,25 +313,6 @@ const AIStudioChatPage = () => {
                           variant="ghost"
                           size="sm"
                           className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                          onClick={() => {
-                            navigator.clipboard.writeText(message.content);
-                            toast({
-                              title: "Copié",
-                              description: "Message copié dans le presse-papier",
-                              duration: 2000,
-                            });
-                          }}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                          </svg>
-                          <span className="sr-only">Copier</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                         >
                           <ThumbsUp className="h-3 w-3" />
                           <span className="sr-only">J'aime</span>
@@ -377,6 +324,14 @@ const AIStudioChatPage = () => {
                         >
                           <ThumbsDown className="h-3 w-3" />
                           <span className="sr-only">Je n'aime pas</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                        >
+                          <Share2 className="h-3 w-3" />
+                          <span className="sr-only">Partager</span>
                         </Button>
                       </div>
                     )}
@@ -410,35 +365,8 @@ const AIStudioChatPage = () => {
           </div>
         </div>
         
-        {/* Suggestion chips - new feature */}
-        {agent && messages.length > 0 && !sending && (
-          <div className="px-4 py-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700">
-            <div className="container mx-auto max-w-3xl overflow-x-auto flex space-x-2 pb-2 scrollbar-thin">
-              {[
-                "Dis m'en plus sur ce sujet",
-                "Peux-tu expliquer plus simplement?",
-                "Quelles sont les prochaines étapes?",
-                "Donne-moi des exemples"
-              ].map((suggestion, i) => (
-                <Button 
-                  key={i}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setInput(suggestion);
-                    inputRef.current?.focus();
-                  }}
-                  className="flex-shrink-0 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
-                >
-                  {suggestion}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-        
         {/* Input area */}
-        <div className="sticky bottom-0 z-10 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4">
+        <div className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4">
           <div className="container mx-auto max-w-3xl">
             <form
               onSubmit={(e) => {
@@ -453,7 +381,7 @@ const AIStudioChatPage = () => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Écrivez votre message..."
-                className="flex-grow shadow-sm dark:bg-slate-700 dark:border-slate-600"
+                className="flex-grow"
                 autoComplete="off"
                 disabled={loading || !agent}
               />

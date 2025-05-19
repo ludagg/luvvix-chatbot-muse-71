@@ -9,41 +9,35 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  try {
-    const { user, loading } = useAuth();
-    const location = useLocation();
-    const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
-    useEffect(() => {
-      // Set a flag once the initial auth check is complete
-      if (!loading) {
-        setInitialCheckDone(true);
-      }
-    }, [loading]);
-
-    // Show loading indicator during initial auth check
-    if (loading || !initialCheckDone) {
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-          <span className="ml-2 text-gray-700">Vérification de l'authentification...</span>
-        </div>
-      );
+  useEffect(() => {
+    // Set a flag once the initial auth check is complete
+    if (!loading) {
+      setInitialCheckDone(true);
     }
+  }, [loading]);
 
-    // Redirect to login if not authenticated, passing the current path as return_to
-    if (!user) {
-      console.log(`Redirecting to auth with return_to: ${location.pathname}`);
-      return <Navigate to={`/auth?return_to=${encodeURIComponent(location.pathname)}`} replace />;
-    }
-
-    // Render children if authenticated
-    return <>{children}</>;
-  } catch (error) {
-    console.error("Authentication error:", error);
-    // Fallback when auth provider is not available
-    return <Navigate to="/auth" replace />;
+  // Show loading indicator during initial auth check
+  if (loading || !initialCheckDone) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+        <span className="ml-2 text-gray-700">Vérification de l'authentification...</span>
+      </div>
+    );
   }
+
+  // Redirect to login if not authenticated, passing the current path as return_to
+  if (!user) {
+    console.log(`Redirecting to auth with return_to: ${location.pathname}`);
+    return <Navigate to={`/auth?return_to=${encodeURIComponent(location.pathname)}`} replace />;
+  }
+
+  // Render children if authenticated
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;

@@ -1,7 +1,8 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   Sun, 
   CloudRain, 
@@ -432,46 +433,44 @@ const WeatherWidget = () => {
   
   return (
     <div className="flex items-center">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10" 
-              onClick={requestNotificationPermission}
-            >
-              {weather ? (
-                renderWeatherIcon(weather.condition)
-              ) : (
-                <Thermometer className="w-5 h-5" />
-              )}
-              <span className="font-medium">{weather?.temperature}°C</span>
-              <Badge variant="outline" className="ml-1 text-xs py-0 px-1.5 border-white/20">
-                {weather?.location}
-              </Badge>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="p-4 max-w-[16rem]">
-            <div className="space-y-2">
-              <div className="font-medium">{weather?.location}</div>
-              <div className="capitalize">{weather?.condition}</div>
-              <div className="text-sm text-muted-foreground">
-                Humidité: {weather?.humidity}% • Vent: {weather?.windSpeed} km/h
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>Lever: {weather?.sunrise}</span>
-                <span>Coucher: {weather?.sunset}</span>
-              </div>
-              <div className="text-xs text-muted-foreground mt-2">
-                {Notification.permission === "granted"
-                  ? "Cliquez pour afficher les détails"
-                  : "Cliquez pour activer les notifications météo"}
-              </div>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10" 
+            onClick={requestNotificationPermission}
+          >
+            {weather ? (
+              renderWeatherIcon(weather.condition)
+            ) : (
+              <Thermometer className="w-5 h-5" />
+            )}
+            <span className="font-medium">{weather?.temperature}°C</span>
+            <Badge variant="outline" className="ml-1 text-xs py-0 px-1.5 border-white/20">
+              {weather?.location}
+            </Badge>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="p-4 max-w-[16rem]">
+          <div className="space-y-2">
+            <div className="font-medium">{weather?.location}</div>
+            <div className="capitalize">{weather?.condition}</div>
+            <div className="text-sm text-muted-foreground">
+              Humidité: {weather?.humidity}% • Vent: {weather?.windSpeed} km/h
             </div>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+              <span>Lever: {weather?.sunrise}</span>
+              <span>Coucher: {weather?.sunset}</span>
+            </div>
+            <div className="text-xs text-muted-foreground mt-2">
+              {Notification.permission === "granted"
+                ? "Cliquez pour afficher les détails"
+                : "Cliquez pour activer les notifications météo"}
+            </div>
+          </div>
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 };

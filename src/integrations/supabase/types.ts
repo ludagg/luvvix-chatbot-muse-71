@@ -9,6 +9,24 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_tokens: {
+        Row: {
+          created_at: string
+          description: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          token?: string
+        }
+        Relationships: []
+      }
       appconnection: {
         Row: {
           applicationid: string
@@ -256,6 +274,36 @@ export type Database = {
           },
         ]
       }
+      characters: {
+        Row: {
+          anime: string
+          created_at: string
+          id: string
+          image: string
+          name: string
+          prompt_template: string
+          updated_at: string
+        }
+        Insert: {
+          anime: string
+          created_at?: string
+          id: string
+          image: string
+          name: string
+          prompt_template: string
+          updated_at?: string
+        }
+        Update: {
+          anime?: string
+          created_at?: string
+          id?: string
+          image?: string
+          name?: string
+          prompt_template?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cloud_files: {
         Row: {
           created_at: string
@@ -360,6 +408,30 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          character_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          character_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          character_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           book_id: string
@@ -423,6 +495,38 @@ export type Database = {
             columns: ["file_id"]
             isOneToOne: false
             referencedRelation: "cloud_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          id: string
+          role: string
+          timestamp: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          id?: string
+          role: string
+          timestamp?: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          id?: string
+          role?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]

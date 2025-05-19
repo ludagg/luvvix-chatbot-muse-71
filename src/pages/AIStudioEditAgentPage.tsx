@@ -79,7 +79,8 @@ const AIStudioEditAgentPage = () => {
           is_public: data.is_public || false,
           is_paid: data.is_paid || false,
           price: data.price?.toString() || "0",
-          system_prompt: data.system_prompt || ""
+          // Fix here: Get system_prompt from parameters.system_prompt if available
+          system_prompt: data.parameters?.system_prompt || ""
         });
         
         // Fetch context files/documents
@@ -276,6 +277,12 @@ const AIStudioEditAgentPage = () => {
     try {
       setSaving(true);
       
+      // Fix here: Store system_prompt in the parameters JSON object
+      const updatedParameters = {
+        ...(agent?.parameters || {}),
+        system_prompt: formState.system_prompt
+      };
+      
       const { error } = await supabase
         .from("ai_agents")
         .update({
@@ -286,7 +293,7 @@ const AIStudioEditAgentPage = () => {
           is_public: formState.is_public,
           is_paid: formState.is_paid,
           price: formState.is_paid ? parseFloat(formState.price) : 0,
-          system_prompt: formState.system_prompt,
+          parameters: updatedParameters, // Store system_prompt here
           updated_at: new Date().toISOString()
         })
         .eq("id", agentId);

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +16,7 @@ import AuthPage from "./pages/AuthPage";
 import Dashboard from "./pages/Dashboard";
 import CloudPage from "./pages/CloudPage";
 import NewsPage from "./pages/NewsPage";
+import WeatherPage from "./pages/WeatherPage";
 import OAuth from "./pages/OAuth";
 import AdminPanel from "./pages/AdminPanel";
 import OAuthTest from "./pages/OAuthTest";
@@ -56,6 +58,7 @@ const App = () => (
                   <Route path="/api-docs" element={<ApiDocs />} />
                   <Route path="/auth" element={<AuthPage />} />
                   <Route path="/news" element={<NewsPage />} />
+                  <Route path="/weather" element={<WeatherPage />} />
                   <Route path="/oauth/authorize" element={
                     <ProtectedRoute>
                       <OAuth />

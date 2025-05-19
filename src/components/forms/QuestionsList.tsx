@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit, Trash } from "lucide-react";
+import { Edit, Trash, Plus, X } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { FormQuestion } from "@/services/forms-service";
 
@@ -91,12 +91,38 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
     { value: "phone", label: "Téléphone" },
     { value: "url", label: "URL" },
   ];
+  
+  // Fonction pour ajouter une nouvelle option
+  const addOption = () => {
+    const currentChoices = question.options?.choices || [];
+    onUpdate("options", { 
+      ...question.options,
+      choices: [...currentChoices, ""]
+    });
+  };
+
+  // Fonction pour supprimer une option
+  const removeOption = (indexToRemove: number) => {
+    const newChoices = (question.options?.choices || []).filter((_, i) => i !== indexToRemove);
+    onUpdate("options", { 
+      ...question.options,
+      choices: newChoices
+    });
+  };
+
+  // Fonction pour mettre à jour une option spécifique
+  const updateOption = (index: number, value: string) => {
+    const newChoices = [...(question.options?.choices || [])];
+    newChoices[index] = value;
+    onUpdate("options", { 
+      ...question.options,
+      choices: newChoices
+    });
+  };
 
   // Fonction pour empêcher l'événement par défaut (soumission du formulaire) sur la touche Entrée
-  // mais permettre l'édition multilignes dans les champs de type textarea pour les options
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Si la touche Entrée est pressée sans la touche Shift, empêcher la soumission
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter') {
       e.preventDefault();
     }
   };
@@ -153,25 +179,49 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
               {(question.question_type === "multipleChoice" || 
                 question.question_type === "checkboxes" || 
                 question.question_type === "dropdown") && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Options (une par ligne, appuyez sur Shift+Entrée pour ajouter une nouvelle ligne)
-                  </label>
-                  <Textarea
-                    value={question.options?.choices?.join('\n') || ''}
-                    onChange={(e) => onUpdate("options", { 
-                      ...question.options,
-                      choices: e.target.value.split('\n').filter(line => line.trim() !== '')
-                    })}
-                    // Ne pas intercepter Shift+Entrée pour permettre d'ajouter des lignes
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                      }
-                    }}
-                    placeholder="Option 1&#10;Option 2&#10;Option 3"
-                    className="h-24"
-                  />
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-medium text-gray-700">Options</label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={addOption}
+                      className="flex items-center gap-1 text-xs"
+                    >
+                      <Plus className="w-3 h-3" />
+                      Ajouter une option
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {(question.options?.choices || []).map((choice, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input
+                          value={choice}
+                          onChange={(e) => updateOption(index, e.target.value)}
+                          placeholder={`Option ${index + 1}`}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeOption(index)}
+                          className="p-1"
+                          title="Supprimer cette option"
+                        >
+                          <X className="w-4 h-4 text-gray-500" />
+                        </Button>
+                      </div>
+                    ))}
+
+                    {(question.options?.choices || []).length === 0 && (
+                      <div className="text-sm text-gray-500 italic p-2 text-center border border-dashed rounded-md">
+                        Aucune option ajoutée
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

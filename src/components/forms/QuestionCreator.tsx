@@ -127,20 +127,6 @@ const QuestionCreator = ({ formId, onAddQuestion }: QuestionCreatorProps) => {
       <div className="text-center mb-6">
         <h3 className="text-lg font-medium mb-2">Ajouter une nouvelle question</h3>
         <p className="text-gray-500">Choisissez le type de question à ajouter à votre formulaire</p>
-        
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="inline-flex items-center mt-2 text-sm text-blue-600 hover:text-blue-800">
-                <Info className="h-4 w-4 mr-1" />
-                <span>Astuce pour les options multiples</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs p-3 bg-white border shadow-lg rounded-md text-sm">
-              <p>Pour ajouter plusieurs options dans les questions à choix, utilisez <strong>Shift+Entrée</strong> pour créer une nouvelle ligne.</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
       </div>
       
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">

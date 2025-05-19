@@ -30,7 +30,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated, passing the current path as return_to
   if (!user) {
     return <Navigate to={`/auth?return_to=${encodeURIComponent(location.pathname)}`} replace />;
   }

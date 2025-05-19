@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -38,6 +38,7 @@ const AIStudioMarketplacePage = () => {
   const [agents, setAgents] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [category, setCategory] = useState("all");
+  const navigate = useNavigate();
   
   useEffect(() => {
     document.title = "Marketplace - LuvviX AI Studio";
@@ -118,7 +119,7 @@ const AIStudioMarketplacePage = () => {
               Marketplace d'agents IA
             </h1>
             <p className="text-xl text-slate-600 dark:text-slate-400 max-w-3xl text-center mb-8">
-              Découvrez et utilisez des agents IA spécialisés créés par la communauté
+              Découvrez et utilisez des agents IA sp��cialisés créés par la communauté
             </p>
             
             <div className="w-full max-w-3xl flex flex-col md:flex-row gap-4">

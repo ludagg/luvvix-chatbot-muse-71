@@ -24,37 +24,45 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     username: ''
   });
   
+  // Function to handle redirection after authentication
+  const handleRedirectAfterAuth = (success: boolean) => {
+    if (!success) return;
+    
+    if (returnTo) {
+      const decodedPath = decodeURIComponent(returnTo);
+      console.log(`Authentication: Auth successful, redirecting to: ${decodedPath}`);
+      navigate(decodedPath, { replace: true });
+    } else {
+      console.log("Authentication: Auth successful but no returnTo path, redirecting to dashboard");
+      navigate('/dashboard', { replace: true });
+    }
+  };
+  
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Authentication: Starting signup process");
+    console.log("Authentication: Return URL if successful:", returnTo);
+    
     setIsLoading(true);
     const success = await signUp(formData.email, formData.password, {
       full_name: formData.fullName,
       username: formData.username
     });
     setIsLoading(false);
-    if (success) {
-      if (returnTo) {
-        console.log(`After signup, redirecting to: ${decodeURIComponent(returnTo)}`);
-        navigate(decodeURIComponent(returnTo));
-      } else {
-        navigate('/dashboard');
-      }
-    }
+    
+    handleRedirectAfterAuth(success);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Authentication: Starting signin process");
+    console.log("Authentication: Return URL if successful:", returnTo);
+    
     setIsLoading(true);
     const success = await signIn(formData.email, formData.password);
     setIsLoading(false);
-    if (success) {
-      if (returnTo) {
-        console.log(`After signin, redirecting to: ${decodeURIComponent(returnTo)}`);
-        navigate(decodeURIComponent(returnTo));
-      } else {
-        navigate('/dashboard');
-      }
-    }
+    
+    handleRedirectAfterAuth(success);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

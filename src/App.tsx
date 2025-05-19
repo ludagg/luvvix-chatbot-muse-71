@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -80,7 +79,11 @@ const App = () => (
                   } />
                   
                   {/* Routes pour LuvviX Forms */}
-                  <Route path="/forms" element={<FormsPage />} />
+                  <Route path="/forms" element={
+                    <ProtectedRoute>
+                      <FormsPage />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/forms/create" element={
                     <ProtectedRoute>
                       <FormEditorPage />

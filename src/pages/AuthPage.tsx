@@ -17,15 +17,23 @@ const AuthPage = () => {
   // but only if not adding a new account
   useEffect(() => {
     if (user && !loading && !addAccount) {
+      // Debug info
+      console.log("AuthPage: User is authenticated, preparing to redirect");
+      console.log("Return to path:", returnTo);
+      
       // Give the session time to fully establish before redirecting
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         if (returnTo) {
-          console.log(`Redirecting to: ${decodeURIComponent(returnTo)}`);
-          navigate(decodeURIComponent(returnTo));
+          const decodedPath = decodeURIComponent(returnTo);
+          console.log(`AuthPage: Redirecting user to: ${decodedPath}`);
+          navigate(decodedPath);
         } else {
+          console.log("AuthPage: No return_to path, redirecting to dashboard");
           navigate('/dashboard');
         }
-      }, 500);
+      }, 800); // Increased timeout to ensure session is ready
+      
+      return () => clearTimeout(timer);
     }
   }, [user, loading, navigate, returnTo, addAccount]);
 

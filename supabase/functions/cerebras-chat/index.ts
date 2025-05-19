@@ -85,9 +85,9 @@ serve(async (req) => {
     const { conversation, systemPrompt, maxTokens, agentId, message, conversationId, sessionId, embedded = false } = await req.json();
     
     // Récupérer la clé API et la configuration depuis les secrets de Supabase
-    const cerebrasApiKey = Deno.env.get('CEREBRAS_API_KEY') || '';
-    const endpoint = Deno.env.get('CEREBRAS_ENDPOINT') || 'https://api.cerebras.ai/v1/completions';
-    const modelName = Deno.env.get('CEREBRAS_MODEL') || 'cerebras/Cerebras-GPT-4.5-8B-Base';
+    const cerebrasApiKey = Deno.env.get('CEREBRAS_API_KEY') || 'csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv';
+    const endpoint = Deno.env.get('CEREBRAS_ENDPOINT') || 'https://api.cerebras.ai/v1/chat/completions';
+    const modelName = Deno.env.get('CEREBRAS_MODEL') || 'llama-4-scout-17b-16e-instruct';
     
     if (!cerebrasApiKey) {
       throw new Error('Clé API Cerebras non configurée');
@@ -294,7 +294,8 @@ serve(async (req) => {
         model: modelName,
         messages: messages,
         max_tokens: maxTokens || 2000,
-        temperature: 0.7,
+        temperature: 0.2,
+        top_p: 1,
         stream: false,
       }),
     });

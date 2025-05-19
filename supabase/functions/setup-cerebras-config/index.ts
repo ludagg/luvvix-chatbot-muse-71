@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
 
@@ -35,7 +34,7 @@ serve(async (req) => {
     // Si aucune clé API n'est fournie, utiliser celle qui existe déjà
     let finalApiKey = api_key;
     if (!finalApiKey) {
-      // Utiliser la clé par défaut "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv"
+      // Utiliser la clé par défaut que vous avez fournie
       finalApiKey = "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv";
       console.log("Utilisation de la clé API par défaut");
     }
@@ -87,7 +86,7 @@ serve(async (req) => {
       const { error: modelError } = await supabase.rpc('set_edge_function_secret', {
         function_name: 'cerebras-chat',
         secret_name: 'CEREBRAS_MODEL',
-        secret_value: model_name,
+        secret_value: model_name || 'llama-4-scout-17b-16e-instruct',
       });
 
       if (modelError) {
@@ -98,7 +97,7 @@ serve(async (req) => {
       await supabase.rpc('set_edge_function_secret', {
         function_name: 'cerebras-embed',
         secret_name: 'CEREBRAS_MODEL',
-        secret_value: model_name,
+        secret_value: model_name || 'llama-4-scout-17b-16e-instruct',
       });
     }
     
@@ -125,9 +124,9 @@ serve(async (req) => {
       const { error: updateError } = await supabase
         .from('ai_admin_config')
         .update({
-          endpoint_url: endpoint_url || null,
+          endpoint_url: endpoint_url || 'https://api.cerebras.ai/v1/chat/completions',
           api_key: finalApiKey,
-          model_name: model_name || 'cerebras/Cerebras-GPT-4.5-8B-Base',
+          model_name: model_name || 'llama-4-scout-17b-16e-instruct',
           quota_per_user: quota_per_user,
           max_tokens: max_tokens,
           updated_at: new Date().toISOString()
@@ -142,9 +141,9 @@ serve(async (req) => {
       const { error: insertError } = await supabase
         .from('ai_admin_config')
         .insert({
-          endpoint_url: endpoint_url || null,
+          endpoint_url: endpoint_url || 'https://api.cerebras.ai/v1/chat/completions',
           api_key: finalApiKey,
-          model_name: model_name || 'cerebras/Cerebras-GPT-4.5-8B-Base',
+          model_name: model_name || 'llama-4-scout-17b-16e-instruct',
           quota_per_user: quota_per_user,
           max_tokens: max_tokens
         });

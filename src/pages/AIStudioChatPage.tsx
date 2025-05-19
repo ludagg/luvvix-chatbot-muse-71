@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -109,9 +108,9 @@ const AIStudioChatPage = () => {
     setMessages((prev) => [...prev, userMessageObj]);
     
     try {
-      // Call the AI Studio chat function
+      // Call the Cerebras chat function
       const response = await fetch(
-        "https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/ai-studio-chat",
+        "https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/cerebras-chat",
         {
           method: "POST",
           headers: {
@@ -144,7 +143,7 @@ const AIStudioChatPage = () => {
         {
           id: uuidv4(),
           role: "assistant",
-          content: data.response,
+          content: data.reply || "Je n'ai pas pu générer de réponse.",
           timestamp: new Date(),
         },
       ]);

@@ -18,6 +18,38 @@ import EmbedChat from "@/components/ai-studio/EmbedChat";
 import EmbedCodeGenerator from "@/components/ai-studio/EmbedCodeGenerator";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+// Define the types for better type safety
+interface AgentReview {
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+}
+
+interface UserProfile {
+  id: string;
+  full_name: string;
+  username: string;
+  avatar_url: string;
+}
+
+interface Agent {
+  id: string;
+  name: string;
+  objective: string;
+  personality: string;
+  avatar_url?: string;
+  avatar_style: string;
+  is_public: boolean;
+  parameters: {
+    knowledge_domains?: string[];
+    [key: string]: any;
+  };
+  created_at: string;
+  user_profiles: UserProfile;
+  ai_agent_reviews: AgentReview[];
+}
+
 const AIStudioAgentPage = () => {
   const { agentId } = useParams();
   const { user } = useAuth();
@@ -47,7 +79,7 @@ const AIStudioAgentPage = () => {
         .single();
       
       if (error) throw error;
-      return data;
+      return data as Agent;
     },
     enabled: !!agentId,
   });
@@ -305,7 +337,11 @@ const AIStudioAgentPage = () => {
                 <Card>
                   <CardContent className="pt-6">
                     <h2 className="text-xl font-bold mb-4">Embed this agent on your website</h2>
-                    <EmbedCodeGenerator agentId={agentId} />
+                    <EmbedCodeGenerator 
+                      agentId={agentId} 
+                      agentName={agent.name}
+                      isPublic={agent.is_public}
+                    />
                     <Button asChild className="w-full mt-4" variant="outline">
                       <Link to="https://docs.luvvix.it.com/ai-studio/embedding" target="_blank">
                         <ExternalLink className="h-4 w-4 mr-2" />

@@ -254,7 +254,6 @@ const EmbedCodeGenerator = ({ agentId, agentName, isPublic }: EmbedCodeGenerator
                       accentColor={customOptions.accentColor}
                       hideCredit={customOptions.hideCredit}
                       startMessage={customOptions.startMessage}
-                      mode="inline"
                     />
                   </div>
                 ) : previewType === "script" ? (
@@ -274,7 +273,6 @@ const EmbedCodeGenerator = ({ agentId, agentName, isPublic }: EmbedCodeGenerator
                             accentColor={customOptions.accentColor}
                             hideCredit={customOptions.hideCredit}
                             startMessage={customOptions.startMessage}
-                            mode="inline"
                           />
                         </div>
                       </div>
@@ -301,7 +299,6 @@ const EmbedCodeGenerator = ({ agentId, agentName, isPublic }: EmbedCodeGenerator
                           accentColor={customOptions.accentColor}
                           hideCredit={customOptions.hideCredit}
                           startMessage={customOptions.startMessage}
-                          mode="inline"
                         />
                       </div>
                       <div className="flex items-center justify-center h-full">

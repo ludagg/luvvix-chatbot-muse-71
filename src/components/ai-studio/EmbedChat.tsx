@@ -125,12 +125,12 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
     }
   };
 
-  const saveMessage = async (message: Message, conversationId: string) => {
+  const saveMessage = async (message: Message, convId: string) => {
     try {
       await supabase
         .from('ai_messages')
         .insert({
-          conversation_id: conversationId,
+          conversation_id: convId,
           content: message.content,
           role: message.role
         });

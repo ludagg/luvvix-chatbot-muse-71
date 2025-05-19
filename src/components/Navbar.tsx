@@ -10,7 +10,21 @@ import NewsNotification from './news/NewsNotification';
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, loading } = useAuth();
+  
+  // Safely handle auth with a try/catch
+  const [authState, setAuthState] = useState({ user: null, loading: true });
+  
+  useEffect(() => {
+    try {
+      const { user, loading } = useAuth();
+      setAuthState({ user, loading });
+    } catch (error) {
+      console.error("Auth provider not available:", error);
+      setAuthState({ user: null, loading: false });
+    }
+  }, []);
+  
+  const { user, loading } = authState;
 
   useEffect(() => {
     const handleScroll = () => {

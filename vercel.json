@@ -1,4 +1,3 @@
-
 {
   "rewrites": [
     {
@@ -16,20 +15,9 @@
     {
       "source": "/forms/:path*",
       "destination": "/forms/:path*"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/"
     }
   ],
   "routes": [
-    {
-      "src": "/(.*)",
-      "headers": {
-        "x-custom-host": "{host}"
-      },
-      "dest": "/$1"
-    },
     {
       "src": "/(.*)",
       "has": [
@@ -39,6 +27,13 @@
         }
       ],
       "dest": "/forms/$1"
+    },
+    {
+      "src": "/(.*)",
+      "headers": {
+        "x-custom-host": "{host}"
+      },
+      "dest": "/$1"
     }
   ],
   "cookies": {

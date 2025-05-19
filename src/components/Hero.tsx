@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, Zap, Globe, Check } from "lucide-react";
+import { ArrowRight, Shield, Zap, Globe, Check, Bot, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
@@ -29,7 +29,7 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#1A1F2C] via-[#2C1F3D] to-[#332145] py-16">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#1A1F2C] via-[#2C1F3D] to-[#332145] py-16 pt-24">
       {/* Animated background elements */}
       <div className="absolute inset-0 z-0">
         {/* Modern abstract shapes */}
@@ -63,7 +63,7 @@ const Hero = () => {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
-              Un compte unique pour tous vos services
+              Un écosystème complet pour votre vie numérique
             </motion.div>
             
             <motion.h1 
@@ -160,6 +160,47 @@ const Hero = () => {
                 </div>
                 <span className="text-white/90">API pour développeurs</span>
               </motion.div>
+            </motion.div>
+
+            {/* NOUVELLE SECTION: Promotion LuvviX AI Studio */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.8 }}
+              className="mt-10 p-4 bg-gradient-to-r from-indigo-800/50 to-violet-800/50 rounded-xl border border-indigo-500/30"
+            >
+              <div className="flex items-center space-x-3 mb-3">
+                <Bot size={24} className="text-indigo-300" />
+                <h3 className="text-xl font-semibold text-white">LuvviX AI Studio</h3>
+                <span className="px-2 py-1 bg-indigo-700/50 rounded-full text-xs text-indigo-200 font-medium">NOUVEAU</span>
+              </div>
+              
+              <p className="text-white/80 mb-4">
+                Créez vos propres agents IA personnalisés en quelques minutes. Propulsé par la technologie Cerebras.
+              </p>
+              
+              <div className="flex flex-wrap gap-3">
+                <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full">
+                  <Sparkles size={14} className="text-amber-300" />
+                  <span className="text-white/90 text-sm">IA avancée</span>
+                </div>
+                <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full">
+                  <Zap size={14} className="text-cyan-300" />
+                  <span className="text-white/90 text-sm">Rapide</span>
+                </div>
+                <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full">
+                  <Shield size={14} className="text-green-300" />
+                  <span className="text-white/90 text-sm">Sécurisé</span>
+                </div>
+              </div>
+              
+              <Button 
+                onClick={() => navigate("/ai-studio")}
+                className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white w-full"
+              >
+                Créer votre assistant IA
+                <ArrowRight size={16} className="ml-2" />
+              </Button>
             </motion.div>
           </motion.div>
           

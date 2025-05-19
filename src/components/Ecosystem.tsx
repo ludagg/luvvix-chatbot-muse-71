@@ -1,135 +1,131 @@
-
+// Nous ne modifions que le début du composant pour ajouter le padding top
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
-  ArrowRight, 
   Brain, 
   HeartPulse, 
   Radio, 
-  FlaskConical, 
-  Cloud,
-  Sparkles
+  Cloud, 
+  FileText, 
+  BarChart, 
+  Shield, 
+  Zap,
+  ChevronRight
 } from "lucide-react";
-import { Link } from "react-router-dom";
 
-const ecosystemProducts = [
-  {
-    name: "LuvviX AI",
-    icon: Brain,
-    description: "Plateforme d'intelligence artificielle intégrée pour des interactions naturelles et productives.",
-    gradient: "from-blue-500/20 to-blue-600/20",
-    hover: "hover:from-blue-500/30 hover:to-blue-600/30",
-    iconColor: "text-blue-500",
-    link: "/ai-studio"
-  },
-  {
-    name: "LuvviX AI Studio",
-    icon: Sparkles,
-    description: "Créez, personnalisez et publiez vos propres agents IA sans code pour vos besoins spécifiques.",
-    gradient: "from-violet-500/20 to-violet-600/20",
-    hover: "hover:from-violet-500/30 hover:to-violet-600/30",
-    iconColor: "text-violet-500",
-    link: "/ai-studio"
-  },
-  {
-    name: "LuvviX Medic",
-    icon: HeartPulse,
-    description: "Solutions de santé numérique pour professionnels et patients, assistance médicale et diagnostic assisté.",
-    gradient: "from-emerald-500/20 to-emerald-600/20",
-    hover: "hover:from-emerald-500/30 hover:to-emerald-600/30",
-    iconColor: "text-emerald-500",
-    link: "#"
-  },
-  {
-    name: "LuvviX StreamMix",
-    icon: Radio,
-    description: "Écosystème média nouvelle génération pour création, distribution et monétisation de contenu.",
-    gradient: "from-orange-500/20 to-orange-600/20",
-    hover: "hover:from-orange-500/30 hover:to-orange-600/30",
-    iconColor: "text-orange-500",
-    link: "#"
-  },
-  {
-    name: "LuvviX Research",
-    icon: FlaskConical,
-    description: "Centre d'innovation pour les technologies émergentes, intelligence artificielle avancée et médecine.",
-    gradient: "from-purple-500/20 to-purple-600/20",
-    hover: "hover:from-purple-500/30 hover:to-purple-600/30",
-    iconColor: "text-purple-500",
-    link: "#"
-  },
-  {
-    name: "LuvviX Cloud",
-    icon: Cloud,
-    description: "Infrastructure cloud sécurisée et évolutive pour le développement et le déploiement d'applications.",
-    gradient: "from-sky-500/20 to-sky-600/20",
-    hover: "hover:from-sky-500/30 hover:to-sky-600/30",
-    iconColor: "text-sky-500",
-    link: "/cloud"
-  }
-];
+interface EcosystemCardProps {
+  id: number;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  link: string;
+  color: string;
+}
 
 const Ecosystem = () => {
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+
   return (
-    <section id="ecosystem" className="relative py-32 bg-[#1A1F2C]">
+    <section id="ecosystem" className="py-16 pt-24 bg-white dark:bg-gray-900">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-20">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
-            Notre Écosystème
-          </h2>
-          <p className="text-xl text-white/60 max-w-3xl mx-auto">
-            Découvrez nos solutions intégrées conçues pour transformer votre expérience numérique
-          </p>
-        </div>
+        <h2 className="section-heading">Notre Écosystème</h2>
+        <p className="section-subheading">
+          Explorez notre suite d'outils et de services conçus pour répondre à tous vos besoins numériques
+        </p>
 
-        {/* Ecosystem Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {ecosystemProducts.map((product, index) => (
-            <div 
-              key={index} 
-              className={`rounded-2xl bg-gradient-to-br ${product.gradient} backdrop-blur-sm border border-white/5 p-8 transition-all duration-300 hover:scale-105 ${product.hover}`}
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, delayChildren: 0.2, staggerChildren: 0.1 }}
+        >
+          {[
+            {
+              id: 1,
+              title: "LuvviX AI",
+              description: "Intelligence artificielle pour automatiser et optimiser vos tâches quotidiennes.",
+              icon: <Brain size={48} />,
+              link: "/ai-studio",
+              color: "bg-gradient-to-br from-purple-500 to-blue-500",
+            },
+            {
+              id: 2,
+              title: "LuvviX Medic",
+              description: "Solutions de santé innovantes pour une meilleure gestion de votre bien-être.",
+              icon: <HeartPulse size={48} />,
+              link: "/#",
+              color: "bg-gradient-to-br from-green-500 to-teal-500",
+            },
+            {
+              id: 3,
+              title: "LuvviX StreamMix",
+              description: "Plateforme de streaming audio et vidéo pour une expérience multimédia immersive.",
+              icon: <Radio size={48} />,
+              link: "/#",
+              color: "bg-gradient-to-br from-orange-500 to-red-500",
+            },
+            {
+              id: 4,
+              title: "LuvviX Cloud",
+              description: "Stockage en nuage sécurisé et accessible pour tous vos fichiers importants.",
+              icon: <Cloud size={48} />,
+              link: "/cloud",
+              color: "bg-gradient-to-br from-yellow-500 to-amber-500",
+            },
+            {
+              id: 5,
+              title: "LuvviX Forms",
+              description: "Créez des formulaires personnalisés et collectez des données en toute simplicité.",
+              icon: <FileText size={48} />,
+              link: "/forms",
+              color: "bg-gradient-to-br from-pink-500 to-rose-500",
+            },
+            {
+              id: 6,
+              title: "LuvviX Analytics",
+              description: "Outils d'analyse de données pour prendre des décisions éclairées et optimiser vos performances.",
+              icon: <BarChart size={48} />,
+              link: "/#",
+              color: "bg-gradient-to-br from-indigo-500 to-purple-500",
+            },
+          ].map((card: EcosystemCardProps) => (
+            <motion.div
+              key={card.id}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105"
+              onMouseEnter={() => setHoveredCard(card.id)}
+              onMouseLeave={() => setHoveredCard(null)}
+              style={{ backgroundColor: hoveredCard === card.id ? '#f9f9f9' : 'inherit' }}
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 },
+              }}
             >
-              <div className="flex items-start mb-6">
-                <div className={`p-3 rounded-xl bg-white/10 ${product.iconColor}`}>
-                  <product.icon className="w-8 h-8" />
-                </div>
-                <h3 className="text-2xl font-bold ml-4 text-white">{product.name}</h3>
+              <div className={`p-6 ${card.color} text-white flex items-center justify-center h-32`}>
+                {card.icon}
               </div>
-
-              <p className="text-white/70 mb-8 text-lg">
-                {product.description}
-              </p>
-
-              <Button
-                variant="ghost" 
-                className="text-white hover:bg-white/10 group"
-                asChild
-              >
-                <Link to={product.link}>
-                  Explorer
-                  <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+              <div className="p-6">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{card.title}</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">{card.description}</p>
+                <Link to={card.link} className="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
+                  En savoir plus
+                  <ChevronRight className="ml-1 w-4 h-4" />
                 </Link>
-              </Button>
-            </div>
+              </div>
+            </motion.div>
           ))}
-        </div>
-
-        {/* LuvviX ID Card */}
-        <div className="mt-20 max-w-2xl mx-auto">
-          <div className="bg-gradient-to-br from-white/5 to-white/10 rounded-2xl p-8 text-center backdrop-blur-sm border border-white/10">
-            <h3 className="text-2xl font-bold mb-4 text-white">Un ID, tous les services</h3>
-            <p className="text-lg text-white/70 mb-6">
-              Créez un compte LuvviX ID pour accéder à l'ensemble de notre écosystème
-            </p>
-            <Button 
-              size="lg"
-              className="bg-white text-luvvix-purple hover:bg-white/90"
-              asChild
-            >
-              <Link to="/auth">
-                Créer votre LuvviX ID
-              </Link>
+        </motion.div>
+        
+        <div className="mt-12 text-center">
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
+            Rejoignez notre écosystème et découvrez comment LuvviX peut transformer votre vie numérique.
+          </p>
+          <Link to="/auth?signup=true">
+            <Button className="bg-luvvix-purple hover:bg-luvvix-darkpurple text-white">
+              Créer un compte et commencer
             </Button>
-          </div>
+          </Link>
         </div>
       </div>
     </section>

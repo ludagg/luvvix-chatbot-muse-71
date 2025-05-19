@@ -16,7 +16,7 @@ import CeoSection from "@/components/CeoSection";
 
 const Index = () => {
   return (
-<div className="min-h-screen">
+    <div className="min-h-screen pt-16">
       <Navbar />
       <Hero />
       <Ecosystem />

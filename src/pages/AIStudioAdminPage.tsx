@@ -43,6 +43,7 @@ interface AdminConfig {
   model_name: string;
   quota_per_user: number;
   max_tokens: number;
+  provider?: string; // Ajouter le fournisseur d'API (OpenAI, Cerebras, etc.)
 }
 
 const AIStudioAdminPage = () => {
@@ -57,11 +58,12 @@ const AIStudioAdminPage = () => {
   
   // Update the state type to use our AdminConfig interface
   const [config, setConfig] = useState<AdminConfig>({
-    endpoint_url: "",
+    endpoint_url: "https://api.cerebras.ai/v1/completions",
     api_key: "",
-    model_name: "",
+    model_name: "cerebras/Cerebras-GPT-4.5-8B-Base",
     quota_per_user: 100,
     max_tokens: 2000,
+    provider: "cerebras",
   });
   
   const [stats, setStats] = useState({
@@ -202,7 +204,8 @@ const AIStudioAdminPage = () => {
             api_key: config.api_key,
             model_name: config.model_name,
             quota_per_user: config.quota_per_user,
-            max_tokens: config.max_tokens
+            max_tokens: config.max_tokens,
+            provider: config.provider
           })
           .eq("id", config.id || ''); // Now TypeScript knows id is allowed
           
@@ -216,7 +219,8 @@ const AIStudioAdminPage = () => {
             api_key: config.api_key,
             model_name: config.model_name,
             quota_per_user: config.quota_per_user,
-            max_tokens: config.max_tokens
+            max_tokens: config.max_tokens,
+            provider: config.provider
           });
           
         if (error) throw error;
@@ -244,7 +248,7 @@ const AIStudioAdminPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6 pt-24">
       <div className="max-w-7xl mx-auto">
         {loading ? (
           <div className="space-y-6">
@@ -426,10 +430,26 @@ const AIStudioAdminPage = () => {
                   <CardHeader>
                     <CardTitle>Configuration API</CardTitle>
                     <CardDescription>
-                      Paramètres de connexion aux modèles d'intelligence artificielle
+                      Paramètres de connexion à l'API Cerebras pour l'intelligence artificielle
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium block">
+                        Fournisseur d'API
+                      </label>
+                      <Input
+                        value={config.provider || "cerebras"}
+                        onChange={(e) =>
+                          setConfig({ ...config, provider: e.target.value })
+                        }
+                        placeholder="cerebras"
+                      />
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Nom du fournisseur d'API (cerebras, openai, etc.)
+                      </p>
+                    </div>
+                  
                     <div className="space-y-2">
                       <label className="text-sm font-medium block">
                         URL de l'API
@@ -439,7 +459,7 @@ const AIStudioAdminPage = () => {
                         onChange={(e) =>
                           setConfig({ ...config, endpoint_url: e.target.value })
                         }
-                        placeholder="https://api.openai.com/v1/chat/completions"
+                        placeholder="https://api.cerebras.ai/v1/completions"
                       />
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         Endpoint complet pour les appels d'API
@@ -456,10 +476,10 @@ const AIStudioAdminPage = () => {
                         onChange={(e) =>
                           setConfig({ ...config, api_key: e.target.value })
                         }
-                        placeholder="sk-..."
+                        placeholder="csk-..."
                       />
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Clé secrète pour l'authentification API
+                        Clé secrète pour l'authentification API Cerebras
                       </p>
                     </div>
                     
@@ -472,7 +492,7 @@ const AIStudioAdminPage = () => {
                         onChange={(e) =>
                           setConfig({ ...config, model_name: e.target.value })
                         }
-                        placeholder="gpt-4o-mini"
+                        placeholder="cerebras/Cerebras-GPT-4.5-8B-Base"
                       />
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         Nom du modèle d'IA à utiliser pour les requêtes

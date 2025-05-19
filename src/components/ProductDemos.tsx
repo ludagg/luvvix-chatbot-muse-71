@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, HeartPulse, Radio, ArrowRight, Send, Search, Calendar } from "lucide-react";
+import { Brain, HeartPulse, Radio, ArrowRight, Send, Search, Calendar, Bot, Sparkles, Code } from "lucide-react";
+import { Link } from 'react-router-dom';
 
 const ProductDemos = () => {
   // For AI Chat Demo
@@ -38,12 +39,78 @@ const ProductDemos = () => {
   };
 
   return (
-    <section id="products" className="container-padding bg-gradient-to-b from-white to-luvvix-lightgray">
+    <section id="products" className="container-padding bg-gradient-to-b from-white to-luvvix-lightgray pt-24">
       <div className="container mx-auto px-4">
         <h2 className="section-heading">Nos Produits</h2>
         <p className="section-subheading">
           Découvrez nos solutions innovantes à travers ces démonstrations interactives
         </p>
+
+        {/* Section de mise en avant de LuvviX AI Studio */}
+        <div className="mb-16">
+          <div className="max-w-4xl mx-auto bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl overflow-hidden shadow-xl border border-indigo-100 dark:border-indigo-800/30">
+            <div className="grid grid-cols-1 md:grid-cols-3">
+              <div className="md:col-span-2 p-8">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Bot className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+                  <h3 className="text-2xl font-bold text-indigo-800 dark:text-indigo-300">LuvviX AI Studio</h3>
+                  <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200 rounded-full text-xs font-medium">NOUVEAU</span>
+                </div>
+                
+                <h3 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Créez vos propres agents IA <span className="text-indigo-600 dark:text-indigo-400">en quelques minutes</span></h3>
+                
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
+                  LuvviX AI Studio vous permet de créer des assistants IA personnalisés pour vos besoins spécifiques, sans aucune compétence en programmation. Propulsé par la technologie Cerebras, nos agents sont rapides, intelligents et toujours disponibles.
+                </p>
+                
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="h-5 w-5 text-amber-500" />
+                    <span className="text-gray-700 dark:text-gray-200">IA avancée</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Bot className="h-5 w-5 text-violet-500" />
+                    <span className="text-gray-700 dark:text-gray-200">Personnalisable</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Code className="h-5 w-5 text-emerald-500" />
+                    <span className="text-gray-700 dark:text-gray-200">Sans code</span>
+                  </div>
+                </div>
+                
+                <Link to="/ai-studio">
+                  <Button className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                    Découvrir LuvviX AI Studio
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+              
+              <div className="relative bg-indigo-900 hidden md:flex items-center justify-center">
+                <div className="absolute inset-0 opacity-20" style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.2'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+                }}></div>
+                <div className="relative z-10 p-6">
+                  <div className="bg-white/10 backdrop-blur-md rounded-lg p-4 border border-white/20 shadow-2xl transform -rotate-6">
+                    <div className="flex items-center mb-3">
+                      <div className="h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center">
+                        <Bot className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="ml-3">
+                        <h4 className="text-white font-medium">Assistant Marketing</h4>
+                        <p className="text-indigo-200 text-xs">Optimisé pour les campagnes</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2 mb-2">
+                      <div className="bg-white/5 p-2 rounded text-white text-sm">Comment puis-je améliorer mon taux de conversion?</div>
+                      <div className="bg-indigo-600/30 p-2 rounded text-white text-sm">Je peux vous suggérer plusieurs stratégies pour augmenter votre taux de conversion...</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <div className="mt-12">
           <Tabs defaultValue="ai" className="w-full">

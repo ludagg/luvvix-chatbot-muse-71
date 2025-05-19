@@ -52,8 +52,8 @@ const WeatherWidget = () => {
   const [error, setError] = useState<string | null>(null);
   const [showDetailed, setShowDetailed] = useState(false);
 
-  // Free OpenWeatherMap API key (for demo purposes)
-  const API_KEY = "3b7ae57a234b7e6279287af79efeb36c";
+  // Free WeatherAPI.com API key (for demo purposes)
+  const API_KEY = "b91e7e5ad18e4387aec74107232408";
 
   useEffect(() => {
     const fetchWeather = async () => {
@@ -68,9 +68,9 @@ const WeatherWidget = () => {
           return;
         }
         
-        // Use OpenWeatherMap API (free tier) to get current weather data
+        // Use WeatherAPI.com for current weather data (free tier)
         const response = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${locationData.latitude}&lon=${locationData.longitude}&units=metric&lang=fr&appid=${API_KEY}`
+          `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${locationData.latitude},${locationData.longitude}&days=3&lang=fr&aqi=no`
         );
         
         if (!response.ok) {
@@ -79,55 +79,29 @@ const WeatherWidget = () => {
         
         const data = await response.json();
         
-        // Also fetch 5-day forecast
-        const forecastResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/forecast?lat=${locationData.latitude}&lon=${locationData.longitude}&units=metric&lang=fr&appid=${API_KEY}`
-        );
-        
-        let forecast: ForecastDay[] = [];
-        
-        if (forecastResponse.ok) {
-          const forecastData = await forecastResponse.json();
-          
-          // Process forecast data - get one forecast per day (noon time)
-          const dailyForecasts = new Map<string, any>();
-          
-          forecastData.list.forEach((item: any) => {
-            const date = new Date(item.dt * 1000).toISOString().split('T')[0];
-            if (!dailyForecasts.has(date) || 
-                Math.abs(new Date(item.dt * 1000).getHours() - 12) < 
-                Math.abs(new Date(dailyForecasts.get(date).dt * 1000).getHours() - 12)) {
-              dailyForecasts.set(date, item);
-            }
-          });
-          
-          // Get next 3 days
-          forecast = Array.from(dailyForecasts.values())
-            .slice(1, 4)
-            .map(item => ({
-              date: new Date(item.dt * 1000).toLocaleDateString('fr-FR', { weekday: 'short' }),
-              minTemp: Math.round(item.main.temp_min),
-              maxTemp: Math.round(item.main.temp_max),
-              condition: item.weather[0].description,
-              icon: item.weather[0].icon
-            }));
-        }
-        
         // Transform data into our format
+        const forecastDays = data.forecast.forecastday.map((day: any) => ({
+          date: new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'short' }),
+          minTemp: Math.round(day.day.mintemp_c),
+          maxTemp: Math.round(day.day.maxtemp_c),
+          condition: day.day.condition.text.toLowerCase(),
+          icon: day.day.condition.icon
+        }));
+        
         setWeather({
-          temperature: Math.round(data.main.temp),
-          feelsLike: Math.round(data.main.feels_like),
-          condition: data.weather[0].description,
-          icon: data.weather[0].icon,
-          location: data.name,
-          humidity: data.main.humidity,
-          windSpeed: Math.round(data.wind.speed * 3.6), // Convert m/s to km/h
-          windDirection: data.wind.deg,
-          pressure: data.main.pressure,
-          visibility: data.visibility / 1000, // Convert to km
-          sunrise: data.sys.sunrise,
-          sunset: data.sys.sunset,
-          forecast
+          temperature: Math.round(data.current.temp_c),
+          feelsLike: Math.round(data.current.feelslike_c),
+          condition: data.current.condition.text.toLowerCase(),
+          icon: data.current.condition.icon,
+          location: data.location.name,
+          humidity: data.current.humidity,
+          windSpeed: Math.round(data.current.wind_kph),
+          windDirection: data.current.wind_degree,
+          pressure: data.current.pressure_mb,
+          visibility: data.current.vis_km,
+          sunrise: data.forecast.forecastday[0].astro.sunrise,
+          sunset: data.forecast.forecastday[0].astro.sunset,
+          forecast: forecastDays
         });
         
         // Check for extreme weather conditions and send notifications if needed
@@ -142,36 +116,36 @@ const WeatherWidget = () => {
             temperature: 22,
             feelsLike: 24,
             condition: 'ciel dégagé',
-            icon: '01d',
+            icon: '//cdn.weatherapi.com/weather/64x64/day/113.png',
             location: 'Douala',
             humidity: 65,
             windSpeed: 13,
             windDirection: 180,
             pressure: 1013,
             visibility: 10,
-            sunrise: 1620100800,
-            sunset: 1620147600,
+            sunrise: '06:32',
+            sunset: '18:44',
             forecast: [
               {
                 date: 'Demain',
                 minTemp: 20,
                 maxTemp: 25,
                 condition: 'ciel dégagé',
-                icon: '01d'
+                icon: '//cdn.weatherapi.com/weather/64x64/day/113.png'
               },
               {
                 date: 'Mer.',
                 minTemp: 21,
                 maxTemp: 26,
                 condition: 'quelques nuages',
-                icon: '02d'
+                icon: '//cdn.weatherapi.com/weather/64x64/day/116.png'
               },
               {
                 date: 'Jeu.',
                 minTemp: 19,
                 maxTemp: 24,
                 condition: 'couvert',
-                icon: '03d'
+                icon: '//cdn.weatherapi.com/weather/64x64/day/119.png'
               }
             ]
           });
@@ -199,46 +173,46 @@ const WeatherWidget = () => {
     // Check for permission
     if (Notification.permission === "granted") {
       // Check for extreme weather conditions
-      if (data.main.temp > 35) {
+      if (data.current.temp_c > 35) {
         new Notification("Alerte Météo", {
-          body: `Canicule: ${Math.round(data.main.temp)}°C à ${data.name}. Restez hydraté !`,
+          body: `Canicule: ${Math.round(data.current.temp_c)}°C à ${data.location.name}. Restez hydraté !`,
           icon: "/weather-icons/hot.png"
         });
         
         toast({
           title: "Alerte Météo",
-          description: `Canicule: ${Math.round(data.main.temp)}°C à ${data.name}. Restez hydraté !`,
+          description: `Canicule: ${Math.round(data.current.temp_c)}°C à ${data.location.name}. Restez hydraté !`,
           variant: "destructive",
         });
-      } else if (data.main.temp < 0) {
+      } else if (data.current.temp_c < 0) {
         new Notification("Alerte Météo", {
-          body: `Gel: ${Math.round(data.main.temp)}°C à ${data.name}. Couvrez-vous !`,
+          body: `Gel: ${Math.round(data.current.temp_c)}°C à ${data.location.name}. Couvrez-vous !`,
           icon: "/weather-icons/cold.png"
         });
         
         toast({
           title: "Alerte Météo",
-          description: `Gel: ${Math.round(data.main.temp)}°C à ${data.name}. Couvrez-vous !`,
+          description: `Gel: ${Math.round(data.current.temp_c)}°C à ${data.location.name}. Couvrez-vous !`,
         });
-      } else if (data.weather[0].main === "Thunderstorm") {
+      } else if (data.current.condition.text.includes("Thunder")) {
         new Notification("Alerte Météo", {
-          body: `Orages à ${data.name}. Restez prudent !`,
+          body: `Orages à ${data.location.name}. Restez prudent !`,
           icon: "/weather-icons/storm.png"
         });
         
         toast({
           title: "Alerte Météo",
-          description: `Orages à ${data.name}. Restez prudent !`,
+          description: `Orages à ${data.location.name}. Restez prudent !`,
         });
-      } else if (data.wind.speed > 20) {
+      } else if (data.current.wind_kph > 50) {
         new Notification("Alerte Météo", {
-          body: `Vents violents à ${data.name} (${data.wind.speed} km/h).`,
+          body: `Vents violents à ${data.location.name} (${data.current.wind_kph} km/h).`,
           icon: "/weather-icons/wind.png"
         });
         
         toast({
           title: "Alerte Météo",
-          description: `Vents violents à ${data.name} (${data.wind.speed} km/h).`,
+          description: `Vents violents à ${data.location.name} (${data.current.wind_kph} km/h).`,
         });
       }
     }
@@ -275,14 +249,6 @@ const WeatherWidget = () => {
     }
   };
   
-  // Format time from Unix timestamp
-  const formatTime = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-  
   // Format wind direction
   const formatWindDirection = (degrees: number) => {
     const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
@@ -290,7 +256,7 @@ const WeatherWidget = () => {
     return directions[index];
   };
   
-  // Choose weather icon based on condition
+  // Choose weather icon based on condition or use API provided icon
   const renderWeatherIcon = (condition: string, size: number = 5) => {
     if (condition.includes("pluie") || condition.includes("averse")) {
       return <CloudRain className={`w-${size} h-${size}`} />;
@@ -332,7 +298,11 @@ const WeatherWidget = () => {
       <Card className="fixed top-20 right-4 z-50 p-4 w-80 shadow-lg animate-in fade-in-0 slide-in-from-top-5">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            {renderWeatherIcon(weather.condition)}
+            {weather.icon && weather.icon.startsWith('http') ? (
+              <img src={weather.icon} width="40" height="40" alt={weather.condition} />
+            ) : (
+              renderWeatherIcon(weather.condition)
+            )}
             <div>
               <h3 className="font-medium text-lg">{weather.location}</h3>
               <p className="text-sm text-muted-foreground capitalize">{weather.condition}</p>
@@ -372,11 +342,11 @@ const WeatherWidget = () => {
         <div className="flex justify-between items-center mt-3 text-xs text-muted-foreground">
           <div className="flex items-center">
             <Sun className="w-3 h-3 text-yellow-400 mr-1" />
-            Lever: {formatTime(weather.sunrise)}
+            Lever: {weather.sunrise}
           </div>
           <div className="flex items-center">
             <Sun className="w-3 h-3 text-orange-400 mr-1" />
-            Coucher: {formatTime(weather.sunset)}
+            Coucher: {weather.sunset}
           </div>
         </div>
         
@@ -387,7 +357,13 @@ const WeatherWidget = () => {
               {weather.forecast.map((day, i) => (
                 <div key={i} className="text-center">
                   <div className="text-xs font-medium">{day.date}</div>
-                  <div className="my-1">{renderWeatherIcon(day.condition, 4)}</div>
+                  <div className="my-1">
+                    {day.icon && day.icon.startsWith('http') ? (
+                      <img src={day.icon} width="32" height="32" alt={day.condition} />
+                    ) : (
+                      renderWeatherIcon(day.condition, 4)
+                    )}
+                  </div>
                   <div className="text-xs">
                     <span className="font-medium">{day.maxTemp}°</span>
                     <span className="text-muted-foreground"> {day.minTemp}°</span>
@@ -416,7 +392,13 @@ const WeatherWidget = () => {
             className="flex items-center space-x-1 px-3 py-1.5 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10" 
             onClick={requestNotificationPermission}
           >
-            {weather ? renderWeatherIcon(weather.condition) : <Thermometer className="w-5 h-5" />}
+            {weather ? (
+              weather.icon && weather.icon.startsWith('http') ? (
+                <img src={weather.icon} width="24" height="24" alt={weather.condition} className="mr-1" />
+              ) : renderWeatherIcon(weather.condition)
+            ) : (
+              <Thermometer className="w-5 h-5" />
+            )}
             <span className="font-medium">{weather?.temperature}°C</span>
             <Badge variant="outline" className="ml-1 text-xs py-0 px-1.5 border-white/20">
               {weather?.location}
@@ -431,8 +413,8 @@ const WeatherWidget = () => {
               Humidité: {weather?.humidity}% • Vent: {weather?.windSpeed} km/h
             </div>
             <div className="flex justify-between text-xs text-muted-foreground mt-1">
-              <span>Lever: {weather ? formatTime(weather.sunrise) : ''}</span>
-              <span>Coucher: {weather ? formatTime(weather.sunset) : ''}</span>
+              <span>Lever: {weather?.sunrise}</span>
+              <span>Coucher: {weather?.sunset}</span>
             </div>
             <div className="text-xs text-muted-foreground mt-2">
               {Notification.permission === "granted"

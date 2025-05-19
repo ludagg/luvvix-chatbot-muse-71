@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 const corsHeaders = {
@@ -6,17 +5,31 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// API endpoint for GNews API (gratuit avec limite de requêtes raisonnable)
-const GNEWS_API_URL = "https://gnews.io/api/v4";
-const API_KEY = Deno.env.get("GNEWS_API_KEY") || "";
+// On utilise RSS2JSON pour convertir les flux RSS en JSON (API gratuite et fiable)
+const RSS2JSON_API_URL = "https://api.rss2json.com/v1/api.json";
+const NEWS_FEEDS = {
+  all: "https://news.google.com/rss",
+  business: "https://news.google.com/rss/headlines/section/topic/BUSINESS",
+  technology: "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY",
+  entertainment: "https://news.google.com/rss/headlines/section/topic/ENTERTAINMENT",
+  sports: "https://news.google.com/rss/headlines/section/topic/SPORTS",
+  science: "https://news.google.com/rss/headlines/section/topic/SCIENCE",
+  health: "https://news.google.com/rss/headlines/section/topic/HEALTH",
+  general: "https://news.google.com/rss/headlines/section/topic/WORLD",
+};
 
-interface NewsRequestParams {
-  country?: string;
-  category?: string;
-  q?: string;
-  max?: number;
-  page?: number;
-}
+// Pour les recherches spécifiques
+const getSearchFeed = (query: string, country: string = 'fr') => {
+  const baseUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}`;
+  const fullUrl = country ? `${baseUrl}&gl=${country.toLowerCase()}` : baseUrl;
+  return fullUrl;
+};
+
+// Pour filtrer par pays (si précisé)
+const getCountryFeed = (category: string, country: string) => {
+  const feed = NEWS_FEEDS[category as keyof typeof NEWS_FEEDS] || NEWS_FEEDS.all;
+  return `${feed}?gl=${country.toLowerCase()}`;
+};
 
 serve(async (req: Request) => {
   // Handle CORS preflight requests
@@ -25,98 +38,49 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Check if API key is available
-    if (!API_KEY) {
-      console.error("GNEWS_API_KEY is not set in environment variables");
-      return new Response(
-        JSON.stringify({
-          error: "API key is not configured",
-          message: "Please set the GNEWS_API_KEY in your Edge Function secrets",
-          items: [] // Return empty array to prevent UI breaks
-        }),
-        {
-          status: 200, // Return 200 to prevent fetch errors on client
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    // Extract parameters from the request body
+    const params = await req.json();
+    const category = params.category || "all";
+    const country = params.country || "fr";
+    const query = params.query || "";
+    
+    console.log(`Processing request with params: category=${category}, country=${country}, query=${query}`);
+    
+    // Determine which feed to use
+    let feedUrl: string;
+    
+    if (query) {
+      // If search query provided, use search feed
+      feedUrl = getSearchFeed(query, country);
+    } else if (country) {
+      // If country provided, get country-specific feed
+      feedUrl = getCountryFeed(category, country);
     } else {
-      // Log masked API key to verify it's present
-      const maskedKey = API_KEY.substring(0, 4) + "..." + API_KEY.substring(API_KEY.length - 4);
-      console.log(`Using GNews API key: ${maskedKey}`);
+      // Otherwise use default feed
+      feedUrl = NEWS_FEEDS[category as keyof typeof NEWS_FEEDS] || NEWS_FEEDS.all;
     }
-
-    // Extract parameters from the request URL
-    const url = new URL(req.url);
-    const category = url.searchParams.get("category") || "general";
-    const country = url.searchParams.get("country") || "fr";
-    const search = url.searchParams.get("q") || "";
-    const max = url.searchParams.get("max") || "10";
-    const page = url.searchParams.get("page") || "1";
-
-    // Log the parameters for debugging
-    console.log(`Processing request with params: category=${category}, country=${country}, search=${search}, max=${max}, page=${page}`);
     
-    // Construct API request parameters
-    const params: NewsRequestParams = {
-      max: parseInt(max),
-      page: parseInt(page),
-    };
-
-    // Add country if provided (GNews uses 2-letter country codes)
-    if (country) {
-      params.country = country;
-    }
-
-    // Add category if it's not "all"
-    if (category && category !== "all") {
-      params.category = category;
-    }
-
-    // Choose endpoint based on whether search is provided
-    let endpoint = "top-headlines";
+    // Construct the API URL for RSS2JSON
+    const apiUrl = new URL(RSS2JSON_API_URL);
+    apiUrl.searchParams.append("rss_url", feedUrl);
+    apiUrl.searchParams.append("count", "20");
     
-    // Add search query if provided
-    if (search) {
-      params.q = search;
-      endpoint = "search"; // Use search endpoint when query is provided
-    }
-
-    // Construct the API URL
-    const apiUrl = new URL(`${GNEWS_API_URL}/${endpoint}`);
-    Object.entries(params).forEach(([key, value]) => {
-      apiUrl.searchParams.append(key, value.toString());
-    });
+    console.log(`Fetching news from RSS feed: ${feedUrl}`);
     
-    // Always add the API key
-    apiUrl.searchParams.append("apikey", API_KEY);
-    // Set language to French
-    apiUrl.searchParams.append("lang", "fr");
-
     // Make the API request
-    console.log(`Fetching news from: ${apiUrl.toString().replace(API_KEY, "API_KEY_HIDDEN")}`);
     const response = await fetch(apiUrl.toString());
-
-    // Log the response status
-    console.log(`GNews API response status: ${response.status}`);
-
+    
+    console.log(`RSS2JSON API response status: ${response.status}`);
+    
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`GNews API error: ${response.status} - ${errorText}`);
-      
-      let errorMessage = "Une erreur s'est produite lors de la récupération des actualités";
-      
-      // Handle specific error cases
-      if (response.status === 401) {
-        errorMessage = "La clé API est invalide ou expirée. Veuillez vérifier votre clé GNews.";
-      } else if (response.status === 429) {
-        errorMessage = "Limite de requêtes atteinte pour la clé API. Veuillez réessayer plus tard.";
-      }
+      console.error(`RSS2JSON API error: ${response.status} - ${errorText}`);
       
       return new Response(
         JSON.stringify({
-          error: `GNews API error: ${response.status}`,
+          error: `RSS2JSON API error: ${response.status}`,
           details: errorText,
-          message: errorMessage,
+          message: "Une erreur s'est produite lors de la récupération des actualités",
           items: [] // Return empty array to prevent UI breaks
         }),
         {
@@ -125,14 +89,14 @@ serve(async (req: Request) => {
         }
       );
     }
-
+    
     const data = await response.json();
     
     // Verify the response data structure
     console.log(`Response data structure: ${JSON.stringify(Object.keys(data))}`);
     
     // Check if articles were found
-    if (!data.articles || data.articles.length === 0) {
+    if (!data.items || data.items.length === 0) {
       console.log("No articles found in the API response");
       return new Response(
         JSON.stringify({
@@ -150,26 +114,26 @@ serve(async (req: Request) => {
     
     // Transform the response to match our NewsItem type
     const transformedData = {
-      items: data.articles.map((article: any) => ({
-        id: article.url, // Use URL as ID since GNews API doesn't provide unique IDs
-        title: article.title,
-        summary: article.description || "",
-        content: article.content || "",
-        publishedAt: article.publishedAt,
-        source: article.source?.name || "Source inconnue",
+      items: data.items.map((item: any, index: number) => ({
+        id: item.guid || `news-${index}-${Date.now()}`,
+        title: item.title,
+        summary: item.description || "",
+        content: item.content || "",
+        publishedAt: item.pubDate,
+        source: item.author || item.source?.name || "Actualités Google",
         category: category !== "all" ? category : "general",
-        url: article.url,
-        imageUrl: article.image,
+        url: item.link,
+        imageUrl: extractImageFromDescription(item.description) || extractImageFromContent(item.content),
         location: {
           country: country || "fr"
         }
       })),
-      totalResults: data.totalArticles || data.articles.length,
+      totalResults: data.items.length,
       status: "ok",
     };
-
+    
     console.log(`Successfully fetched ${transformedData.items.length} articles`);
-
+    
     return new Response(JSON.stringify(transformedData), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
@@ -188,3 +152,23 @@ serve(async (req: Request) => {
     );
   }
 });
+
+// Helper function to extract image from description
+function extractImageFromDescription(description: string): string | null {
+  if (!description) return null;
+  
+  const imgRegex = /<img.*?src=["'](.*?)["']/;
+  const match = description.match(imgRegex);
+  
+  return match ? match[1] : null;
+}
+
+// Helper function to extract image from content
+function extractImageFromContent(content: string): string | null {
+  if (!content) return null;
+  
+  const imgRegex = /<img.*?src=["'](.*?)["']/;
+  const match = content.match(imgRegex);
+  
+  return match ? match[1] : "https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=1000";
+}

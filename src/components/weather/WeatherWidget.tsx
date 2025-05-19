@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -32,8 +33,8 @@ interface WeatherData {
   windDirection: number;
   pressure: number;
   visibility: number;
-  sunrise: string; // Changed type from number to string
-  sunset: string;  // Changed type from number to string
+  sunrise: string;
+  sunset: string;
   forecast?: ForecastDay[];
 }
 
@@ -51,9 +52,6 @@ const WeatherWidget = () => {
   const [error, setError] = useState<string | null>(null);
   const [showDetailed, setShowDetailed] = useState(false);
 
-  // Free WeatherAPI.com API key (for demo purposes)
-  const API_KEY = "b91e7e5ad18e4387aec74107232408";
-
   useEffect(() => {
     const fetchWeather = async () => {
       try {
@@ -67,9 +65,9 @@ const WeatherWidget = () => {
           return;
         }
         
-        // Use WeatherAPI.com for current weather data (free tier)
+        // Use OpenWeatherMap with their free tier
         const response = await fetch(
-          `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${locationData.latitude},${locationData.longitude}&days=3&lang=fr&aqi=no`
+          `https://api.open-meteo.com/v1/forecast?latitude=${locationData.latitude}&longitude=${locationData.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,wind_speed_10m,wind_direction_10m,pressure_msl,visibility&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto&forecast_days=3`
         );
         
         if (!response.ok) {
@@ -78,28 +76,43 @@ const WeatherWidget = () => {
         
         const data = await response.json();
         
-        // Transform data into our format
-        const forecastDays = data.forecast.forecastday.map((day: any) => ({
-          date: new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'short' }),
-          minTemp: Math.round(day.day.mintemp_c),
-          maxTemp: Math.round(day.day.maxtemp_c),
-          condition: day.day.condition.text.toLowerCase(),
-          icon: day.day.condition.icon
+        // Format forecast days
+        const forecastDays = data.daily.time.map((date: string, i: number) => ({
+          date: new Date(date).toLocaleDateString('fr-FR', { weekday: 'short' }),
+          minTemp: Math.round(data.daily.temperature_2m_min[i]),
+          maxTemp: Math.round(data.daily.temperature_2m_max[i]),
+          condition: getWeatherCondition(data.daily.weather_code[i]),
+          icon: ""
         }));
         
+        // Get city name from reverse geocoding (using a free service)
+        const locationResponse = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${locationData.latitude}&lon=${locationData.longitude}&zoom=10&accept-language=fr`
+        );
+        
+        let locationName = "Votre position";
+        if (locationResponse.ok) {
+          const locationData = await locationResponse.json();
+          locationName = locationData.address?.city || 
+                        locationData.address?.town || 
+                        locationData.address?.village || 
+                        locationData.address?.municipality ||
+                        "Votre position";
+        }
+        
         setWeather({
-          temperature: Math.round(data.current.temp_c),
-          feelsLike: Math.round(data.current.feelslike_c),
-          condition: data.current.condition.text.toLowerCase(),
-          icon: data.current.condition.icon,
-          location: data.location.name,
-          humidity: data.current.humidity,
-          windSpeed: Math.round(data.current.wind_kph),
-          windDirection: data.current.wind_degree,
-          pressure: data.current.pressure_mb,
-          visibility: data.current.vis_km,
-          sunrise: data.forecast.forecastday[0].astro.sunrise, // This is a string value
-          sunset: data.forecast.forecastday[0].astro.sunset,   // This is a string value
+          temperature: Math.round(data.current.temperature_2m),
+          feelsLike: Math.round(data.current.apparent_temperature),
+          condition: getWeatherCondition(data.current.weather_code),
+          icon: "",
+          location: locationName,
+          humidity: data.current.relative_humidity_2m,
+          windSpeed: Math.round(data.current.wind_speed_10m),
+          windDirection: data.current.wind_direction_10m,
+          pressure: data.current.pressure_msl,
+          visibility: data.current.visibility / 1000, // Convert to km
+          sunrise: formatTime(data.daily.sunrise[0]),
+          sunset: formatTime(data.daily.sunset[0]),
           forecast: forecastDays
         });
         
@@ -109,46 +122,44 @@ const WeatherWidget = () => {
         console.error("Erreur météo:", err);
         setError("Erreur lors du chargement de la météo");
         
-        // Set fallback data for development/testing
-        if (process.env.NODE_ENV === 'development') {
-          setWeather({
-            temperature: 22,
-            feelsLike: 24,
-            condition: 'ciel dégagé',
-            icon: '//cdn.weatherapi.com/weather/64x64/day/113.png',
-            location: 'Douala',
-            humidity: 65,
-            windSpeed: 13,
-            windDirection: 180,
-            pressure: 1013,
-            visibility: 10,
-            sunrise: '06:32', // String value
-            sunset: '18:44',  // String value
-            forecast: [
-              {
-                date: 'Demain',
-                minTemp: 20,
-                maxTemp: 25,
-                condition: 'ciel dégagé',
-                icon: '//cdn.weatherapi.com/weather/64x64/day/113.png'
-              },
-              {
-                date: 'Mer.',
-                minTemp: 21,
-                maxTemp: 26,
-                condition: 'quelques nuages',
-                icon: '//cdn.weatherapi.com/weather/64x64/day/116.png'
-              },
-              {
-                date: 'Jeu.',
-                minTemp: 19,
-                maxTemp: 24,
-                condition: 'couvert',
-                icon: '//cdn.weatherapi.com/weather/64x64/day/119.png'
-              }
-            ]
-          });
-        }
+        // Set fallback data for testing
+        setWeather({
+          temperature: 22,
+          feelsLike: 24,
+          condition: 'ciel dégagé',
+          icon: '',
+          location: 'Position inconnue',
+          humidity: 65,
+          windSpeed: 13,
+          windDirection: 180,
+          pressure: 1013,
+          visibility: 10,
+          sunrise: '06:32',
+          sunset: '18:44',
+          forecast: [
+            {
+              date: 'Demain',
+              minTemp: 20,
+              maxTemp: 25,
+              condition: 'ciel dégagé',
+              icon: ''
+            },
+            {
+              date: 'Mer.',
+              minTemp: 21,
+              maxTemp: 26,
+              condition: 'quelques nuages',
+              icon: ''
+            },
+            {
+              date: 'Jeu.',
+              minTemp: 19,
+              maxTemp: 24,
+              condition: 'couvert',
+              icon: ''
+            }
+          ]
+        });
       } finally {
         setLoading(false);
       }
@@ -162,6 +173,50 @@ const WeatherWidget = () => {
     return () => clearInterval(interval);
   }, []);
   
+  // Helper function to format time from ISO string
+  const formatTime = (isoString: string): string => {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  };
+  
+  // Helper function to convert weather code to human-readable condition
+  const getWeatherCondition = (code: number): string => {
+    // WMO Weather interpretation codes (WW)
+    // https://open-meteo.com/en/docs
+    const conditions: {[key: number]: string} = {
+      0: 'ciel dégagé',
+      1: 'principalement dégagé',
+      2: 'partiellement nuageux',
+      3: 'couvert',
+      45: 'brouillard',
+      48: 'brouillard givrant',
+      51: 'bruine légère',
+      53: 'bruine modérée',
+      55: 'bruine dense',
+      56: 'bruine verglaçante légère',
+      57: 'bruine verglaçante dense',
+      61: 'pluie légère',
+      63: 'pluie modérée',
+      65: 'pluie forte',
+      66: 'pluie verglaçante légère',
+      67: 'pluie verglaçante forte',
+      71: 'neige légère',
+      73: 'neige modérée',
+      75: 'neige forte',
+      77: 'grains de neige',
+      80: 'averses de pluie légères',
+      81: 'averses de pluie modérées',
+      82: 'averses de pluie violentes',
+      85: 'averses de neige légères',
+      86: 'averses de neige fortes',
+      95: 'orage',
+      96: 'orage avec grêle légère',
+      99: 'orage avec grêle forte'
+    };
+    
+    return conditions[code] || 'inconnu';
+  };
+  
   // Function to check for extreme weather and send notifications
   const checkExtremeWeather = (data: any) => {
     // Check if notifications are supported and permission is granted
@@ -171,47 +226,50 @@ const WeatherWidget = () => {
     
     // Check for permission
     if (Notification.permission === "granted") {
+      const temperature = Math.round(data.current.temperature_2m);
+      const weatherCode = data.current.weather_code;
+      
       // Check for extreme weather conditions
-      if (data.current.temp_c > 35) {
+      if (temperature > 35) {
         new Notification("Alerte Météo", {
-          body: `Canicule: ${Math.round(data.current.temp_c)}°C à ${data.location.name}. Restez hydraté !`,
+          body: `Canicule: ${temperature}°C à ${weather?.location}. Restez hydraté !`,
           icon: "/weather-icons/hot.png"
         });
         
         toast({
           title: "Alerte Météo",
-          description: `Canicule: ${Math.round(data.current.temp_c)}°C à ${data.location.name}. Restez hydraté !`,
+          description: `Canicule: ${temperature}°C à ${weather?.location}. Restez hydraté !`,
           variant: "destructive",
         });
-      } else if (data.current.temp_c < 0) {
+      } else if (temperature < 0) {
         new Notification("Alerte Météo", {
-          body: `Gel: ${Math.round(data.current.temp_c)}°C à ${data.location.name}. Couvrez-vous !`,
+          body: `Gel: ${temperature}°C à ${weather?.location}. Couvrez-vous !`,
           icon: "/weather-icons/cold.png"
         });
         
         toast({
           title: "Alerte Météo",
-          description: `Gel: ${Math.round(data.current.temp_c)}°C à ${data.location.name}. Couvrez-vous !`,
+          description: `Gel: ${temperature}°C à ${weather?.location}. Couvrez-vous !`,
         });
-      } else if (data.current.condition.text.includes("Thunder")) {
+      } else if ([95, 96, 99].includes(weatherCode)) {
         new Notification("Alerte Météo", {
-          body: `Orages à ${data.location.name}. Restez prudent !`,
+          body: `Orages à ${weather?.location}. Restez prudent !`,
           icon: "/weather-icons/storm.png"
         });
         
         toast({
           title: "Alerte Météo",
-          description: `Orages à ${data.location.name}. Restez prudent !`,
+          description: `Orages à ${weather?.location}. Restez prudent !`,
         });
-      } else if (data.current.wind_kph > 50) {
+      } else if (data.current.wind_speed_10m > 50) {
         new Notification("Alerte Météo", {
-          body: `Vents violents à ${data.location.name} (${data.current.wind_kph} km/h).`,
+          body: `Vents violents à ${weather?.location} (${data.current.wind_speed_10m} km/h).`,
           icon: "/weather-icons/wind.png"
         });
         
         toast({
           title: "Alerte Météo",
-          description: `Vents violents à ${data.location.name} (${data.current.wind_kph} km/h).`,
+          description: `Vents violents à ${weather?.location} (${data.current.wind_speed_10m} km/h).`,
         });
       }
     }
@@ -297,11 +355,7 @@ const WeatherWidget = () => {
       <Card className="fixed top-20 right-4 z-50 p-4 w-80 shadow-lg animate-in fade-in-0 slide-in-from-top-5">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            {weather.icon && weather.icon.startsWith('http') ? (
-              <img src={weather.icon} width="40" height="40" alt={weather.condition} />
-            ) : (
-              renderWeatherIcon(weather.condition)
-            )}
+            {renderWeatherIcon(weather.condition)}
             <div>
               <h3 className="font-medium text-lg">{weather.location}</h3>
               <p className="text-sm text-muted-foreground capitalize">{weather.condition}</p>
@@ -357,11 +411,7 @@ const WeatherWidget = () => {
                 <div key={i} className="text-center">
                   <div className="text-xs font-medium">{day.date}</div>
                   <div className="my-1">
-                    {day.icon && day.icon.startsWith('http') ? (
-                      <img src={day.icon} width="32" height="32" alt={day.condition} />
-                    ) : (
-                      renderWeatherIcon(day.condition, 4)
-                    )}
+                    {renderWeatherIcon(day.condition, 4)}
                   </div>
                   <div className="text-xs">
                     <span className="font-medium">{day.maxTemp}°</span>
@@ -392,9 +442,7 @@ const WeatherWidget = () => {
             onClick={requestNotificationPermission}
           >
             {weather ? (
-              weather.icon && weather.icon.startsWith('http') ? (
-                <img src={weather.icon} width="24" height="24" alt={weather.condition} className="mr-1" />
-              ) : renderWeatherIcon(weather.condition)
+              renderWeatherIcon(weather.condition)
             ) : (
               <Thermometer className="w-5 h-5" />
             )}

@@ -1,0 +1,165 @@
+
+import { useState } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { 
+  AlignLeft, 
+  List, 
+  ListChecks, 
+  Calendar, 
+  Mail, 
+  Globe, 
+  Phone, 
+  Hash, 
+  ChevronDown
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+
+interface QuestionType {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  description: string;
+}
+
+interface QuestionCreatorProps {
+  formId?: string;
+  onAddQuestion: (type: string) => Promise<void>;
+}
+
+const QuestionCreator = ({ formId, onAddQuestion }: QuestionCreatorProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const questionTypes: QuestionType[] = [
+    {
+      id: "text",
+      label: "Texte court",
+      icon: <AlignLeft className="h-5 w-5" />,
+      description: "Réponse courte d'une ligne"
+    },
+    {
+      id: "textarea",
+      label: "Texte long",
+      icon: <AlignLeft className="h-5 w-5" />,
+      description: "Réponse sur plusieurs lignes"
+    },
+    {
+      id: "multipleChoice",
+      label: "Choix multiple",
+      icon: <List className="h-5 w-5" />,
+      description: "Sélection d'une seule option"
+    },
+    {
+      id: "checkboxes",
+      label: "Cases à cocher",
+      icon: <ListChecks className="h-5 w-5" />,
+      description: "Sélection de plusieurs options"
+    },
+    {
+      id: "dropdown",
+      label: "Liste déroulante",
+      icon: <ChevronDown className="h-5 w-5" />,
+      description: "Menu déroulant avec options"
+    },
+    {
+      id: "email",
+      label: "Email",
+      icon: <Mail className="h-5 w-5" />,
+      description: "Adresse email avec validation"
+    },
+    {
+      id: "number",
+      label: "Nombre",
+      icon: <Hash className="h-5 w-5" />,
+      description: "Valeur numérique"
+    },
+    {
+      id: "date",
+      label: "Date",
+      icon: <Calendar className="h-5 w-5" />,
+      description: "Sélection d'une date"
+    },
+    {
+      id: "phone",
+      label: "Téléphone",
+      icon: <Phone className="h-5 w-5" />,
+      description: "Numéro de téléphone"
+    },
+    {
+      id: "url",
+      label: "URL",
+      icon: <Globe className="h-5 w-5" />,
+      description: "Adresse web"
+    }
+  ];
+  
+  const handleAddQuestion = async (type: string) => {
+    if (!formId) return;
+    
+    setIsLoading(true);
+    try {
+      await onAddQuestion(type);
+      toast.success(`Question de type ${type} ajoutée`);
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de la question:", error);
+      toast.error("Impossible d'ajouter la question");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  return (
+    <Card className="p-6 my-8 border-2 border-dashed border-gray-200 hover:border-purple-300 transition-colors">
+      <div className="text-center mb-6">
+        <h3 className="text-lg font-medium mb-2">Ajouter une nouvelle question</h3>
+        <p className="text-gray-500">Choisissez le type de question à ajouter à votre formulaire</p>
+      </div>
+      
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+        {questionTypes.map((type) => (
+          <Button
+            key={type.id}
+            variant="outline"
+            className="h-auto flex flex-col items-center justify-center p-3 hover:bg-purple-50 hover:border-purple-300 transition-colors"
+            onClick={() => handleAddQuestion(type.id)}
+            disabled={isLoading}
+          >
+            <div className="text-purple-500 mb-2">{type.icon}</div>
+            <span className="text-sm font-medium">{type.label}</span>
+            <span className="text-xs text-gray-500 mt-1 hidden md:block">{type.description}</span>
+          </Button>
+        ))}
+      </div>
+      
+      <div className="mt-6 flex justify-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              Plus d'options
+              <ChevronDown className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => handleAddQuestion("text")}>
+              Question avec logique conditionnelle
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAddQuestion("text")}>
+              Grille d'évaluation
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAddQuestion("text")}>
+              Téléchargement de fichier
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </Card>
+  );
+};
+
+export default QuestionCreator;

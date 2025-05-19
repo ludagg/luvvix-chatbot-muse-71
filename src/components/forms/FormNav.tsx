@@ -1,12 +1,7 @@
 
-import { Link } from "react-router-dom";
-import { Card } from "@/components/ui/card";
-import { 
-  FileText, 
-  Settings, 
-  BarChart2
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Edit, MessageSquare, Settings } from "lucide-react";
 
 interface FormNavProps {
   formId?: string;
@@ -14,49 +9,39 @@ interface FormNavProps {
 }
 
 const FormNav = ({ formId, activeTab }: FormNavProps) => {
+  const navigate = useNavigate();
+  
   if (!formId) return null;
   
-  const tabs = [
-    {
-      id: "editor",
-      label: "Modifier",
-      icon: <FileText className="h-5 w-5" />,
-      href: `/forms/edit/${formId}`
-    },
-    {
-      id: "responses",
-      label: "Réponses",
-      icon: <BarChart2 className="h-5 w-5" />,
-      href: `/forms/responses/${formId}`
-    },
-    {
-      id: "settings",
-      label: "Paramètres",
-      icon: <Settings className="h-5 w-5" />,
-      href: `/forms/settings/${formId}`
-    }
-  ];
-  
   return (
-    <Card className="p-1">
-      <div className="flex">
-        {tabs.map((tab) => (
-          <Link
-            key={tab.id}
-            to={tab.href}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-md flex-1 justify-center transition-colors",
-              activeTab === tab.id
-                ? "bg-purple-100 text-purple-700 font-medium"
-                : "text-gray-600 hover:bg-gray-100"
-            )}
-          >
-            {tab.icon}
-            <span>{tab.label}</span>
-          </Link>
-        ))}
+    <div className="border-b mb-4">
+      <div className="flex space-x-1 overflow-x-auto">
+        <Button
+          variant={activeTab === "editor" ? "default" : "ghost"}
+          onClick={() => navigate(`/forms/edit/${formId}`)}
+          className="flex items-center"
+        >
+          <Edit className="h-4 w-4 mr-2" />
+          Créer
+        </Button>
+        <Button
+          variant={activeTab === "responses" ? "default" : "ghost"}
+          onClick={() => navigate(`/forms/responses/${formId}`)}
+          className="flex items-center"
+        >
+          <MessageSquare className="h-4 w-4 mr-2" />
+          Réponses
+        </Button>
+        <Button
+          variant={activeTab === "settings" ? "default" : "ghost"}
+          onClick={() => navigate(`/forms/settings/${formId}`)}
+          className="flex items-center"
+        >
+          <Settings className="h-4 w-4 mr-2" />
+          Paramètres
+        </Button>
       </div>
-    </Card>
+    </div>
   );
 };
 

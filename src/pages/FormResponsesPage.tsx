@@ -10,6 +10,8 @@ const FormResponsesPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
+      {/* Ajout d'un div spacer pour compenser la hauteur de la navbar fixed */}
+      <div className="pt-20"></div>
       <main className="flex-grow">
         <FormResponsesView formId={formId} />
       </main>

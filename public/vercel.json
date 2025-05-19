@@ -2,6 +2,14 @@
 {
   "rewrites": [
     {
+      "source": "/auth/:path*",
+      "destination": "/auth"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://luvvix-id.com/api/:path*"
+    },
+    {
       "source": "/ai/:path*",
       "destination": "https://luvvi-ai.vercel.app/:path*"
     },
@@ -12,6 +20,21 @@
     {
       "source": "/streammix/:path*",
       "destination": "https://luvvi-streammix.vercel.app/:path*"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*.luvvix.it.com"
+        }
+      ]
     }
   ]
 }

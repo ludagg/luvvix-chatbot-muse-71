@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
+import { useCrossAppAuth } from '@/hooks/use-cross-app-auth';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -12,13 +13,17 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const { isAuthenticated, isInitialized } = useCrossAppAuth({ 
+    appName: 'main', 
+    autoInit: true 
+  });
 
   useEffect(() => {
     // Set a flag once the initial auth check is complete
-    if (!loading) {
+    if (!loading && isInitialized) {
       setInitialCheckDone(true);
     }
-  }, [loading]);
+  }, [loading, isInitialized]);
 
   // Show loading indicator during initial auth check
   if (loading || !initialCheckDone) {
@@ -31,7 +36,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   // Redirect to login if not authenticated, passing the current path as return_to
-  if (!user) {
+  if (!user && !isAuthenticated) {
     // Include both pathname and search params in the return URL
     const fullPath = `${location.pathname}${location.search}`;
     const returnPath = encodeURIComponent(fullPath);

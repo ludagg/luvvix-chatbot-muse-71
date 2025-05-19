@@ -37,23 +37,23 @@ const Navbar = () => {
     <nav className={navbarClasses}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
-          <a href="https://luvvix.it.com/" className="flex items-center">
+          <a href="/" className="flex items-center">
             <span className="text-2xl font-bold text-white">LuvviX</span>
           </a>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
             <div className="flex items-center space-x-6">
-              <a href="https://luvvix.it.com#ecosystem" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+              <a href="#ecosystem" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
                 Écosystème
               </a>
-              <a href="https://luvvix.it.com#products" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+              <a href="#products" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
                 Produits
               </a>
-              <a href="https://luvvix.it.com#developers" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+              <a href="#developers" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
                 Développeurs
               </a>
-              <Link to="https://luvvix.it.com/news" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
+              <Link to="/news" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
                 <Newspaper className="w-4 h-4 mr-1" />
                 News
               </Link>
@@ -118,13 +118,13 @@ const Navbar = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden pt-4 pb-3 animate-fade-in bg-[#1A1F2C] mt-4 rounded-lg">
             <div className="flex flex-col space-y-4 p-4">
-              <a href="https://luvvix.it.com#ecosystem" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+              <a href="#ecosystem" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
                 Écosystème
               </a>
-              <a href="https://luvvix.it.com#products" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+              <a href="#products" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
                 Produits
               </a>
-              <a href="https://luvvix.it.com#developers" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+              <a href="#developers" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
                 Développeurs
               </a>
               <Link to="/news" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">

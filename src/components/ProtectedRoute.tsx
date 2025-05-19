@@ -3,9 +3,6 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
-import { useCrossAppAuth } from '@/hooks/use-cross-app-auth';
-import authSync from '@/services/auth-sync';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -15,62 +12,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const [initialCheckDone, setInitialCheckDone] = useState(false);
-  const [crossDomainChecked, setCrossDomainChecked] = useState(false);
-  const [directCheckDone, setDirectCheckDone] = useState(false);
-  const { isAuthenticated, isInitialized, revalidateAuth } = useCrossAppAuth({ 
-    appName: 'main', 
-    autoInit: true,
-    checkSubdomainAuth: true
-  });
 
-  // Direct check with Supabase
   useEffect(() => {
-    const checkDirectAuth = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        console.log("ProtectedRoute: Direct Supabase session check:", data.session ? "Session found" : "No session");
-        setDirectCheckDone(true);
-      } catch (error) {
-        console.error("Error during direct session check:", error);
-        setDirectCheckDone(true);
-      }
-    };
-    
-    checkDirectAuth();
-  }, []);
-
-  // Force a sync when the component mounts to ensure cross-domain consistency
-  useEffect(() => {
-    console.log("ProtectedRoute: Forcing auth sync on mount");
-    authSync.forceSync();
-  }, []);
-
-  // Check for authentication across subdomains
-  useEffect(() => {
-    const checkCrossDomainAuth = async () => {
-      if (isInitialized && !user && isAuthenticated) {
-        // We might be authenticated on a subdomain but not on the main domain
-        // Try to revalidate auth
-        console.log("ProtectedRoute: Cross-domain auth check - authenticated on subdomain but not main domain");
-        await revalidateAuth();
-      }
-      setCrossDomainChecked(true);
-    };
-    
-    if (isInitialized) {
-      checkCrossDomainAuth();
-    }
-  }, [isInitialized, isAuthenticated, user, revalidateAuth]);
-
-  // Set a flag once all auth checks are complete
-  useEffect(() => {
-    if (!loading && isInitialized && crossDomainChecked && directCheckDone) {
-      console.log("ProtectedRoute: All auth checks complete");
-      console.log("ProtectedRoute: Main auth user:", user ? "Authenticated" : "Not authenticated");
-      console.log("ProtectedRoute: Cross app auth:", isAuthenticated ? "Authenticated" : "Not authenticated");
+    // Set a flag once the initial auth check is complete
+    if (!loading) {
       setInitialCheckDone(true);
     }
-  }, [loading, isInitialized, crossDomainChecked, directCheckDone, user, isAuthenticated]);
+  }, [loading]);
 
   // Show loading indicator during initial auth check
   if (loading || !initialCheckDone) {
@@ -83,17 +31,9 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   // Redirect to login if not authenticated, passing the current path as return_to
-  if (!user && !isAuthenticated) {
-    // Include both pathname and search params in the return URL
-    const fullPath = `${location.pathname}${location.search}`;
-    const returnPath = encodeURIComponent(fullPath);
-    
-    console.log(`ProtectedRoute: User not authenticated`);
-    console.log(`ProtectedRoute: Current location:`, location);
-    console.log(`ProtectedRoute: Encoded return path: ${returnPath}`);
-    console.log(`ProtectedRoute: Redirecting to: /auth?return_to=${returnPath}`);
-    
-    return <Navigate to={`/auth?return_to=${returnPath}`} replace />;
+  if (!user) {
+    console.log(`Redirecting to auth with return_to: ${location.pathname}`);
+    return <Navigate to={`/auth?return_to=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   // Render children if authenticated

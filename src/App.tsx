@@ -1,14 +1,12 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { DecentralizedStorageProvider } from "@/hooks/use-ipfs";
 import { HelmetProvider } from "react-helmet-async";
-import { useEffect } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -25,7 +23,6 @@ import FormEditorPage from "./pages/FormEditorPage";
 import FormViewPage from "./pages/FormViewPage";
 import FormSettingsPage from "./pages/FormSettingsPage";
 import FormResponsesPage from "./pages/FormResponsesPage";
-import authSync from "./services/auth-sync";
 
 // Configure le client de requête avec des paramètres optimisés
 const queryClient = new QueryClient({
@@ -44,119 +41,77 @@ const queryClient = new QueryClient({
   },
 });
 
-// Initialize auth sync for all domains
-const initializeAuthSync = () => {
-  console.log("Initializing cross-domain auth sync");
-  
-  // Start auth sync immediately
-  authSync.startSync();
-  
-  // Detect subdomain navigation
-  const isSubdomain = window.location.hostname.split('.').length > 2;
-  if (isSubdomain) {
-    console.log(`Running on subdomain: ${window.location.hostname}`);
-    // Force sync immediately on subdomain load
-    setTimeout(() => {
-      authSync.forceSync();
-    }, 500);
-  }
-  
-  // Check cookie support
-  authSync.checkCookieSupport().then(supported => {
-    if (!supported) {
-      console.warn("Cross-domain cookie support may be limited in this browser");
-    } else {
-      console.log("Cross-domain cookie support detected");
-    }
-  });
-  
-  // Return cleanup function
-  return () => {
-    console.log("Stopping auth sync");
-    authSync.stopSync();
-  };
-};
-
-const App = () => {
-  // Start auth sync on app initialization with stronger cross-domain support
-  useEffect(initializeAuthSync, []);
-  
-  return (
-    <QueryClientProvider client={queryClient}>
-      <HelmetProvider>
-        <ThemeProvider defaultTheme="light">
-          <TooltipProvider>
-            <AuthProvider>
-              <DecentralizedStorageProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/api-docs" element={<ApiDocs />} />
-                    <Route path="/auth" element={<AuthPage />} />
-                    <Route path="/news" element={<NewsPage />} />
-                    <Route path="/oauth/authorize" element={
-                      <ProtectedRoute>
-                        <OAuth />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/oauth/test" element={<OAuthTest />} />
-                    <Route path="/dashboard" element={
-                      <ProtectedRoute>
-                        <Dashboard />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/cloud/*" element={
-                      <ProtectedRoute>
-                        <CloudPage />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/admin" element={
-                      <ProtectedRoute>
-                        <AdminPanel />
-                      </ProtectedRoute>
-                    } />
-                    
-                    {/* Routes pour LuvviX Forms */}
-                    <Route path="/forms" element={
-                      <ProtectedRoute>
-                        <FormsPage />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/forms/create" element={
-                      <ProtectedRoute>
-                        <FormEditorPage />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/forms/edit/:formId" element={
-                      <ProtectedRoute>
-                        <FormEditorPage />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/forms/view/:formId" element={<FormViewPage />} />
-                    <Route path="/forms/settings/:formId" element={
-                      <ProtectedRoute>
-                        <FormSettingsPage />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/forms/responses/:formId" element={
-                      <ProtectedRoute>
-                        <FormResponsesPage />
-                      </ProtectedRoute>
-                    } />
-                    
-                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </BrowserRouter>
-              </DecentralizedStorageProvider>
-            </AuthProvider>
-          </TooltipProvider>
-        </ThemeProvider>
-      </HelmetProvider>
-    </QueryClientProvider>
-  );
-};
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <HelmetProvider>
+      <ThemeProvider defaultTheme="light">
+        <TooltipProvider>
+          <AuthProvider>
+            <DecentralizedStorageProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/api-docs" element={<ApiDocs />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/news" element={<NewsPage />} />
+                  <Route path="/oauth/authorize" element={
+                    <ProtectedRoute>
+                      <OAuth />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/oauth/test" element={<OAuthTest />} />
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/cloud/*" element={
+                    <ProtectedRoute>
+                      <CloudPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin" element={
+                    <ProtectedRoute>
+                      <AdminPanel />
+                    </ProtectedRoute>
+                  } />
+                  
+                  {/* Routes pour LuvviX Forms */}
+                  <Route path="/forms" element={<FormsPage />} />
+                  <Route path="/forms/create" element={
+                    <ProtectedRoute>
+                      <FormEditorPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/forms/edit/:formId" element={
+                    <ProtectedRoute>
+                      <FormEditorPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/forms/view/:formId" element={<FormViewPage />} />
+                  <Route path="/forms/settings/:formId" element={
+                    <ProtectedRoute>
+                      <FormSettingsPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/forms/responses/:formId" element={
+                    <ProtectedRoute>
+                      <FormResponsesPage />
+                    </ProtectedRoute>
+                  } />
+                  
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </DecentralizedStorageProvider>
+          </AuthProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </HelmetProvider>
+  </QueryClientProvider>
+);
 
 export default App;

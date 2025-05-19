@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -6,12 +5,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit, Trash } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import FormNav from "@/components/forms/FormNav";
 import QuestionCreator from "@/components/forms/QuestionCreator";
 import QuestionsList from "@/components/forms/QuestionsList";
 import formsService, { FormQuestion } from "@/services/forms-service";
+import { Helmet } from "react-helmet-async";
 
 interface FormEditorProps {
   formId?: string;
@@ -23,6 +23,7 @@ const FormEditor = ({ formId }: FormEditorProps) => {
   const [title, setTitle] = useState("Formulaire sans titre");
   const [description, setDescription] = useState("");
   const [editingQuestion, setEditingQuestion] = useState<string | null>(null);
+  const [formChanged, setFormChanged] = useState(false);
   
   const { data: form, isLoading: formLoading } = useQuery({
     queryKey: ["form", formId],
@@ -40,6 +41,7 @@ const FormEditor = ({ formId }: FormEditorProps) => {
     if (form) {
       setTitle(form.title);
       setDescription(form.description || "");
+      setFormChanged(false);
     }
   }, [form]);
 
@@ -51,6 +53,7 @@ const FormEditor = ({ formId }: FormEditorProps) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["forms"] });
       queryClient.invalidateQueries({ queryKey: ["form", formId] });
+      setFormChanged(false);
       toast.success("Formulaire enregistré avec succès");
     },
   });
@@ -96,10 +99,12 @@ const FormEditor = ({ formId }: FormEditorProps) => {
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTitle(e.target.value);
+    setFormChanged(true);
   };
 
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setDescription(e.target.value);
+    setFormChanged(true);
   };
 
   // Fonction pour empêcher l'envoi du formulaire avec la touche Entrée
@@ -192,6 +197,11 @@ const FormEditor = ({ formId }: FormEditorProps) => {
   };
 
   const isLoading = formLoading || questionsLoading;
+  
+  // Ajout du titre dynamique en fonction du titre du formulaire
+  const pageTitle = formId 
+    ? title ? `Modifier: ${title}` : "Modifier le formulaire"
+    : "Créer un formulaire";
 
   if (isLoading) {
     return (
@@ -207,6 +217,10 @@ const FormEditor = ({ formId }: FormEditorProps) => {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-5xl">
+      <Helmet>
+        <title>{pageTitle} | LuvviX Forms</title>
+      </Helmet>
+      
       {formId && <FormNav formId={formId} activeTab="editor" />}
       
       <div className="mt-6">
@@ -228,7 +242,11 @@ const FormEditor = ({ formId }: FormEditorProps) => {
             />
           </div>
           <div className="flex justify-between items-center mt-4">
-            <Button onClick={handleSave} variant="default">
+            <Button 
+              onClick={handleSave} 
+              variant="default" 
+              disabled={!formChanged && !!formId}
+            >
               Enregistrer
             </Button>
           </div>
@@ -242,7 +260,7 @@ const FormEditor = ({ formId }: FormEditorProps) => {
           {questions.length === 0 ? (
             <Card className="p-10 text-center">
               <p className="text-gray-500 mb-4">Aucune question dans ce formulaire</p>
-              <Button onClick={() => handleAddQuestion()} variant="secondary">
+              <Button onClick={() => handleAddQuestion("text")} variant="secondary">
                 <Plus className="h-4 w-4 mr-2" />
                 Ajouter votre première question
               </Button>

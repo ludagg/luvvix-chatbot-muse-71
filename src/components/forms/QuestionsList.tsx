@@ -1,10 +1,9 @@
-
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit, Trash, Plus, X } from "lucide-react";
+import { Edit, Trash, Plus, X, Save } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { FormQuestion } from "@/services/forms-service";
 
@@ -79,6 +78,25 @@ interface QuestionCardProps {
 }
 
 const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: QuestionCardProps) => {
+  // Ajout de state local pour stocker les modifications temporaires
+  const [localQuestion, setLocalQuestion] = useState<Partial<FormQuestion>>({});
+  const [hasChanges, setHasChanges] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Initialiser le state local lorsque le mode édition est activé
+  useState(() => {
+    if (isEditing) {
+      setLocalQuestion({
+        question_text: question.question_text,
+        description: question.description,
+        question_type: question.question_type,
+        required: question.required,
+        options: question.options,
+      });
+      setHasChanges(false);
+    }
+  });
+
   const questionTypes = [
     { value: "text", label: "Texte court" },
     { value: "textarea", label: "Texte long" },
@@ -91,40 +109,67 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
     { value: "phone", label: "Téléphone" },
     { value: "url", label: "URL" },
   ];
+
+  // Mettre à jour le state local sans envoyer au serveur
+  const handleLocalChange = (field: string, value: any) => {
+    setLocalQuestion(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    setHasChanges(true);
+  };
+  
+  // Mettre à jour le options.choices localement
+  const handleLocalOptionsChange = (choices: string[]) => {
+    setLocalQuestion(prev => ({
+      ...prev,
+      options: { 
+        ...prev.options,
+        choices 
+      }
+    }));
+    setHasChanges(true);
+  };
+
+  // Enregistrer les modifications au serveur
+  const handleSaveChanges = () => {
+    Object.entries(localQuestion).forEach(([field, value]) => {
+      onUpdate(field, value);
+    });
+    setHasChanges(false);
+  };
   
   // Fonction pour ajouter une nouvelle option
   const addOption = () => {
-    const currentChoices = question.options?.choices || [];
-    onUpdate("options", { 
-      ...question.options,
-      choices: [...currentChoices, ""]
-    });
+    const currentChoices = localQuestion.options?.choices || question.options?.choices || [];
+    handleLocalOptionsChange([...currentChoices, ""]);
   };
 
   // Fonction pour supprimer une option
   const removeOption = (indexToRemove: number) => {
-    const newChoices = (question.options?.choices || []).filter((_, i) => i !== indexToRemove);
-    onUpdate("options", { 
-      ...question.options,
-      choices: newChoices
-    });
+    const currentChoices = localQuestion.options?.choices || question.options?.choices || [];
+    const newChoices = currentChoices.filter((_, i) => i !== indexToRemove);
+    handleLocalOptionsChange(newChoices);
   };
 
   // Fonction pour mettre à jour une option spécifique
   const updateOption = (index: number, value: string) => {
-    const newChoices = [...(question.options?.choices || [])];
+    const currentChoices = localQuestion.options?.choices || question.options?.choices || [];
+    const newChoices = [...currentChoices];
     newChoices[index] = value;
-    onUpdate("options", { 
-      ...question.options,
-      choices: newChoices
-    });
+    handleLocalOptionsChange(newChoices);
   };
 
-  // Fonction pour empêcher l'événement par défaut (soumission du formulaire) sur la touche Entrée
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-    }
+  // Récupérer les valeurs à afficher (local s'il y a des modifications, sinon original)
+  const displayQuestion = isEditing ? {
+    ...question,
+    ...localQuestion
+  } : question;
+
+  // Quand on quitte le mode édition, réinitialiser le state local
+  const handleCancelEdit = () => {
+    setHasChanges(false);
+    onEdit();
   };
 
   return (
@@ -132,11 +177,17 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
       <div className="flex justify-between items-start">
         <div className="flex-1">
           {isEditing ? (
-            <div className="space-y-4">
+            <form 
+              ref={formRef} 
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSaveChanges();
+              }}
+            >
               <Input 
-                value={question.question_text} 
-                onChange={(e) => onUpdate("question_text", e.target.value)}
-                onKeyDown={handleKeyDown}
+                value={localQuestion.question_text || question.question_text} 
+                onChange={(e) => handleLocalChange("question_text", e.target.value)}
                 placeholder="Texte de la question" 
                 className="text-lg font-medium w-full"
               />
@@ -144,8 +195,8 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description (optionnelle)</label>
                 <Textarea
-                  value={question.description || ''} 
-                  onChange={(e) => onUpdate("description", e.target.value)}
+                  value={localQuestion.description || question.description || ''} 
+                  onChange={(e) => handleLocalChange("description", e.target.value)}
                   placeholder="Description ou aide pour cette question"
                   className="w-full"
                 />
@@ -155,8 +206,8 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
                 <div className="w-1/2 min-w-[200px]">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Type de question</label>
                   <select 
-                    value={question.question_type} 
-                    onChange={(e) => onUpdate("question_type", e.target.value)}
+                    value={localQuestion.question_type || question.question_type} 
+                    onChange={(e) => handleLocalChange("question_type", e.target.value as FormQuestion["question_type"])}
                     className="w-full p-2 border rounded-md"
                   >
                     {questionTypes.map(type => (
@@ -168,17 +219,17 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
                   <input
                     type="checkbox"
                     id={`required-${question.id}`}
-                    checked={question.required}
-                    onChange={(e) => onUpdate("required", e.target.checked)}
+                    checked={localQuestion.required !== undefined ? localQuestion.required : question.required}
+                    onChange={(e) => handleLocalChange("required", e.target.checked)}
                     className="h-4 w-4 mr-2"
                   />
                   <label htmlFor={`required-${question.id}`}>Obligatoire</label>
                 </div>
               </div>
               
-              {(question.question_type === "multipleChoice" || 
-                question.question_type === "checkboxes" || 
-                question.question_type === "dropdown") && (
+              {(displayQuestion.question_type === "multipleChoice" || 
+                displayQuestion.question_type === "checkboxes" || 
+                displayQuestion.question_type === "dropdown") && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <label className="block text-sm font-medium text-gray-700">Options</label>
@@ -195,7 +246,7 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
                   </div>
                   
                   <div className="space-y-2">
-                    {(question.options?.choices || []).map((choice, index) => (
+                    {(displayQuestion.options?.choices || []).map((choice, index) => (
                       <div key={index} className="flex items-center gap-2">
                         <Input
                           value={choice}
@@ -216,7 +267,7 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
                       </div>
                     ))}
 
-                    {(question.options?.choices || []).length === 0 && (
+                    {(displayQuestion.options?.choices || []).length === 0 && (
                       <div className="text-sm text-gray-500 italic p-2 text-center border border-dashed rounded-md">
                         Aucune option ajoutée
                       </div>
@@ -224,7 +275,26 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
                   </div>
                 </div>
               )}
-            </div>
+              
+              <div className="flex justify-end gap-2 mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelEdit}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  variant="default"
+                  disabled={!hasChanges}
+                  className="flex items-center gap-1"
+                >
+                  <Save className="w-4 h-4" />
+                  Enregistrer
+                </Button>
+              </div>
+            </form>
           ) : (
             <>
               <h3 className="text-lg font-medium">{question.question_text}</h3>
@@ -257,7 +327,7 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
         </div>
         
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={onEdit} title={isEditing ? "Fermer l'éditeur" : "Modifier la question"}>
+          <Button variant="ghost" size="sm" onClick={isEditing ? handleSaveChanges : onEdit} title={isEditing ? "Enregistrer" : "Modifier la question"}>
             <Edit size={18} />
           </Button>
           <Button variant="ghost" size="sm" onClick={onDelete} title="Supprimer la question">

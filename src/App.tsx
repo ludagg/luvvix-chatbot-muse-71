@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { DecentralizedStorageProvider } from "@/hooks/use-ipfs";
+import { HelmetProvider } from "react-helmet-async";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -43,56 +43,58 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="light">
-      <TooltipProvider>
-        <AuthProvider>
-          <DecentralizedStorageProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/api-docs" element={<ApiDocs />} />
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/news" element={<NewsPage />} />
-                <Route path="/oauth/authorize" element={
-                  <ProtectedRoute>
-                    <OAuth />
-                  </ProtectedRoute>
-                } />
-                <Route path="/oauth/test" element={<OAuthTest />} />
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/cloud/*" element={
-                  <ProtectedRoute>
-                    <CloudPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin" element={
-                  <ProtectedRoute>
-                    <AdminPanel />
-                  </ProtectedRoute>
-                } />
-                
-                {/* Routes pour LuvviX Forms */}
-                <Route path="/forms" element={<FormsPage />} />
-                <Route path="/forms/create" element={<FormEditorPage />} />
-                <Route path="/forms/edit/:formId" element={<FormEditorPage />} />
-                <Route path="/forms/view/:formId" element={<FormViewPage />} />
-                <Route path="/forms/settings/:formId" element={<FormSettingsPage />} />
-                <Route path="/forms/responses/:formId" element={<FormResponsesPage />} />
-                
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </DecentralizedStorageProvider>
-        </AuthProvider>
-      </TooltipProvider>
-    </ThemeProvider>
+    <HelmetProvider>
+      <ThemeProvider defaultTheme="light">
+        <TooltipProvider>
+          <AuthProvider>
+            <DecentralizedStorageProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/api-docs" element={<ApiDocs />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/news" element={<NewsPage />} />
+                  <Route path="/oauth/authorize" element={
+                    <ProtectedRoute>
+                      <OAuth />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/oauth/test" element={<OAuthTest />} />
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/cloud/*" element={
+                    <ProtectedRoute>
+                      <CloudPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin" element={
+                    <ProtectedRoute>
+                      <AdminPanel />
+                    </ProtectedRoute>
+                  } />
+                  
+                  {/* Routes pour LuvviX Forms */}
+                  <Route path="/forms" element={<FormsPage />} />
+                  <Route path="/forms/create" element={<FormEditorPage />} />
+                  <Route path="/forms/edit/:formId" element={<FormEditorPage />} />
+                  <Route path="/forms/view/:formId" element={<FormViewPage />} />
+                  <Route path="/forms/settings/:formId" element={<FormSettingsPage />} />
+                  <Route path="/forms/responses/:formId" element={<FormResponsesPage />} />
+                  
+                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </DecentralizedStorageProvider>
+          </AuthProvider>
+        </TooltipProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   </QueryClientProvider>
 );
 

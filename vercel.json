@@ -50,6 +50,10 @@
         {
           "key": "Access-Control-Allow-Origin",
           "value": "*.luvvix.it.com"
+        },
+        {
+          "key": "Set-Cookie",
+          "value": "Path=/; Domain=.luvvix.it.com; SameSite=Strict; Secure"
         }
       ]
     }

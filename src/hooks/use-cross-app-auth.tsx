@@ -2,11 +2,13 @@
 import { useEffect, useState } from 'react';
 import authService from '@/utils/auth-service';
 import { useToast } from '@/hooks/use-toast';
+import authSync from '@/services/auth-sync';
 
 interface CrossAppAuthOptions {
   appName: 'main' | 'pharmacy' | 'streaming' | 'chat';
   redirectUrl?: string;
   autoInit?: boolean;
+  checkSubdomainAuth?: boolean;
 }
 
 interface CrossAppAuthResult {
@@ -17,10 +19,11 @@ interface CrossAppAuthResult {
   logout: () => void;
   globalLogout: () => void;
   getAppToken: () => Promise<string | null>;
+  revalidateAuth: () => Promise<boolean>;
 }
 
 /**
- * Hook pour gérer l'authentification entre applications LuvviX
+ * Hook pour gérer l'authentification entre applications LuvviX et sous-domaines
  * Permet de partager l'état d'authentification entre différentes applications
  */
 export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResult => {
@@ -40,16 +43,28 @@ export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResul
       });
       
       // Vérifier l'état d'authentification initial
-      authService.isAuthenticated().then(authenticated => {
-        setIsAuthenticated(authenticated);
-        setIsInitialized(true);
-        
-        if (authenticated) {
-          authService.getUserProfile().then(profile => {
+      const checkAuth = async () => {
+        try {
+          // First check Supabase auth directly
+          const authenticated = await authService.isAuthenticated();
+          setIsAuthenticated(authenticated);
+          
+          if (authenticated) {
+            const profile = await authService.getUserProfile();
             setUser(profile);
-          });
+          }
+          
+          // Then force a sync to ensure cross-domain consistency
+          authSync.forceSync();
+          
+          setIsInitialized(true);
+        } catch (error) {
+          console.error('Error during auth initialization:', error);
+          setIsInitialized(true);
         }
-      });
+      };
+      
+      checkAuth();
       
       // Ajouter un écouteur pour les changements d'authentification
       const authListener = (authenticated: boolean) => {
@@ -58,9 +73,13 @@ export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResul
         if (authenticated) {
           authService.getUserProfile().then(profile => {
             setUser(profile);
+            // Force sync after authentication change
+            authSync.forceSync();
           });
         } else {
           setUser(null);
+          // Force sync after authentication change
+          authSync.forceSync();
         }
       };
       
@@ -90,6 +109,9 @@ export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResul
           
           setIsAuthenticated(true);
           setUser(result.user);
+          
+          // Force sync after authentication
+          authSync.forceSync();
           
           toast({
             title: "Connexion réussie",
@@ -123,6 +145,9 @@ export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResul
     setIsAuthenticated(false);
     setUser(null);
     
+    // Force sync after logout
+    authSync.forceSync();
+    
     toast({
       title: "Déconnexion réussie",
       description: "Vous avez été déconnecté avec succès.",
@@ -134,11 +159,37 @@ export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResul
     authService.globalLogout();
     setIsAuthenticated(false);
     setUser(null);
+    
+    // Force sync after global logout
+    authSync.forceSync();
   };
   
   // Fonction pour obtenir un token d'application
   const getAppToken = async () => {
     return await authService.getAppToken();
+  };
+  
+  // Fonction pour forcer une revérification de l'authentification
+  const revalidateAuth = async (): Promise<boolean> => {
+    try {
+      const authenticated = await authService.isAuthenticated();
+      setIsAuthenticated(authenticated);
+      
+      if (authenticated && !user) {
+        const profile = await authService.getUserProfile();
+        setUser(profile);
+      } else if (!authenticated && user) {
+        setUser(null);
+      }
+      
+      // Force sync after revalidation
+      authSync.forceSync();
+      
+      return authenticated;
+    } catch (error) {
+      console.error('Error revalidating authentication:', error);
+      return false;
+    }
   };
   
   return {
@@ -148,7 +199,8 @@ export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResul
     login,
     logout,
     globalLogout,
-    getAppToken
+    getAppToken,
+    revalidateAuth
   };
 };
 

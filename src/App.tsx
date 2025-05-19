@@ -46,12 +46,39 @@ const queryClient = new QueryClient({
 
 // Initialize auth sync for all domains
 const initializeAuthSync = () => {
+  console.log("Initializing cross-domain auth sync");
+  
+  // Start auth sync immediately
   authSync.startSync();
-  return () => authSync.stopSync();
+  
+  // Detect subdomain navigation
+  const isSubdomain = window.location.hostname.split('.').length > 2;
+  if (isSubdomain) {
+    console.log(`Running on subdomain: ${window.location.hostname}`);
+    // Force sync immediately on subdomain load
+    setTimeout(() => {
+      authSync.forceSync();
+    }, 500);
+  }
+  
+  // Check cookie support
+  AuthSync.checkCookieSupport().then(supported => {
+    if (!supported) {
+      console.warn("Cross-domain cookie support may be limited in this browser");
+    } else {
+      console.log("Cross-domain cookie support detected");
+    }
+  });
+  
+  // Return cleanup function
+  return () => {
+    console.log("Stopping auth sync");
+    authSync.stopSync();
+  };
 };
 
 const App = () => {
-  // Start auth sync on app initialization
+  // Start auth sync on app initialization with stronger cross-domain support
   useEffect(initializeAuthSync, []);
   
   return (

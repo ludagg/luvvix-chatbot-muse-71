@@ -11,6 +11,7 @@ import Testimonials from "@/components/Testimonials";
 import Footer from "@/components/Footer";
 import NewsPreview from "@/components/news/NewsPreview";
 import WeatherWidget from "@/components/weather/WeatherWidget";
+import FormsPromo from "@/components/forms/FormsPromo";
 
 const Index = () => {
   return (
@@ -21,6 +22,7 @@ const Index = () => {
       <Navbar />
       <Hero />
       <Ecosystem />
+      <FormsPromo />
       <NewsPreview />
       <Authentication />
       <ProductDemos />

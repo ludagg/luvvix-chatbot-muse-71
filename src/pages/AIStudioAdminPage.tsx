@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +35,16 @@ import {
   RefreshCw,
 } from "lucide-react";
 
+// Define the interface for the config object to include the id property
+interface AdminConfig {
+  id?: string; // Make id optional since it might not exist for new configs
+  endpoint_url: string;
+  api_key: string;
+  model_name: string;
+  quota_per_user: number;
+  max_tokens: number;
+}
+
 const AIStudioAdminPage = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
@@ -44,7 +55,8 @@ const AIStudioAdminPage = () => {
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   
-  const [config, setConfig] = useState({
+  // Update the state type to use our AdminConfig interface
+  const [config, setConfig] = useState<AdminConfig>({
     endpoint_url: "",
     api_key: "",
     model_name: "",
@@ -192,7 +204,7 @@ const AIStudioAdminPage = () => {
             quota_per_user: config.quota_per_user,
             max_tokens: config.max_tokens
           })
-          .eq("id", config.id || ''); // Handle the case when id might be undefined
+          .eq("id", config.id || ''); // Now TypeScript knows id is allowed
           
         if (error) throw error;
       } else {

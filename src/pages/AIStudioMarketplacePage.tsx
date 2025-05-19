@@ -92,6 +92,7 @@ const AIStudioMarketplacePage = () => {
   });
 
   return (
+      <div className="pt-24 flex-1">
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
@@ -227,7 +228,7 @@ const AIStudioMarketplacePage = () => {
       </main>
       
       <Footer />
-    </div>
+    </div></div>
   );
 };
 

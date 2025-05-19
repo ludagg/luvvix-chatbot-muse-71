@@ -13,13 +13,15 @@ import NewsPreview from "@/components/news/NewsPreview";
 import WeatherWidget from "@/components/weather/WeatherWidget";
 import FormsPromo from "@/components/forms/FormsPromo";
 import CeoSection from "@/components/CeoSection";
+import AIStudioPromo from "@/components/ai-studio/AIStudioPromo";
 
 const Index = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
-  
+      <div className="pt-24">
         <Hero />
+        <AIStudioPromo />
         <Ecosystem />
         <FormsPromo />
         <NewsPreview />
@@ -30,8 +32,8 @@ const Index = () => {
         <CeoSection />
         <Careers />
         <Testimonials />
-        <Footer />
-      
+      </div>
+      <Footer />
     </div>
   );
 };

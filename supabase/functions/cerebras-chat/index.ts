@@ -13,8 +13,70 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Cache system for improved performance
+const agentCache = new Map();
+const contextCache = new Map();
+const CACHE_TTL = 1800000; // 30 minutes
+
+function getCachedAgent(id) {
+  const cachedData = agentCache.get(id);
+  if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_TTL) {
+    return cachedData.agent;
+  }
+  return null;
+}
+
+function setCachedAgent(id, agent) {
+  agentCache.set(id, {
+    timestamp: Date.now(),
+    agent
+  });
+}
+
+function getCachedContext(id) {
+  const cachedData = contextCache.get(id);
+  if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_TTL) {
+    return cachedData.context;
+  }
+  return null;
+}
+
+function setCachedContext(id, context) {
+  contextCache.set(id, {
+    timestamp: Date.now(),
+    context
+  });
+}
+
+// Function to analyze token usage and track quotas
+async function trackUsage(userId, agentId, tokens) {
+  try {
+    // Get the admin configuration for quotas
+    const { data: config } = await supabase
+      .from('ai_admin_config')
+      .select('quota_per_user')
+      .limit(1)
+      .maybeSingle();
+      
+    const quotaPerUser = config?.quota_per_user || 100;
+    
+    // If it's a registered user, check and update their quota
+    if (userId) {
+      // TODO: Implement usage tracking and quota management
+      // This would typically update a user_ai_usage table
+    }
+    
+    // Log usage for analytics regardless of user status
+    console.log(`Usage - ${userId || 'Guest'} used ${tokens} tokens with agent ${agentId}`);
+    
+  } catch (error) {
+    console.error('Error tracking usage:', error);
+    // Don't throw - just log and continue
+  }
+}
+
 serve(async (req) => {
-  // Handle CORS
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -34,20 +96,36 @@ serve(async (req) => {
     let finalSystemPrompt = systemPrompt;
     let finalConversation = conversation || [];
     let finalConversationId = conversationId;
+    let userId = null;
+    let contextContent = "";
     
     // Si un agentId est fourni, rechercher le prompt système associé dans la base de données
     if (agentId) {
-      const { data: agent, error } = await supabase
-        .from('ai_agents')
-        .select('system_prompt, name, objective, personality')
-        .eq('id', agentId)
-        .single();
+      // Check if we have the agent in cache
+      let agent = getCachedAgent(agentId);
+      
+      // If not in cache, fetch from database
+      if (!agent) {
+        const { data, error } = await supabase
+          .from('ai_agents')
+          .select('system_prompt, name, objective, personality, user_id')
+          .eq('id', agentId)
+          .single();
 
-      if (error) {
-        throw new Error(`Erreur lors de la récupération de l'agent: ${error.message}`);
+        if (error) {
+          throw new Error(`Erreur lors de la récupération de l'agent: ${error.message}`);
+        }
+
+        if (data) {
+          agent = data;
+          setCachedAgent(agentId, agent);
+        }
       }
 
       if (agent) {
+        // Store user ID for usage tracking
+        userId = agent.user_id;
+        
         // Construire le prompt système basé sur les attributs de l'agent
         finalSystemPrompt = agent.system_prompt || `Tu es ${agent.name}, `;
         
@@ -55,7 +133,22 @@ serve(async (req) => {
           finalSystemPrompt = `Tu es ${agent.name}, `;
           
           if (agent.personality) {
-            finalSystemPrompt += `avec une personnalité ${agent.personality}. `;
+            switch (agent.personality) {
+              case 'expert':
+                finalSystemPrompt += `un expert formel et précis dans ton domaine. `;
+                break;
+              case 'friendly':
+                finalSystemPrompt += `avec une personnalité chaleureuse et décontractée. `;
+                break;
+              case 'concise':
+                finalSystemPrompt += `avec un style direct et efficace. `;
+                break;
+              case 'empathetic':
+                finalSystemPrompt += `avec une approche empathique et compréhensive. `;
+                break;
+              default:
+                finalSystemPrompt += `avec une personnalité ${agent.personality}. `;
+            }
           }
           
           if (agent.objective) {
@@ -63,11 +156,47 @@ serve(async (req) => {
           }
         }
         
-        // Incrémenter le compteur de vues pour cet agent
-        await supabase.rpc('increment_agent_views', { agent_id: agentId });
+        // Check for context in cache first
+        let contextData = getCachedContext(agentId);
+        
+        if (!contextData) {
+          // Récupérer le contexte de l'agent depuis la base de données
+          const { data: fetchedContextData, error: contextError } = await supabase
+            .from('ai_agent_context')
+            .select('content_type, content, url')
+            .eq('agent_id', agentId);
+            
+          if (!contextError && fetchedContextData && fetchedContextData.length > 0) {
+            contextData = fetchedContextData;
+            setCachedContext(agentId, contextData);
+          }
+        }
+        
+        // Ajouter le contenu du contexte au prompt système
+        if (contextData && contextData.length > 0) {
+          contextContent = "\n\nVoici des informations supplémentaires à connaître:\n\n";
+          
+          for (const ctx of contextData) {
+            if (ctx.content_type === "text" && ctx.content) {
+              contextContent += ctx.content + "\n\n";
+            } else if (ctx.content_type === "url" && ctx.url) {
+              contextContent += `Information provenant de: ${ctx.url}\n\n`;
+            }
+          }
+        }
+        
+        // Incrémenter le compteur de vues pour cet agent s'il n'est pas intégré
+        if (!embedded) {
+          try {
+            await supabase.rpc('increment_agent_views', { agent_id: agentId });
+          } catch (error) {
+            console.error('Failed to increment views:', error);
+            // Non-critical, continue execution
+          }
+        }
         
         // Si c'est une session intégrée, gérer la conversation
-        if (embedded && sessionId) {
+        if (sessionId) {
           // Vérifier si une conversation existe déjà pour cette session
           if (conversationId) {
             // Récupérer les messages existants
@@ -87,7 +216,8 @@ serve(async (req) => {
               .insert({
                 agent_id: agentId,
                 is_guest: true,
-                session_id: sessionId
+                session_id: sessionId,
+                user_id: userId
               })
               .select()
               .single();
@@ -124,9 +254,16 @@ serve(async (req) => {
     
     // Ajouter le message système s'il existe
     if (finalSystemPrompt) {
+      let fullPrompt = finalSystemPrompt;
+      
+      // Ajouter le contexte au prompt système s'il existe
+      if (contextContent) {
+        fullPrompt += contextContent;
+      }
+      
       messages.push({
         role: 'system',
-        content: finalSystemPrompt
+        content: fullPrompt
       });
     }
     
@@ -137,6 +274,14 @@ serve(async (req) => {
         content: msg.content
       });
     });
+    
+    // Si le message n'est pas dans finalConversation (cas où il n'y a pas de conversationId)
+    if (message && !finalConversation.some(msg => msg.role === 'user' && msg.content === message)) {
+      messages.push({
+        role: 'user',
+        content: message
+      });
+    }
 
     // Appeler l'API Cerebras
     const response = await fetch(endpoint, {
@@ -163,8 +308,13 @@ serve(async (req) => {
     const data = await response.json();
     const assistantReply = data.choices[0].message.content;
     
+    // Track token usage
+    if (data.usage) {
+      trackUsage(userId, agentId, data.usage.total_tokens || 0);
+    }
+    
     // Si c'est une conversation intégrée avec un ID, sauvegarder la réponse
-    if (embedded && finalConversationId) {
+    if (finalConversationId) {
       await supabase
         .from('ai_messages')
         .insert({

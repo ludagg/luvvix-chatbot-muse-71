@@ -22,7 +22,15 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Récupérer les données envoyées dans la requête
-    const { endpoint_url, api_key, model_name, provider, embed_enabled = true } = await req.json();
+    const { 
+      endpoint_url, 
+      api_key, 
+      model_name, 
+      provider, 
+      embed_enabled = true, 
+      quota_per_user = 100,
+      max_tokens = 2000
+    } = await req.json();
     
     // Si aucune clé API n'est fournie, utiliser celle qui existe déjà
     let finalApiKey = api_key;
@@ -104,12 +112,55 @@ serve(async (req) => {
     if (embedEnabledError) {
       throw new Error(`Erreur lors de la configuration du secret EMBED_ENABLED: ${embedEnabledError.message}`);
     }
+    
+    // Mettre à jour ou insérer la configuration dans la table ai_admin_config
+    const { data: existingConfig } = await supabase
+      .from('ai_admin_config')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+      
+    if (existingConfig) {
+      // Mise à jour de la configuration existante
+      const { error: updateError } = await supabase
+        .from('ai_admin_config')
+        .update({
+          endpoint_url: endpoint_url || null,
+          api_key: finalApiKey,
+          model_name: model_name || 'cerebras/Cerebras-GPT-4.5-8B-Base',
+          quota_per_user: quota_per_user,
+          max_tokens: max_tokens,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingConfig.id);
+        
+      if (updateError) {
+        throw new Error(`Erreur lors de la mise à jour de la configuration: ${updateError.message}`);
+      }
+    } else {
+      // Création d'une nouvelle configuration
+      const { error: insertError } = await supabase
+        .from('ai_admin_config')
+        .insert({
+          endpoint_url: endpoint_url || null,
+          api_key: finalApiKey,
+          model_name: model_name || 'cerebras/Cerebras-GPT-4.5-8B-Base',
+          quota_per_user: quota_per_user,
+          max_tokens: max_tokens
+        });
+        
+      if (insertError) {
+        throw new Error(`Erreur lors de la création de la configuration: ${insertError.message}`);
+      }
+    }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: 'Configuration Cerebras sauvegardée avec succès',
-        embed_enabled: embed_enabled
+        embed_enabled: embed_enabled,
+        quota_per_user: quota_per_user,
+        max_tokens: max_tokens
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

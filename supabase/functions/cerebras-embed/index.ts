@@ -7,13 +7,48 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Content-Security-Policy': "frame-ancestors 'self' *.luvvix.it.com luvvix.it.com"
+  'Content-Security-Policy': "frame-ancestors 'self' *"
 };
 
 // Create a Supabase client
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Cache system for improved performance
+const agentCache = new Map();
+const responseCache = new Map();
+const CACHE_TTL = 1800000; // 30 minutes
+
+function getCachedAgent(id) {
+  const cachedData = agentCache.get(id);
+  if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_TTL) {
+    return cachedData.agent;
+  }
+  return null;
+}
+
+function setCachedAgent(id, agent) {
+  agentCache.set(id, {
+    timestamp: Date.now(),
+    agent
+  });
+}
+
+function getCachedResponse(key) {
+  const cachedData = responseCache.get(key);
+  if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_TTL) {
+    return cachedData.response;
+  }
+  return null;
+}
+
+function setCachedResponse(key, response) {
+  responseCache.set(key, {
+    timestamp: Date.now(),
+    response
+  });
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -25,28 +60,63 @@ serve(async (req) => {
     const url = new URL(req.url);
     const agentId = url.searchParams.get('agentId');
     
+    // Get URL parameters for customization
+    const theme = url.searchParams.get('theme') || 'light'; // light or dark
+    const accentColor = url.searchParams.get('accentColor') || '#6366f1'; // Hex color
+    const hideCredit = url.searchParams.get('hideCredit') === 'true';
+    const startMessage = url.searchParams.get('startMessage') || '';
+    
     // For GET requests, send the HTML for embedding the agent
     if (req.method === 'GET') {
       if (!agentId) {
         throw new Error('Agent ID non spécifié');
       }
 
-      // Check if agent exists and is public
-      const { data: agent, error } = await supabase
-        .from('ai_agents')
-        .select('id, name, avatar_style, is_public, slug')
-        .eq('id', agentId)
-        .single();
+      // Check if agent is in cache
+      let agent = getCachedAgent(agentId);
+      
+      // If not in cache, fetch from database
+      if (!agent) {
+        // Check if agent exists and is public
+        const { data, error } = await supabase
+          .from('ai_agents')
+          .select('id, name, avatar_style, is_public, slug, objective')
+          .eq('id', agentId)
+          .single();
 
-      if (error || !agent) {
-        throw new Error('Agent non trouvé');
-      }
+        if (error || !data) {
+          throw new Error('Agent non trouvé');
+        }
 
-      if (!agent.is_public) {
-        throw new Error('Cet agent n\'est pas disponible pour l\'intégration');
+        if (!data.is_public) {
+          throw new Error('Cet agent n\'est pas disponible pour l\'intégration');
+        }
+        
+        agent = data;
+        setCachedAgent(agentId, agent);
+        
+        // Increment view counter
+        await supabase.rpc('increment_agent_views', { agent_id: agentId });
       }
 
       // Generate embed HTML with appropriate CORS settings
+      // Create color variants based on the accent color
+      const accentHexColor = accentColor.replace('#', '');
+      const primaryColor = accentColor;
+      const primaryLightColor = `#${accentHexColor}20`; // 20% opacity version
+      const primaryDarkColor = `#${accentHexColor}`;
+      
+      // Theme-specific styles
+      const isDark = theme === 'dark';
+      const bgColor = isDark ? '#1a1f2c' : 'white';
+      const textColor = isDark ? 'white' : '#1a1f2c';
+      const borderColor = isDark ? '#ffffff20' : '#e5e7eb';
+      const inputBgColor = isDark ? '#ffffff10' : '#f9fafb';
+      const messageBgUser = primaryColor;
+      const messageBgBot = isDark ? '#374151' : '#f3f4f6';
+      const messageColorUser = '#ffffff';
+      const messageColorBot = isDark ? '#e5e7eb' : '#1f2937';
+
       const html = `
         <!DOCTYPE html>
         <html lang="fr">
@@ -70,11 +140,12 @@ serve(async (req) => {
               border-radius: 8px;
               overflow: hidden;
               box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-              background: white;
+              background: ${bgColor};
+              color: ${textColor};
             }
             .chat-header {
               padding: 12px 16px;
-              background: #1A1F2C;
+              background: ${isDark ? '#1A1F2C' : primaryColor};
               color: white;
               display: flex;
               align-items: center;
@@ -83,12 +154,12 @@ serve(async (req) => {
               width: 32px;
               height: 32px;
               border-radius: 50%;
-              background: #6366f1;
+              background: ${primaryLightColor};
+              color: ${primaryColor};
               display: flex;
               align-items: center;
               justify-content: center;
               margin-right: 12px;
-              color: white;
               font-weight: bold;
             }
             .messages {
@@ -102,59 +173,81 @@ serve(async (req) => {
             .input-area {
               display: flex;
               padding: 12px;
-              border-top: 1px solid #e5e7eb;
+              border-top: 1px solid ${borderColor};
+              background: ${bgColor};
             }
             input {
               flex-grow: 1;
               padding: 8px 12px;
-              border: 1px solid #d1d5db;
+              border: 1px solid ${borderColor};
               border-radius: 4px;
               margin-right: 8px;
+              background: ${inputBgColor};
+              color: ${textColor};
             }
             button {
-              background: #6366f1;
+              background: ${primaryColor};
               color: white;
               border: none;
               border-radius: 4px;
               padding: 8px 16px;
               cursor: pointer;
             }
+            button:hover {
+              opacity: 0.9;
+            }
+            button:disabled {
+              opacity: 0.6;
+              cursor: not-allowed;
+            }
             .message {
               max-width: 85%;
               padding: 10px 14px;
               border-radius: 18px;
               line-height: 1.4;
+              white-space: pre-wrap;
             }
             .bot {
               align-self: flex-start;
-              background: #f3f4f6;
+              background: ${messageBgBot};
+              color: ${messageColorBot};
               border-top-left-radius: 4px;
             }
             .user {
               align-self: flex-end;
-              background: #6366f1;
-              color: white;
+              background: ${messageBgUser};
+              color: ${messageColorUser};
               border-top-right-radius: 4px;
             }
             .credit {
+              ${hideCredit ? 'display: none;' : ''}
               font-size: 10px;
               text-align: center;
               margin-top: 4px;
               color: #9ca3af;
             }
             .credit a {
-              color: #6366f1;
+              color: ${primaryColor};
               text-decoration: none;
             }
             .loader {
               display: inline-block;
               width: 20px;
               height: 20px;
-              border: 2px solid #f3f4f6;
+              border: 2px solid ${isDark ? '#374151' : '#f3f4f6'};
               border-radius: 50%;
-              border-top-color: #6366f1;
+              border-top-color: ${primaryColor};
               animation: spin 1s linear infinite;
               margin-right: 8px;
+            }
+            .agent-description {
+              font-size: 12px;
+              opacity: 0.8;
+              margin-top: 2px;
+              max-width: 200px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
             }
             @keyframes spin {
               to { transform: rotate(360deg); }
@@ -162,16 +255,38 @@ serve(async (req) => {
             .hidden {
               display: none;
             }
+            .markdown-content code {
+              background: ${isDark ? '#1f2937' : '#f1f5f9'};
+              padding: 2px 4px;
+              border-radius: 4px;
+              font-family: monospace;
+            }
+            .markdown-content pre {
+              background: ${isDark ? '#1f2937' : '#f1f5f9'};
+              padding: 8px;
+              border-radius: 4px;
+              overflow-x: auto;
+            }
+            .markdown-content a {
+              color: ${primaryColor};
+              text-decoration: underline;
+            }
+            .markdown-content ul, .markdown-content ol {
+              padding-left: 20px;
+            }
           </style>
         </head>
         <body>
           <div class="chat-container">
             <div class="chat-header">
               <div class="avatar">${agent.name.charAt(0)}</div>
-              <div>${agent.name}</div>
+              <div>
+                <div>${agent.name}</div>
+                ${agent.objective ? `<div class="agent-description">${agent.objective}</div>` : ''}
+              </div>
             </div>
             <div class="messages" id="messages">
-              <div class="message bot">Bonjour ! Comment puis-je vous aider aujourd'hui ?</div>
+              <div class="message bot markdown-content">Bonjour ! Comment puis-je vous aider aujourd'hui ?</div>
             </div>
             <div class="input-area">
               <input type="text" id="user-input" placeholder="Posez votre question..." />
@@ -181,6 +296,35 @@ serve(async (req) => {
           <div class="credit">Propulsé par <a href="https://luvvix.it.com/ai-studio" target="_blank">LuvviX AI Studio</a></div>
 
           <script>
+            // Simple markdown-like formatting
+            function formatMarkdown(text) {
+              if (!text) return '';
+              
+              // Code blocks
+              text = text.replace(/\`\`\`([\\s\\S]*?)\`\`\`/g, '<pre><code>$1</code></pre>');
+              
+              // Inline code
+              text = text.replace(/\`([^\`]+)\`/g, '<code>$1</code>');
+              
+              // Bold
+              text = text.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+              
+              // Italic
+              text = text.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
+              
+              // Links
+              text = text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+              
+              // Lists
+              text = text.replace(/^\s*-\s+(.+)/gm, '<li>$1</li>').replace(/(<li>[\\s\\S]*?<\/li>)/g, '<ul>$1</ul>');
+              text = text.replace(/^\s*\\d+\\.\\s+(.+)/gm, '<li>$1</li>').replace(/(<li>[\\s\\S]*?<\/li>)/g, '<ol>$1</ol>');
+              
+              // Paragraphs
+              text = text.replace(/\\n\\n/g, '<br><br>');
+              
+              return text;
+            }
+          
             const messages = document.getElementById('messages');
             const userInput = document.getElementById('user-input');
             const sendButton = document.getElementById('send-btn');
@@ -190,6 +334,16 @@ serve(async (req) => {
             
             let conversationId = null;
             let isLoading = false;
+
+            // Initialize with custom start message if provided
+            ${startMessage ? `
+            window.addEventListener('DOMContentLoaded', () => {
+              if(userInput) {
+                userInput.value = "${startMessage.replace(/"/g, '\\"')}";
+                setTimeout(() => sendMessage(), 500);
+              }
+            });
+            ` : ''}
 
             async function sendMessage() {
               if (isLoading) return;
@@ -205,6 +359,10 @@ serve(async (req) => {
               
               // Clear input
               userInput.value = '';
+              
+              // Disable input and button while loading
+              userInput.disabled = true;
+              sendButton.disabled = true;
               
               // Show loading indicator
               isLoading = true;
@@ -227,7 +385,7 @@ serve(async (req) => {
                 };
                 
                 // Call API
-                const response = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/cerebras-chat', {
+                const response = await fetch('${supabaseUrl}/functions/v1/cerebras-chat', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
@@ -251,8 +409,8 @@ serve(async (req) => {
                 
                 // Add bot response to chat
                 const botMessageElement = document.createElement('div');
-                botMessageElement.className = 'message bot';
-                botMessageElement.textContent = data.reply || data.message;
+                botMessageElement.className = 'message bot markdown-content';
+                botMessageElement.innerHTML = formatMarkdown(data.reply || data.message);
                 messages.appendChild(botMessageElement);
               } catch (error) {
                 console.error('Error sending message:', error);
@@ -269,6 +427,9 @@ serve(async (req) => {
                 messages.appendChild(errorElement);
               } finally {
                 isLoading = false;
+                // Re-enable input and button
+                userInput.disabled = false;
+                sendButton.disabled = false;
                 // Auto scroll to bottom
                 messages.scrollTop = messages.scrollHeight;
               }
@@ -284,11 +445,12 @@ serve(async (req) => {
         </html>
       `;
 
+      // Cache the response for future use
+      const cacheKey = `html_${agentId}_${theme}_${accentColor}_${hideCredit}_${startMessage}`;
+      setCachedResponse(cacheKey, html);
+
       return new Response(html, {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'text/html',
-        }
+        headers: { ...corsHeaders, 'Content-Type': 'text/html' },
       });
     }
     
@@ -300,15 +462,53 @@ serve(async (req) => {
         throw new Error('Agent ID est requis');
       }
 
-      // Récupérer l'agent depuis la base de données
-      const { data: agent, error: agentError } = await supabase
-        .from('ai_agents')
-        .select('*')
-        .eq('id', agentId)
-        .single();
+      // Check if we have a cached agent
+      let agent = getCachedAgent(agentId);
+      
+      // If not in cache, fetch from database
+      if (!agent) {
+        const { data: agentData, error: agentError } = await supabase
+          .from('ai_agents')
+          .select('*')
+          .eq('id', agentId)
+          .single();
 
-      if (agentError || !agent) {
-        throw new Error('Agent non trouvé');
+        if (agentError || !agentData) {
+          throw new Error('Agent non trouvé');
+        }
+        
+        agent = agentData;
+        setCachedAgent(agentId, agent);
+      }
+
+      // Construire le prompt système
+      let systemPrompt = agent.system_prompt;
+      
+      if (!systemPrompt) {
+        systemPrompt = `Tu es ${agent.name}, `;
+        
+        if (agent.personality) {
+          switch (agent.personality) {
+            case 'expert':
+              systemPrompt += `un expert formel et précis dans ton domaine. `;
+              break;
+            case 'friendly':
+              systemPrompt += `avec une personnalité chaleureuse et décontractée. `;
+              break;
+            case 'concise':
+              systemPrompt += `avec un style direct et efficace. `;
+              break;
+            case 'empathetic':
+              systemPrompt += `avec une approche empathique et compréhensive. `;
+              break;
+            default:
+              systemPrompt += `avec une personnalité ${agent.personality}. `;
+          }
+        }
+        
+        if (agent.objective) {
+          systemPrompt += `Ton objectif est ${agent.objective}.`;
+        }
       }
 
       // Récupérer la clé API Cerebras et la configuration depuis les secrets
@@ -319,16 +519,30 @@ serve(async (req) => {
       if (!cerebrasApiKey) {
         throw new Error('Clé API Cerebras non configurée');
       }
-
-      // Construire le prompt système
-      let systemPrompt = `Tu es ${agent.name}, `;
       
-      if (agent.personality) {
-        systemPrompt += `avec une personnalité ${agent.personality}. `;
+      // Récupérer le contexte de l'agent depuis la base de données
+      let contextContent = "";
+      const { data: contextData, error: contextError } = await supabase
+        .from('ai_agent_context')
+        .select('content_type, content, url')
+        .eq('agent_id', agentId);
+        
+      if (!contextError && contextData && contextData.length > 0) {
+        // Ajouter le contenu du contexte au prompt système
+        contextContent = "\n\nVoici des informations supplémentaires à connaître:\n\n";
+        
+        for (const ctx of contextData) {
+          if (ctx.content_type === "text" && ctx.content) {
+            contextContent += ctx.content + "\n\n";
+          } else if (ctx.content_type === "url" && ctx.url) {
+            contextContent += `Information provenant de: ${ctx.url}\n\n`;
+          }
+        }
       }
       
-      if (agent.objective) {
-        systemPrompt += `Ton objectif est ${agent.objective}.`;
+      // Ajouter le contexte au prompt système s'il existe
+      if (contextContent) {
+        systemPrompt += contextContent;
       }
 
       // Construire les messages pour l'API
@@ -357,6 +571,16 @@ serve(async (req) => {
         });
       }
 
+      // Check if we have a cached response for this exact request
+      const requestHash = `req_${agentId}_${message}_${JSON.stringify(conversation)}`;
+      const cachedResp = getCachedResponse(requestHash);
+      
+      if (cachedResp) {
+        return new Response(JSON.stringify(cachedResp), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       // Appeler l'API Cerebras
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -367,7 +591,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: modelName,
           messages: messages,
-          max_tokens: 1000,
+          max_tokens: 2000,
           temperature: 0.7,
           stream: false,
         }),
@@ -380,11 +604,76 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      
-      return new Response(JSON.stringify({
+      const result = {
         reply: data.choices[0].message.content,
-        usage: data.usage
-      }), {
+        usage: data.usage,
+        conversationId: null
+      };
+
+      // Si c'est une conversation intégrée avec un ID de session, sauvegarder la conversation
+      if (embedded && sessionId) {
+        try {
+          // Vérifier si une conversation existe déjà pour cette session et cet agent
+          let conversationId = null;
+          
+          const { data: existingConv } = await supabase
+            .from('ai_conversations')
+            .select('id')
+            .eq('agent_id', agentId)
+            .eq('session_id', sessionId)
+            .eq('is_guest', true)
+            .maybeSingle();
+            
+          if (existingConv) {
+            conversationId = existingConv.id;
+          } else {
+            // Créer une nouvelle conversation
+            const { data: newConversation, error: convError } = await supabase
+              .from('ai_conversations')
+              .insert({
+                agent_id: agentId,
+                is_guest: true,
+                session_id: sessionId
+              })
+              .select()
+              .single();
+              
+            if (!convError) {
+              conversationId = newConversation.id;
+            }
+          }
+          
+          if (conversationId) {
+            // Ajouter le message utilisateur
+            await supabase
+              .from('ai_messages')
+              .insert({
+                conversation_id: conversationId,
+                content: message,
+                role: 'user'
+              });
+              
+            // Ajouter la réponse de l'assistant
+            await supabase
+              .from('ai_messages')
+              .insert({
+                conversation_id: conversationId,
+                content: result.reply,
+                role: 'assistant'
+              });
+              
+            result.conversationId = conversationId;
+          }
+        } catch (error) {
+          console.error('Error saving conversation:', error);
+          // Continue même en cas d'erreur pour ne pas bloquer l'utilisateur
+        }
+      }
+      
+      // Cache the result
+      setCachedResponse(requestHash, result);
+      
+      return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

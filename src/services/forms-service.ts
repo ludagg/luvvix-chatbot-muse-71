@@ -247,11 +247,14 @@ class FormsService {
     }
   }
 
-  async updateQuestionOrder(questions: { id: string; position: number }[]) {
+  async updateQuestionOrder(questions: { id: string; position: number; form_id: string; question_text: string; question_type: string }[]) {
     try {
-      const updates = questions.map(({ id, position }) => ({
+      const updates = questions.map(({ id, position, form_id, question_text, question_type }) => ({
         id,
-        position
+        position,
+        form_id,
+        question_text,
+        question_type
       }));
 
       const { error } = await supabase
@@ -282,7 +285,8 @@ class FormsService {
         return { allowed: false, reason: "Ce formulaire n'est pas publié." };
       }
 
-      const settings = form.settings || {};
+      // Type assertion for settings to properly access its properties
+      const settings = form.settings as FormSettings || {};
       
       if (settings.maxResponses) {
         const { count, error: countError } = await supabase
@@ -292,7 +296,7 @@ class FormsService {
           
         if (countError) throw countError;
         
-        if (count && count >= settings.maxResponses) {
+        if (count && count >= (settings.maxResponses as number)) {
           return { 
             allowed: false, 
             reason: "Ce formulaire a atteint le nombre maximum de réponses." 
@@ -300,7 +304,7 @@ class FormsService {
         }
       }
       
-      if (settings.closesAt && new Date(settings.closesAt) < new Date()) {
+      if (settings.closesAt && new Date(settings.closesAt as string) < new Date()) {
         return { 
           allowed: false, 
           reason: "Ce formulaire est fermé." 

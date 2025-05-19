@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -138,7 +139,7 @@ const FormEditor = ({ formId }: FormEditorProps) => {
             />
           </div>
           <div className="flex justify-between items-center mt-4">
-            <Button onClick={handleSave} variant="primary">
+            <Button onClick={handleSave}>
               Enregistrer
             </Button>
             <Button onClick={handleAddQuestion} variant="secondary">

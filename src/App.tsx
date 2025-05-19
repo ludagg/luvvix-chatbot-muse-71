@@ -7,6 +7,7 @@ import {
 import { useEffect, useState } from "react";
 import { useAuth } from "./hooks/useAuth";
 import { supabase } from "./integrations/supabase/client";
+import { TooltipProvider } from "./components/ui/tooltip";
 import Index from "./pages/Index";
 import Pricing from "./pages/Pricing";
 import Auth from "./pages/Auth";
@@ -78,29 +79,31 @@ function App() {
 
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/blog/:id" element={<BlogPost />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/legal" element={<Legal />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="*" element={<NotFound />} />
+      <TooltipProvider>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:id" element={<BlogPost />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/legal" element={<Legal />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="*" element={<NotFound />} />
 
-        {/* Routes AI Studio */}
-        <Route path="/ai-studio" element={<AIStudioLandingPage />} /> {/* Nouvelle route vers la landing page */}
-        <Route path="/ai-studio/dashboard" element={<ProtectedRoute><AIStudioPage /></ProtectedRoute>} />
-        <Route path="/ai-studio/agent/:agentId" element={<AIStudioChatPage />} />
-        <Route path="/ai-studio/marketplace" element={<AIStudioMarketplacePage />} />
-        <Route path="/ai-studio/create" element={<ProtectedRoute><AIStudioCreateAgentPage /></ProtectedRoute>} />
-        <Route path="/ai-studio/edit/:agentId" element={<ProtectedRoute><AIStudioEditAgentPage /></ProtectedRoute>} />
-        <Route path="/ai-studio/favorites" element={<ProtectedRoute><AIStudioFavoritesPage /></ProtectedRoute>} />
-        <Route path="/ai-studio/admin" element={<AdminTokenValidator><AIStudioAdminPage /></AdminTokenValidator>} />
-      </Routes>
+          {/* Routes AI Studio */}
+          <Route path="/ai-studio" element={<AIStudioLandingPage />} />
+          <Route path="/ai-studio/dashboard" element={<ProtectedRoute><AIStudioPage /></ProtectedRoute>} />
+          <Route path="/ai-studio/agent/:agentId" element={<AIStudioChatPage />} />
+          <Route path="/ai-studio/marketplace" element={<AIStudioMarketplacePage />} />
+          <Route path="/ai-studio/create" element={<ProtectedRoute><AIStudioCreateAgentPage /></ProtectedRoute>} />
+          <Route path="/ai-studio/edit/:agentId" element={<ProtectedRoute><AIStudioEditAgentPage /></ProtectedRoute>} />
+          <Route path="/ai-studio/favorites" element={<ProtectedRoute><AIStudioFavoritesPage /></ProtectedRoute>} />
+          <Route path="/ai-studio/admin" element={<AdminTokenValidator><AIStudioAdminPage /></AdminTokenValidator>} />
+        </Routes>
+      </TooltipProvider>
     </Router>
   );
 }

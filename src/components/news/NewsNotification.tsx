@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { useNotifications } from '@/hooks/use-notifications';
 import { Button } from "@/components/ui/button";
 import { Bell, BellRing } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 const NewsNotification = () => {
   const { 
@@ -35,28 +35,31 @@ const NewsNotification = () => {
     return null;
   }
   
+  // Wrap the tooltip in a TooltipProvider to ensure it has access to tooltip context
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={requestPermission}
-          className="px-2"
-        >
-          {notificationsEnabled ? (
-            <BellRing className="h-5 w-5" />
-          ) : (
-            <Bell className="h-5 w-5" />
-          )}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">
-        {notificationsEnabled 
-          ? "Notifications d'actualités activées" 
-          : "Activer les notifications d'actualités"}
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={requestPermission}
+            className="px-2"
+          >
+            {notificationsEnabled ? (
+              <BellRing className="h-5 w-5" />
+            ) : (
+              <Bell className="h-5 w-5" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          {notificationsEnabled 
+            ? "Notifications d'actualités activées" 
+            : "Activer les notifications d'actualités"}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 

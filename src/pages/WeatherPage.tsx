@@ -27,7 +27,7 @@ const WeatherPage = () => {
             </CardHeader>
             <CardContent className="flex justify-center py-6">
               <div className="w-full max-w-sm">
-                <WeatherWidget expanded={true} />
+                <WeatherWidget />
               </div>
             </CardContent>
           </Card>

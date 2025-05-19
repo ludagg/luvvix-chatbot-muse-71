@@ -1,4 +1,17 @@
 {
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "forms.luvvix.it.com"
+        }
+      ],
+      "destination": "/forms",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/ai/:path*",

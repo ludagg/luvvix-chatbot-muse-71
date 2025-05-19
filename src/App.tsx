@@ -1,120 +1,90 @@
+import React, { useState, useEffect } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "@/pages";
+import AuthPage from "@/pages/AuthPage";
+import Dashboard from "@/pages/Dashboard";
+import OAuth from "@/pages/OAuth";
+import OAuthTest from "@/pages/OAuthTest";
+import WeatherPage from "@/pages/WeatherPage";
+import NewsPage from "@/pages/NewsPage";
+import AdminPanel from "@/pages/AdminPanel";
+import ApiDocs from "@/pages/ApiDocs";
+import CloudPage from "@/pages/CloudPage";
+import NotFound from "@/pages/NotFound";
+import FormsPage from "@/pages/FormsPage";
+import FormEditorPage from "@/pages/FormEditorPage";
+import FormResponsesPage from "@/pages/FormResponsesPage";
+import FormSettingsPage from "@/pages/FormSettingsPage";
+import FormViewPage from "@/pages/FormViewPage";
+import AIStudioPage from "@/pages/AIStudioPage";
+import AIStudioAdminPage from "@/pages/AIStudioAdminPage";
+import AIStudioDashboardPage from "@/pages/AIStudioDashboardPage";
+import AIStudioCreateAgentPage from "@/pages/AIStudioCreateAgentPage";
+import AIStudioEditAgentPage from "@/pages/AIStudioEditAgentPage";
+import AIStudioChatPage from "@/pages/AIStudioChatPage";
+import AIStudioMarketplacePage from "@/pages/AIStudioMarketplacePage";
+import AIStudioAgentPage from "@/pages/AIStudioAgentPage";
+import AIStudioCreatorPage from "@/pages/AIStudioCreatorPage";
 
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/hooks/use-theme";
-import { DecentralizedStorageProvider } from "@/hooks/use-ipfs";
-import { HelmetProvider } from "react-helmet-async";
-import { Routes, Route } from "react-router-dom";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import ApiDocs from "./pages/ApiDocs";
-import AuthPage from "./pages/AuthPage";
-import Dashboard from "./pages/Dashboard";
-import CloudPage from "./pages/CloudPage";
-import NewsPage from "./pages/NewsPage";
-import WeatherPage from "./pages/WeatherPage";
-import OAuth from "./pages/OAuth";
-import AdminPanel from "./pages/AdminPanel";
-import OAuthTest from "./pages/OAuthTest";
-import FormsPage from "./pages/FormsPage";
-import FormEditorPage from "./pages/FormEditorPage";
-import FormViewPage from "./pages/FormViewPage";
-import FormSettingsPage from "./pages/FormSettingsPage";
-import FormResponsesPage from "./pages/FormResponsesPage";
-import AIStudioPage from "./pages/AIStudioPage";
-import AIStudioDashboardPage from "./pages/AIStudioDashboardPage";
-import AIStudioAgentPage from "./pages/AIStudioAgentPage";
-import AIStudioCreateAgentPage from "./pages/AIStudioCreateAgentPage";
-import AIStudioEditAgentPage from "./pages/AIStudioEditAgentPage";
-import AIStudioMarketplacePage from "./pages/AIStudioMarketplacePage";
-import AIStudioAdminPage from "./pages/AIStudioAdminPage";
-import AIStudioChatPage from "./pages/AIStudioChatPage";
+function App() {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
-const App = () => (
-  <HelmetProvider>
-    <ThemeProvider defaultTheme="light">
-      <DecentralizedStorageProvider>
-        <Sonner />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/api-docs" element={<ApiDocs />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/news" element={<NewsPage />} />
-          <Route path="/weather" element={<WeatherPage />} />
-          <Route path="/oauth/authorize" element={
-            <ProtectedRoute>
-              <OAuth />
-            </ProtectedRoute>
-          } />
-          <Route path="/oauth/test" element={<OAuthTest />} />
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/cloud/*" element={
-            <ProtectedRoute>
-              <CloudPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin" element={
-            <ProtectedRoute>
-              <AdminPanel />
-            </ProtectedRoute>
-          } />
-          
-          {/* Routes for LuvviX Forms */}
-          <Route path="/forms" element={<FormsPage />} />
-          <Route path="/forms/create" element={
-            <ProtectedRoute>
-              <FormEditorPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/edit/:formId" element={
-            <ProtectedRoute>
-              <FormEditorPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/view/:formId" element={<FormViewPage />} />
-          <Route path="/forms/settings/:formId" element={
-            <ProtectedRoute>
-              <FormSettingsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/responses/:formId" element={
-            <ProtectedRoute>
-              <FormResponsesPage />
-            </ProtectedRoute>
-          } />
-          
-          {/* Routes for LuvviX AI Studio */}
-          <Route path="/ai-studio" element={<AIStudioPage />} />
-          <Route path="/ai-studio/dashboard" element={
-            <ProtectedRoute>
-              <AIStudioDashboardPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/ai-studio/agents/:agentId" element={<AIStudioAgentPage />} />
-          <Route path="/ai-studio/create" element={
-            <ProtectedRoute>
-              <AIStudioCreateAgentPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/ai-studio/edit/:agentId" element={
-            <ProtectedRoute>
-              <AIStudioEditAgentPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/ai-studio/marketplace" element={<AIStudioMarketplacePage />} />
-          <Route path="/ai-studio/chat/:agentId" element={<AIStudioChatPage />} />
-          <Route path="/ai-studio/admin" element={<AIStudioAdminPage />} />
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </DecentralizedStorageProvider>
-    </ThemeProvider>
-  </HelmetProvider>
-);
+  useEffect(() => {
+    const updateMousePosition = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener("mousemove", updateMousePosition);
+
+    return () => {
+      window.removeEventListener("mousemove", updateMousePosition);
+    };
+  }, []);
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/oauth" element={<OAuth />} />
+        <Route path="/oauth-test" element={<OAuthTest />} />
+        <Route path="/weather" element={<WeatherPage />} />
+        <Route path="/news" element={<NewsPage />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/api-docs" element={<ApiDocs />} />
+        <Route path="/cloud" element={<CloudPage />} />
+        
+        {/* Forms routes */}
+        <Route path="/forms" element={<FormsPage />} />
+        <Route path="/forms/:formId" element={<FormEditorPage />} />
+        <Route path="/forms/:formId/edit" element={<FormEditorPage />} />
+        <Route path="/forms/:formId/responses" element={<FormResponsesPage />} />
+        <Route path="/forms/:formId/settings" element={<FormSettingsPage />} />
+        <Route path="/forms/:formId/view" element={<FormViewPage />} />
+        
+        {/* AI Studio routes */}
+        <Route path="/ai-studio" element={<AIStudioPage />} />
+        <Route path="/ai-studio/admin" element={<AIStudioAdminPage />} />
+        <Route path="/ai-studio/dashboard" element={<AIStudioDashboardPage />} />
+        <Route path="/ai-studio/create" element={<AIStudioCreateAgentPage />} />
+        <Route path="/ai-studio/edit/:agentId" element={<AIStudioEditAgentPage />} />
+        <Route path="/ai-studio/chat/:agentId" element={<AIStudioChatPage />} />
+        <Route path="/ai-studio/marketplace" element={<AIStudioMarketplacePage />} />
+        <Route path="/ai-studio/agents/:agentId" element={<AIStudioAgentPage />} />
+        <Route path="/ai-studio/creators/:creatorId" element={<AIStudioCreatorPage />} />
+        
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <div
+        className="custom-cursor"
+        style={{
+          left: mousePosition.x + "px",
+          top: mousePosition.y + "px",
+        }}
+      />
+    </BrowserRouter>
+  );
+}
 
 export default App;

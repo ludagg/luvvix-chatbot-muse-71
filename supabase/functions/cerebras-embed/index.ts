@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -417,7 +416,7 @@ function generateChatHtml(agent, theme, accentColor, hideCredit, startMessage, i
             };
             
             // Call API
-            const response = await fetch('${supabaseUrl}/functions/v1/cerebras-chat', {
+            const response = await fetch('https://luvvix.it.com/functions/v1/cerebras-chat', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -685,7 +684,7 @@ serve(async (req) => {
       console.log(`Calling Cerebras API with ${messages.length} messages`);
 
       // Appeler l'API Cerebras
-      const response = await fetch(endpoint, {
+      const response = await fetch('https://luvvix.it.com/functions/v1/cerebras-chat', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${cerebrasApiKey}`,

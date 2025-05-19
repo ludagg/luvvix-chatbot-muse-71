@@ -3,10 +3,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Code, Copy, Check, Eye, EyeOff } from "lucide-react";
+import { Code, Copy, Check, Eye, EyeOff, PenTool } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import EmbedChat from "./EmbedChat";
 
 interface EmbedCodeGeneratorProps {
   agentId: string;
@@ -71,11 +72,6 @@ const EmbedCodeGenerator = ({ agentId, agentName, isPublic }: EmbedCodeGenerator
       </Card>
     );
   }
-
-  const getPreviewUrl = (type: "iframe" | "script" | "popup") => {
-    const baseUrl = `https://luvvix.it.com/api/preview-embed/${agentId}?embedType=${type}&theme=${customOptions.theme}&accentColor=${encodeURIComponent(customOptions.accentColor)}${customOptions.hideCredit ? '&hideCredit=true' : ''}${customOptions.startMessage ? `&startMessage=${encodeURIComponent(customOptions.startMessage)}` : ''}`;
-    return baseUrl;
-  };
 
   return (
     <TooltipProvider>
@@ -233,18 +229,89 @@ const EmbedCodeGenerator = ({ agentId, agentName, isPublic }: EmbedCodeGenerator
           </div>
 
           {showPreview && (
-            <div className="w-full bg-white border rounded-md mt-4">
-              <div className="p-2 bg-slate-100 border-b">
+            <div className="w-full bg-white dark:bg-slate-800 border rounded-md mt-4">
+              <div className="p-2 bg-slate-100 dark:bg-slate-900 border-b flex items-center justify-between">
                 <h3 className="text-sm font-medium">Aperçu de l'intégration</h3>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => handleCustomOptionChange("theme", customOptions.theme === "light" ? "dark" : "light")}
+                  >
+                    <PenTool className="h-3 w-3 mr-1" />
+                    {customOptions.theme === "light" ? "Mode sombre" : "Mode clair"}
+                  </Button>
+                </div>
               </div>
-              <div className="p-0">
-                <iframe
-                  src={getPreviewUrl(previewType)}
-                  width="100%"
-                  height="500"
-                  className="border-0"
-                  title={`Aperçu de ${agentName}`}
-                />
+              
+              <div className="p-6 h-[500px]">
+                {previewType === "iframe" ? (
+                  <div className="h-full border rounded">
+                    <EmbedChat 
+                      agentId={agentId} 
+                      theme={customOptions.theme as "light" | "dark"} 
+                      accentColor={customOptions.accentColor}
+                      hideCredit={customOptions.hideCredit}
+                      startMessage={customOptions.startMessage}
+                      mode="inline"
+                    />
+                  </div>
+                ) : previewType === "script" ? (
+                  <div className="h-full border rounded flex flex-col">
+                    <div className="bg-slate-100 dark:bg-slate-900 p-3 border-b text-sm">
+                      Aperçu du script
+                    </div>
+                    <div className="flex-1 flex items-center justify-center p-4 text-center">
+                      <div className="max-w-md">
+                        <p className="mb-4 text-slate-600 dark:text-slate-400">
+                          Le script intègrerait l'interface de chat directement dans votre page web, comme ceci :
+                        </p>
+                        <div className="border rounded h-96 shadow-sm">
+                          <EmbedChat 
+                            agentId={agentId} 
+                            theme={customOptions.theme as "light" | "dark"} 
+                            accentColor={customOptions.accentColor}
+                            hideCredit={customOptions.hideCredit}
+                            startMessage={customOptions.startMessage}
+                            mode="inline"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full border rounded flex flex-col">
+                    <div className="bg-slate-100 dark:bg-slate-900 p-3 border-b text-sm">
+                      Aperçu du popup
+                    </div>
+                    <div className="flex-1 p-6 relative">
+                      <div className="absolute bottom-6 right-6">
+                        <Button 
+                          style={{ backgroundColor: customOptions.accentColor }}
+                          className="flex items-center shadow-lg"
+                        >
+                          Chat avec {agentName}
+                        </Button>
+                      </div>
+                      <div className="absolute bottom-20 right-6 w-80 h-96 shadow-lg rounded-md overflow-hidden border">
+                        <EmbedChat 
+                          agentId={agentId} 
+                          theme={customOptions.theme as "light" | "dark"} 
+                          accentColor={customOptions.accentColor}
+                          hideCredit={customOptions.hideCredit}
+                          startMessage={customOptions.startMessage}
+                          mode="inline"
+                        />
+                      </div>
+                      <div className="flex items-center justify-center h-full">
+                        <p className="text-center text-slate-600 dark:text-slate-400 max-w-sm">
+                          L'intégration popup ajoutera un bouton flottant qui ouvrira l'interface de chat lorsqu'il est cliqué.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

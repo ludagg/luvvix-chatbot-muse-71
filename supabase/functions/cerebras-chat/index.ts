@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -302,10 +301,25 @@ serve(async (req) => {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('Cerebras API error:', errorData);
-      throw new Error(`Erreur API Cerebras: ${response.status} ${response.statusText}`);
+      
+      // Amélioration des messages d'erreur
+      let errorMessage = `Erreur API Cerebras: ${response.status} ${response.statusText}`;
+      
+      if (errorData && errorData.error) {
+        errorMessage += ` - ${errorData.error.message || errorData.error}`;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
+    
+    // Vérification supplémentaire pour s'assurer que la réponse contient le message attendu
+    if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Unexpected response format from Cerebras API:', data);
+      throw new Error("Format de réponse inattendu de l'API Cerebras");
+    }
+    
     const assistantReply = data.choices[0].message.content;
     
     // Track token usage
@@ -315,13 +329,18 @@ serve(async (req) => {
     
     // Si c'est une conversation intégrée avec un ID, sauvegarder la réponse
     if (finalConversationId) {
-      await supabase
-        .from('ai_messages')
-        .insert({
-          conversation_id: finalConversationId,
-          content: assistantReply,
-          role: 'assistant'
-        });
+      try {
+        await supabase
+          .from('ai_messages')
+          .insert({
+            conversation_id: finalConversationId,
+            content: assistantReply,
+            role: 'assistant'
+          });
+      } catch (insertError) {
+        console.error('Error saving message to database:', insertError);
+        // Continue malgré l'erreur pour au moins renvoyer la réponse au client
+      }
     }
     
     return new Response(JSON.stringify({
@@ -333,7 +352,16 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in cerebras-chat function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    
+    // Ajouter plus d'informations de debug dans la réponse d'erreur
+    const errorMessage = error instanceof Error ? error.message : 'Une erreur inconnue est survenue';
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      stack: process.env.NODE_ENV === 'development' ? errorStack : undefined,
+      timestamp: new Date().toISOString()
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

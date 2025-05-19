@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +22,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import FavoriteButton from "@/components/ai-studio/FavoriteButton";
+import FollowButton from "@/components/ai-studio/FollowButton";
 import {
   Bot,
   Search,
@@ -71,6 +72,21 @@ const AIStudioMarketplacePage = () => {
       default:
         return <Bot className="h-full w-full p-1.5" />;
     }
+  };
+  
+  const getAvatarColor = (avatarStyle: string) => {
+    switch (avatarStyle) {
+      case "bot":
+        return "bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300";
+      case "sparkles":
+        return "bg-amber-100 text-amber-600 dark:bg-amber-900 dark:text-amber-300";
+      default:
+        return "bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300";
+    }
+  };
+  
+  const getAgentInitial = (name: string) => {
+    return name.charAt(0).toUpperCase();
   };
   
   const filteredAgents = agents.filter(agent => {
@@ -156,24 +172,21 @@ const AIStudioMarketplacePage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredAgents.map((agent) => (
                 <Card key={agent.id} className="overflow-hidden">
-                  <CardHeader>
-                    <div className="flex items-start">
-                      <Avatar className="mr-3 h-10 w-10 bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
-                        <AvatarFallback>
-                          {getAvatarIcon(agent.avatar_style)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="mb-1">{agent.name}</CardTitle>
-                        <CardDescription>
-                          {agent.personality === "expert" && "Expert"}
-                          {agent.personality === "friendly" && "Amical"}
-                          {agent.personality === "concise" && "Concis"}
-                          {agent.personality === "empathetic" && "Empathique"}
-                        </CardDescription>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <Avatar className={`${getAvatarColor(agent.avatar_style)}`}>
+                          <AvatarFallback>{getAgentInitial(agent.name)}</AvatarFallback>
+                        </Avatar>
+                        <div className="ml-3">
+                          <h3 className="font-semibold text-lg">{agent.name}</h3>
+                          <p className="text-sm text-gray-500">{agent.personality}</p>
+                        </div>
                       </div>
+                      <FavoriteButton agentId={agent.id} />
                     </div>
                   </CardHeader>
+                  
                   <CardContent>
                     <p className="line-clamp-3 text-slate-600 dark:text-slate-300">
                       {agent.objective}
@@ -195,11 +208,17 @@ const AIStudioMarketplacePage = () => {
                       )}
                     </div>
                   </CardContent>
-                  <CardFooter>
-                    <Button asChild className="w-full bg-violet-600 hover:bg-violet-700">
-                      <Link to={`/ai-studio/agents/${agent.id}`}>
-                        Voir et discuter
-                      </Link>
+                  
+                  <CardFooter className="flex justify-between items-center pt-2">
+                    <div className="flex items-center gap-2">
+                      <FollowButton creatorId={agent.user_id} size="sm" />
+                    </div>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => navigate(`/ai-studio/agent/${agent.slug || agent.id}`)}
+                    >
+                      Voir l'agent
                     </Button>
                   </CardFooter>
                 </Card>

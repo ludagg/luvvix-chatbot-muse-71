@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -33,6 +32,7 @@ import AIStudioEditAgentPage from "./pages/AIStudioEditAgentPage";
 import AIStudioMarketplacePage from "./pages/AIStudioMarketplacePage";
 import AIStudioAdminPage from "./pages/AIStudioAdminPage";
 import AIStudioChatPage from "./pages/AIStudioChatPage";
+import AIStudioFavoritesPage from "./pages/AIStudioFavoritesPage";
 
 // Configure le client de requête avec des paramètres optimisés
 const queryClient = new QueryClient({
@@ -134,6 +134,7 @@ const App = () => (
                   <Route path="/ai-studio/marketplace" element={<AIStudioMarketplacePage />} />
                   <Route path="/ai-studio/chat/:agentId" element={<AIStudioChatPage />} />
                   <Route path="/ai-studio/admin" element={<AIStudioAdminPage />} />
+                  <Route path="/ai-studio/favorites" element={<AIStudioFavoritesPage />} />
                   
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

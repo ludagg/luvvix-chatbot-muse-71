@@ -225,6 +225,56 @@ export type Database = {
           },
         ]
       }
+      ai_favorites: {
+        Row: {
+          added_at: string
+          agent_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          agent_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          agent_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_favorites_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_follows: {
+        Row: {
+          creator_id: string
+          followed_at: string
+          follower_id: string
+          id: string
+        }
+        Insert: {
+          creator_id: string
+          followed_at?: string
+          follower_id: string
+          id?: string
+        }
+        Update: {
+          creator_id?: string
+          followed_at?: string
+          follower_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
       ai_messages: {
         Row: {
           content: string

@@ -50,7 +50,7 @@ const StatCards = ({ userId }: StatCardsProps) => {
         // Récupérer les réponses aux formulaires
         const { count: responsesCount, error: responsesError } = await supabase
           .from('form_submissions')
-          .select('id', { count: true })
+          .select('id', { count: 'exact' })
           .eq('responder_id', userId);
           
         if (responsesError) throw responsesError;

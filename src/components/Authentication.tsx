@@ -34,7 +34,8 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     setIsLoading(false);
     if (success) {
       if (returnTo) {
-        navigate(returnTo);
+        console.log(`After signup, redirecting to: ${decodeURIComponent(returnTo)}`);
+        navigate(decodeURIComponent(returnTo));
       } else {
         navigate('/dashboard');
       }
@@ -48,7 +49,8 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     setIsLoading(false);
     if (success) {
       if (returnTo) {
-        navigate(returnTo);
+        console.log(`After signin, redirecting to: ${decodeURIComponent(returnTo)}`);
+        navigate(decodeURIComponent(returnTo));
       } else {
         navigate('/dashboard');
       }

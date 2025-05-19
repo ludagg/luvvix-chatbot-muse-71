@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -116,7 +117,6 @@ const AIStudioChatPage = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(user && { Authorization: `Bearer ${supabase.auth.getSession()}` }),
           },
           body: JSON.stringify({
             agentId,
@@ -126,6 +126,11 @@ const AIStudioChatPage = () => {
           }),
         }
       );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erreur lors de la communication avec l'IA");
+      }
       
       const data = await response.json();
       

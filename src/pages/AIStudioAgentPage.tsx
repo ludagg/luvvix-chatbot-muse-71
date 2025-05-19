@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, MessageSquare, Code } from "lucide-react";
+import { Loader2, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 import EmbedCodeGenerator from "@/components/ai-studio/EmbedCodeGenerator";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -121,7 +121,7 @@ const AIStudioAgentPage = () => {
                   Cet agent n'existe pas ou n'est pas public.
                 </p>
                 <Button asChild className="bg-violet-600 hover:bg-violet-700">
-                  <a href="/ai-studio/marketplace">Explorer le marketplace</a>
+                  <Link to="/ai-studio/marketplace">Explorer le marketplace</Link>
                 </Button>
               </div>
             )}

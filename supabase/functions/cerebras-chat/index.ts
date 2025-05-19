@@ -13,68 +13,6 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Cache system for improved performance
-const agentCache = new Map();
-const contextCache = new Map();
-const CACHE_TTL = 1800000; // 30 minutes
-
-function getCachedAgent(id) {
-  const cachedData = agentCache.get(id);
-  if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_TTL) {
-    return cachedData.agent;
-  }
-  return null;
-}
-
-function setCachedAgent(id, agent) {
-  agentCache.set(id, {
-    timestamp: Date.now(),
-    agent
-  });
-}
-
-function getCachedContext(id) {
-  const cachedData = contextCache.get(id);
-  if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_TTL) {
-    return cachedData.context;
-  }
-  return null;
-}
-
-function setCachedContext(id, context) {
-  contextCache.set(id, {
-    timestamp: Date.now(),
-    context
-  });
-}
-
-// Function to analyze token usage and track quotas
-async function trackUsage(userId, agentId, tokens) {
-  try {
-    // Get the admin configuration for quotas
-    const { data: config } = await supabase
-      .from('ai_admin_config')
-      .select('quota_per_user')
-      .limit(1)
-      .maybeSingle();
-      
-    const quotaPerUser = config?.quota_per_user || 100;
-    
-    // If it's a registered user, check and update their quota
-    if (userId) {
-      // TODO: Implement usage tracking and quota management
-      // This would typically update a user_ai_usage table
-    }
-    
-    // Log usage for analytics regardless of user status
-    console.log(`Usage - ${userId || 'Guest'} used ${tokens} tokens with agent ${agentId}`);
-    
-  } catch (error) {
-    console.error('Error tracking usage:', error);
-    // Don't throw - just log and continue
-  }
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -84,7 +22,7 @@ serve(async (req) => {
   try {
     const { conversation, systemPrompt, maxTokens, agentId, message, conversationId, sessionId, embedded = false } = await req.json();
     
-    // Récupérer la clé API et la configuration depuis les secrets de Supabase
+    // Get API key and configuration from Supabase secrets
     const cerebrasApiKey = Deno.env.get('CEREBRAS_API_KEY') || 'csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv';
     const endpoint = Deno.env.get('CEREBRAS_ENDPOINT') || 'https://api.cerebras.ai/v1/chat/completions';
     const modelName = Deno.env.get('CEREBRAS_MODEL') || 'llama-4-scout-17b-16e-instruct';
@@ -99,80 +37,56 @@ serve(async (req) => {
     let userId = null;
     let contextContent = "";
     
-    // Si un agentId est fourni, rechercher le prompt système associé dans la base de données
+    // If agent ID is provided, get system prompt from database
     if (agentId) {
-      // Check if we have the agent in cache
-      let agent = getCachedAgent(agentId);
-      
-      // If not in cache, fetch from database
-      if (!agent) {
-        const { data, error } = await supabase
-          .from('ai_agents')
-          .select('system_prompt, name, objective, personality, user_id')
-          .eq('id', agentId)
-          .single();
+      // Get agent from database
+      const { data, error } = await supabase
+        .from('ai_agents')
+        .select('name, objective, personality, user_id')
+        .eq('id', agentId)
+        .single();
 
-        if (error) {
-          throw new Error(`Erreur lors de la récupération de l'agent: ${error.message}`);
-        }
-
-        if (data) {
-          agent = data;
-          setCachedAgent(agentId, agent);
-        }
+      if (error) {
+        throw new Error(`Erreur lors de la récupération de l'agent: ${error.message}`);
       }
 
-      if (agent) {
+      if (data) {
         // Store user ID for usage tracking
-        userId = agent.user_id;
+        userId = data.user_id;
         
-        // Construire le prompt système basé sur les attributs de l'agent
-        finalSystemPrompt = agent.system_prompt || `Tu es ${agent.name}, `;
+        // Build system prompt based on agent attributes
+        finalSystemPrompt = `Tu es ${data.name}, `;
         
-        if (!finalSystemPrompt && agent.name) {
-          finalSystemPrompt = `Tu es ${agent.name}, `;
-          
-          if (agent.personality) {
-            switch (agent.personality) {
-              case 'expert':
-                finalSystemPrompt += `un expert formel et précis dans ton domaine. `;
-                break;
-              case 'friendly':
-                finalSystemPrompt += `avec une personnalité chaleureuse et décontractée. `;
-                break;
-              case 'concise':
-                finalSystemPrompt += `avec un style direct et efficace. `;
-                break;
-              case 'empathetic':
-                finalSystemPrompt += `avec une approche empathique et compréhensive. `;
-                break;
-              default:
-                finalSystemPrompt += `avec une personnalité ${agent.personality}. `;
-            }
-          }
-          
-          if (agent.objective) {
-            finalSystemPrompt += `Ton objectif est ${agent.objective}.`;
+        if (data.personality) {
+          switch (data.personality) {
+            case 'expert':
+              finalSystemPrompt += `un expert formel et précis dans ton domaine. `;
+              break;
+            case 'friendly':
+              finalSystemPrompt += `avec une personnalité chaleureuse et décontractée. `;
+              break;
+            case 'concise':
+              finalSystemPrompt += `avec un style direct et efficace. `;
+              break;
+            case 'empathetic':
+              finalSystemPrompt += `avec une approche empathique et compréhensive. `;
+              break;
+            default:
+              finalSystemPrompt += `avec une personnalité ${data.personality}. `;
           }
         }
         
-        // Check for context in cache first
-        let contextData = getCachedContext(agentId);
-        
-        if (!contextData) {
-          // Récupérer le contexte de l'agent depuis la base de données
-          const { data: fetchedContextData, error: contextError } = await supabase
-            .from('ai_agent_context')
-            .select('content_type, content, url')
-            .eq('agent_id', agentId);
-            
-          if (!contextError && fetchedContextData && fetchedContextData.length > 0) {
-            contextData = fetchedContextData;
-            setCachedContext(agentId, contextData);
-          }
+        if (data.objective) {
+          finalSystemPrompt += `Ton objectif est ${data.objective}.`;
         }
         
-        // Ajouter le contenu du contexte au prompt système
+        // Get agent context
+        const { data: contextData } = await supabase
+          .from('ai_agent_context')
+          .select('content_type, content, url')
+          .eq('agent_id', agentId);
+          
+        // Add context content to system prompt
         if (contextData && contextData.length > 0) {
           contextContent = "\n\nVoici des informations supplémentaires à connaître:\n\n";
           
@@ -185,21 +99,21 @@ serve(async (req) => {
           }
         }
         
-        // Incrémenter le compteur de vues pour cet agent s'il n'est pas intégré
+        // Increment view count if not embedded
         if (!embedded) {
           try {
             await supabase.rpc('increment_agent_views', { agent_id: agentId });
           } catch (error) {
             console.error('Failed to increment views:', error);
-            // Non-critical, continue execution
+            // Continue execution even if this fails
           }
         }
         
-        // Si c'est une session intégrée, gérer la conversation
+        // Handle conversation session
         if (sessionId) {
-          // Vérifier si une conversation existe déjà pour cette session
+          // Check if conversation exists
           if (conversationId) {
-            // Récupérer les messages existants
+            // Get existing messages
             const { data: existingMessages } = await supabase
               .from('ai_messages')
               .select('content, role')
@@ -210,7 +124,7 @@ serve(async (req) => {
               finalConversation = existingMessages;
             }
           } else {
-            // Créer une nouvelle conversation
+            // Create new conversation
             const { data: newConversation, error: convError } = await supabase
               .from('ai_conversations')
               .insert({
@@ -229,7 +143,7 @@ serve(async (req) => {
             }
           }
           
-          // Ajouter le message utilisateur à la base de données si nécessaire
+          // Add user message to database if needed
           if (message && finalConversationId) {
             await supabase
               .from('ai_messages')
@@ -239,7 +153,7 @@ serve(async (req) => {
                 role: 'user'
               });
               
-            // Ajouter le message à la conversation en cours
+            // Add message to current conversation
             finalConversation.push({
               role: 'user',
               content: message
@@ -249,14 +163,14 @@ serve(async (req) => {
       }
     }
 
-    // Construire les messages pour l'API
+    // Build messages for API
     const messages = [];
     
-    // Ajouter le message système s'il existe
+    // Add system message if it exists
     if (finalSystemPrompt) {
       let fullPrompt = finalSystemPrompt;
       
-      // Ajouter le contexte au prompt système s'il existe
+      // Add context if it exists
       if (contextContent) {
         fullPrompt += contextContent;
       }
@@ -267,7 +181,7 @@ serve(async (req) => {
       });
     }
     
-    // Ajouter les messages de la conversation
+    // Add conversation messages
     finalConversation.forEach((msg) => {
       messages.push({
         role: msg.role,
@@ -275,7 +189,7 @@ serve(async (req) => {
       });
     });
     
-    // Si le message n'est pas dans finalConversation (cas où il n'y a pas de conversationId)
+    // Add user message if not in conversation
     if (message && !finalConversation.some(msg => msg.role === 'user' && msg.content === message)) {
       messages.push({
         role: 'user',
@@ -283,7 +197,9 @@ serve(async (req) => {
       });
     }
 
-    // Appeler l'API Cerebras
+    console.log("Calling Cerebras API with messages:", JSON.stringify(messages));
+
+    // Call Cerebras API
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -301,20 +217,15 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Cerebras API error:', errorData);
+      const errorText = await response.text();
+      console.error('Cerebras API error response:', errorText);
       throw new Error(`Erreur API Cerebras: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
     const assistantReply = data.choices[0].message.content;
     
-    // Track token usage
-    if (data.usage) {
-      trackUsage(userId, agentId, data.usage.total_tokens || 0);
-    }
-    
-    // Si c'est une conversation intégrée avec un ID, sauvegarder la réponse
+    // If this is a conversation with an ID, save the response
     if (finalConversationId) {
       await supabase
         .from('ai_messages')

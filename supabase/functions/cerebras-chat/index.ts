@@ -20,7 +20,7 @@ serve(async (req) => {
   }
 
   try {
-    const { conversation, systemPrompt, maxTokens, agentId } = await req.json();
+    const { conversation, systemPrompt, maxTokens, agentId, message, conversationId, sessionId, embedded = false } = await req.json();
     
     // Récupérer la clé API et la configuration depuis les secrets de Supabase
     const cerebrasApiKey = Deno.env.get('CEREBRAS_API_KEY') || '';
@@ -32,12 +32,14 @@ serve(async (req) => {
     }
 
     let finalSystemPrompt = systemPrompt;
+    let finalConversation = conversation || [];
+    let finalConversationId = conversationId;
     
     // Si un agentId est fourni, rechercher le prompt système associé dans la base de données
     if (agentId) {
       const { data: agent, error } = await supabase
         .from('ai_agents')
-        .select('system_prompt, name')
+        .select('system_prompt, name, objective, personality')
         .eq('id', agentId)
         .single();
 
@@ -46,10 +48,74 @@ serve(async (req) => {
       }
 
       if (agent) {
-        finalSystemPrompt = agent.system_prompt;
+        // Construire le prompt système basé sur les attributs de l'agent
+        finalSystemPrompt = agent.system_prompt || `Tu es ${agent.name}, `;
+        
+        if (!finalSystemPrompt && agent.name) {
+          finalSystemPrompt = `Tu es ${agent.name}, `;
+          
+          if (agent.personality) {
+            finalSystemPrompt += `avec une personnalité ${agent.personality}. `;
+          }
+          
+          if (agent.objective) {
+            finalSystemPrompt += `Ton objectif est ${agent.objective}.`;
+          }
+        }
         
         // Incrémenter le compteur de vues pour cet agent
         await supabase.rpc('increment_agent_views', { agent_id: agentId });
+        
+        // Si c'est une session intégrée, gérer la conversation
+        if (embedded && sessionId) {
+          // Vérifier si une conversation existe déjà pour cette session
+          if (conversationId) {
+            // Récupérer les messages existants
+            const { data: existingMessages } = await supabase
+              .from('ai_messages')
+              .select('content, role')
+              .eq('conversation_id', conversationId)
+              .order('created_at', { ascending: true });
+              
+            if (existingMessages && existingMessages.length > 0) {
+              finalConversation = existingMessages;
+            }
+          } else {
+            // Créer une nouvelle conversation
+            const { data: newConversation, error: convError } = await supabase
+              .from('ai_conversations')
+              .insert({
+                agent_id: agentId,
+                is_guest: true,
+                session_id: sessionId
+              })
+              .select()
+              .single();
+              
+            if (convError) {
+              console.error('Error creating conversation:', convError);
+            } else {
+              finalConversationId = newConversation.id;
+            }
+          }
+          
+          // Ajouter le message utilisateur à la base de données si nécessaire
+          if (message && finalConversationId) {
+            await supabase
+              .from('ai_messages')
+              .insert({
+                conversation_id: finalConversationId,
+                content: message,
+                role: 'user'
+              });
+              
+            // Ajouter le message à la conversation en cours
+            finalConversation.push({
+              role: 'user',
+              content: message
+            });
+          }
+        }
       }
     }
 
@@ -65,7 +131,7 @@ serve(async (req) => {
     }
     
     // Ajouter les messages de la conversation
-    conversation.forEach((msg: { role: string; content: string }) => {
+    finalConversation.forEach((msg) => {
       messages.push({
         role: msg.role,
         content: msg.content
@@ -95,10 +161,23 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    const assistantReply = data.choices[0].message.content;
+    
+    // Si c'est une conversation intégrée avec un ID, sauvegarder la réponse
+    if (embedded && finalConversationId) {
+      await supabase
+        .from('ai_messages')
+        .insert({
+          conversation_id: finalConversationId,
+          content: assistantReply,
+          role: 'assistant'
+        });
+    }
     
     return new Response(JSON.stringify({
-      reply: data.choices[0].message.content,
-      usage: data.usage
+      reply: assistantReply,
+      usage: data.usage,
+      conversationId: finalConversationId
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

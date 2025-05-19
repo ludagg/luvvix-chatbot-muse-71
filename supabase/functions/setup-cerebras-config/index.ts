@@ -22,7 +22,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Récupérer les données envoyées dans la requête
-    const { endpoint_url, api_key, model_name, provider } = await req.json();
+    const { endpoint_url, api_key, model_name, provider, embed_enabled = true } = await req.json();
     
     // Si aucune clé API n'est fournie, utiliser celle qui existe déjà
     let finalApiKey = api_key;
@@ -93,9 +93,24 @@ serve(async (req) => {
         secret_value: model_name,
       });
     }
+    
+    // Configuration pour l'intégration
+    const { error: embedEnabledError } = await supabase.rpc('set_edge_function_secret', {
+      function_name: 'cerebras-embed',
+      secret_name: 'EMBED_ENABLED',
+      secret_value: embed_enabled ? 'true' : 'false',
+    });
+
+    if (embedEnabledError) {
+      throw new Error(`Erreur lors de la configuration du secret EMBED_ENABLED: ${embedEnabledError.message}`);
+    }
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Configuration Cerebras sauvegardée avec succès' }),
+      JSON.stringify({ 
+        success: true, 
+        message: 'Configuration Cerebras sauvegardée avec succès',
+        embed_enabled: embed_enabled
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

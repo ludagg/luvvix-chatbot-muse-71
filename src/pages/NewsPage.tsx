@@ -15,6 +15,9 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
 
 const NewsPage = () => {
+  useEffect(() => {
+    document.title = "LuvviX News - Restez informés";
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [userCountry, setUserCountry] = useState<string>('');

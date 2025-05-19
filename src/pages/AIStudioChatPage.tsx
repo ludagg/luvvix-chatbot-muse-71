@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import FavoriteButton from "@/components/ai-studio/FavoriteButton";
 
 interface Message {
   id: string;

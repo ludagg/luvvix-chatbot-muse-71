@@ -140,7 +140,8 @@ const Dashboard = () => {
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Navbar />
       
-      <main className="flex-grow container mx-auto px-4 py-8">
+      {/* Ajout d'un espace en haut pour éviter que le contenu soit caché par la barre de navigation */}
+      <main className="flex-grow container mx-auto px-4 py-8 pt-24">
         <div className="max-w-7xl mx-auto">
           {user && (
             <>
@@ -197,7 +198,7 @@ const Dashboard = () => {
                         <RecentActivities />
                       </div>
                       <div className="lg:col-span-1">
-                        <StatCards />
+                        <StatCards userId={user.id} />
                       </div>
                     </div>
                   </div>

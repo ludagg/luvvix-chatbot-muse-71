@@ -1,5 +1,4 @@
 
-import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WeatherWidget from "@/components/weather/WeatherWidget";
@@ -11,7 +10,8 @@ const WeatherPage = () => {
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Navbar />
       
-      <main className="flex-grow container mx-auto px-4 py-8">
+      {/* Ajout d'un espace en haut pour éviter que le contenu soit caché par la barre de navigation */}
+      <main className="flex-grow container mx-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-6 text-center">LuvviX Météo</h1>
           

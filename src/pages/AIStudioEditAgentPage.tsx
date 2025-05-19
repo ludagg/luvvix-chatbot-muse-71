@@ -1,4 +1,3 @@
-
 import { useParams, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast"; // Added proper import, just in case it's needed
 
 const AIStudioEditAgentPage = () => {
   const { agentId } = useParams<{ agentId: string }>();

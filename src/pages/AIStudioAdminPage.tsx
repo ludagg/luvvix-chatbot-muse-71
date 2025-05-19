@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast"; // Fixed import path
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -186,15 +185,27 @@ const AIStudioAdminPage = () => {
         // Update existing config
         const { error } = await supabase
           .from("ai_admin_config")
-          .update(config)
-          .eq("id", config.id);
+          .update({
+            endpoint_url: config.endpoint_url,
+            api_key: config.api_key,
+            model_name: config.model_name,
+            quota_per_user: config.quota_per_user,
+            max_tokens: config.max_tokens
+          })
+          .eq("id", config.id || ''); // Handle the case when id might be undefined
           
         if (error) throw error;
       } else {
         // Insert new config
         const { error } = await supabase
           .from("ai_admin_config")
-          .insert(config);
+          .insert({
+            endpoint_url: config.endpoint_url,
+            api_key: config.api_key,
+            model_name: config.model_name,
+            quota_per_user: config.quota_per_user,
+            max_tokens: config.max_tokens
+          });
           
         if (error) throw error;
       }

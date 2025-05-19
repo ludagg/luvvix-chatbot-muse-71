@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Radio, RadioGroup } from "@/components/ui/radio-group";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileText } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -200,7 +200,7 @@ const FormViewPage = () => {
                 >
                   {question.options?.choices?.map((option: string, i: number) => (
                     <div key={i} className="flex items-center space-x-2">
-                      <Radio id={`${question.id}-option-${i}`} value={option} />
+                      <RadioGroupItem id={`${question.id}-option-${i}`} value={option} />
                       <label
                         htmlFor={`${question.id}-option-${i}`}
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"

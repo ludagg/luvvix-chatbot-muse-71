@@ -18,7 +18,7 @@
     },
     {
       "source": "/:path*",
-      "destination": "/:path*"
+      "destination": "/index.html"
     }
   ],
   "headers": [

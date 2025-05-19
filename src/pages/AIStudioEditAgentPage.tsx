@@ -1,4 +1,3 @@
-
 import { useParams, Navigate, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +15,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Bot, Sparkles, Code2, FileText, Upload, Plus, Trash2, Save, Settings2, MessageSquare } from "lucide-react";
 import EmbedCodeGenerator from "@/components/ai-studio/EmbedCodeGenerator";
+
+// Define an interface for the parameters object to help TypeScript
+interface AgentParameters {
+  system_prompt?: string;
+  [key: string]: any;
+}
 
 const AIStudioEditAgentPage = () => {
   const { agentId } = useParams<{ agentId: string }>();
@@ -71,6 +76,10 @@ const AIStudioEditAgentPage = () => {
         }
         
         setAgent(data);
+        
+        // Safely access parameters by ensuring it's an object and casting to our interface
+        const parameters = (typeof data.parameters === 'object' ? data.parameters : {}) as AgentParameters;
+        
         setFormState({
           name: data.name || "",
           objective: data.objective || "",
@@ -79,8 +88,7 @@ const AIStudioEditAgentPage = () => {
           is_public: data.is_public || false,
           is_paid: data.is_paid || false,
           price: data.price?.toString() || "0",
-          // Fix here: Get system_prompt from parameters.system_prompt if available
-          system_prompt: data.parameters?.system_prompt || ""
+          system_prompt: parameters.system_prompt || ""
         });
         
         // Fetch context files/documents
@@ -277,9 +285,10 @@ const AIStudioEditAgentPage = () => {
     try {
       setSaving(true);
       
-      // Fix here: Store system_prompt in the parameters JSON object
-      const updatedParameters = {
-        ...(agent?.parameters || {}),
+      // Safely create the updated parameters object by ensuring the original parameters is an object
+      const currentParameters = (typeof agent?.parameters === 'object' ? agent?.parameters : {}) as AgentParameters;
+      const updatedParameters: AgentParameters = {
+        ...currentParameters,
         system_prompt: formState.system_prompt
       };
       
@@ -293,7 +302,7 @@ const AIStudioEditAgentPage = () => {
           is_public: formState.is_public,
           is_paid: formState.is_paid,
           price: formState.is_paid ? parseFloat(formState.price) : 0,
-          parameters: updatedParameters, // Store system_prompt here
+          parameters: updatedParameters,
           updated_at: new Date().toISOString()
         })
         .eq("id", agentId);

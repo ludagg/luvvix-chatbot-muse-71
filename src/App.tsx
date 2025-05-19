@@ -80,11 +80,27 @@ const App = () => (
                   
                   {/* Routes pour LuvviX Forms */}
                   <Route path="/forms" element={<FormsPage />} />
-                  <Route path="/forms/create" element={<FormEditorPage />} />
-                  <Route path="/forms/edit/:formId" element={<FormEditorPage />} />
+                  <Route path="/forms/create" element={
+                    <ProtectedRoute>
+                      <FormEditorPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/forms/edit/:formId" element={
+                    <ProtectedRoute>
+                      <FormEditorPage />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/forms/view/:formId" element={<FormViewPage />} />
-                  <Route path="/forms/settings/:formId" element={<FormSettingsPage />} />
-                  <Route path="/forms/responses/:formId" element={<FormResponsesPage />} />
+                  <Route path="/forms/settings/:formId" element={
+                    <ProtectedRoute>
+                      <FormSettingsPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/forms/responses/:formId" element={
+                    <ProtectedRoute>
+                      <FormResponsesPage />
+                    </ProtectedRoute>
+                  } />
                   
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

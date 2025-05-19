@@ -34,7 +34,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     setIsLoading(false);
     if (success) {
       if (returnTo) {
-        window.location.href = returnTo;
+        navigate(returnTo);
       } else {
         navigate('/dashboard');
       }
@@ -48,7 +48,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     setIsLoading(false);
     if (success) {
       if (returnTo) {
-        window.location.href = returnTo;
+        navigate(returnTo);
       } else {
         navigate('/dashboard');
       }

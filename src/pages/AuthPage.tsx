@@ -20,6 +20,7 @@ const AuthPage = () => {
       // Give the session time to fully establish before redirecting
       setTimeout(() => {
         if (returnTo) {
+          console.log(`Redirecting to: ${returnTo}`);
           navigate(returnTo);
         } else {
           navigate('/dashboard');

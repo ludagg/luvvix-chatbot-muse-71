@@ -6,8 +6,10 @@ import {
   HeartPulse, 
   Radio, 
   FlaskConical, 
-  Cloud 
+  Cloud,
+  Sparkles
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const ecosystemProducts = [
   {
@@ -17,7 +19,16 @@ const ecosystemProducts = [
     gradient: "from-blue-500/20 to-blue-600/20",
     hover: "hover:from-blue-500/30 hover:to-blue-600/30",
     iconColor: "text-blue-500",
-    link: "#"
+    link: "/ai-studio"
+  },
+  {
+    name: "LuvviX AI Studio",
+    icon: Sparkles,
+    description: "Créez, personnalisez et publiez vos propres agents IA sans code pour vos besoins spécifiques.",
+    gradient: "from-violet-500/20 to-violet-600/20",
+    hover: "hover:from-violet-500/30 hover:to-violet-600/30",
+    iconColor: "text-violet-500",
+    link: "/ai-studio"
   },
   {
     name: "LuvviX Medic",
@@ -53,7 +64,7 @@ const ecosystemProducts = [
     gradient: "from-sky-500/20 to-sky-600/20",
     hover: "hover:from-sky-500/30 hover:to-sky-600/30",
     iconColor: "text-sky-500",
-    link: "#"
+    link: "/cloud"
   }
 ];
 
@@ -91,9 +102,12 @@ const Ecosystem = () => {
               <Button
                 variant="ghost" 
                 className="text-white hover:bg-white/10 group"
+                asChild
               >
-                Explorer
-                <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                <Link to={product.link}>
+                  Explorer
+                  <ArrowRight size={16} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </Button>
             </div>
           ))}
@@ -109,8 +123,11 @@ const Ecosystem = () => {
             <Button 
               size="lg"
               className="bg-white text-luvvix-purple hover:bg-white/90"
+              asChild
             >
-              Créer votre LuvviX ID
+              <Link to="/auth">
+                Créer votre LuvviX ID
+              </Link>
             </Button>
           </div>
         </div>

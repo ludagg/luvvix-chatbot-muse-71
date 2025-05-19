@@ -27,6 +27,236 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_admin_config: {
+        Row: {
+          api_key: string
+          endpoint_url: string
+          id: string
+          max_tokens: number | null
+          model_name: string
+          quota_per_user: number | null
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          endpoint_url: string
+          id?: string
+          max_tokens?: number | null
+          model_name: string
+          quota_per_user?: number | null
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          endpoint_url?: string
+          id?: string
+          max_tokens?: number | null
+          model_name?: string
+          quota_per_user?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_agent_context: {
+        Row: {
+          agent_id: string
+          content: string | null
+          content_type: string
+          created_at: string
+          file_path: string | null
+          id: string
+          url: string | null
+        }
+        Insert: {
+          agent_id: string
+          content?: string | null
+          content_type: string
+          created_at?: string
+          file_path?: string | null
+          id?: string
+          url?: string | null
+        }
+        Update: {
+          agent_id?: string
+          content?: string | null
+          content_type?: string
+          created_at?: string
+          file_path?: string | null
+          id?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_agent_context_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_agent_reviews: {
+        Row: {
+          agent_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          agent_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          user_id: string
+        }
+        Update: {
+          agent_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_agent_reviews_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_agents: {
+        Row: {
+          api_key: string | null
+          avatar_style: string
+          created_at: string
+          id: string
+          is_paid: boolean
+          is_public: boolean
+          name: string
+          objective: string
+          parameters: Json | null
+          personality: string
+          price: number | null
+          rating: number | null
+          slug: string | null
+          updated_at: string
+          user_id: string
+          views: number | null
+        }
+        Insert: {
+          api_key?: string | null
+          avatar_style: string
+          created_at?: string
+          id?: string
+          is_paid?: boolean
+          is_public?: boolean
+          name: string
+          objective: string
+          parameters?: Json | null
+          personality: string
+          price?: number | null
+          rating?: number | null
+          slug?: string | null
+          updated_at?: string
+          user_id: string
+          views?: number | null
+        }
+        Update: {
+          api_key?: string | null
+          avatar_style?: string
+          created_at?: string
+          id?: string
+          is_paid?: boolean
+          is_public?: boolean
+          name?: string
+          objective?: string
+          parameters?: Json | null
+          personality?: string
+          price?: number | null
+          rating?: number | null
+          slug?: string | null
+          updated_at?: string
+          user_id?: string
+          views?: number | null
+        }
+        Relationships: []
+      }
+      ai_conversations: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          is_guest: boolean
+          session_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          is_guest?: boolean
+          session_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          is_guest?: boolean
+          session_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appconnection: {
         Row: {
           applicationid: string

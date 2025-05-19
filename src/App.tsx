@@ -25,6 +25,14 @@ import FormEditorPage from "./pages/FormEditorPage";
 import FormViewPage from "./pages/FormViewPage";
 import FormSettingsPage from "./pages/FormSettingsPage";
 import FormResponsesPage from "./pages/FormResponsesPage";
+import AIStudioPage from "./pages/AIStudioPage";
+import AIStudioDashboardPage from "./pages/AIStudioDashboardPage";
+import AIStudioAgentPage from "./pages/AIStudioAgentPage";
+import AIStudioCreateAgentPage from "./pages/AIStudioCreateAgentPage";
+import AIStudioEditAgentPage from "./pages/AIStudioEditAgentPage";
+import AIStudioMarketplacePage from "./pages/AIStudioMarketplacePage";
+import AIStudioAdminPage from "./pages/AIStudioAdminPage";
+import AIStudioChatPage from "./pages/AIStudioChatPage";
 
 // Configure le client de requête avec des paramètres optimisés
 const queryClient = new QueryClient({
@@ -104,6 +112,28 @@ const App = () => (
                       <FormResponsesPage />
                     </ProtectedRoute>
                   } />
+                  
+                  {/* Routes pour LuvviX AI Studio */}
+                  <Route path="/ai-studio" element={<AIStudioPage />} />
+                  <Route path="/ai-studio/dashboard" element={
+                    <ProtectedRoute>
+                      <AIStudioDashboardPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/ai-studio/agents/:agentId" element={<AIStudioAgentPage />} />
+                  <Route path="/ai-studio/create" element={
+                    <ProtectedRoute>
+                      <AIStudioCreateAgentPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/ai-studio/edit/:agentId" element={
+                    <ProtectedRoute>
+                      <AIStudioEditAgentPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/ai-studio/marketplace" element={<AIStudioMarketplacePage />} />
+                  <Route path="/ai-studio/chat/:agentId" element={<AIStudioChatPage />} />
+                  <Route path="/ai-studio/admin" element={<AIStudioAdminPage />} />
                   
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

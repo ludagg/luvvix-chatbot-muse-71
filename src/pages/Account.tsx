@@ -37,8 +37,8 @@ const Account = () => {
       setUser(user);
       
       const { data, error } = await supabase
-        .from('profiles')
-        .select('username, website, avatar_url')
+        .from('user_profiles')
+        .select('username, avatar_url')
         .eq('id', user.id)
         .single();
       
@@ -48,7 +48,6 @@ const Account = () => {
       
       if (data) {
         setUsername(data.username || '');
-        setWebsite(data.website || '');
         setAvatarUrl(data.avatar_url || '');
       }
     } catch (error: any) {
@@ -64,10 +63,9 @@ const Account = () => {
       
       if (!user) throw new Error('Utilisateur non connecté');
       
-      const { error } = await supabase.from('profiles').upsert({
+      const { error } = await supabase.from('user_profiles').upsert({
         id: user.id,
         username,
-        website,
         avatar_url: avatarUrl,
         updated_at: new Date().toISOString(),
       });
@@ -147,15 +145,6 @@ const Account = () => {
                             onChange={(e) => setUsername(e.target.value)}
                           />
                         </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="website">Site web</Label>
-                          <Input 
-                            id="website" 
-                            value={website} 
-                            onChange={(e) => setWebsite(e.target.value)}
-                          />
-                        </div>
                       </div>
                       
                       <div className="flex justify-end space-x-2">
@@ -163,7 +152,6 @@ const Account = () => {
                           variant="outline" 
                           onClick={() => {
                             setUsername('');
-                            setWebsite('');
                           }}
                         >
                           Annuler

@@ -27,12 +27,13 @@ const CloudHeader: FC<CloudHeaderProps> = ({ toggleSidebar, sidebarOpen }) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
+  // Only toggle between light and system since dark is not available in Theme type
   const toggleTheme = () => {
-    setTheme(resolvedTheme === "light" ? "dark" : "light");
+    setTheme(theme === "light" ? "system" : "light");
   };
 
   return (
-    <div className="border-b bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 p-2 sm:p-4 sticky top-0 z-20 shadow-sm">
+    <div className="border-b bg-gradient-to-r from-purple-50 to-indigo-50 p-2 sm:p-4 sticky top-0 z-20 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           {!sidebarOpen && (
@@ -41,7 +42,7 @@ const CloudHeader: FC<CloudHeaderProps> = ({ toggleSidebar, sidebarOpen }) => {
             </Button>
           )}
           
-          <div className="hidden md:flex items-center text-sm text-gray-700 dark:text-gray-300">
+          <div className="hidden md:flex items-center text-sm text-gray-700">
             <CloudCog className="h-5 w-5 mr-2 text-purple-500" />
             <span className="font-semibold">LuvviX Cloud</span>
             <ChevronRight className="h-4 w-4 mx-1" />
@@ -49,7 +50,7 @@ const CloudHeader: FC<CloudHeaderProps> = ({ toggleSidebar, sidebarOpen }) => {
           </div>
           
           {isMobile && (
-            <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center">
+            <h1 className="text-lg font-semibold text-gray-800 flex items-center">
               <CloudCog className="h-5 w-5 mr-2 text-purple-500" />
               LuvviX Cloud
             </h1>
@@ -61,7 +62,7 @@ const CloudHeader: FC<CloudHeaderProps> = ({ toggleSidebar, sidebarOpen }) => {
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input 
               placeholder="Search files..." 
-              className="pl-8 pr-4 py-2 rounded-full border-gray-300 bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500 text-gray-800 dark:text-gray-200"
+              className="pl-8 pr-4 py-2 rounded-full border-gray-300 bg-white/70 backdrop-blur-sm focus:border-purple-500 focus:ring-purple-500 text-gray-800"
             />
           </div>
         </div>
@@ -71,7 +72,7 @@ const CloudHeader: FC<CloudHeaderProps> = ({ toggleSidebar, sidebarOpen }) => {
             <Button 
               variant="outline" 
               size="sm" 
-              className="hidden sm:flex items-center gap-1 text-purple-600 border-purple-300 dark:text-purple-400 dark:border-purple-800 bg-white/80 dark:bg-gray-800/80"
+              className="hidden sm:flex items-center gap-1 text-purple-600 border-purple-300 bg-white/80"
               onClick={() => navigate('/cloud/upload')}
             >
               <Upload className="h-4 w-4" />
@@ -81,7 +82,7 @@ const CloudHeader: FC<CloudHeaderProps> = ({ toggleSidebar, sidebarOpen }) => {
             <Button 
               variant="outline" 
               size="sm" 
-              className="hidden sm:flex items-center gap-1 text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-800 bg-white/80 dark:bg-gray-800/80"
+              className="hidden sm:flex items-center gap-1 text-blue-600 border-blue-300 bg-white/80"
               onClick={() => navigate('/cloud/new-folder')}
             >
               <FolderPlus className="h-4 w-4" />
@@ -93,18 +94,18 @@ const CloudHeader: FC<CloudHeaderProps> = ({ toggleSidebar, sidebarOpen }) => {
             variant="ghost" 
             size="icon" 
             onClick={toggleTheme} 
-            className="text-gray-600 dark:text-gray-300"
-            aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
+            className="text-gray-600"
+            aria-label="Toggle theme"
           >
             <SunMoon className="h-5 w-5" />
           </Button>
           
-          <Button variant="ghost" size="icon" className="text-gray-600 dark:text-gray-300">
+          <Button variant="ghost" size="icon" className="text-gray-600">
             <Grid className="h-5 w-5" />
           </Button>
           
           {!isMobile && (
-            <Button variant="ghost" size="icon" className="text-gray-600 dark:text-gray-300">
+            <Button variant="ghost" size="icon" className="text-gray-600">
               <List className="h-5 w-5" />
             </Button>
           )}
@@ -117,14 +118,14 @@ const CloudHeader: FC<CloudHeaderProps> = ({ toggleSidebar, sidebarOpen }) => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <Input 
               placeholder="Search files..." 
-              className="pl-10 pr-4 py-3 rounded-full border-gray-200 bg-white/70 dark:bg-gray-700/70 backdrop-blur-sm w-full focus:border-purple-500 focus:ring-purple-500 text-gray-800 dark:text-gray-200"
+              className="pl-10 pr-4 py-3 rounded-full border-gray-200 bg-white/70 backdrop-blur-sm w-full focus:border-purple-500 focus:ring-purple-500 text-gray-800"
             />
           </div>
           <div className="flex justify-between mt-2">
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex items-center gap-1 text-purple-600 border-purple-300 dark:text-purple-400 dark:border-purple-800 flex-1 mr-1 justify-center bg-white/80 dark:bg-gray-800/80"
+              className="flex items-center gap-1 text-purple-600 border-purple-300 flex-1 mr-1 justify-center bg-white/80"
               onClick={() => navigate('/cloud/upload')}
             >
               <Upload className="h-4 w-4" />
@@ -134,7 +135,7 @@ const CloudHeader: FC<CloudHeaderProps> = ({ toggleSidebar, sidebarOpen }) => {
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex items-center gap-1 text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-800 flex-1 ml-1 justify-center bg-white/80 dark:bg-gray-800/80"
+              className="flex items-center gap-1 text-blue-600 border-blue-300 flex-1 ml-1 justify-center bg-white/80"
               onClick={() => navigate('/cloud/new-folder')}
             >
               <FolderPlus className="h-4 w-4" />

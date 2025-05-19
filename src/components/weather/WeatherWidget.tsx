@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -33,8 +32,8 @@ interface WeatherData {
   windDirection: number;
   pressure: number;
   visibility: number;
-  sunrise: number;
-  sunset: number;
+  sunrise: string; // Changed type from number to string
+  sunset: string;  // Changed type from number to string
   forecast?: ForecastDay[];
 }
 
@@ -99,8 +98,8 @@ const WeatherWidget = () => {
           windDirection: data.current.wind_degree,
           pressure: data.current.pressure_mb,
           visibility: data.current.vis_km,
-          sunrise: data.forecast.forecastday[0].astro.sunrise,
-          sunset: data.forecast.forecastday[0].astro.sunset,
+          sunrise: data.forecast.forecastday[0].astro.sunrise, // This is a string value
+          sunset: data.forecast.forecastday[0].astro.sunset,   // This is a string value
           forecast: forecastDays
         });
         
@@ -123,8 +122,8 @@ const WeatherWidget = () => {
             windDirection: 180,
             pressure: 1013,
             visibility: 10,
-            sunrise: '06:32',
-            sunset: '18:44',
+            sunrise: '06:32', // String value
+            sunset: '18:44',  // String value
             forecast: [
               {
                 date: 'Demain',

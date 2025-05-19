@@ -25,7 +25,11 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+    () => {
+      const storedTheme = localStorage.getItem(storageKey) as Theme | null;
+      // Only allow 'light' or 'system' as valid themes
+      return (storedTheme === 'light' || storedTheme === 'system') ? storedTheme : defaultTheme;
+    }
   );
   
   // Always set resolved theme to light

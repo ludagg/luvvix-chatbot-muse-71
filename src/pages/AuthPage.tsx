@@ -7,6 +7,9 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 
 const AuthPage = () => {
+    useEffect(() => {
+    document.title = "Compte LuvviX ID ";
+  }, []);
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

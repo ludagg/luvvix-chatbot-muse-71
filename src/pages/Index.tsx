@@ -18,7 +18,6 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="pt-16"> {/* Added padding-top to prevent navbar overlap */}
         <Hero />
         <Ecosystem />
         <FormsPromo />

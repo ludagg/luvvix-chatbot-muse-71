@@ -24,7 +24,7 @@ const FormsHeader = () => {
           </div>
           <Button 
             onClick={() => navigate("/forms/create")}
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-purple-600 hover:bg-purple-700 z-10"
           >
             <Plus className="h-4 w-4 mr-2" />
             Nouveau formulaire

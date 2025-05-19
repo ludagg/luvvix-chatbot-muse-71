@@ -16,6 +16,8 @@ const FormsPage = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
+      {/* Ajout d'un div spacer pour compenser la hauteur de la navbar fixed */}
+      <div className="pt-20"></div> 
       <FormsHeader />
       <main className="flex-grow container mx-auto px-4 py-8">
         <FormsList />

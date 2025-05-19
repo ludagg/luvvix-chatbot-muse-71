@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -260,7 +259,7 @@ const FormsList = () => {
           <p className="text-gray-500 mb-6">Créez votre premier formulaire pour commencer à collecter des réponses</p>
           <Button 
             onClick={() => navigate("/forms/create")}
-            className="bg-purple-600 hover:bg-purple-700"
+            className="bg-purple-600 hover:bg-purple-700 z-10"
           >
             <Plus className="h-4 w-4 mr-2" />
             Nouveau formulaire

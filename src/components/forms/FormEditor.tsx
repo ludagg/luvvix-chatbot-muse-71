@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +27,15 @@ interface FormEditorProps {
   formId?: string;
 }
 
+// Define the form types for react-hook-form
+interface FormValues {
+  formTitle: string;
+  formDescription: string;
+  collectEmails: boolean;
+  limitResponses: boolean;
+  confirmation: string;
+}
+
 const FormEditor = ({ formId }: FormEditorProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -38,7 +46,17 @@ const FormEditor = ({ formId }: FormEditorProps) => {
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
-  const form = useForm();
+  
+  // Initialize the form properly
+  const form = useForm<FormValues>({
+    defaultValues: {
+      formTitle: "",
+      formDescription: "",
+      collectEmails: false,
+      limitResponses: false,
+      confirmation: "Merci d'avoir répondu à ce formulaire."
+    }
+  });
 
   const { data: formData, isLoading: isLoadingForm } = useQuery({
     queryKey: ["form", formId],
@@ -51,6 +69,16 @@ const FormEditor = ({ formId }: FormEditorProps) => {
     queryFn: () => formId ? formsService.getFormQuestions(formId) : [],
     enabled: !!formId,
   });
+
+  // Update form with data when loaded
+  useEffect(() => {
+    if (formData) {
+      setTitle(formData.title);
+      setDescription(formData.description || "");
+      form.setValue("formTitle", formData.title);
+      form.setValue("formDescription", formData.description || "");
+    }
+  }, [formData, form]);
 
   const updateFormMutation = useMutation({
     mutationFn: ({ formId, updates }: { formId: string, updates: Partial<FormType> }) => 
@@ -111,13 +139,6 @@ const FormEditor = ({ formId }: FormEditorProps) => {
   });
   
   useEffect(() => {
-    if (formData) {
-      setTitle(formData.title);
-      setDescription(formData.description || "");
-    }
-  }, [formData]);
-  
-  useEffect(() => {
     if (questionsData) {
       setQuestions(questionsData);
     }
@@ -132,6 +153,7 @@ const FormEditor = ({ formId }: FormEditorProps) => {
 
   const handleTitleChange = (value: string) => {
     setTitle(value);
+    form.setValue("formTitle", value);
     if (formId) {
       updateFormMutation.mutate({
         formId,
@@ -142,6 +164,7 @@ const FormEditor = ({ formId }: FormEditorProps) => {
 
   const handleDescriptionChange = (value: string) => {
     setDescription(value);
+    form.setValue("formDescription", value);
     if (formId) {
       updateFormMutation.mutate({
         formId,
@@ -328,6 +351,7 @@ const FormEditor = ({ formId }: FormEditorProps) => {
                   <div className="space-y-4">
                     <Form {...form}>
                       <FormField
+                        control={form.control}
                         name="formTitle"
                         render={({ field }) => (
                           <FormItem>
@@ -335,6 +359,7 @@ const FormEditor = ({ formId }: FormEditorProps) => {
                             <FormControl>
                               <Input 
                                 placeholder="Saisissez un titre" 
+                                {...field}
                                 value={title} 
                                 onChange={(e) => handleTitleChange(e.target.value)} 
                               />
@@ -344,6 +369,7 @@ const FormEditor = ({ formId }: FormEditorProps) => {
                       />
                       
                       <FormField
+                        control={form.control}
                         name="formDescription"
                         render={({ field }) => (
                           <FormItem>
@@ -351,6 +377,7 @@ const FormEditor = ({ formId }: FormEditorProps) => {
                             <FormControl>
                               <Input 
                                 placeholder="Ajoutez une description" 
+                                {...field}
                                 value={description} 
                                 onChange={(e) => handleDescriptionChange(e.target.value)} 
                               />
@@ -606,64 +633,72 @@ const FormEditor = ({ formId }: FormEditorProps) => {
               <TabsContent value="settings" className="p-6">
                 <h3 className="text-lg font-medium mb-4">Paramètres du formulaire</h3>
                 <div className="space-y-6">
-                  <FormField
-                    name="collectEmails"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <input
-                            type="checkbox"
-                            checked={false}
-                            className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 h-4 w-4 mt-1"
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Collecter les adresses email</FormLabel>
+                  <Form {...form}>
+                    <FormField
+                      control={form.control}
+                      name="collectEmails"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={field.onChange}
+                              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 h-4 w-4 mt-1"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Collecter les adresses email</FormLabel>
+                            <FormDescription>
+                              Demander aux répondants de fournir leur adresse email.
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="limitResponses"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                          <FormControl>
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={field.onChange}
+                              className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 h-4 w-4 mt-1"
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Limiter le nombre de réponses</FormLabel>
+                            <FormDescription>
+                              Définir un nombre maximum de réponses à collecter.
+                            </FormDescription>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="confirmation"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Message de confirmation</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Merci d'avoir répondu à ce formulaire."
+                              {...field}
+                            />
+                          </FormControl>
                           <FormDescription>
-                            Demander aux répondants de fournir leur adresse email.
+                            Ce message s'affichera après qu'un utilisateur ait soumis le formulaire.
                           </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    name="limitResponses"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                        <FormControl>
-                          <input
-                            type="checkbox"
-                            checked={false}
-                            className="rounded border-gray-300 text-purple-600 focus:ring-purple-500 h-4 w-4 mt-1"
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel>Limiter le nombre de réponses</FormLabel>
-                          <FormDescription>
-                            Définir un nombre maximum de réponses à collecter.
-                          </FormDescription>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    name="confirmation"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Message de confirmation</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Merci d'avoir répondu à ce formulaire."
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          Ce message s'affichera après qu'un utilisateur ait soumis le formulaire.
-                        </FormDescription>
-                      </FormItem>
-                    )}
-                  />
+                        </FormItem>
+                      )}
+                    />
+                  </Form>
                 </div>
               </TabsContent>
             </Tabs>

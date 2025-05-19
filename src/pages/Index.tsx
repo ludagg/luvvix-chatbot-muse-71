@@ -19,7 +19,7 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="pt-24">
+      
         <Hero />
         <AIStudioPromo />
         <Ecosystem />
@@ -32,7 +32,7 @@ const Index = () => {
         <CeoSection />
         <Careers />
         <Testimonials />
-      </div>
+      
       <Footer />
     </div>
   );

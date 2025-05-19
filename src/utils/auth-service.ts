@@ -27,7 +27,7 @@ class AuthService {
         appName: options.appName,
         redirectUrl: options.redirectUrl,
         apiBaseUrl: options.apiBaseUrl,
-        cookieDomain: '.luvix.it.com' // Définir le domaine parent pour tous les cookies
+        cookieDomain: '.luvvix.it.com' // Définir le domaine parent pour tous les cookies
       });
       
       // Vérifier l'authentification actuelle

@@ -1,6 +1,0 @@
-{
-  "appId": "com.ludagg.luvvixchatbot",
-  "appName": "LuvviX AI",
-  "webDir": "dist", // ← Doit être 'dist' et non 'www'
-  "bundledWebRuntime": false
-}

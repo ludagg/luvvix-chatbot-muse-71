@@ -1,0 +1,17 @@
+
+{
+  "rewrites": [
+    {
+      "source": "/ai/:path*",
+      "destination": "https://luvvi-ai.vercel.app/:path*"
+    },
+    {
+      "source": "/medecine/:path*",
+      "destination": "https://medivox.vercel.app/:path*"
+    },
+    {
+      "source": "/streammix/:path*",
+      "destination": "https://luvvi-streammix.vercel.app/:path*"
+    }
+  ]
+}

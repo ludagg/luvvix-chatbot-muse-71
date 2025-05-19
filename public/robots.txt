@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://luvvix.it.com/sitemap.xml

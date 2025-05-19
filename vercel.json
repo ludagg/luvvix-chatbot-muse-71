@@ -35,9 +35,5 @@
       },
       "dest": "/$1"
     }
-  ],
-  "cookies": {
-    "sourcePattern": ".",
-    "domain": ".luvvix.it.com"
-  }
+  ]
 }

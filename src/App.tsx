@@ -62,7 +62,7 @@ const initializeAuthSync = () => {
   }
   
   // Check cookie support
-  AuthSync.checkCookieSupport().then(supported => {
+  authSync.checkCookieSupport().then(supported => {
     if (!supported) {
       console.warn("Cross-domain cookie support may be limited in this browser");
     } else {

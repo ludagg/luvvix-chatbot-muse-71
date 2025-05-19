@@ -197,7 +197,7 @@ export class AuthSync {
    * Check if the current browser supports third-party cookies
    * This is just a helper method to detect potential issues
    */
-  public static checkCookieSupport(): Promise<boolean> {
+  public checkCookieSupport(): Promise<boolean> {
     return new Promise(resolve => {
       const testCookieName = 'luvvix_cookie_test';
       document.cookie = `${testCookieName}=1; path=/; SameSite=None; Secure`;

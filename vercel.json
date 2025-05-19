@@ -1,17 +1,4 @@
 {
-  "redirects": [
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "host",
-          "value": "forms.luvvix.it.com"
-        }
-      ],
-      "destination": "/forms",
-      "permanent": false
-    }
-  ],
   "rewrites": [
     {
       "source": "/ai/:path*",
@@ -26,8 +13,31 @@
       "destination": "https://luvvi-streammix.vercel.app/:path*"
     },
     {
+      "source": "/forms/:path*",
+      "destination": "/forms/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "headers": {
+        "x-custom-host": "{host}"
+      },
+      "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "forms.luvix.it.com"
+        }
+      ],
+      "dest": "/forms/$1"
     }
   ]
 }

@@ -8,7 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import App from './App.tsx';
 import './index.css';
 
-// Créer un client de requête pour React Query
+// Create a query client for React Query
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

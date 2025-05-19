@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Bot,
   Send,
@@ -204,208 +205,210 @@ const AIStudioChatPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      
-      <main className="flex-grow bg-slate-50 dark:bg-slate-900 flex flex-col">
-        {/* Chat header */}
-        <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4">
-          <div className="container mx-auto flex items-center">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mr-4 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
-              asChild
-            >
-              <Link to="/ai-studio/dashboard">
-                <ArrowLeft className="h-4 w-4 mr-2" /> Retour
-              </Link>
-            </Button>
-            
-            {loading ? (
-              <div className="flex items-center">
-                <Skeleton className="h-10 w-10 rounded-full mr-3" />
-                <div>
-                  <Skeleton className="h-5 w-32 mb-1" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-              </div>
-            ) : agent ? (
-              <div className="flex items-center">
-                <Avatar className="mr-3 h-10 w-10 bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
-                  <AvatarFallback>
-                    {getAvatarForAgent()}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h1 className="font-medium text-slate-900 dark:text-white">
-                    {agent.name}
-                  </h1>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {agent.personality === "expert" && "Expert"}
-                    {agent.personality === "friendly" && "Amical"}
-                    {agent.personality === "concise" && "Concis"}
-                    {agent.personality === "empathetic" && "Empathique"}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center">
-                <Avatar className="mr-3">
-                  <AvatarFallback>
-                    <Bot className="h-5 w-5" />
-                  </AvatarFallback>
-                </Avatar>
-                <h1 className="font-medium text-slate-900 dark:text-white">
-                  Agent introuvable
-                </h1>
-              </div>
-            )}
-          </div>
-        </header>
+    <TooltipProvider>
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
         
-        {/* Chat messages */}
-        <div className="flex-grow overflow-y-auto p-4 md:p-6 space-y-6">
-          <div className="container mx-auto max-w-3xl">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex mb-6 ${
-                  message.role === "user" ? "justify-end" : "justify-start"
-                }`}
+        <main className="flex-grow bg-slate-50 dark:bg-slate-900 flex flex-col">
+          {/* Chat header */}
+          <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4">
+            <div className="container mx-auto flex items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mr-4 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                asChild
               >
+                <Link to="/ai-studio/dashboard">
+                  <ArrowLeft className="h-4 w-4 mr-2" /> Retour
+                </Link>
+              </Button>
+              
+              {loading ? (
+                <div className="flex items-center">
+                  <Skeleton className="h-10 w-10 rounded-full mr-3" />
+                  <div>
+                    <Skeleton className="h-5 w-32 mb-1" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+              ) : agent ? (
+                <div className="flex items-center">
+                  <Avatar className="mr-3 h-10 w-10 bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
+                    <AvatarFallback>
+                      {getAvatarForAgent()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <h1 className="font-medium text-slate-900 dark:text-white">
+                      {agent.name}
+                    </h1>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {agent.personality === "expert" && "Expert"}
+                      {agent.personality === "friendly" && "Amical"}
+                      {agent.personality === "concise" && "Concis"}
+                      {agent.personality === "empathetic" && "Empathique"}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <Avatar className="mr-3">
+                    <AvatarFallback>
+                      <Bot className="h-5 w-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <h1 className="font-medium text-slate-900 dark:text-white">
+                    Agent introuvable
+                  </h1>
+                </div>
+              )}
+            </div>
+          </header>
+          
+          {/* Chat messages */}
+          <div className="flex-grow overflow-y-auto p-4 md:p-6 space-y-6">
+            <div className="container mx-auto max-w-3xl">
+              {messages.map((message) => (
                 <div
-                  className={`flex max-w-[80%] md:max-w-[70%] ${
-                    message.role === "user" ? "flex-row-reverse" : "flex-row"
+                  key={message.id}
+                  className={`flex mb-6 ${
+                    message.role === "user" ? "justify-end" : "justify-start"
                   }`}
                 >
                   <div
-                    className={`flex-shrink-0 ${
-                      message.role === "user" ? "ml-3" : "mr-3"
+                    className={`flex max-w-[80%] md:max-w-[70%] ${
+                      message.role === "user" ? "flex-row-reverse" : "flex-row"
                     }`}
                   >
-                    <Avatar>
-                      {message.role === "user" ? (
-                        <AvatarFallback className="bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300">
-                          <User className="h-5 w-5" />
-                        </AvatarFallback>
-                      ) : (
-                        <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
-                          {getAvatarForAgent()}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                  </div>
-                  
-                  <div
-                    className={`rounded-2xl p-4 ${
-                      message.role === "user"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
+                    <div
+                      className={`flex-shrink-0 ${
+                        message.role === "user" ? "ml-3" : "mr-3"
+                      }`}
+                    >
+                      <Avatar>
+                        {message.role === "user" ? (
+                          <AvatarFallback className="bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300">
+                            <User className="h-5 w-5" />
+                          </AvatarFallback>
+                        ) : (
+                          <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
+                            {getAvatarForAgent()}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                    </div>
                     
-                    {message.role === "assistant" && (
-                      <div className="flex items-center justify-end mt-2 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                        >
-                          <ThumbsUp className="h-3 w-3" />
-                          <span className="sr-only">J'aime</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                        >
-                          <ThumbsDown className="h-3 w-3" />
-                          <span className="sr-only">Je n'aime pas</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                        >
-                          <Share2 className="h-3 w-3" />
-                          <span className="sr-only">Partager</span>
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-            
-            {sending && (
-              <div className="flex mb-6 justify-start">
-                <div className="flex max-w-[80%] md:max-w-[70%] flex-row">
-                  <div className="flex-shrink-0 mr-3">
-                    <Avatar>
-                      <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
-                        {getAvatarForAgent()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  
-                  <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center space-x-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
-                      <p className="text-slate-500">En train d'écrire...</p>
+                    <div
+                      className={`rounded-2xl p-4 ${
+                        message.role === "user"
+                          ? "bg-blue-600 text-white"
+                          : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+                      
+                      {message.role === "assistant" && (
+                        <div className="flex items-center justify-end mt-2 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                          >
+                            <ThumbsUp className="h-3 w-3" />
+                            <span className="sr-only">J'aime</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                          >
+                            <ThumbsDown className="h-3 w-3" />
+                            <span className="sr-only">Je n'aime pas</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                          >
+                            <Share2 className="h-3 w-3" />
+                            <span className="sr-only">Partager</span>
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
+              ))}
+              
+              {sending && (
+                <div className="flex mb-6 justify-start">
+                  <div className="flex max-w-[80%] md:max-w-[70%] flex-row">
+                    <div className="flex-shrink-0 mr-3">
+                      <Avatar>
+                        <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
+                          {getAvatarForAgent()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                    
+                    <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center space-x-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
+                        <p className="text-slate-500">En train d'écrire...</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
+            </div>
           </div>
-        </div>
-        
-        {/* Input area */}
-        <div className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4">
-          <div className="container mx-auto max-w-3xl">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className="flex space-x-2"
-            >
-              <Input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Écrivez votre message..."
-                className="flex-grow"
-                autoComplete="off"
-                disabled={loading || !agent}
-              />
-              <Button
-                type="submit"
-                size="icon"
-                disabled={!input.trim() || sending || loading || !agent}
-                className="bg-violet-600 hover:bg-violet-700 text-white"
+          
+          {/* Input area */}
+          <div className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4">
+            <div className="container mx-auto max-w-3xl">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSendMessage();
+                }}
+                className="flex space-x-2"
               >
-                {sending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
-              </Button>
-            </form>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center">
-              LuvviX AI n'est pas parfait et peut parfois générer des informations incorrectes
-            </p>
+                <Input
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Écrivez votre message..."
+                  className="flex-grow"
+                  autoComplete="off"
+                  disabled={loading || !agent}
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  disabled={!input.trim() || sending || loading || !agent}
+                  className="bg-violet-600 hover:bg-violet-700 text-white"
+                >
+                  {sending ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
+                </Button>
+              </form>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center">
+                LuvviX AI n'est pas parfait et peut parfois générer des informations incorrectes
+              </p>
+            </div>
           </div>
-        </div>
-      </main>
-      
-      <Footer />
-    </div>
+        </main>
+        
+        <Footer />
+      </div>
+    </TooltipProvider>
   );
 };
 

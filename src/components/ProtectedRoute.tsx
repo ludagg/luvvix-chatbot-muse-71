@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 import { useCrossAppAuth } from '@/hooks/use-cross-app-auth';
 import authSync from '@/services/auth-sync';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -15,14 +16,32 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const location = useLocation();
   const [initialCheckDone, setInitialCheckDone] = useState(false);
   const [crossDomainChecked, setCrossDomainChecked] = useState(false);
+  const [directCheckDone, setDirectCheckDone] = useState(false);
   const { isAuthenticated, isInitialized, revalidateAuth } = useCrossAppAuth({ 
     appName: 'main', 
     autoInit: true,
     checkSubdomainAuth: true
   });
 
+  // Direct check with Supabase
+  useEffect(() => {
+    const checkDirectAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        console.log("ProtectedRoute: Direct Supabase session check:", data.session ? "Session found" : "No session");
+        setDirectCheckDone(true);
+      } catch (error) {
+        console.error("Error during direct session check:", error);
+        setDirectCheckDone(true);
+      }
+    };
+    
+    checkDirectAuth();
+  }, []);
+
   // Force a sync when the component mounts to ensure cross-domain consistency
   useEffect(() => {
+    console.log("ProtectedRoute: Forcing auth sync on mount");
     authSync.forceSync();
   }, []);
 
@@ -45,13 +64,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   // Set a flag once all auth checks are complete
   useEffect(() => {
-    if (!loading && isInitialized && crossDomainChecked) {
+    if (!loading && isInitialized && crossDomainChecked && directCheckDone) {
       console.log("ProtectedRoute: All auth checks complete");
       console.log("ProtectedRoute: Main auth user:", user ? "Authenticated" : "Not authenticated");
       console.log("ProtectedRoute: Cross app auth:", isAuthenticated ? "Authenticated" : "Not authenticated");
       setInitialCheckDone(true);
     }
-  }, [loading, isInitialized, crossDomainChecked, user, isAuthenticated]);
+  }, [loading, isInitialized, crossDomainChecked, directCheckDone, user, isAuthenticated]);
 
   // Show loading indicator during initial auth check
   if (loading || !initialCheckDone) {

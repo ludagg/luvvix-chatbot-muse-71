@@ -110,14 +110,29 @@ export class AuthSync {
    * Get the root domain from the current hostname
    */
   private getRootDomain(): string {
-    const hostname = window.location.hostname;
-    
-    // Extract root domain (e.g., from forms.luvvix.it.com -> .luvvix.it.com)
-    const parts = hostname.split('.');
-    if (parts.length <= 2) return hostname; // Already on root domain
-    
-    // Return root domain with leading dot for cookie compatibility
-    return '.' + parts.slice(-3).join('.');
+    try {
+      const hostname = window.location.hostname;
+      
+      // For development environments with localhost
+      if (hostname === 'localhost' || hostname.match(/^127\.\d+\.\d+\.\d+$/)) {
+        return hostname;
+      }
+      
+      // For preview or staging environments like .vercel.app
+      if (hostname.includes('.vercel.app')) {
+        return hostname;
+      }
+      
+      // Extract root domain (e.g., from forms.luvvix.it.com -> .luvvix.it.com)
+      const parts = hostname.split('.');
+      if (parts.length <= 2) return hostname; // Already on root domain
+      
+      // Return root domain with leading dot for cookie compatibility
+      return '.' + parts.slice(-3).join('.');
+    } catch (error) {
+      console.error('Error getting root domain:', error);
+      return window.location.hostname; // Fallback to full hostname
+    }
   }
   
   /**
@@ -128,6 +143,8 @@ export class AuthSync {
       const syncToken = localStorage.getItem(this.localStorageKey);
       const rootDomain = this.getRootDomain();
       
+      console.log(`Syncing auth state across domains with root domain: ${rootDomain}`);
+      
       if (syncToken) {
         // We have an authentication token, ensure it's set in all places
         localStorage.setItem('sb-qlhovvqcwjdbirmekdoy-auth-token', syncToken);
@@ -137,8 +154,8 @@ export class AuthSync {
           domain: rootDomain,
           maxAge: 604800, // 7 days
           path: '/',
-          secure: true,
-          sameSite: 'Strict'
+          secure: window.location.protocol === 'https:',
+          sameSite: 'Lax' // Changed from Strict to Lax for better cross-domain support
         });
         
         console.log(`Auth state synchronized across domains using root domain: ${rootDomain}`);
@@ -151,8 +168,8 @@ export class AuthSync {
           domain: rootDomain,
           maxAge: 0,
           path: '/',
-          secure: true,
-          sameSite: 'Strict'
+          secure: window.location.protocol === 'https:',
+          sameSite: 'Lax'
         });
         
         console.log('Auth state cleared across all domains');
@@ -174,13 +191,26 @@ export class AuthSync {
   }): void {
     try {
       const cookieValue = encodeURIComponent(value);
-      let cookie = `${name}=${cookieValue}; Path=${options.path}; Domain=${options.domain}; Max-Age=${options.maxAge}`;
+      let cookie = `${name}=${cookieValue}; Path=${options.path}; Max-Age=${options.maxAge}`;
+      
+      // Add domain if not localhost
+      if (options.domain !== 'localhost' && !options.domain.match(/^127\.\d+\.\d+\.\d+$/)) {
+        cookie += `; Domain=${options.domain}`;
+      }
       
       if (options.secure) cookie += '; Secure';
       if (options.sameSite) cookie += `; SameSite=${options.sameSite}`;
       
       document.cookie = cookie;
       console.log(`Cookie set: ${name} on domain ${options.domain}`);
+      
+      // Verify cookie was set
+      setTimeout(() => {
+        const allCookies = document.cookie;
+        const cookieExists = allCookies.indexOf(name) !== -1;
+        console.log(`Cookie verification: ${name} ${cookieExists ? 'was set' : 'failed to set'}`);
+      }, 100);
+      
     } catch (error) {
       console.error('Error setting cookie:', error);
     }
@@ -190,6 +220,7 @@ export class AuthSync {
    * Manually force a sync (useful after login/logout operations)
    */
   public forceSync(): void {
+    console.log("Force synchronizing auth state across domains...");
     this.syncAuthState();
   }
   
@@ -200,10 +231,21 @@ export class AuthSync {
   public checkCookieSupport(): Promise<boolean> {
     return new Promise(resolve => {
       const testCookieName = 'luvvix_cookie_test';
-      document.cookie = `${testCookieName}=1; path=/; SameSite=None; Secure`;
+      const testValue = 'test_' + Date.now();
+      
+      // Try to set a test cookie
+      document.cookie = `${testCookieName}=${testValue}; path=/; SameSite=None${window.location.protocol === 'https:' ? '; Secure' : ''}`;
       
       setTimeout(() => {
-        const hasCookie = document.cookie.indexOf(testCookieName) !== -1;
+        // Check if the cookie was set successfully
+        const cookies = document.cookie.split(';');
+        const hasCookie = cookies.some(cookie => cookie.trim().startsWith(`${testCookieName}=`));
+        
+        console.log(`Cookie support test: ${hasCookie ? 'Supported' : 'Not supported'}`);
+        
+        // Try to clean up the test cookie
+        document.cookie = `${testCookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+        
         resolve(hasCookie);
       }, 100);
     });

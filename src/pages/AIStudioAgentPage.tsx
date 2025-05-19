@@ -49,6 +49,7 @@ const AIStudioAgentPage = () => {
   }, [agentId]);
 
   return (
+      <div className="pt-24 flex-1">
     <TooltipProvider>
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -131,6 +132,7 @@ const AIStudioAgentPage = () => {
         <Footer />
       </div>
     </TooltipProvider>
+</div>
   );
 };
 

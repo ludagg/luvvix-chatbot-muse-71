@@ -102,6 +102,13 @@ const FormEditor = ({ formId }: FormEditorProps) => {
     setDescription(e.target.value);
   };
 
+  // Fonction pour empêcher l'envoi du formulaire avec la touche Entrée
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+    }
+  };
+
   const handleSave = async () => {
     if (!formId) {
       // Si pas de formId, créer un nouveau formulaire
@@ -210,6 +217,7 @@ const FormEditor = ({ formId }: FormEditorProps) => {
               placeholder="Titre du formulaire"
               value={title}
               onChange={handleTitleChange}
+              onKeyDown={handleKeyDown}
               className="text-2xl font-bold mb-2"
             />
             <Textarea

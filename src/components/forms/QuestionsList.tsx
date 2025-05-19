@@ -92,6 +92,15 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
     { value: "url", label: "URL" },
   ];
 
+  // Fonction pour empêcher l'événement par défaut (soumission du formulaire) sur la touche Entrée
+  // mais permettre l'édition multilignes dans les champs de type textarea pour les options
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Si la touche Entrée est pressée sans la touche Shift, empêcher la soumission
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <Card className="p-4 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start">
@@ -101,6 +110,7 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
               <Input 
                 value={question.question_text} 
                 onChange={(e) => onUpdate("question_text", e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="Texte de la question" 
                 className="text-lg font-medium w-full"
               />
@@ -144,13 +154,21 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
                 question.question_type === "checkboxes" || 
                 question.question_type === "dropdown") && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Options (une par ligne)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Options (une par ligne, appuyez sur Shift+Entrée pour ajouter une nouvelle ligne)
+                  </label>
                   <Textarea
                     value={question.options?.choices?.join('\n') || ''}
                     onChange={(e) => onUpdate("options", { 
                       ...question.options,
                       choices: e.target.value.split('\n').filter(line => line.trim() !== '')
                     })}
+                    // Ne pas intercepter Shift+Entrée pour permettre d'ajouter des lignes
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                      }
+                    }}
                     placeholder="Option 1&#10;Option 2&#10;Option 3"
                     className="h-24"
                   />

@@ -170,8 +170,8 @@ const Dashboard = () => {
               
               <Tabs defaultValue={defaultTab} className="w-full">
                 <TabsList className="grid grid-cols-4 mb-6">
-                  <TabsTrigger value="ecosystem">Écosystème</TabsTrigger>
-                  <TabsTrigger value="connected-apps">Applications connectées</TabsTrigger>
+                  <TabsTrigger value="ecosystem">LuvviX</TabsTrigger>
+                  <TabsTrigger value="connected-apps">SSO</TabsTrigger>
                   <TabsTrigger value="security">Sécurité</TabsTrigger>
                   <TabsTrigger value="profile">Profil</TabsTrigger>
                 </TabsList>

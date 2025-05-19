@@ -30,7 +30,7 @@ export interface FormQuestion {
   id: string;
   form_id: string;
   question_text: string;
-  question_type: "text" | "multipleChoice" | "checkboxes" | "dropdown" | "grid";
+  question_type: "text" | "textarea" | "multipleChoice" | "checkboxes" | "dropdown" | "email" | "number" | "date" | "phone" | "url" | "grid";
   description: string | null;
   required: boolean;
   options: any;
@@ -249,17 +249,9 @@ class FormsService {
 
   async updateQuestionOrder(questions: { id: string; position: number; form_id: string; question_text: string; question_type: string }[]) {
     try {
-      const updates = questions.map(({ id, position, form_id, question_text, question_type }) => ({
-        id,
-        position,
-        form_id,
-        question_text,
-        question_type
-      }));
-
       const { error } = await supabase
         .from("form_questions")
-        .upsert(updates);
+        .upsert(questions);
 
       if (error) throw error;
       

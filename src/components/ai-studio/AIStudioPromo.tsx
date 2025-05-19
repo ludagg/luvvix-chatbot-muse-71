@@ -1,7 +1,7 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Bot, Sparkles, Zap, Brain, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const AIStudioPromo = () => {
   return (
@@ -67,11 +67,13 @@ const AIStudioPromo = () => {
             <div className="flex flex-wrap gap-4">
               <Button 
                 size="lg"
-                className="bg-violet-600 hover:bg-violet-700 text-white"
+                variant="default"
+                className="bg-luvvix-purple hover:bg-luvvix-darkpurple"
                 asChild
               >
                 <Link to="/ai-studio">
-                  Explorer AI Studio
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  Découvrir AI Studio
                 </Link>
               </Button>
               <Button

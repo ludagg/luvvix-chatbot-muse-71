@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, Bot, User, ExternalLink } from "lucide-react";
+import { Loader2, Send, Bot, User, ExternalLink, AlertCircle } from "lucide-react";
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +16,7 @@ interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp?: Date;
+  isError?: boolean;
 }
 
 interface EmbedChatProps {
@@ -40,10 +41,12 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const [sessionId, setSessionId] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [errorState, setErrorState] = useState<string | null>(null);
   
   // Generate a unique session ID for guest users
   useEffect(() => {
@@ -67,6 +70,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           .single();
           
         if (error) {
+          console.error("Error fetching agent:", error);
           throw error;
         }
         
@@ -93,10 +97,12 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
         }
       } catch (error) {
         console.error('Error fetching agent:', error);
+        setErrorState('Could not load the agent. Please try again later.');
         setMessages([
           { 
             role: 'system', 
-            content: 'Error: Could not load the agent. Please try again later.' 
+            content: 'Error: Could not load the agent. Please try again later.',
+            isError: true
           }
         ]);
       } finally {
@@ -125,7 +131,10 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
         .select('id')
         .single();
         
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating conversation:", error);
+        throw error;
+      }
       
       return data.id;
     } catch (error) {
@@ -135,6 +144,8 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
   };
 
   const saveMessage = async (message: Message, convId: string) => {
+    if (message.isError) return; // Don't save error messages
+    
     try {
       await supabase
         .from('ai_messages')
@@ -152,6 +163,8 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
     const userMessage = text || input;
     if (!userMessage.trim()) return;
     
+    setErrorState(null);
+    
     // Create a conversation if it doesn't exist
     if (!conversationId) {
       const newConversationId = await createConversation();
@@ -163,7 +176,11 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       setInput('');
       
       // Add user message to the UI
-      const newUserMessage = { role: 'user' as const, content: userMessage };
+      const newUserMessage = { 
+        role: 'user' as const, 
+        content: userMessage,
+        timestamp: new Date()
+      };
       setMessages(prevMessages => [...prevMessages, newUserMessage]);
       
       // Save user message to the database if we have a conversation ID
@@ -180,6 +197,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
         embedded: isEmbed
       });
       
+      // Try with cerebras-chat endpoint first
       const response = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/cerebras-chat', {
         method: 'POST',
         headers: {
@@ -196,7 +214,9 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       });
       
       if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
+        const errorData = await response.json();
+        console.error("Error from cerebras-chat endpoint:", errorData);
+        throw new Error(errorData.error || `Error: ${response.status}`);
       }
       
       const data = await response.json();
@@ -209,36 +229,104 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       // Add assistant message to the UI
       const assistantMessage = { 
         role: 'assistant' as const, 
-        content: data.reply || 'Sorry, I could not generate a response.'
+        content: data.reply || 'Sorry, I could not generate a response.',
+        timestamp: new Date()
       };
       
       setMessages(prevMessages => [...prevMessages, assistantMessage]);
-      
-      // Save assistant message to the database
-      if (conversationId) {
-        await saveMessage(assistantMessage, conversationId);
-      }
       
       // Update conversation ID if it was created by the function
       if (data.conversationId && !conversationId) {
         setConversationId(data.conversationId);
       }
       
+      // Reset retry count on success
+      setRetryCount(0);
+      
     } catch (error) {
       console.error('Error sending message:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to get a response from the agent."
-      });
+      setErrorState('Failed to get a response from the agent.');
       
-      setMessages(prevMessages => [
-        ...prevMessages, 
-        { 
-          role: 'assistant', 
-          content: 'Sorry, I encountered an error processing your request. Please try again later.'
+      // Fallback to ai-studio-chat if cerebras-chat fails
+      if (retryCount < 1) {
+        setRetryCount(prevCount => prevCount + 1);
+        try {
+          console.log("Trying ai-studio-chat as fallback...");
+          
+          const fallbackResponse = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/ai-studio-chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              agentId,
+              message: userMessage,
+              sessionId,
+              conversationId
+            }),
+          });
+          
+          if (!fallbackResponse.ok) {
+            const fallbackErrorData = await fallbackResponse.json();
+            console.error("Error from ai-studio-chat fallback:", fallbackErrorData);
+            throw new Error(fallbackErrorData.error || `Fallback failed: ${fallbackResponse.status}`);
+          }
+          
+          const fallbackData = await fallbackResponse.json();
+          console.log("ai-studio-chat fallback response:", fallbackData);
+          
+          if (fallbackData.error) {
+            throw new Error(fallbackData.error);
+          }
+          
+          // Add assistant message to the UI
+          const assistantMessage = { 
+            role: 'assistant' as const, 
+            content: fallbackData.response || 'Sorry, I could not generate a response.',
+            timestamp: new Date()
+          };
+          
+          setMessages(prevMessages => [...prevMessages, assistantMessage]);
+          setErrorState(null);
+          
+          // Update conversation ID if it was created by the function
+          if (fallbackData.conversationId && !conversationId) {
+            setConversationId(fallbackData.conversationId);
+          }
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError);
+          
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to get a response from the agent after multiple attempts."
+          });
+          
+          setMessages(prevMessages => [
+            ...prevMessages, 
+            { 
+              role: 'assistant', 
+              content: 'Sorry, I encountered an error processing your request. Please try again later.',
+              isError: true
+            }
+          ]);
         }
-      ]);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to get a response from the agent."
+        });
+        
+        setMessages(prevMessages => [
+          ...prevMessages, 
+          { 
+            role: 'assistant', 
+            content: 'Sorry, I encountered an error processing your request. Please try again later.',
+            isError: true
+          }
+        ]);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -280,35 +368,55 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
             </div>
           </>
         ) : (
-          messages.map((message, i) => (
-            message.role !== 'system' && (
-              <div key={i} className={`flex items-start gap-3 ${message.role === 'assistant' ? 'text-gray-800 dark:text-gray-200' : ''}`}>
-                {message.role === 'assistant' ? (
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={agent?.avatar_url || ''} />
-                    <AvatarFallback 
-                      style={{ backgroundColor: accentColor }}
-                      className="text-white"
-                    >
-                      {agent?.name?.charAt(0) || <Bot size={16} />}
-                    </AvatarFallback>
-                  </Avatar>
-                ) : (
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.user_metadata?.avatar_url || ''} />
-                    <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
-                      <User size={16} />
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                <div className={`${message.role === 'assistant' ? 'prose dark:prose-invert prose-sm max-w-none' : ''}`}>
-                  <ReactMarkdown>
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
+          <>
+            {errorState && (
+              <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-md flex items-center text-red-800 dark:text-red-200 text-sm mb-4">
+                <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span>{errorState}</span>
               </div>
-            )
-          ))
+            )}
+            
+            {messages.map((message, i) => (
+              message.role !== 'system' && (
+                <div 
+                  key={i} 
+                  className={`flex items-start gap-3 ${
+                    message.role === 'assistant' 
+                      ? 'text-gray-800 dark:text-gray-200' 
+                      : ''
+                  } ${
+                    message.isError 
+                      ? 'opacity-70' 
+                      : ''
+                  }`}
+                >
+                  {message.role === 'assistant' ? (
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={agent?.avatar_url || ''} />
+                      <AvatarFallback 
+                        style={{ backgroundColor: message.isError ? '#ef4444' : accentColor }}
+                        className="text-white"
+                      >
+                        {message.isError ? <AlertCircle size={16} /> : (agent?.name?.charAt(0) || <Bot size={16} />)}
+                      </AvatarFallback>
+                    </Avatar>
+                  ) : (
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.user_metadata?.avatar_url || ''} />
+                      <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
+                        <User size={16} />
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div className={`${message.role === 'assistant' ? 'prose dark:prose-invert prose-sm max-w-none' : ''}`}>
+                    <ReactMarkdown>
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              )
+            ))}
+          </>
         )}
         
         {isLoading && (
@@ -352,11 +460,11 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
               borderColor: theme === 'dark' ? '#374151' : '#e5e7eb',
               backgroundColor: theme === 'dark' ? '#1f2937' : '#f9fafb'
             }}
-            disabled={isLoading}
+            disabled={isLoading || isFetching || !!errorState}
           />
           <Button
             onClick={() => handleSend()}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isLoading || isFetching || !!errorState}
             style={{ backgroundColor: accentColor }}
             className="h-10 px-3"
           >

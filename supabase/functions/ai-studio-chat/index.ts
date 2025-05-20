@@ -14,7 +14,26 @@ serve(async (req) => {
   }
   
   try {
-    const { agentId, message, sessionId, conversationId } = await req.json();
+    console.log("Request received by ai-studio-chat function");
+    
+    let requestData;
+    try {
+      requestData = await req.json();
+      console.log("Request data:", JSON.stringify(requestData));
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError);
+      throw new Error("Invalid request format: " + parseError.message);
+    }
+    
+    const { agentId, message, sessionId, conversationId } = requestData;
+    
+    if (!agentId) {
+      throw new Error("Agent ID is required");
+    }
+    
+    if (!message) {
+      throw new Error("Message is required");
+    }
     
     // Get Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -29,8 +48,11 @@ serve(async (req) => {
       .single();
       
     if (agentError || !agent) {
+      console.error("Agent not found:", agentError);
       throw new Error("Agent not found");
     }
+    
+    console.log("Agent found:", agent.name);
     
     // Get agent context
     const { data: contextData } = await supabase
@@ -47,13 +69,17 @@ serve(async (req) => {
       .single();
       
     if (configError || !adminConfig) {
+      console.error("Admin configuration not found:", configError);
       throw new Error("Admin configuration not found");
     }
+    
+    console.log("Admin config loaded, endpoint:", adminConfig.endpoint_url);
     
     let convoId = conversationId;
     
     // Create new conversation if needed
     if (!convoId) {
+      console.log("Creating new conversation");
       const { data: newConversation, error: convoError } = await supabase
         .from("ai_conversations")
         .insert({
@@ -66,14 +92,16 @@ serve(async (req) => {
         .single();
         
       if (convoError || !newConversation) {
+        console.error("Failed to create conversation:", convoError);
         throw new Error("Failed to create conversation");
       }
       
       convoId = newConversation.id;
+      console.log("New conversation created:", convoId);
     }
     
     // Store user message
-    await supabase
+    const { error: msgError } = await supabase
       .from("ai_messages")
       .insert({
         conversation_id: convoId,
@@ -81,9 +109,14 @@ serve(async (req) => {
         role: "user",
       });
       
+    if (msgError) {
+      console.error("Error storing user message:", msgError);
+    }
+      
     // Build context for the AI model
     let contextPrompt = "";
     if (contextData && contextData.length > 0) {
+      console.log(`Adding ${contextData.length} context items`);
       contextData.forEach(item => {
         if (item.content_type === "text" && item.content) {
           contextPrompt += `${item.content}\n\n`;
@@ -122,11 +155,15 @@ serve(async (req) => {
     }
     
     // Get conversation history
-    const { data: messages } = await supabase
+    const { data: messages, error: historyError } = await supabase
       .from("ai_messages")
       .select("*")
       .eq("conversation_id", convoId)
       .order("created_at", { ascending: true });
+      
+    if (historyError) {
+      console.error("Error fetching message history:", historyError);
+    }
       
     // Format messages for the model
     const formattedMessages = [
@@ -134,6 +171,7 @@ serve(async (req) => {
     ];
     
     if (messages && messages.length > 0) {
+      console.log(`Adding ${messages.length} history messages`);
       messages.forEach(msg => {
         formattedMessages.push({
           role: msg.role,
@@ -149,65 +187,76 @@ serve(async (req) => {
     
     console.log("Calling API with model:", cerebrasModel);
     
-    // Call AI model endpoint
-    const modelResponse = await fetch(cerebrasEndpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${cerebrasApiKey}`
-      },
-      body: JSON.stringify({
-        model: cerebrasModel,
-        messages: formattedMessages,
-        max_tokens: adminConfig.max_tokens || 2000,
-        temperature: 0.7,
-        stream: false
-      })
-    });
-    
-    if (!modelResponse.ok) {
-      const errorText = await modelResponse.text();
-      console.error("API error response:", errorText);
-      throw new Error(`Error from AI provider: ${modelResponse.status} ${modelResponse.statusText}`);
-    }
-    
-    const modelData = await modelResponse.json();
-    const aiResponse = modelData.choices && modelData.choices[0]?.message?.content || 
-                       "I'm sorry, I couldn't generate a response at this time.";
-    
-    // Store AI response
-    await supabase
-      .from("ai_messages")
-      .insert({
-        conversation_id: convoId,
-        content: aiResponse,
-        role: "assistant",
-      });
-    
-    // Increment view count for the agent
     try {
-      await supabase
-        .from("ai_agents")
-        .update({ views: (agent.views || 0) + 1 })
-        .eq("id", agentId);
-    } catch (viewError) {
-      console.error("Failed to increment views:", viewError);
-      // Continue execution even if this fails
-    }
-    
-    // Return the AI response
-    return new Response(
-      JSON.stringify({ 
-        response: aiResponse,
-        conversationId: convoId 
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          "Content-Type": "application/json" 
-        } 
+      // Call AI model endpoint
+      const modelResponse = await fetch(cerebrasEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${cerebrasApiKey}`
+        },
+        body: JSON.stringify({
+          model: cerebrasModel,
+          messages: formattedMessages,
+          max_tokens: adminConfig.max_tokens || 2000,
+          temperature: 0.7,
+          stream: false
+        })
+      });
+      
+      if (!modelResponse.ok) {
+        const errorText = await modelResponse.text();
+        console.error("API error response:", errorText);
+        throw new Error(`Error from AI provider: ${modelResponse.status} ${modelResponse.statusText} - ${errorText}`);
       }
-    );
+      
+      const modelData = await modelResponse.json();
+      console.log("Cerebras API response received");
+      
+      const aiResponse = modelData.choices && modelData.choices[0]?.message?.content || 
+                         "I'm sorry, I couldn't generate a response at this time.";
+      
+      // Store AI response
+      const { error: replyError } = await supabase
+        .from("ai_messages")
+        .insert({
+          conversation_id: convoId,
+          content: aiResponse,
+          role: "assistant",
+        });
+        
+      if (replyError) {
+        console.error("Error storing AI reply:", replyError);
+      }
+      
+      // Increment view count for the agent
+      try {
+        await supabase
+          .from("ai_agents")
+          .update({ views: (agent.views || 0) + 1 })
+          .eq("id", agentId);
+      } catch (viewError) {
+        console.error("Failed to increment views:", viewError);
+        // Continue execution even if this fails
+      }
+      
+      // Return the AI response
+      return new Response(
+        JSON.stringify({ 
+          response: aiResponse,
+          conversationId: convoId 
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            "Content-Type": "application/json" 
+          } 
+        }
+      );
+    } catch (apiError) {
+      console.error("Error calling Cerebras API:", apiError);
+      throw apiError;
+    }
   } catch (error) {
     console.error("Error:", error.message);
     return new Response(

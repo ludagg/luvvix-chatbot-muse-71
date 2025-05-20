@@ -20,15 +20,41 @@ serve(async (req) => {
   }
 
   try {
-    const { conversation, systemPrompt, maxTokens, agentId, message, conversationId, sessionId, embedded = false, userId = null } = await req.json();
+    console.log("Request received by cerebras-chat function");
     
-    console.log("Request received:", { agentId, message, conversationId, sessionId, embedded });
+    // Parse request body
+    let requestData;
+    try {
+      requestData = await req.json();
+      console.log("Request data parsed:", JSON.stringify(requestData));
+    } catch (parseError) {
+      console.error("Error parsing request data:", parseError);
+      throw new Error("Invalid request format: " + parseError.message);
+    }
+    
+    const { 
+      conversation = [], 
+      systemPrompt = '', 
+      maxTokens = 2000, 
+      agentId, 
+      message, 
+      conversationId, 
+      sessionId, 
+      embedded = false, 
+      userId = null 
+    } = requestData;
     
     // Get API key from environment or use the provided key
     const cerebrasApiKey = Deno.env.get('CEREBRAS_API_KEY') || 'csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv';
     const endpoint = Deno.env.get('CEREBRAS_ENDPOINT') || 'https://api.cerebras.ai/v1/chat/completions';
     const modelName = Deno.env.get('CEREBRAS_MODEL') || 'llama-4-scout-17b-16e-instruct';
     
+    console.log("Using Cerebras configuration:", {
+      endpoint,
+      model: modelName,
+      hasApiKey: !!cerebrasApiKey
+    });
+
     if (!cerebrasApiKey) {
       throw new Error('Clé API Cerebras non configurée');
     }
@@ -40,6 +66,8 @@ serve(async (req) => {
     
     // If agent ID is provided, get system prompt from database
     if (agentId) {
+      console.log("Getting agent data for ID:", agentId);
+      
       // Get agent from database
       const { data, error } = await supabase
         .from('ai_agents')
@@ -53,6 +81,8 @@ serve(async (req) => {
       }
 
       if (data) {
+        console.log("Agent data retrieved:", data.name);
+        
         // Build system prompt based on agent attributes
         finalSystemPrompt = `Tu es ${data.name}, `;
         
@@ -113,19 +143,30 @@ serve(async (req) => {
         
         // Handle conversation session
         if (sessionId) {
+          console.log("Processing session:", sessionId);
+          
           // Check if conversation exists
           if (finalConversationId) {
+            console.log("Getting existing conversation:", finalConversationId);
+            
             // Get existing messages
-            const { data: existingMessages } = await supabase
+            const { data: existingMessages, error: msgError } = await supabase
               .from('ai_messages')
               .select('content, role')
               .eq('conversation_id', finalConversationId)
               .order('created_at', { ascending: true });
               
+            if (msgError) {
+              console.error("Error fetching messages:", msgError);
+            }
+              
             if (existingMessages && existingMessages.length > 0) {
+              console.log(`Found ${existingMessages.length} existing messages`);
               finalConversation = existingMessages;
             }
           } else {
+            console.log("Creating new conversation");
+            
             // Create new conversation
             const { data: newConversation, error: convError } = await supabase
               .from('ai_conversations')
@@ -141,12 +182,15 @@ serve(async (req) => {
             if (convError) {
               console.error('Error creating conversation:', convError);
             } else {
+              console.log("New conversation created:", newConversation.id);
               finalConversationId = newConversation.id;
             }
           }
           
           // Add user message to database if needed
           if (message && finalConversationId) {
+            console.log("Storing user message in database");
+            
             await supabase
               .from('ai_messages')
               .insert({
@@ -206,55 +250,62 @@ serve(async (req) => {
     });
 
     // Call Cerebras API with the updated configuration
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${cerebrasApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: modelName,
-        messages: messages,
-        max_tokens: maxTokens || 2000,
-        temperature: 0.2,
-        top_p: 1,
-        stream: false,
-      }),
-    });
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${cerebrasApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: modelName,
+          messages: messages,
+          max_tokens: maxTokens || 2000,
+          temperature: 0.2,
+          top_p: 1,
+          stream: false,
+        }),
+      });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Cerebras API error response:', errorText);
-      throw new Error(`Erreur API Cerebras: ${response.status} ${response.statusText}`);
-    }
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Cerebras API error response:', errorText);
+        throw new Error(`Erreur API Cerebras: ${response.status} ${response.statusText} - ${errorText}`);
+      }
 
-    const data = await response.json();
-    console.log("Cerebras API response:", {
-      choices: data.choices?.length || 0,
-      usage: data.usage
-    });
-    
-    const assistantReply = data.choices && data.choices[0]?.message?.content || 
-                      "I'm sorry, I couldn't generate a response at this time.";
-    
-    // If this is a conversation with an ID, save the response
-    if (finalConversationId) {
-      await supabase
-        .from('ai_messages')
-        .insert({
-          conversation_id: finalConversationId,
-          content: assistantReply,
-          role: 'assistant'
-        });
+      const data = await response.json();
+      console.log("Cerebras API response:", {
+        choices: data.choices?.length || 0,
+        usage: data.usage
+      });
+      
+      const assistantReply = data.choices && data.choices[0]?.message?.content || 
+                        "Je suis désolé, je n'ai pas pu générer une réponse pour le moment.";
+      
+      // If this is a conversation with an ID, save the response
+      if (finalConversationId) {
+        console.log("Storing assistant reply in database");
+        
+        await supabase
+          .from('ai_messages')
+          .insert({
+            conversation_id: finalConversationId,
+            content: assistantReply,
+            role: 'assistant'
+          });
+      }
+      
+      return new Response(JSON.stringify({
+        reply: assistantReply,
+        usage: data.usage,
+        conversationId: finalConversationId
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (apiError) {
+      console.error("Error calling Cerebras API:", apiError);
+      throw apiError;
     }
-    
-    return new Response(JSON.stringify({
-      reply: assistantReply,
-      usage: data.usage,
-      conversationId: finalConversationId
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   } catch (error) {
     console.error('Error in cerebras-chat function:', error);
     return new Response(JSON.stringify({ error: error.message }), {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -67,7 +66,7 @@ const AIStudioMarketplacePage = () => {
 
     if (categoryFilter !== 'all') {
       // Note: This requires a 'category' field to exist in the ai_agents table
-      query = query.eq('category', categoryFilter);
+      query = query.eq('avatar_style', categoryFilter);
     }
 
     if (sortOrder === 'popular') {
@@ -75,8 +74,8 @@ const AIStudioMarketplacePage = () => {
     } else if (sortOrder === 'newest') {
       query = query.order('created_at', { ascending: false });
     } else if (sortOrder === 'most_liked') {
-      // Note: This requires a 'likes' field to exist in the ai_agents table
-      query = query.order('likes', { ascending: false });
+      // Using views as a proxy for likes since we don't have a specific likes field
+      query = query.order('views', { ascending: false });
     }
 
     try {
@@ -95,10 +94,10 @@ const AIStudioMarketplacePage = () => {
           category: agent.avatar_style || 'general', // Using avatar_style as category or default to 'general'
           user_id: agent.user_id,
           is_public: agent.is_public,
-          likes: agent.likes || 0, // Default as it's required by interface
+          likes: agent.views || 0, // Using views as a proxy for likes since we don't have a specific likes field
           views: agent.views || 0,
           avatar_url: agent.avatar_url,
-          // Map the user_profiles object to match our AgentUserProfile interface
+          // Handle the user_profiles properly
           user_profiles: agent.user_profiles ? {
             id: agent.user_profiles.id,
             full_name: agent.user_profiles.full_name,

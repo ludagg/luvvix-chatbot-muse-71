@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -48,6 +47,13 @@ interface Agent {
   created_at: string;
   user_profiles: UserProfile;
   ai_agent_reviews: AgentReview[];
+}
+
+// Create a separate interface for EmbedCodeGenerator props
+interface EmbedCodeGeneratorProps {
+  agentId: string;
+  agentName: string;
+  isPublic: boolean;
 }
 
 const AIStudioAgentPage = () => {

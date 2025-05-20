@@ -172,7 +172,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       }
       
       // Call the AI function
-      const response = await fetch('/api/v1/cerebras-chat', {
+      const response = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/cerebras-chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -181,7 +181,9 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           agentId: agentId,
           message: userMessage,
           sessionId: sessionId,
-          userId: user?.id || null
+          userId: user?.id || null,
+          conversationId: conversationId,
+          embedded: isEmbed
         }),
       });
       
@@ -198,7 +200,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       // Add assistant message to the UI
       const assistantMessage = { 
         role: 'assistant' as const, 
-        content: data.response || 'Sorry, I could not generate a response.'
+        content: data.reply || 'Sorry, I could not generate a response.'
       };
       
       setMessages(prevMessages => [...prevMessages, assistantMessage]);
@@ -207,6 +209,12 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       if (conversationId) {
         await saveMessage(assistantMessage, conversationId);
       }
+      
+      // Update conversation ID if it was created by the function
+      if (data.conversationId && !conversationId) {
+        setConversationId(data.conversationId);
+      }
+      
     } catch (error) {
       console.error('Error sending message:', error);
       toast({

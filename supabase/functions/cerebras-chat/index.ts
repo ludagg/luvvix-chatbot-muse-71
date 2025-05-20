@@ -102,7 +102,11 @@ serve(async (req) => {
         // Increment view count if not embedded
         if (!embedded) {
           try {
-            await supabase.rpc('increment_agent_views', { agent_id: agentId });
+            // Use direct update instead of RPC function
+            await supabase
+              .from('ai_agents')
+              .update({ views: data.views ? data.views + 1 : 1 })
+              .eq('id', agentId);
           } catch (error) {
             console.error('Failed to increment views:', error);
             // Continue execution even if this fails
@@ -223,7 +227,8 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const assistantReply = data.choices[0].message.content;
+    const assistantReply = data.choices && data.choices[0]?.message?.content || 
+                       "I'm sorry, I couldn't generate a response at this time.";
     
     // If this is a conversation with an ID, save the response
     if (finalConversationId) {

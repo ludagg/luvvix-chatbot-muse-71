@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, RefreshCw, Bot, User, Info, ExternalLink } from "lucide-react";
+import { Loader2, Send, Bot, User, ExternalLink } from "lucide-react";
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -80,9 +80,9 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           }
         ]);
         
-        // Increment views counter using direct update instead of RPC
+        // Increment views counter
         try {
-          // Directly update the views counter - bypassing the RPC function
+          // Directly update the views counter instead of using RPC
           await supabase
             .from('ai_agents')
             .update({ views: (data.views || 0) + 1 })

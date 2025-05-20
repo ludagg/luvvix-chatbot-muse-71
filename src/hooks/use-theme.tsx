@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'system';
+type Theme = 'light' | 'dark' | 'system';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -28,7 +28,7 @@ export function ThemeProvider({
     () => {
       const storedTheme = localStorage.getItem(storageKey) as Theme | null;
       // Only allow 'light' or 'system' as valid themes
-      return (storedTheme === 'light' || storedTheme === 'system') ? storedTheme : defaultTheme;
+      return (storedTheme === 'light' || storedTheme === 'dark' || storedTheme === 'system') ? storedTheme : defaultTheme;
     }
   );
   

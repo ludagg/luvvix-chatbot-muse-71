@@ -1,11 +1,12 @@
+
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Key, History, AppWindow, Shield, User } from "lucide-react";
+import { LogOut, Key, History, AppWindow, Shield, User, Loader2 } from "lucide-react";
 import AccountSelector from "@/components/AccountSelector";
 import AppGrid from "@/components/dashboard/AppGrid";
 import RecentActivities from "@/components/dashboard/RecentActivities";

@@ -392,7 +392,7 @@ const AIStudioEditAgentPage = () => {
                   </TabsTrigger>
                   <TabsTrigger value="context">
                     <FileText className="h-4 w-4 mr-2" />
-                    Contexte & données
+                    Contexte
                   </TabsTrigger>
                   <TabsTrigger value="integration">
                     <Code2 className="h-4 w-4 mr-2" />

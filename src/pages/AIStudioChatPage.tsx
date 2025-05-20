@@ -210,6 +210,7 @@ const AIStudioChatPage = () => {
   };
 
   return (
+      <div className="pt-24 flex-1">
     <TooltipProvider>
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -411,9 +412,9 @@ const AIStudioChatPage = () => {
           </div>
         </main>
         
-        <Footer />
+        
       </div>
-    </TooltipProvider>
+    </TooltipProvider></div>
   );
 };
 

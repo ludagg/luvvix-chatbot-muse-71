@@ -138,7 +138,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
     }
   };
 
-  // Fix the type error by properly defining the function parameters
+  // Fix the type error by explicitly defining the function parameter type to accept an optional string
   const handleSend = async (text?: string): Promise<void> => {
     const userMessage = text || input;
     if (!userMessage.trim()) return;

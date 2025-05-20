@@ -19,7 +19,6 @@
           "key": "Content-Security-Policy",
           "value": "frame-ancestors *"
         }
-        // Note : Pas de X-Frame-Options ici
       ]
     }
   ],

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -139,8 +138,8 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
     }
   };
 
-  // Explicitly define the function parameter type to accept a string
-  const handleSend = async (text?: string) => {
+  // Fix the type error by properly defining the function parameters
+  const handleSend = async (text?: string): Promise<void> => {
     const userMessage = text || input;
     if (!userMessage.trim()) return;
     

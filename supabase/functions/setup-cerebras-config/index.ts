@@ -32,12 +32,65 @@ serve(async (req) => {
       max_tokens = 2000
     } = await req.json();
     
-    // Si aucune clé API n'est fournie, utiliser celle qui existe déjà ou celle par défaut
+    // Si aucune clé API n'est fournie, vérifier celle existante ou une par défaut
     let finalApiKey = api_key;
     if (!finalApiKey) {
-      // Utiliser la clé par défaut que vous avez fournie
-      finalApiKey = "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv";
-      console.log("Utilisation de la clé API par défaut");
+      // Essayer d'abord de récupérer la clé existante depuis les secrets
+      try {
+        const { data: secretData, error: secretError } = await supabase.rpc('get_edge_function_secret', {
+          function_name: 'cerebras-chat',
+          secret_name: 'CEREBRAS_API_KEY',
+        });
+
+        if (!secretError && secretData) {
+          finalApiKey = secretData;
+          console.log("Utilisation de la clé API existante");
+        } else {
+          // Utiliser la clé par défaut que vous avez fournie
+          finalApiKey = "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv";
+          console.log("Utilisation de la clé API par défaut");
+        }
+      } catch (e) {
+        finalApiKey = "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv";
+        console.log("Utilisation de la clé API par défaut (après erreur)");
+      }
+    } else {
+      console.log("Utilisation de la nouvelle clé API fournie");
+    }
+
+    // Vérifier si la clé API est valide avec un appel de test avant de la sauvegarder
+    try {
+      const testEndpoint = endpoint_url || 'https://api.cerebras.ai/v1/chat/completions';
+      const testModel = model_name || 'llama-4-scout-17b-16e-instruct';
+      console.log(`Test de la clé API avec: ${testEndpoint}, modèle: ${testModel}`);
+      
+      const testResponse = await fetch(testEndpoint, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${finalApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: testModel,
+          messages: [
+            { role: 'system', content: 'Vous êtes un assistant utile.' },
+            { role: 'user', content: 'Dites "La clé API fonctionne correctement".' }
+          ],
+          max_tokens: 30,
+          temperature: 0.3,
+        }),
+      });
+      
+      if (!testResponse.ok) {
+        const errorText = await testResponse.text();
+        console.error("Échec du test de la clé API:", errorText);
+        throw new Error(`La clé API n'est pas valide: ${testResponse.status} ${testResponse.statusText} - ${errorText}`);
+      } else {
+        console.log("Test de la clé API réussi");
+      }
+    } catch (testError) {
+      console.error("Erreur lors du test de la clé API:", testError);
+      throw new Error(`Impossible de valider la clé API: ${testError.message}`);
     }
 
     // Stocker la clé API comme secret dans les fonctions Edge
@@ -157,7 +210,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Configuration Cerebras sauvegardée avec succès',
+        message: 'Configuration Cerebras sauvegardée et validée avec succès',
         embed_enabled: embed_enabled,
         quota_per_user: quota_per_user,
         max_tokens: max_tokens

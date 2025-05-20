@@ -7,14 +7,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Configuration de l'API Cerebras - Valeurs stables et fiables
-const CEREBRAS_CONFIG = {
-  apiKey: 'csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv',
-  endpoint: 'https://api.cerebras.ai/v1/chat/completions',
-  model: 'llama-4-scout-17b-16e-instruct',
-  timeoutMs: 25000, // 25 secondes de timeout
-  defaultMaxTokens: 2000,
-  temperature: 0.5
+// Configuration de l'API Cerebras
+const getConfig = async () => {
+  try {
+    // Récupérer la clé API depuis les secrets de Supabase
+    const apiKey = Deno.env.get('CEREBRAS_API_KEY') || 'csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv';
+    const endpoint = Deno.env.get('CEREBRAS_ENDPOINT') || 'https://api.cerebras.ai/v1/chat/completions';
+    const model = Deno.env.get('CEREBRAS_MODEL') || 'llama-4-scout-17b-16e-instruct';
+    const timeoutMs = 30000; // 30 secondes de timeout
+    const defaultMaxTokens = 2000;
+    const temperature = 0.5;
+
+    return {
+      apiKey,
+      endpoint,
+      model,
+      timeoutMs,
+      defaultMaxTokens,
+      temperature
+    };
+  } catch (error) {
+    console.error("Erreur lors de la récupération de la configuration:", error);
+    // Valeurs par défaut en cas d'erreur
+    return {
+      apiKey: 'csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv',
+      endpoint: 'https://api.cerebras.ai/v1/chat/completions',
+      model: 'llama-4-scout-17b-16e-instruct',
+      timeoutMs: 30000,
+      defaultMaxTokens: 2000,
+      temperature: 0.5
+    };
+  }
 };
 
 serve(async (req) => {
@@ -27,6 +50,10 @@ serve(async (req) => {
   
   try {
     console.log(`[${requestStart}] Requête reçue par ai-studio-chat (fallback)`);
+    
+    // Récupérer la configuration
+    const config = await getConfig();
+    console.log(`[${Date.now() - requestStart}ms] Configuration chargée: Model=${config.model}, Timeout=${config.timeoutMs}ms`);
     
     let requestData;
     try {
@@ -46,6 +73,10 @@ serve(async (req) => {
     
     if (!message) {
       throw new Error("Le message est obligatoire");
+    }
+    
+    if (!sessionId) {
+      throw new Error("L'ID de session est obligatoire");
     }
     
     // Obtenir le client Supabase
@@ -74,9 +105,9 @@ serve(async (req) => {
       .eq("agent_id", agentId);
       
     console.log(`[${Date.now() - requestStart}ms] Utilisation de la configuration Cerebras:`, {
-      model: CEREBRAS_CONFIG.model,
-      endpoint: CEREBRAS_CONFIG.endpoint,
-      hasApiKey: !!CEREBRAS_CONFIG.apiKey
+      model: config.model,
+      endpoint: config.endpoint,
+      hasApiKey: !!config.apiKey
     });
     
     let convoId = conversationId;
@@ -188,25 +219,25 @@ serve(async (req) => {
       });
     }
     
-    console.log(`[${Date.now() - requestStart}ms] Appel de l'API Cerebras avec le modèle:`, CEREBRAS_CONFIG.model);
+    console.log(`[${Date.now() - requestStart}ms] Appel de l'API Cerebras avec le modèle:`, config.model);
     
     try {
       // Créer un contrôleur pour gérer le timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), CEREBRAS_CONFIG.timeoutMs);
+      const timeoutId = setTimeout(() => controller.abort(), config.timeoutMs);
       
       // Appeler le point de terminaison du modèle d'IA
-      const modelResponse = await fetch(CEREBRAS_CONFIG.endpoint, {
+      const modelResponse = await fetch(config.endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${CEREBRAS_CONFIG.apiKey}`
+          "Authorization": `Bearer ${config.apiKey}`
         },
         body: JSON.stringify({
-          model: CEREBRAS_CONFIG.model,
+          model: config.model,
           messages: formattedMessages,
-          max_tokens: CEREBRAS_CONFIG.defaultMaxTokens,
-          temperature: CEREBRAS_CONFIG.temperature,
+          max_tokens: config.defaultMaxTokens,
+          temperature: config.temperature,
           stream: false
         }),
         signal: controller.signal
@@ -218,7 +249,13 @@ serve(async (req) => {
       if (!modelResponse.ok) {
         const errorText = await modelResponse.text();
         console.error(`[${Date.now() - requestStart}ms] Erreur de réponse de l'API:`, errorText, "Statut:", modelResponse.status);
-        throw new Error(`Erreur du fournisseur d'IA: ${modelResponse.status} ${modelResponse.statusText} - ${errorText}`);
+        
+        // Vérifier si c'est une erreur d'authentification
+        if (modelResponse.status === 401 || modelResponse.status === 403) {
+          throw new Error(`Erreur d'authentification API: Vérifiez que la clé API est valide. (${modelResponse.status})`);
+        } else {
+          throw new Error(`Erreur du fournisseur d'IA: ${modelResponse.status} ${modelResponse.statusText} - ${errorText}`);
+        }
       }
       
       const modelData = await modelResponse.json();
@@ -273,8 +310,8 @@ serve(async (req) => {
     } catch (apiError: any) {
       // Vérifier si c'est une erreur de timeout
       if (apiError.name === 'AbortError') {
-        console.error(`[${Date.now() - requestStart}ms] Timeout de l'API après ${CEREBRAS_CONFIG.timeoutMs}ms`);
-        throw new Error(`L'API n'a pas répondu dans le délai imparti de ${CEREBRAS_CONFIG.timeoutMs/1000} secondes`);
+        console.error(`[${Date.now() - requestStart}ms] Timeout de l'API après ${config.timeoutMs}ms`);
+        throw new Error(`L'API n'a pas répondu dans le délai imparti de ${config.timeoutMs/1000} secondes`);
       }
       
       console.error(`[${Date.now() - requestStart}ms] Erreur lors de l'appel à l'API Cerebras:`, apiError);
@@ -288,7 +325,8 @@ serve(async (req) => {
         error: error.message,
         errorType: error.name || 'Error',
         success: false,
-        processingTime: totalTime
+        processingTime: totalTime,
+        authenticationType: "Cerebras API (Fallback)"
       }),
       { 
         headers: { 

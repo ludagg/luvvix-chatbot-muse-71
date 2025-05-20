@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast, useToast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -29,7 +29,6 @@ interface Message {
 const AIStudioChatPage = () => {
   const { agentId } = useParams<{ agentId: string }>();
   const { user } = useAuth();
-  const { toast } = useToast();
   const { resolvedTheme } = useTheme();
   
   const [loading, setLoading] = useState(true);
@@ -41,6 +40,7 @@ const AIStudioChatPage = () => {
   const [errorState, setErrorState] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [maxRetries] = useState(3);
+  const [apiFailures, setApiFailures] = useState(0);
   const [accentColor, setAccentColor] = useState('#6366f1');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -101,25 +101,70 @@ const AIStudioChatPage = () => {
     };
     
     fetchAgent();
-  }, [agentId, toast]);
+  }, [agentId]);
   
   useEffect(() => {
     // Faire défiler vers le bas lorsque les messages changent
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   
-  const handleRetry = async () => {
+  // Fonction pour réinitialiser les états d'erreur avant une nouvelle tentative
+  const resetErrorState = () => {
     setErrorState(null);
-    setRetryCount(0); // Réinitialiser le compteur de tentatives
+    setRetryCount(0);
+    setApiFailures(0);
+  };
+  
+  // Gérer les tentatives de reconnexion à l'API
+  const handleRetry = async () => {
+    resetErrorState();
+    
     if (messages.length > 0) {
       // Récupérer le dernier message de l'utilisateur
       const lastUserMessage = [...messages].reverse().find(msg => msg.role === "user");
       if (lastUserMessage) {
+        // Afficher un message de reconnexion
+        toast({
+          title: "Reconnexion...",
+          description: "Tentative de communication avec l'API...",
+        });
+        
         // Réessayer avec le dernier message de l'utilisateur
-        const userMessage = lastUserMessage.content;
-        await handleSendMessage(userMessage);
+        await handleSendMessage(lastUserMessage.content);
       }
     }
+  };
+  
+  // Analyser les erreurs d'API pour fournir de meilleurs messages
+  const parseApiError = (error: any): string => {
+    const errorMessage = error?.message || "Une erreur inconnue s'est produite";
+    
+    // Vérifier les erreurs d'authentification API
+    if (errorMessage.includes("401") || 
+        errorMessage.includes("403") || 
+        errorMessage.includes("authentification") || 
+        errorMessage.includes("non autorisé") ||
+        errorMessage.includes("API key")) {
+      setApiFailures(prev => prev + 1);
+      return "Erreur d'authentification avec l'API. Veuillez contacter l'administrateur pour vérifier la clé API.";
+    }
+    
+    // Vérifier les erreurs de timeout
+    if (errorMessage.includes("timeout") || 
+        errorMessage.includes("délai") || 
+        errorMessage.includes("timed out") ||
+        errorMessage.includes("AbortError")) {
+      return "L'API a mis trop de temps à répondre. Réessayez dans quelques instants.";
+    }
+    
+    // Erreurs réseau
+    if (errorMessage.includes("network") || 
+        errorMessage.includes("réseau") || 
+        errorMessage.includes("connexion")) {
+      return "Problème de connexion réseau. Vérifiez votre connexion internet et réessayez.";
+    }
+    
+    return `Erreur: ${errorMessage}`;
   };
   
   const handleSendMessage = async (text?: string) => {
@@ -148,62 +193,69 @@ const AIStudioChatPage = () => {
         userId: user?.id || null
       });
       
-      // Appeler la fonction de chat Cerebras
-      const response = await fetch(
-        "https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/cerebras-chat",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            agentId,
-            message: userMessage,
-            sessionId,
-            conversationId,
-            userId: user?.id || null
-          }),
-          signal: AbortSignal.timeout(20000) // 20 secondes de timeout
+      // Premier essai avec cerebras-chat
+      try {
+        const response = await fetch(
+          "https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/cerebras-chat",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              agentId,
+              message: userMessage,
+              sessionId,
+              conversationId,
+              userId: user?.id || null
+            }),
+            signal: AbortSignal.timeout(25000) // 25 secondes de timeout
+          }
+        );
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Erreur lors de la communication avec l'IA");
         }
-      );
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erreur lors de la communication avec l'IA");
-      }
-      
-      const data = await response.json();
-      console.log("Réponse de cerebras chat:", data);
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-      
-      // Enregistrer l'ID de conversation s'il s'agit d'une nouvelle conversation
-      if (data.conversationId && !conversationId) {
-        setConversationId(data.conversationId);
-      }
-      
-      // Ajouter la réponse de l'IA au chat
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uuidv4(),
-          role: "assistant",
-          content: data.reply || "Je n'ai pas pu générer de réponse.",
-          timestamp: new Date(),
-        },
-      ]);
-      
-      // Réinitialiser le compteur de tentatives en cas de succès
-      setRetryCount(0);
-    } catch (error) {
-      console.error("Erreur lors de l'envoi du message:", error);
-      
-      // Fallback vers ai-studio-chat si cerebras-chat échoue
-      if (retryCount < maxRetries) {
-        setRetryCount(prevCount => prevCount + 1);
-        try {
+        
+        const data = await response.json();
+        console.log("Réponse de cerebras chat:", data);
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+        
+        if (!data.success) {
+          throw new Error("Réponse invalide de l'API");
+        }
+        
+        // Enregistrer l'ID de conversation s'il s'agit d'une nouvelle conversation
+        if (data.conversationId && !conversationId) {
+          setConversationId(data.conversationId);
+        }
+        
+        // Ajouter la réponse de l'IA au chat
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: uuidv4(),
+            role: "assistant",
+            content: data.reply || "Je n'ai pas pu générer de réponse.",
+            timestamp: new Date(),
+          },
+        ]);
+        
+        // Réinitialiser les compteurs d'erreurs en cas de succès
+        resetErrorState();
+        
+      } catch (primaryError) {
+        console.error("Erreur avec cerebras-chat, tentative avec ai-studio-chat:", primaryError);
+        
+        // Incrémenter le compteur de tentatives
+        setRetryCount(prev => prev + 1);
+        
+        // Fallback vers ai-studio-chat
+        if (retryCount < maxRetries) {
           console.log(`Tentative ${retryCount + 1}/${maxRetries} - Utilisation de ai-studio-chat comme fallback...`);
           
           const fallbackResponse = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/ai-studio-chat', {
@@ -218,7 +270,7 @@ const AIStudioChatPage = () => {
               conversationId,
               userId: user?.id || null
             }),
-            signal: AbortSignal.timeout(20000) // 20 secondes de timeout
+            signal: AbortSignal.timeout(25000) // 25 secondes de timeout
           });
           
           if (!fallbackResponse.ok) {
@@ -230,8 +282,8 @@ const AIStudioChatPage = () => {
           const fallbackData = await fallbackResponse.json();
           console.log("Réponse du fallback ai-studio-chat:", fallbackData);
           
-          if (fallbackData.error) {
-            throw new Error(fallbackData.error);
+          if (fallbackData.error || !fallbackData.success) {
+            throw new Error(fallbackData.error || "Erreur avec le service de fallback");
           }
           
           // Enregistrer l'ID de conversation s'il s'agit d'une nouvelle conversation
@@ -250,57 +302,45 @@ const AIStudioChatPage = () => {
             },
           ]);
           
-          setErrorState(null);
-          setRetryCount(0); // Réinitialiser le compteur de tentatives en cas de succès
-        } catch (fallbackError) {
-          console.error('Le fallback a également échoué:', fallbackError);
-          
-          setErrorState('Impossible de communiquer avec l\'agent IA après plusieurs tentatives.');
-          
-          // Ajouter un message d'erreur au chat
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: uuidv4(),
-              role: "assistant",
-              content:
-                "Désolé, une erreur est survenue lors du traitement de votre message. Veuillez cliquer sur le bouton réessayer.",
-              timestamp: new Date(),
-              isError: true
-            },
-          ]);
+          // Si le fallback a réussi, on réinitialise uniquement le compteur d'erreur, pas l'état d'erreur global
+          setRetryCount(0);
+        } else {
+          throw primaryError; // Si le nombre maximum de tentatives est atteint, propager l'erreur
         }
-      } else {
-        setErrorState('Impossible de communiquer avec l\'agent IA.');
-        
-        // Ajouter un message d'erreur au chat
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uuidv4(),
-            role: "assistant",
-            content:
-              "Désolé, une erreur est survenue lors du traitement de votre message. Veuillez cliquer sur le bouton réessayer.",
-            timestamp: new Date(),
-            isError: true
-          },
-        ]);
+      }
+    } catch (error) {
+      console.error('Toutes les tentatives ont échoué:', error);
+      
+      // Analyser l'erreur pour fournir un message plus informatif
+      const errorMessage = parseApiError(error);
+      setErrorState(errorMessage);
+      
+      // Ajouter un message d'erreur au chat
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uuidv4(),
+          role: "assistant",
+          content: apiFailures > 1 
+            ? "Désolé, il semble y avoir un problème persistant avec l'API. Veuillez contacter l'administrateur du système." 
+            : "Désolé, une erreur est survenue lors du traitement de votre message. Vous pouvez cliquer sur le bouton réessayer.",
+          timestamp: new Date(),
+          isError: true
+        },
+      ]);
+      
+      // Si beaucoup d'erreurs d'authentification consécutives, afficher un toast avec des instructions pour l'administrateur
+      if (apiFailures > 2) {
+        toast({
+          title: "Problème d'authentification API",
+          description: "Il semble y avoir un problème avec la clé API Cerebras. Si vous êtes administrateur, veuillez vérifier la configuration.",
+          variant: "destructive",
+          duration: 10000
+        });
       }
     } finally {
       setSending(false);
     }
-  };
-
-  const getAvatarForAgent = () => {
-    if (!agent) return null;
-    
-    if (agent.avatar_url) return <AvatarImage src={agent.avatar_url} />;
-    
-    return (
-      <AvatarFallback className="bg-gradient-to-br from-violet-500 to-violet-700 text-white">
-        {agent.name?.charAt(0) || <Bot />}
-      </AvatarFallback>
-    );
   };
 
   return (
@@ -432,8 +472,8 @@ const AIStudioChatPage = () => {
                 <ChatInput
                   onSendMessage={handleSendMessage}
                   isLoading={sending}
-                  disabled={loading || !agent}
-                  placeholder="Écrivez votre message..."
+                  disabled={loading || !agent || !!errorState}
+                  placeholder={errorState ? "Cliquez sur Réessayer pour continuer..." : "Écrivez votre message..."}
                 />
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center">
                   LuvviX AI n'est pas parfait et peut parfois générer des informations incorrectes

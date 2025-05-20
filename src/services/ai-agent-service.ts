@@ -262,7 +262,7 @@ class AIAgentService {
   // Function to directly increment agent views
   async recordAgentView(agentId: string): Promise<void> {
     try {
-      await incrementAgentViews(agentId);
+      await incrementAgentViews({ agentId });
     } catch (error) {
       console.error("Error recording agent view:", error);
     }

@@ -1,5 +1,5 @@
 
-import { toast as sonnerToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 /**
  * Wrapper autour de la fonction toast pour éviter les erreurs TypeScript
@@ -10,27 +10,27 @@ export const showToast = {
    * Affiche une notification standard
    */
   info: (title: string, description?: string) => {
-    return sonnerToast(title, { description });
+    return toast.info(title, { description });
   },
   
   /**
    * Affiche une notification de succès
    */
   success: (title: string, description?: string) => {
-    return sonnerToast(title, { description });
+    return toast.success(title, { description });
   },
   
   /**
    * Affiche une notification d'erreur
    */
   error: (title: string, description?: string) => {
-    return sonnerToast.error(title, { description });
+    return toast.error(title, { description });
   },
   
   /**
    * Affiche une notification d'avertissement
    */
   warning: (title: string, description?: string) => {
-    return sonnerToast(title, { description });
+    return toast.warning(title, { description });
   }
 };

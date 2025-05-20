@@ -108,6 +108,7 @@ const AIStudioDashboardPage = () => {
   );
 
   return (
+      <div className="pt-24 flex-1">
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
@@ -443,7 +444,7 @@ const AIStudioDashboardPage = () => {
       </main>
       
       <Footer />
-    </div>
+    </div></div>
   );
 };
 

@@ -388,7 +388,7 @@ const AIStudioEditAgentPage = () => {
                 <TabsList className="mb-8">
                   <TabsTrigger value="general">
                     <Settings2 className="h-4 w-4 mr-2" />
-                    Paramètres généraux
+                    Général 
                   </TabsTrigger>
                   <TabsTrigger value="context">
                     <FileText className="h-4 w-4 mr-2" />

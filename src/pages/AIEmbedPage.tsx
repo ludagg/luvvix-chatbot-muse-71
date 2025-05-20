@@ -5,6 +5,8 @@ import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
 import AIChat from '@/components/ai-studio/AIChat';
 import { Loader } from 'lucide-react';
+import { incrementAgentViews } from '@/services/ai-agent-service';
+import aiAgentService from '@/services/ai-agent-service';
 
 const AIEmbedPage = () => {
   const { agentId } = useParams<{ agentId: string }>();
@@ -21,24 +23,28 @@ const AIEmbedPage = () => {
           return;
         }
 
-        const { data, error } = await supabase
-          .from("ai_agents")
-          .select(`
-            *,
-            user_profiles:user_id(full_name, avatar_url, username)
-          `)
-          .eq("id", agentId)
-          .eq("is_public", true)
-          .single();
-
-        if (error) throw error;
-        if (!data) {
+        // Use the dedicated getAgentById method with better error handling
+        const agentData = await aiAgentService.getAgentById(agentId);
+        
+        if (!agentData) {
           setError("Agent non trouvé ou non public");
           setLoading(false);
           return;
         }
+        
+        // Verify the agent is public 
+        if (!agentData.is_public) {
+          setError("Cet agent n'est pas disponible publiquement");
+          setLoading(false);
+          return;
+        }
 
-        setAgent(data);
+        setAgent(agentData);
+        
+        // Record the view if agent was successfully loaded
+        if (agentId) {
+          await incrementAgentViews({ agentId });
+        }
       } catch (err) {
         console.error("Error fetching agent:", err);
         setError("Impossible de charger l'agent");

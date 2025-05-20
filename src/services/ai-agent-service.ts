@@ -31,7 +31,6 @@ interface AgentFilter {
   searchQuery?: string;
 }
 
-// Export the function directly so it can be imported by name
 export async function incrementAgentViews({ agentId }: { agentId: string }): Promise<void> {
   try {
     const { error } = await supabase.rpc('increment_agent_views', {
@@ -280,6 +279,52 @@ class AIAgentService {
       await incrementAgentViews({ agentId });
     } catch (error) {
       console.error("Error recording agent view:", error);
+    }
+  }
+  
+  // New method to get a single agent by ID with proper error handling
+  async getAgentById(agentId: string): Promise<Agent | null> {
+    try {
+      // First fetch the agent data
+      const { data: agentData, error: agentError } = await supabase
+        .from("ai_agents")
+        .select("*")
+        .eq("id", agentId)
+        .single();
+      
+      if (agentError || !agentData) {
+        console.error("Error fetching agent:", agentError);
+        return null;
+      }
+      
+      // Then fetch the user profile data separately
+      let userData = null;
+      if (agentData.user_id) {
+        const { data: userProfileData } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("id", agentData.user_id)
+          .single();
+        
+        if (userProfileData) {
+          userData = userProfileData;
+        }
+      }
+      
+      // Combine the data
+      return {
+        ...agentData,
+        user: userData ? {
+          full_name: userData.full_name || '',
+          avatar_url: userData.avatar_url || '',
+          username: userData.username || ''
+        } : undefined,
+        reviews_count: Math.max(1, Math.floor(agentData.views / 10)),
+        conversations_count: Math.max(5, Math.floor(agentData.views * 2)),
+      };
+    } catch (error) {
+      console.error("Error in getAgentById:", error);
+      return null;
     }
   }
 }

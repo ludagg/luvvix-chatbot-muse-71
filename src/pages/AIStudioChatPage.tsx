@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Bot,
   Send,
@@ -19,6 +20,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   Share2,
+  AlertCircle,
+  RefreshCw
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -28,6 +31,7 @@ interface Message {
   role: "user" | "assistant" | "system";
   content: string;
   timestamp?: Date;
+  isError?: boolean;
 }
 
 const AIStudioChatPage = () => {
@@ -42,6 +46,8 @@ const AIStudioChatPage = () => {
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [sessionId] = useState<string>(uuidv4());
+  const [errorState, setErrorState] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -91,12 +97,26 @@ const AIStudioChatPage = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   
-  const handleSendMessage = async () => {
-    if (!input.trim() || sending) return;
+  const handleRetry = async () => {
+    setErrorState(null);
+    if (messages.length > 0) {
+      // Get the last user message
+      const lastUserMessage = [...messages].reverse().find(msg => msg.role === "user");
+      if (lastUserMessage) {
+        // Retry with the last user message
+        const userMessage = lastUserMessage.content;
+        await handleSendMessage(userMessage);
+      }
+    }
+  };
+  
+  const handleSendMessage = async (text?: string) => {
+    const userMessage = text || input.trim();
+    if (!userMessage || sending) return;
     
-    const userMessage = input.trim();
     setInput("");
     setSending(true);
+    setErrorState(null);
     
     // Add user message to chat
     const userMessageObj: Message = {
@@ -109,6 +129,14 @@ const AIStudioChatPage = () => {
     setMessages((prev) => [...prev, userMessageObj]);
     
     try {
+      console.log("Calling cerebras-chat with:", {
+        agentId,
+        message: userMessage,
+        sessionId,
+        conversationId,
+        userId: user?.id || null
+      });
+      
       // Call the Cerebras chat function
       const response = await fetch(
         "https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/cerebras-chat",
@@ -122,6 +150,7 @@ const AIStudioChatPage = () => {
             message: userMessage,
             sessionId,
             conversationId,
+            userId: user?.id || null
           }),
         }
       );
@@ -132,6 +161,7 @@ const AIStudioChatPage = () => {
       }
       
       const data = await response.json();
+      console.log("Cerebras chat response:", data);
       
       if (data.error) {
         throw new Error(data.error);
@@ -153,28 +183,98 @@ const AIStudioChatPage = () => {
         },
       ]);
       
+      // Reset retry count on success
+      setRetryCount(0);
+      
       // Focus the input for next message
       inputRef.current?.focus();
     } catch (error) {
       console.error("Error sending message:", error);
       
-      // Add error message to chat
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uuidv4(),
-          role: "assistant",
-          content:
-            "Désolé, une erreur est survenue lors du traitement de votre message. Veuillez réessayer.",
-          timestamp: new Date(),
-        },
-      ]);
-      
-      toast({
-        title: "Erreur",
-        description: "Impossible d'envoyer votre message.",
-        variant: "destructive",
-      });
+      // Fallback to ai-studio-chat if cerebras-chat fails
+      if (retryCount < 1) {
+        setRetryCount(prevCount => prevCount + 1);
+        try {
+          console.log("Trying ai-studio-chat as fallback...");
+          
+          const fallbackResponse = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/ai-studio-chat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              agentId,
+              message: userMessage,
+              sessionId,
+              conversationId,
+              userId: user?.id || null
+            }),
+          });
+          
+          if (!fallbackResponse.ok) {
+            const fallbackErrorData = await fallbackResponse.json();
+            console.error("Error from ai-studio-chat fallback:", fallbackErrorData);
+            throw new Error(fallbackErrorData.error || `Fallback failed: ${fallbackResponse.status}`);
+          }
+          
+          const fallbackData = await fallbackResponse.json();
+          console.log("ai-studio-chat fallback response:", fallbackData);
+          
+          if (fallbackData.error) {
+            throw new Error(fallbackData.error);
+          }
+          
+          // Save conversation ID if it's a new conversation
+          if (fallbackData.conversationId && !conversationId) {
+            setConversationId(fallbackData.conversationId);
+          }
+          
+          // Add AI response to chat
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: uuidv4(),
+              role: "assistant",
+              content: fallbackData.response || "Je n'ai pas pu générer de réponse.",
+              timestamp: new Date(),
+            },
+          ]);
+          
+          setErrorState(null);
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError);
+          
+          setErrorState('Impossible de communiquer avec l\'agent IA après plusieurs tentatives.');
+          
+          // Add error message to chat
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: uuidv4(),
+              role: "assistant",
+              content:
+                "Désolé, une erreur est survenue lors du traitement de votre message. Veuillez cliquer sur le bouton réessayer.",
+              timestamp: new Date(),
+              isError: true
+            },
+          ]);
+        }
+      } else {
+        setErrorState('Impossible de communiquer avec l\'agent IA.');
+        
+        // Add error message to chat
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: uuidv4(),
+            role: "assistant",
+            content:
+              "Désolé, une erreur est survenue lors du traitement de votre message. Veuillez cliquer sur le bouton réessayer.",
+            timestamp: new Date(),
+            isError: true
+          },
+        ]);
+      }
     } finally {
       setSending(false);
     }
@@ -273,6 +373,23 @@ const AIStudioChatPage = () => {
           {/* Chat messages */}
           <div className="flex-grow overflow-y-auto p-4 md:p-6 space-y-6">
             <div className="container mx-auto max-w-3xl">
+              {errorState && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="flex items-center justify-between w-full">
+                    {errorState}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-red-200 bg-red-100 text-red-800 hover:bg-red-200 flex items-center gap-1 ml-4"
+                      onClick={handleRetry}
+                    >
+                      <RefreshCw className="h-3 w-3" /> Réessayer
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               {messages.map((message) => (
                 <div
                   key={message.id}
@@ -296,8 +413,8 @@ const AIStudioChatPage = () => {
                             <User className="h-5 w-5" />
                           </AvatarFallback>
                         ) : (
-                          <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
-                            {getAvatarForAgent()}
+                          <AvatarFallback className={`${message.isError ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : 'bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300'}`}>
+                            {message.isError ? <AlertCircle className="h-5 w-5" /> : getAvatarForAgent()}
                           </AvatarFallback>
                         )}
                       </Avatar>
@@ -307,12 +424,14 @@ const AIStudioChatPage = () => {
                       className={`rounded-2xl p-4 ${
                         message.role === "user"
                           ? "bg-blue-600 text-white"
+                          : message.isError
+                          ? "bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800"
                           : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                       }`}
                     >
                       <p className="whitespace-pre-wrap">{message.content}</p>
                       
-                      {message.role === "assistant" && (
+                      {message.role === "assistant" && !message.isError && (
                         <div className="flex items-center justify-end mt-2 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
                             variant="ghost"
@@ -388,7 +507,7 @@ const AIStudioChatPage = () => {
                   placeholder="Écrivez votre message..."
                   className="flex-grow"
                   autoComplete="off"
-                  disabled={loading || !agent}
+                  disabled={loading || !agent || sending}
                 />
                 <Button
                   type="submit"

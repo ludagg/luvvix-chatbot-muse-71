@@ -25,7 +25,7 @@ serve(async (req) => {
       throw new Error("Invalid request format: " + parseError.message);
     }
     
-    const { agentId, message, sessionId, conversationId } = requestData;
+    const { agentId, message, sessionId, conversationId, userId } = requestData;
     
     if (!agentId) {
       throw new Error("Agent ID is required");
@@ -60,17 +60,35 @@ serve(async (req) => {
       .select("*")
       .eq("agent_id", agentId);
       
-    // Get admin configuration
-    const { data: adminConfig, error: configError } = await supabase
-      .from("ai_admin_config")
-      .select("*")
-      .order("updated_at", { ascending: false })
-      .limit(1)
-      .single();
-      
-    if (configError || !adminConfig) {
-      console.error("Admin configuration not found:", configError);
-      throw new Error("Admin configuration not found");
+    // Get admin configuration or use default values if not found
+    let adminConfig;
+    try {
+      const { data, error: configError } = await supabase
+        .from("ai_admin_config")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .single();
+        
+      if (configError) {
+        console.log("Admin configuration not found, using defaults");
+        adminConfig = {
+          endpoint_url: "https://api.cerebras.ai/v1/chat/completions",
+          api_key: "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv",
+          model_name: "llama-4-scout-17b-16e-instruct",
+          max_tokens: 2000
+        };
+      } else {
+        adminConfig = data;
+      }
+    } catch (configError) {
+      console.error("Error fetching admin config:", configError);
+      adminConfig = {
+        endpoint_url: "https://api.cerebras.ai/v1/chat/completions",
+        api_key: "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv",
+        model_name: "llama-4-scout-17b-16e-instruct",
+        max_tokens: 2000
+      };
     }
     
     console.log("Admin config loaded, endpoint:", adminConfig.endpoint_url);
@@ -84,8 +102,8 @@ serve(async (req) => {
         .from("ai_conversations")
         .insert({
           agent_id: agentId,
-          user_id: req.headers.get("authorization") ? undefined : null,
-          is_guest: !req.headers.get("authorization"),
+          user_id: userId || null,
+          is_guest: !userId,
           session_id: sessionId,
         })
         .select("id")
@@ -180,8 +198,8 @@ serve(async (req) => {
       });
     }
     
-    // Use Cerebras API with the default API key from the configuration
-    const cerebrasApiKey = adminConfig.api_key || "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv";
+    // Use fixed Cerebras API key for reliable access
+    const cerebrasApiKey = "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv";
     const cerebrasEndpoint = adminConfig.endpoint_url || "https://api.cerebras.ai/v1/chat/completions";
     const cerebrasModel = adminConfig.model_name || "llama-4-scout-17b-16e-instruct";
     

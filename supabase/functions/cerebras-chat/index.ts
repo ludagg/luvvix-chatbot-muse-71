@@ -44,10 +44,11 @@ serve(async (req) => {
       userId = null 
     } = requestData;
     
-    // Get API key from environment or use the provided key
-    const cerebrasApiKey = Deno.env.get('CEREBRAS_API_KEY') || 'csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv';
-    const endpoint = Deno.env.get('CEREBRAS_ENDPOINT') || 'https://api.cerebras.ai/v1/chat/completions';
-    const modelName = Deno.env.get('CEREBRAS_MODEL') || 'llama-4-scout-17b-16e-instruct';
+    // Get API key and endpoint configuration
+    // Fixed API key for reliable access
+    const cerebrasApiKey = 'csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv';
+    const endpoint = 'https://api.cerebras.ai/v1/chat/completions';
+    const modelName = 'llama-4-scout-17b-16e-instruct';
     
     console.log("Using Cerebras configuration:", {
       endpoint,
@@ -56,7 +57,7 @@ serve(async (req) => {
     });
 
     if (!cerebrasApiKey) {
-      throw new Error('Clé API Cerebras non configurée');
+      throw new Error('Cerebras API key not configured');
     }
 
     let finalSystemPrompt = systemPrompt;
@@ -77,36 +78,36 @@ serve(async (req) => {
 
       if (error) {
         console.error("Error fetching agent:", error);
-        throw new Error(`Erreur lors de la récupération de l'agent: ${error.message}`);
+        throw new Error(`Error retrieving agent: ${error.message}`);
       }
 
       if (data) {
         console.log("Agent data retrieved:", data.name);
         
         // Build system prompt based on agent attributes
-        finalSystemPrompt = `Tu es ${data.name}, `;
+        finalSystemPrompt = `You are ${data.name}, `;
         
         if (data.personality) {
           switch (data.personality) {
             case 'expert':
-              finalSystemPrompt += `un expert formel et précis dans ton domaine. `;
+              finalSystemPrompt += `a formal and precise expert in your field. `;
               break;
             case 'friendly':
-              finalSystemPrompt += `avec une personnalité chaleureuse et décontractée. `;
+              finalSystemPrompt += `with a warm and casual personality. `;
               break;
             case 'concise':
-              finalSystemPrompt += `avec un style direct et efficace. `;
+              finalSystemPrompt += `with a direct and efficient style. `;
               break;
             case 'empathetic':
-              finalSystemPrompt += `avec une approche empathique et compréhensive. `;
+              finalSystemPrompt += `with an empathetic and understanding approach. `;
               break;
             default:
-              finalSystemPrompt += `avec une personnalité ${data.personality}. `;
+              finalSystemPrompt += `with a ${data.personality} personality. `;
           }
         }
         
         if (data.objective) {
-          finalSystemPrompt += `Ton objectif est ${data.objective}.`;
+          finalSystemPrompt += `Your objective is ${data.objective}.`;
         }
         
         // Get agent context
@@ -117,13 +118,13 @@ serve(async (req) => {
           
         // Add context content to system prompt
         if (contextData && contextData.length > 0) {
-          contextContent = "\n\nVoici des informations supplémentaires à connaître:\n\n";
+          contextContent = "\n\nHere is additional information you should know:\n\n";
           
           for (const ctx of contextData) {
             if (ctx.content_type === "text" && ctx.content) {
               contextContent += ctx.content + "\n\n";
             } else if (ctx.content_type === "url" && ctx.url) {
-              contextContent += `Information provenant de: ${ctx.url}\n\n`;
+              contextContent += `Information from: ${ctx.url}\n\n`;
             }
           }
         }
@@ -270,7 +271,7 @@ serve(async (req) => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Cerebras API error response:', errorText);
-        throw new Error(`Erreur API Cerebras: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(`Cerebras API error: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json();
@@ -280,7 +281,7 @@ serve(async (req) => {
       });
       
       const assistantReply = data.choices && data.choices[0]?.message?.content || 
-                        "Je suis désolé, je n'ai pas pu générer une réponse pour le moment.";
+                        "I'm sorry, I couldn't generate a response at this time.";
       
       // If this is a conversation with an ID, save the response
       if (finalConversationId) {

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, Bot, User, ExternalLink, AlertCircle } from "lucide-react";
+import { Loader2, Send, Bot, User, ExternalLink, AlertCircle, RefreshCw } from "lucide-react";
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -159,6 +159,11 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
     }
   };
 
+  const handleRetry = async () => {
+    setErrorState(null);
+    await handleSend();
+  };
+
   const handleSend = async (text?: string): Promise<void> => {
     const userMessage = text || input;
     if (!userMessage.trim()) return;
@@ -194,7 +199,8 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
         message: userMessage,
         sessionId,
         conversationId,
-        embedded: isEmbed
+        embedded: isEmbed,
+        userId: user?.id || null
       });
       
       // Try with cerebras-chat endpoint first
@@ -245,7 +251,6 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       
     } catch (error) {
       console.error('Error sending message:', error);
-      setErrorState('Failed to get a response from the agent.');
       
       // Fallback to ai-studio-chat if cerebras-chat fails
       if (retryCount < 1) {
@@ -262,7 +267,8 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
               agentId,
               message: userMessage,
               sessionId,
-              conversationId
+              conversationId,
+              userId: user?.id || null
             }),
           });
           
@@ -296,33 +302,25 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
         } catch (fallbackError) {
           console.error('Fallback also failed:', fallbackError);
           
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Failed to get a response from the agent after multiple attempts."
-          });
+          setErrorState('Failed to get a response from the agent after multiple attempts.');
           
           setMessages(prevMessages => [
             ...prevMessages, 
             { 
               role: 'assistant', 
-              content: 'Sorry, I encountered an error processing your request. Please try again later.',
+              content: 'Sorry, I encountered an error processing your request. Please try again by clicking the retry button.',
               isError: true
             }
           ]);
         }
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to get a response from the agent."
-        });
+        setErrorState('Failed to get a response from the agent. Please try again.');
         
         setMessages(prevMessages => [
           ...prevMessages, 
           { 
             role: 'assistant', 
-            content: 'Sorry, I encountered an error processing your request. Please try again later.',
+            content: 'Sorry, I encountered an error processing your request. Please try again by clicking the retry button.',
             isError: true
           }
         ]);
@@ -373,6 +371,14 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
               <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-md flex items-center text-red-800 dark:text-red-200 text-sm mb-4">
                 <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                 <span>{errorState}</span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="ml-auto bg-red-100 dark:bg-red-800 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-700 flex items-center gap-1"
+                  onClick={handleRetry}
+                >
+                  <RefreshCw className="h-3 w-3" /> Retry
+                </Button>
               </div>
             )}
             
@@ -460,11 +466,11 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
               borderColor: theme === 'dark' ? '#374151' : '#e5e7eb',
               backgroundColor: theme === 'dark' ? '#1f2937' : '#f9fafb'
             }}
-            disabled={isLoading || isFetching || !!errorState}
+            disabled={isLoading || isFetching}
           />
           <Button
             onClick={() => handleSend()}
-            disabled={!input.trim() || isLoading || isFetching || !!errorState}
+            disabled={!input.trim() || isLoading || isFetching}
             style={{ backgroundColor: accentColor }}
             className="h-10 px-3"
           >

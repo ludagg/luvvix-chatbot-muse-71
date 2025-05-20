@@ -1,19 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { LogOut, Key, History, AppWindow, Loader2, Shield, User } from "lucide-react";
+import { LogOut, Key, History, AppWindow, Shield, User } from "lucide-react";
 import AccountSelector from "@/components/AccountSelector";
 import AppGrid from "@/components/dashboard/AppGrid";
 import RecentActivities from "@/components/dashboard/RecentActivities";
 import StatCards from "@/components/dashboard/StatCards";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 
 interface AppAccess {
   id: string;
@@ -110,6 +112,19 @@ const Dashboard = () => {
     }
   };
   
+  // Collection of sample notifications for demonstration
+  useEffect(() => {
+    if (user) {
+      // Create a welcome toast when dashboard is loaded
+      setTimeout(() => {
+        toast({
+          title: "Bienvenue sur votre tableau de bord",
+          description: "Découvrez les nouvelles fonctionnalités modernisées"
+        });
+      }, 1000);
+    }
+  }, [user]);
+  
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
@@ -137,18 +152,19 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-900 to-black">
       <Navbar />
       
-      {/* Ajout d'un espace en haut pour éviter que le contenu soit caché par la barre de navigation */}
       <main className="flex-grow container mx-auto px-4 py-8 pt-24">
         <div className="max-w-7xl mx-auto">
           {user && (
             <>
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Tableau de bord</h1>
-                  <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-indigo-300">
+                    Tableau de bord
+                  </h1>
+                  <p className="text-gray-400 mt-1">
                     Bienvenue, {profile?.full_name || user.email}
                   </p>
                 </div>
@@ -168,23 +184,45 @@ const Dashboard = () => {
                 </div>
               </div>
               
+              <DashboardHeader userId={user.id} />
+              
               <Tabs defaultValue={defaultTab} className="w-full">
-                <TabsList className="grid grid-cols-4 mb-6">
-                  <TabsTrigger value="ecosystem">LuvviX</TabsTrigger>
-                  <TabsTrigger value="connected-apps">SSO</TabsTrigger>
-                  <TabsTrigger value="security">Sécurité</TabsTrigger>
-                  <TabsTrigger value="profile">Profil</TabsTrigger>
+                <TabsList className="grid grid-cols-4 mb-6 bg-slate-800/30 backdrop-blur-md border border-slate-700/50 rounded-xl">
+                  <TabsTrigger 
+                    value="ecosystem" 
+                    className="data-[state=active]:bg-violet-600 data-[state=active]:text-white rounded-lg"
+                  >
+                    LuvviX
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="connected-apps" 
+                    className="data-[state=active]:bg-violet-600 data-[state=active]:text-white rounded-lg"
+                  >
+                    SSO
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="security" 
+                    className="data-[state=active]:bg-violet-600 data-[state=active]:text-white rounded-lg"
+                  >
+                    Sécurité
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="profile" 
+                    className="data-[state=active]:bg-violet-600 data-[state=active]:text-white rounded-lg"
+                  >
+                    Profil
+                  </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="ecosystem">
                   <div className="space-y-8">
-                    <Card>
+                    <Card className="bg-slate-800/20 backdrop-blur-md border-slate-700/50 shadow-lg">
                       <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
+                        <CardTitle className="flex items-center gap-2 text-slate-100">
                           <AppWindow className="h-5 w-5 text-purple-600" />
                           Écosystème LuvviX
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-slate-400">
                           Accédez à toutes vos applications et services LuvviX
                         </CardDescription>
                       </CardHeader>
@@ -271,13 +309,13 @@ const Dashboard = () => {
                 </TabsContent>
                 
                 <TabsContent value="security">
-                  <Card>
+                  <Card className="bg-slate-800/20 backdrop-blur-md border-slate-700/50 shadow-lg">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 text-slate-100">
                         <Shield className="h-5 w-5 text-purple-600" />
                         Sécurité du compte
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-slate-400">
                         Gérez les paramètres de sécurité et les connexions récentes
                       </CardDescription>
                     </CardHeader>
@@ -346,13 +384,13 @@ const Dashboard = () => {
                 </TabsContent>
                 
                 <TabsContent value="profile">
-                  <Card>
+                  <Card className="bg-slate-800/20 backdrop-blur-md border-slate-700/50 shadow-lg">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 text-slate-100">
                         <User className="h-5 w-5 text-purple-600" />
                         Profil utilisateur
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-slate-400">
                         Gérez vos informations personnelles
                       </CardDescription>
                     </CardHeader>

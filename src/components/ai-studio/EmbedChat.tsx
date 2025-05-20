@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -25,11 +26,6 @@ interface EmbedChatProps {
   startMessage?: string;
   isEmbed?: boolean;
 }
-
-// Define the parameter type for the increment_agent_views RPC function
-type IncrementAgentViewsParams = {
-  agent_id: string;
-};
 
 const EmbedChat: React.FC<EmbedChatProps> = ({ 
   agentId, 
@@ -84,8 +80,13 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           }
         ]);
         
-        // Increment views counter using the typed parameter
-        await supabase.rpc('increment_agent_views', { agent_id: agentId } as IncrementAgentViewsParams);
+        // Increment views counter - simplifying the RPC call
+        try {
+          await supabase.rpc('increment_agent_views', { agent_id: agentId });
+        } catch (viewError) {
+          console.error('Error incrementing agent views:', viewError);
+          // Continue even if view counting fails
+        }
       } catch (error) {
         console.error('Error fetching agent:', error);
         setMessages([

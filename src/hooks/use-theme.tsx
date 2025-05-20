@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
 
-type Theme = 'light' | 'system';
+type Theme = 'dark' | 'light' | 'system';
 
 interface ThemeProviderProps {
   children: React.ReactNode;
@@ -13,40 +13,72 @@ interface ThemeProviderProps {
 interface ThemeProviderState {
   theme: Theme;
   setTheme: (theme: Theme) => void;
-  resolvedTheme: 'light'; // Always resolved to light theme
+  resolvedTheme: 'dark' | 'light';
 }
 
 const ThemeProviderContext = createContext<ThemeProviderState | undefined>(undefined);
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'light',
-  storageKey = 'luvvix-ui-theme',
+  defaultTheme = 'system',
+  storageKey = 'luvvix-theme',
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
     () => {
       const storedTheme = localStorage.getItem(storageKey) as Theme | null;
-      // Only allow 'light' or 'system' as valid themes
-      return (storedTheme === 'light' || storedTheme === 'system') ? storedTheme : defaultTheme;
+      return (storedTheme === 'dark' || storedTheme === 'light' || storedTheme === 'system') 
+        ? storedTheme 
+        : defaultTheme;
     }
   );
   
-  // Always set resolved theme to light
-  const resolvedTheme: 'light' = 'light';
+  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>(
+    theme === 'system' 
+      ? window.matchMedia('(prefers-color-scheme: dark)').matches 
+        ? 'dark' 
+        : 'light' 
+      : (theme as 'dark' | 'light')
+  );
   
-  // Handle theme changes - always apply light theme
+  // Écouter les changements de préférences système
   useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const handleChange = () => {
+      if (theme === 'system') {
+        setResolvedTheme(mediaQuery.matches ? 'dark' : 'light');
+        updateThemeClass(mediaQuery.matches ? 'dark' : 'light');
+      }
+    };
+    
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [theme]);
+  
+  // Appliquer le thème
+  const updateThemeClass = (resolvedMode: 'dark' | 'light') => {
     const root = window.document.documentElement;
     
-    // Remove existing theme classes
+    // Supprimer les classes de thème existantes
     root.classList.remove('light', 'dark');
     
-    // Always apply light theme
-    root.classList.add('light');
+    // Ajouter la nouvelle classe de thème
+    root.classList.add(resolvedMode);
     
-    // Set data-theme attribute for libraries that use it
-    root.setAttribute('data-theme', 'light');
+    // Définir l'attribut data-theme pour les bibliothèques qui l'utilisent
+    root.setAttribute('data-theme', resolvedMode);
+  };
+  
+  useEffect(() => {
+    if (theme === 'system') {
+      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      setResolvedTheme(systemTheme);
+      updateThemeClass(systemTheme);
+    } else {
+      setResolvedTheme(theme as 'dark' | 'light');
+      updateThemeClass(theme as 'dark' | 'light');
+    }
   }, [theme]);
 
   const value = {

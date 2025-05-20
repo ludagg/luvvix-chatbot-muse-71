@@ -5,26 +5,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Bot,
-  Send,
-  ArrowLeft,
-  User,
-  Loader2,
-  ThumbsUp,
-  ThumbsDown,
-  Share2,
-  AlertCircle,
-  RefreshCw
-} from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { Bot, ArrowLeft, AlertCircle } from "lucide-react";
+import ChatInput from "@/components/ai-studio/ChatInput";
+import ChatMessage from "@/components/ai-studio/ChatMessage";
+import ChatToolbar from "@/components/ai-studio/ChatToolbar";
+import AnimatedBackground from "@/components/ui/animated-background";
+import { useTheme } from "@/hooks/use-theme";
 
 interface Message {
   id: string;
@@ -38,20 +30,20 @@ const AIStudioChatPage = () => {
   const { agentId } = useParams<{ agentId: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { resolvedTheme } = useTheme();
   
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [agent, setAgent] = useState<any>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [sessionId] = useState<string>(uuidv4());
   const [errorState, setErrorState] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [maxRetries] = useState(3); // Maximum number of retries
+  const [maxRetries] = useState(3);
+  const [accentColor, setAccentColor] = useState('#6366f1');
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
     document.title = "Chat avec l'IA - LuvviX AI Studio";
@@ -70,7 +62,25 @@ const AIStudioChatPage = () => {
         
         setAgent(data);
         
-        // Add system message as welcome
+        // Personnaliser la couleur d'accent en fonction de la personnalité
+        switch (data.personality) {
+          case "expert":
+            setAccentColor('#3B82F6'); // Bleu
+            break;
+          case "friendly":
+            setAccentColor('#10B981'); // Vert
+            break;
+          case "concise":
+            setAccentColor('#6366F1'); // Violet
+            break;
+          case "empathetic":
+            setAccentColor('#EC4899'); // Rose
+            break;
+          default:
+            setAccentColor('#6366F1'); // Violet par défaut
+        }
+        
+        // Ajouter un message système en guise de bienvenue
         setMessages([
           {
             id: uuidv4(),
@@ -79,7 +89,7 @@ const AIStudioChatPage = () => {
           },
         ]);
       } catch (error) {
-        console.error("Error fetching agent:", error);
+        console.error("Erreur lors de la récupération de l'agent:", error);
         toast({
           title: "Erreur",
           description: "Impossible de charger l'agent IA.",
@@ -94,18 +104,18 @@ const AIStudioChatPage = () => {
   }, [agentId, toast]);
   
   useEffect(() => {
-    // Scroll to bottom when messages change
+    // Faire défiler vers le bas lorsque les messages changent
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   
   const handleRetry = async () => {
     setErrorState(null);
-    setRetryCount(0); // Reset retry count
+    setRetryCount(0); // Réinitialiser le compteur de tentatives
     if (messages.length > 0) {
-      // Get the last user message
+      // Récupérer le dernier message de l'utilisateur
       const lastUserMessage = [...messages].reverse().find(msg => msg.role === "user");
       if (lastUserMessage) {
-        // Retry with the last user message
+        // Réessayer avec le dernier message de l'utilisateur
         const userMessage = lastUserMessage.content;
         await handleSendMessage(userMessage);
       }
@@ -113,14 +123,13 @@ const AIStudioChatPage = () => {
   };
   
   const handleSendMessage = async (text?: string) => {
-    const userMessage = text || input.trim();
+    const userMessage = text?.trim();
     if (!userMessage || sending) return;
     
-    setInput("");
     setSending(true);
     setErrorState(null);
     
-    // Add user message to chat
+    // Ajouter le message de l'utilisateur au chat
     const userMessageObj: Message = {
       id: uuidv4(),
       role: "user",
@@ -131,7 +140,7 @@ const AIStudioChatPage = () => {
     setMessages((prev) => [...prev, userMessageObj]);
     
     try {
-      console.log("Calling cerebras-chat with:", {
+      console.log("Appel de cerebras-chat avec:", {
         agentId,
         message: userMessage,
         sessionId,
@@ -139,7 +148,7 @@ const AIStudioChatPage = () => {
         userId: user?.id || null
       });
       
-      // Call the Cerebras chat function
+      // Appeler la fonction de chat Cerebras
       const response = await fetch(
         "https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/cerebras-chat",
         {
@@ -154,7 +163,7 @@ const AIStudioChatPage = () => {
             conversationId,
             userId: user?.id || null
           }),
-          signal: AbortSignal.timeout(15000) // 15 second timeout
+          signal: AbortSignal.timeout(20000) // 20 secondes de timeout
         }
       );
       
@@ -164,18 +173,18 @@ const AIStudioChatPage = () => {
       }
       
       const data = await response.json();
-      console.log("Cerebras chat response:", data);
+      console.log("Réponse de cerebras chat:", data);
       
       if (data.error) {
         throw new Error(data.error);
       }
       
-      // Save conversation ID if it's a new conversation
+      // Enregistrer l'ID de conversation s'il s'agit d'une nouvelle conversation
       if (data.conversationId && !conversationId) {
         setConversationId(data.conversationId);
       }
       
-      // Add AI response to chat
+      // Ajouter la réponse de l'IA au chat
       setMessages((prev) => [
         ...prev,
         {
@@ -186,19 +195,16 @@ const AIStudioChatPage = () => {
         },
       ]);
       
-      // Reset retry count on success
+      // Réinitialiser le compteur de tentatives en cas de succès
       setRetryCount(0);
-      
-      // Focus the input for next message
-      inputRef.current?.focus();
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("Erreur lors de l'envoi du message:", error);
       
-      // Fallback to ai-studio-chat if cerebras-chat fails
+      // Fallback vers ai-studio-chat si cerebras-chat échoue
       if (retryCount < maxRetries) {
         setRetryCount(prevCount => prevCount + 1);
         try {
-          console.log(`Retry attempt ${retryCount + 1}/${maxRetries} - Using ai-studio-chat as fallback...`);
+          console.log(`Tentative ${retryCount + 1}/${maxRetries} - Utilisation de ai-studio-chat comme fallback...`);
           
           const fallbackResponse = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/ai-studio-chat', {
             method: 'POST',
@@ -212,28 +218,28 @@ const AIStudioChatPage = () => {
               conversationId,
               userId: user?.id || null
             }),
-            signal: AbortSignal.timeout(15000) // 15 second timeout
+            signal: AbortSignal.timeout(20000) // 20 secondes de timeout
           });
           
           if (!fallbackResponse.ok) {
             const fallbackErrorData = await fallbackResponse.json();
-            console.error("Error from ai-studio-chat fallback:", fallbackErrorData);
-            throw new Error(fallbackErrorData.error || `Fallback failed: ${fallbackResponse.status}`);
+            console.error("Erreur du fallback ai-studio-chat:", fallbackErrorData);
+            throw new Error(fallbackErrorData.error || `Échec du fallback: ${fallbackResponse.status}`);
           }
           
           const fallbackData = await fallbackResponse.json();
-          console.log("ai-studio-chat fallback response:", fallbackData);
+          console.log("Réponse du fallback ai-studio-chat:", fallbackData);
           
           if (fallbackData.error) {
             throw new Error(fallbackData.error);
           }
           
-          // Save conversation ID if it's a new conversation
+          // Enregistrer l'ID de conversation s'il s'agit d'une nouvelle conversation
           if (fallbackData.conversationId && !conversationId) {
             setConversationId(fallbackData.conversationId);
           }
           
-          // Add AI response to chat
+          // Ajouter la réponse de l'IA au chat
           setMessages((prev) => [
             ...prev,
             {
@@ -245,13 +251,13 @@ const AIStudioChatPage = () => {
           ]);
           
           setErrorState(null);
-          setRetryCount(0); // Reset retry count on success
+          setRetryCount(0); // Réinitialiser le compteur de tentatives en cas de succès
         } catch (fallbackError) {
-          console.error('Fallback also failed:', fallbackError);
+          console.error('Le fallback a également échoué:', fallbackError);
           
           setErrorState('Impossible de communiquer avec l\'agent IA après plusieurs tentatives.');
           
-          // Add error message to chat
+          // Ajouter un message d'erreur au chat
           setMessages((prev) => [
             ...prev,
             {
@@ -267,7 +273,7 @@ const AIStudioChatPage = () => {
       } else {
         setErrorState('Impossible de communiquer avec l\'agent IA.');
         
-        // Add error message to chat
+        // Ajouter un message d'erreur au chat
         setMessages((prev) => [
           ...prev,
           {
@@ -284,33 +290,17 @@ const AIStudioChatPage = () => {
       setSending(false);
     }
   };
-  
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      handleSendMessage();
-    }
-  };
-  
+
   const getAvatarForAgent = () => {
     if (!agent) return null;
     
-    switch (agent.avatar_style) {
-      case "bot":
-        return <Bot className="h-full w-full p-2" />;
-      case "sparkles":
-        return <span className="text-lg">✨</span>;
-      case "human-female-1":
-        return <span className="text-lg">👩</span>;
-      case "human-female-2":
-        return <span className="text-lg">👱‍♀️</span>;
-      case "human-male-1":
-        return <span className="text-lg">👨</span>;
-      case "human-male-2":
-        return <span className="text-lg">👨‍🦰</span>;
-      default:
-        return <Bot className="h-full w-full p-2" />;
-    }
+    if (agent.avatar_url) return <AvatarImage src={agent.avatar_url} />;
+    
+    return (
+      <AvatarFallback className="bg-gradient-to-br from-violet-500 to-violet-700 text-white">
+        {agent.name?.charAt(0) || <Bot />}
+      </AvatarFallback>
+    );
   };
 
   return (
@@ -318,218 +308,137 @@ const AIStudioChatPage = () => {
       <div className="min-h-screen flex flex-col">
         <Navbar />
         
-        <main className="flex-grow bg-slate-50 dark:bg-slate-900 flex flex-col">
-          {/* Chat header */}
-          <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-4">
-            <div className="container mx-auto flex items-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mr-4 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
-                asChild
-              >
-                <Link to="/ai-studio/dashboard">
-                  <ArrowLeft className="h-4 w-4 mr-2" /> Retour
-                </Link>
-              </Button>
-              
+        <main className="flex-grow bg-slate-50 dark:bg-slate-900 flex flex-col relative">
+          {/* Fond d'animation */}
+          <AnimatedBackground />
+          
+          {/* Chat container */}
+          <div className="container mx-auto max-w-4xl flex-grow flex flex-col">
+            <div className="flex-grow flex flex-col bg-white dark:bg-gray-800 shadow-lg rounded-lg my-4 overflow-hidden border border-gray-200 dark:border-gray-700">
+              {/* Chat header */}
               {loading ? (
-                <div className="flex items-center">
-                  <Skeleton className="h-10 w-10 rounded-full mr-3" />
-                  <div>
-                    <Skeleton className="h-5 w-32 mb-1" />
-                    <Skeleton className="h-4 w-24" />
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mr-4 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                      asChild
+                    >
+                      <Link to="/ai-studio/dashboard">
+                        <ArrowLeft className="h-4 w-4 mr-2" /> Retour
+                      </Link>
+                    </Button>
+                    <Skeleton className="h-10 w-10 rounded-full mr-3" />
+                    <div>
+                      <Skeleton className="h-5 w-32 mb-1" />
+                      <Skeleton className="h-4 w-24" />
+                    </div>
                   </div>
                 </div>
               ) : agent ? (
-                <div className="flex items-center">
-                  <Avatar className="mr-3 h-10 w-10 bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
-                    <AvatarFallback>
-                      {getAvatarForAgent()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
+                <ChatToolbar 
+                  agentName={agent.name}
+                  agentAvatar={agent.avatar_url}
+                  agentObjective={agent.objective}
+                  accentColor={accentColor}
+                  onBackClick={() => window.location.href = "/ai-studio/dashboard"}
+                />
+              ) : (
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mr-4 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                      asChild
+                    >
+                      <Link to="/ai-studio/dashboard">
+                        <ArrowLeft className="h-4 w-4 mr-2" /> Retour
+                      </Link>
+                    </Button>
+                    <Avatar className="mr-3">
+                      <AvatarFallback>
+                        <Bot className="h-5 w-5" />
+                      </AvatarFallback>
+                    </Avatar>
                     <h1 className="font-medium text-slate-900 dark:text-white">
-                      {agent.name}
+                      Agent introuvable
                     </h1>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {agent.personality === "expert" && "Expert"}
-                      {agent.personality === "friendly" && "Amical"}
-                      {agent.personality === "concise" && "Concis"}
-                      {agent.personality === "empathetic" && "Empathique"}
-                    </p>
                   </div>
                 </div>
-              ) : (
-                <div className="flex items-center">
-                  <Avatar className="mr-3">
-                    <AvatarFallback>
-                      <Bot className="h-5 w-5" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <h1 className="font-medium text-slate-900 dark:text-white">
-                    Agent introuvable
-                  </h1>
-                </div>
               )}
-            </div>
-          </header>
-          
-          {/* Chat messages */}
-          <div className="flex-grow overflow-y-auto p-4 md:p-6 space-y-6">
-            <div className="container mx-auto max-w-3xl">
-              {errorState && (
-                <Alert variant="destructive" className="mb-4">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="flex items-center justify-between w-full">
-                    {errorState}
+              
+              {/* Chat messages */}
+              <div className="flex-grow overflow-y-auto p-4 md:p-6 space-y-6">
+                {errorState && (
+                  <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-md flex items-center justify-between text-red-800 dark:text-red-200 text-sm mb-4">
+                    <div className="flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                      <span>{errorState}</span>
+                    </div>
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="border-red-200 bg-red-100 text-red-800 hover:bg-red-200 flex items-center gap-1 ml-4"
+                      className="border-red-200 bg-red-100 text-red-800 hover:bg-red-200 flex items-center gap-1 ml-4 dark:border-red-800 dark:bg-red-900/50 dark:text-red-200 dark:hover:bg-red-800"
                       onClick={handleRetry}
                     >
-                      <RefreshCw className="h-3 w-3" /> Réessayer
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38"/>
+                      </svg>
+                      Réessayer
                     </Button>
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex mb-6 ${
-                    message.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`flex max-w-[80%] md:max-w-[70%] ${
-                      message.role === "user" ? "flex-row-reverse" : "flex-row"
-                    }`}
-                  >
-                    <div
-                      className={`flex-shrink-0 ${
-                        message.role === "user" ? "ml-3" : "mr-3"
-                      }`}
-                    >
-                      <Avatar>
-                        {message.role === "user" ? (
-                          <AvatarFallback className="bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300">
-                            <User className="h-5 w-5" />
-                          </AvatarFallback>
-                        ) : (
-                          <AvatarFallback className={`${message.isError ? 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-300' : 'bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300'}`}>
-                            {message.isError ? <AlertCircle className="h-5 w-5" /> : getAvatarForAgent()}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                    </div>
-                    
-                    <div
-                      className={`rounded-2xl p-4 ${
-                        message.role === "user"
-                          ? "bg-blue-600 text-white"
-                          : message.isError
-                          ? "bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800"
-                          : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                      }`}
-                    >
-                      <p className="whitespace-pre-wrap">{message.content}</p>
-                      
-                      {message.role === "assistant" && !message.isError && (
-                        <div className="flex items-center justify-end mt-2 space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                          >
-                            <ThumbsUp className="h-3 w-3" />
-                            <span className="sr-only">J'aime</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                          >
-                            <ThumbsDown className="h-3 w-3" />
-                            <span className="sr-only">Je n'aime pas</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                          >
-                            <Share2 className="h-3 w-3" />
-                            <span className="sr-only">Partager</span>
-                          </Button>
-                        </div>
-                      )}
-                    </div>
                   </div>
-                </div>
-              ))}
-              
-              {sending && (
-                <div className="flex mb-6 justify-start">
-                  <div className="flex max-w-[80%] md:max-w-[70%] flex-row">
-                    <div className="flex-shrink-0 mr-3">
-                      <Avatar>
-                        <AvatarFallback className="bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
-                          {getAvatarForAgent()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
+                )}
+                
+                {messages.map((message) => (
+                  <ChatMessage
+                    key={message.id}
+                    message={message}
+                    agentName={agent?.name}
+                    agentAvatar={agent?.avatar_url}
+                    userAvatar={user?.user_metadata?.avatar_url}
+                    accentColor={accentColor}
+                    onRetry={message.isError ? handleRetry : undefined}
+                  />
+                ))}
+                
+                {sending && (
+                  <div className="flex items-start">
+                    <Avatar className="h-8 w-8 mr-3">
+                      <AvatarImage src={agent?.avatar_url} />
+                      <AvatarFallback style={{ backgroundColor: accentColor }} className="text-white">
+                        {agent?.name?.charAt(0) || <Bot size={16} />}
+                      </AvatarFallback>
+                    </Avatar>
                     
-                    <div className="rounded-2xl p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    <div className="px-4 py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
                       <div className="flex items-center space-x-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-slate-500" />
-                        <p className="text-slate-500">En train d'écrire...</p>
+                        <div className="flex gap-1">
+                          <div className="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-pulse"></div>
+                          <div className="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                          <div className="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+                
+                <div ref={messagesEndRef} />
+              </div>
               
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-          
-          {/* Input area */}
-          <div className="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 p-4">
-            <div className="container mx-auto max-w-3xl">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSendMessage();
-                }}
-                className="flex space-x-2"
-              >
-                <Input
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
+              {/* Input area */}
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                <ChatInput
+                  onSendMessage={handleSendMessage}
+                  isLoading={sending}
+                  disabled={loading || !agent}
                   placeholder="Écrivez votre message..."
-                  className="flex-grow"
-                  autoComplete="off"
-                  disabled={loading || !agent || sending}
                 />
-                <Button
-                  type="submit"
-                  size="icon"
-                  disabled={!input.trim() || sending || loading || !agent}
-                  className="bg-violet-600 hover:bg-violet-700 text-white"
-                >
-                  {sending ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
-                </Button>
-              </form>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center">
-                LuvviX AI n'est pas parfait et peut parfois générer des informations incorrectes
-              </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 text-center">
+                  LuvviX AI n'est pas parfait et peut parfois générer des informations incorrectes
+                </p>
+              </div>
             </div>
           </div>
         </main>

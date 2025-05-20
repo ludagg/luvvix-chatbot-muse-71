@@ -7,40 +7,53 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Configuration de l'API Cerebras - Valeurs stables et fiables
+const CEREBRAS_CONFIG = {
+  apiKey: 'csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv',
+  endpoint: 'https://api.cerebras.ai/v1/chat/completions',
+  model: 'llama-4-scout-17b-16e-instruct',
+  timeoutMs: 25000, // 25 secondes de timeout
+  defaultMaxTokens: 2000,
+  temperature: 0.5
+};
+
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Gérer les requêtes OPTIONS pour CORS
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
   
+  const requestStart = Date.now();
+  
   try {
-    console.log("Request received by ai-studio-chat function");
+    console.log(`[${requestStart}] Requête reçue par ai-studio-chat (fallback)`);
     
     let requestData;
     try {
       requestData = await req.json();
-      console.log("Request data:", JSON.stringify(requestData));
+      console.log(`[${Date.now() - requestStart}ms] Données de requête analysées:`, JSON.stringify(requestData));
     } catch (parseError) {
-      console.error("Error parsing request body:", parseError);
-      throw new Error("Invalid request format: " + parseError.message);
+      console.error(`[${Date.now() - requestStart}ms] Erreur d'analyse du corps de la requête:`, parseError);
+      throw new Error("Format de requête invalide: " + parseError.message);
     }
     
     const { agentId, message, sessionId, conversationId, userId } = requestData;
     
+    // Validation des données requises
     if (!agentId) {
-      throw new Error("Agent ID is required");
+      throw new Error("L'ID de l'agent est obligatoire");
     }
     
     if (!message) {
-      throw new Error("Message is required");
+      throw new Error("Le message est obligatoire");
     }
     
-    // Get Supabase client
+    // Obtenir le client Supabase
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
     
-    // Get agent configuration
+    // Récupérer la configuration de l'agent
     const { data: agent, error: agentError } = await supabase
       .from("ai_agents")
       .select("*")
@@ -48,34 +61,29 @@ serve(async (req) => {
       .single();
       
     if (agentError || !agent) {
-      console.error("Agent not found:", agentError);
-      throw new Error("Agent not found");
+      console.error(`[${Date.now() - requestStart}ms] Agent non trouvé:`, agentError);
+      throw new Error("Agent non trouvé");
     }
     
-    console.log("Agent found:", agent.name);
+    console.log(`[${Date.now() - requestStart}ms] Agent trouvé:`, agent.name);
     
-    // Get agent context
+    // Récupérer le contexte de l'agent
     const { data: contextData } = await supabase
       .from("ai_agent_context")
       .select("*")
       .eq("agent_id", agentId);
       
-    // Fixed Cerebras API credentials for reliability
-    const cerebrasApiKey = "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv";
-    const cerebrasEndpoint = "https://api.cerebras.ai/v1/chat/completions";
-    const cerebrasModel = "llama-4-scout-17b-16e-instruct";
-        
-    console.log("Using Cerebras configuration:", {
-      model: cerebrasModel,
-      endpoint: cerebrasEndpoint,
-      hasApiKey: !!cerebrasApiKey
+    console.log(`[${Date.now() - requestStart}ms] Utilisation de la configuration Cerebras:`, {
+      model: CEREBRAS_CONFIG.model,
+      endpoint: CEREBRAS_CONFIG.endpoint,
+      hasApiKey: !!CEREBRAS_CONFIG.apiKey
     });
     
     let convoId = conversationId;
     
-    // Create new conversation if needed
+    // Créer une nouvelle conversation si nécessaire
     if (!convoId) {
-      console.log("Creating new conversation");
+      console.log(`[${Date.now() - requestStart}ms] Création d'une nouvelle conversation`);
       const { data: newConversation, error: convoError } = await supabase
         .from("ai_conversations")
         .insert({
@@ -88,15 +96,15 @@ serve(async (req) => {
         .single();
         
       if (convoError || !newConversation) {
-        console.error("Failed to create conversation:", convoError);
-        throw new Error("Failed to create conversation");
+        console.error(`[${Date.now() - requestStart}ms] Échec de la création de la conversation:`, convoError);
+        throw new Error("Échec de la création de la conversation");
       }
       
       convoId = newConversation.id;
-      console.log("New conversation created:", convoId);
+      console.log(`[${Date.now() - requestStart}ms] Nouvelle conversation créée:`, convoId);
     }
     
-    // Store user message
+    // Stocker le message de l'utilisateur
     const { error: msgError } = await supabase
       .from("ai_messages")
       .insert({
@@ -106,52 +114,52 @@ serve(async (req) => {
       });
       
     if (msgError) {
-      console.error("Error storing user message:", msgError);
-      // Continue anyway
+      console.error(`[${Date.now() - requestStart}ms] Erreur lors du stockage du message utilisateur:`, msgError);
+      // Continuer quand même
     }
       
-    // Build context for the AI model
+    // Construire le contexte pour le modèle d'IA
     let contextPrompt = "";
     if (contextData && contextData.length > 0) {
-      console.log(`Adding ${contextData.length} context items`);
+      console.log(`[${Date.now() - requestStart}ms] Ajout de ${contextData.length} éléments de contexte`);
       contextData.forEach(item => {
         if (item.content_type === "text" && item.content) {
           contextPrompt += `${item.content}\n\n`;
         } else if (item.content_type === "url" && item.url) {
-          contextPrompt += `Information from URL: ${item.url}\n\n`;
+          contextPrompt += `Informations de l'URL: ${item.url}\n\n`;
         }
       });
     }
     
-    let systemPrompt = `You are an AI assistant named ${agent.name}. `;
+    let systemPrompt = `Vous êtes un assistant IA nommé ${agent.name}. `;
     
-    // Add personality
+    // Ajouter la personnalité
     switch (agent.personality) {
       case "expert":
-        systemPrompt += "You are an expert in your field and provide detailed, accurate information. Your tone is professional and authoritative. ";
+        systemPrompt += "Vous êtes un expert dans votre domaine et fournissez des informations détaillées et précises. Votre ton est professionnel et autoritaire. ";
         break;
       case "friendly":
-        systemPrompt += "You are friendly, casual, and approachable. You use simple language and sometimes add humor to your responses. ";
+        systemPrompt += "Vous êtes amical, décontracté et accessible. Vous utilisez un langage simple et ajoutez parfois de l'humour à vos réponses. ";
         break;
       case "concise":
-        systemPrompt += "You give brief, to-the-point responses without unnecessary details. ";
+        systemPrompt += "Vous donnez des réponses brèves et précises sans détails superflus. ";
         break;
       case "empathetic":
-        systemPrompt += "You are warm, understanding, and compassionate. You acknowledge emotions and provide supportive responses. ";
+        systemPrompt += "Vous êtes chaleureux, compréhensif et compatissant. Vous reconnaissez les émotions et fournissez des réponses de soutien. ";
         break;
       default:
-        systemPrompt += "You are helpful and informative. ";
+        systemPrompt += "Vous êtes serviable et informatif. ";
     }
     
-    // Add objective
-    systemPrompt += `Your purpose is: ${agent.objective}. `;
+    // Ajouter l'objectif
+    systemPrompt += `Votre objectif est: ${agent.objective}. `;
     
-    // Add context if available
+    // Ajouter le contexte si disponible
     if (contextPrompt) {
-      systemPrompt += `\n\nUse the following information to inform your responses: ${contextPrompt}`;
+      systemPrompt += `\n\nUtilisez les informations suivantes pour éclairer vos réponses: ${contextPrompt}`;
     }
     
-    // Get conversation history
+    // Récupérer l'historique de la conversation
     const { data: messages, error: historyError } = await supabase
       .from("ai_messages")
       .select("*")
@@ -159,17 +167,17 @@ serve(async (req) => {
       .order("created_at", { ascending: true });
       
     if (historyError) {
-      console.error("Error fetching message history:", historyError);
-      // Continue anyway
+      console.error(`[${Date.now() - requestStart}ms] Erreur lors de la récupération de l'historique des messages:`, historyError);
+      // Continuer quand même
     }
       
-    // Format messages for the model
+    // Formater les messages pour le modèle
     const formattedMessages = [
       { role: "system", content: systemPrompt }
     ];
     
     if (messages && messages.length > 0) {
-      console.log(`Adding ${messages.length} history messages`);
+      console.log(`[${Date.now() - requestStart}ms] Ajout de ${messages.length} messages d'historique`);
       messages.forEach(msg => {
         if (msg && msg.role && msg.content) {
           formattedMessages.push({
@@ -180,38 +188,46 @@ serve(async (req) => {
       });
     }
     
-    console.log("Calling Cerebras API with model:", cerebrasModel);
+    console.log(`[${Date.now() - requestStart}ms] Appel de l'API Cerebras avec le modèle:`, CEREBRAS_CONFIG.model);
     
     try {
-      // Call AI model endpoint
-      const modelResponse = await fetch(cerebrasEndpoint, {
+      // Créer un contrôleur pour gérer le timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CEREBRAS_CONFIG.timeoutMs);
+      
+      // Appeler le point de terminaison du modèle d'IA
+      const modelResponse = await fetch(CEREBRAS_CONFIG.endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${cerebrasApiKey}`
+          "Authorization": `Bearer ${CEREBRAS_CONFIG.apiKey}`
         },
         body: JSON.stringify({
-          model: cerebrasModel,
+          model: CEREBRAS_CONFIG.model,
           messages: formattedMessages,
-          max_tokens: 2000,
-          temperature: 0.7,
+          max_tokens: CEREBRAS_CONFIG.defaultMaxTokens,
+          temperature: CEREBRAS_CONFIG.temperature,
           stream: false
-        })
+        }),
+        signal: controller.signal
       });
+      
+      // Effacer le timeout
+      clearTimeout(timeoutId);
       
       if (!modelResponse.ok) {
         const errorText = await modelResponse.text();
-        console.error("API error response:", errorText, "Status:", modelResponse.status);
-        throw new Error(`Error from AI provider: ${modelResponse.status} ${modelResponse.statusText} - ${errorText}`);
+        console.error(`[${Date.now() - requestStart}ms] Erreur de réponse de l'API:`, errorText, "Statut:", modelResponse.status);
+        throw new Error(`Erreur du fournisseur d'IA: ${modelResponse.status} ${modelResponse.statusText} - ${errorText}`);
       }
       
       const modelData = await modelResponse.json();
-      console.log("Cerebras API response received");
+      console.log(`[${Date.now() - requestStart}ms] Réponse de l'API Cerebras reçue`);
       
       const aiResponse = modelData.choices && modelData.choices[0]?.message?.content || 
-                         "Je suis désolé, je n'ai pas pu générer une réponse pour le moment. Veuillez réessayer.";
+                       "Je suis désolé, je n'ai pas pu générer une réponse pour le moment. Veuillez réessayer.";
       
-      // Store AI response
+      // Stocker la réponse de l'IA
       const { error: replyError } = await supabase
         .from("ai_messages")
         .insert({
@@ -221,27 +237,31 @@ serve(async (req) => {
         });
         
       if (replyError) {
-        console.error("Error storing AI reply:", replyError);
-        // Continue anyway
+        console.error(`[${Date.now() - requestStart}ms] Erreur lors du stockage de la réponse de l'IA:`, replyError);
+        // Continuer quand même
       }
       
-      // Increment view count for the agent
+      // Incrémenter le compteur de vues pour l'agent
       try {
         await supabase
           .from("ai_agents")
           .update({ views: (agent.views || 0) + 1 })
           .eq("id", agentId);
       } catch (viewError) {
-        console.error("Failed to increment views:", viewError);
-        // Continue execution even if this fails
+        console.error(`[${Date.now() - requestStart}ms] Échec de l'incrémentation des vues:`, viewError);
+        // Continuer l'exécution même si cela échoue
       }
       
-      // Return the AI response
+      const totalTime = Date.now() - requestStart;
+      console.log(`[${totalTime}ms] Traitement terminé avec succès`);
+      
+      // Retourner la réponse de l'IA
       return new Response(
         JSON.stringify({ 
           response: aiResponse,
           conversationId: convoId,
-          success: true
+          success: true,
+          processingTime: totalTime
         }),
         { 
           headers: { 
@@ -250,17 +270,25 @@ serve(async (req) => {
           } 
         }
       );
-    } catch (apiError) {
-      console.error("Error calling Cerebras API:", apiError);
+    } catch (apiError: any) {
+      // Vérifier si c'est une erreur de timeout
+      if (apiError.name === 'AbortError') {
+        console.error(`[${Date.now() - requestStart}ms] Timeout de l'API après ${CEREBRAS_CONFIG.timeoutMs}ms`);
+        throw new Error(`L'API n'a pas répondu dans le délai imparti de ${CEREBRAS_CONFIG.timeoutMs/1000} secondes`);
+      }
+      
+      console.error(`[${Date.now() - requestStart}ms] Erreur lors de l'appel à l'API Cerebras:`, apiError);
       throw apiError;
     }
-  } catch (error) {
-    console.error("Error:", error.message);
+  } catch (error: any) {
+    const totalTime = Date.now() - requestStart;
+    console.error(`[${totalTime}ms] Erreur:`, error.message);
     return new Response(
       JSON.stringify({ 
         error: error.message,
         errorType: error.name || 'Error',
-        success: false
+        success: false,
+        processingTime: totalTime
       }),
       { 
         headers: { 

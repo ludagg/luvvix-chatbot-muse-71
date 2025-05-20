@@ -1,16 +1,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Send, Bot, User, ExternalLink, AlertCircle, RefreshCw } from "lucide-react";
+import { Bot, User, ExternalLink, AlertCircle } from "lucide-react";
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Card } from '@/components/ui/card';
-import ReactMarkdown from 'react-markdown';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
+import ChatMessage from './ChatMessage';
+import ChatInput from './ChatInput';
+import { Badge } from "@/components/ui/badge";
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -42,14 +40,14 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
-  const [maxRetries] = useState(3);  // Maximum number of retries
+  const [maxRetries] = useState(3);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const [sessionId, setSessionId] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [errorState, setErrorState] = useState<string | null>(null);
   
-  // Generate a unique session ID for guest users
+  // Générer un ID de session unique pour les utilisateurs invités
   useEffect(() => {
     if (!sessionId) {
       setSessionId(crypto.randomUUID());
@@ -60,7 +58,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
     }
   }, []);
 
-  // Fetch agent information
+  // Récupérer les informations de l'agent
   useEffect(() => {
     const fetchAgent = async () => {
       try {
@@ -71,42 +69,42 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           .single();
           
         if (error) {
-          console.error("Error fetching agent:", error);
+          console.error("Erreur lors de la récupération de l'agent:", error);
           throw error;
         }
         
         if (!data) {
-          throw new Error("Agent not found");
+          throw new Error("Agent non trouvé");
         }
         
         setAgent(data);
         
-        // Add system message
+        // Ajouter un message système
         setMessages([
           { 
             role: 'system', 
-            content: `Agent initialized: ${data.name}`
+            content: `Agent initialisé: ${data.name}`
           }
         ]);
         
-        // Increment views counter
+        // Incrémenter le compteur de vues
         try {
-          // Directly update the views counter
+          // Mettre à jour directement le compteur de vues
           await supabase
             .from('ai_agents')
             .update({ views: (data.views || 0) + 1 })
             .eq('id', agentId);
         } catch (viewError) {
-          console.error('Error incrementing agent views:', viewError);
-          // Continue even if view counting fails
+          console.error('Erreur lors de l\'incrémentation des vues de l\'agent:', viewError);
+          // Continuer même si le comptage des vues échoue
         }
       } catch (error: any) {
-        console.error('Error fetching agent:', error);
-        setErrorState('Could not load the agent. Please try again later.');
+        console.error('Erreur lors de la récupération de l\'agent:', error);
+        setErrorState('Impossible de charger l\'agent. Veuillez réessayer plus tard.');
         setMessages([
           { 
             role: 'system', 
-            content: 'Error: Could not load the agent. Please try again later.',
+            content: 'Erreur: Impossible de charger l\'agent. Veuillez réessayer plus tard.',
             isError: true
           }
         ]);
@@ -118,7 +116,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
     fetchAgent();
   }, [agentId]);
 
-  // Scroll to bottom when messages change
+  // Faire défiler vers le bas lorsque les messages changent
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -137,19 +135,19 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
         .single();
         
       if (error) {
-        console.error("Error creating conversation:", error);
+        console.error("Erreur lors de la création de la conversation:", error);
         throw error;
       }
       
       return data.id;
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      console.error('Erreur lors de la création de la conversation:', error);
       return null;
     }
   };
 
   const saveMessage = async (message: Message, convId: string) => {
-    if (message.isError || message.role === 'system') return; // Don't save error or system messages
+    if (message.isError || message.role === 'system') return; // Ne pas enregistrer les messages d'erreur ou système
     
     try {
       await supabase
@@ -160,13 +158,13 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           role: message.role
         });
     } catch (error) {
-      console.error('Error saving message:', error);
+      console.error('Erreur lors de l\'enregistrement du message:', error);
     }
   };
 
   const handleRetry = async () => {
     setErrorState(null);
-    setRetryCount(0); // Reset retry count
+    setRetryCount(0); // Réinitialiser le compteur de tentatives
     await handleSend();
   };
 
@@ -176,7 +174,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
     
     setErrorState(null);
     
-    // Create a conversation if it doesn't exist
+    // Créer une conversation si elle n'existe pas
     let currentConversationId = conversationId;
     if (!currentConversationId) {
       const newConversationId = await createConversation();
@@ -190,7 +188,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       setIsLoading(true);
       setInput('');
       
-      // Add user message to the UI
+      // Ajouter le message de l'utilisateur à l'interface
       const newUserMessage = { 
         role: 'user' as const, 
         content: userMessage,
@@ -198,13 +196,13 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       };
       setMessages(prevMessages => [...prevMessages, newUserMessage]);
       
-      // Save user message to the database if we have a conversation ID
+      // Enregistrer le message de l'utilisateur dans la base de données si nous avons un ID de conversation
       if (currentConversationId) {
         await saveMessage(newUserMessage, currentConversationId);
       }
       
-      // Call the cerebras-chat function first
-      console.log("Calling cerebras-chat with:", {
+      // Appeler d'abord la fonction cerebras-chat
+      console.log("Appel de cerebras-chat avec:", {
         agentId,
         message: userMessage,
         sessionId,
@@ -227,47 +225,47 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           embedded: isEmbed,
           maxTokens: 2000
         }),
-        signal: AbortSignal.timeout(15000) // 15 second timeout
+        signal: AbortSignal.timeout(20000) // 20 secondes de timeout
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Error from cerebras-chat endpoint:", errorData);
-        throw new Error(errorData.error || `Error: ${response.status}`);
+        console.error("Erreur de l'endpoint cerebras-chat:", errorData);
+        throw new Error(errorData.error || `Erreur: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log("Cerebras chat response:", data);
+      console.log("Réponse de cerebras chat:", data);
       
       if (data.error) {
         throw new Error(data.error);
       }
       
-      // Add assistant message to the UI
+      // Ajouter le message de l'assistant à l'interface
       const assistantMessage = { 
         role: 'assistant' as const, 
-        content: data.reply || 'Sorry, I could not generate a response.',
+        content: data.reply || 'Désolé, je n\'ai pas pu générer de réponse.',
         timestamp: new Date()
       };
       
       setMessages(prevMessages => [...prevMessages, assistantMessage]);
       
-      // Update conversation ID if it was created by the function
+      // Mettre à jour l'ID de conversation s'il a été créé par la fonction
       if (data.conversationId && !conversationId) {
         setConversationId(data.conversationId);
       }
       
-      // Reset retry count on success
+      // Réinitialiser le compteur de tentatives en cas de succès
       setRetryCount(0);
       
     } catch (error: any) {
-      console.error('Error sending message:', error);
+      console.error('Erreur lors de l\'envoi du message:', error);
       
-      // Fallback to ai-studio-chat if cerebras-chat fails and we haven't exceeded retries
+      // Fallback vers ai-studio-chat si cerebras-chat échoue et que nous n'avons pas dépassé les tentatives
       if (retryCount < maxRetries) {
         try {
           setRetryCount(prevCount => prevCount + 1);
-          console.log(`Retry attempt ${retryCount + 1}/${maxRetries} - Using ai-studio-chat as fallback...`);
+          console.log(`Tentative ${retryCount + 1}/${maxRetries} - Utilisation de ai-studio-chat comme fallback...`);
           
           const fallbackResponse = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/ai-studio-chat', {
             method: 'POST',
@@ -281,41 +279,41 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
               conversationId: currentConversationId,
               userId: user?.id || null
             }),
-            signal: AbortSignal.timeout(15000) // 15 second timeout
+            signal: AbortSignal.timeout(20000) // 20 secondes de timeout
           });
           
           if (!fallbackResponse.ok) {
             const fallbackErrorData = await fallbackResponse.json();
-            console.error("Error from ai-studio-chat fallback:", fallbackErrorData);
-            throw new Error(fallbackErrorData.error || `Fallback failed: ${fallbackResponse.status}`);
+            console.error("Erreur du fallback ai-studio-chat:", fallbackErrorData);
+            throw new Error(fallbackErrorData.error || `Échec du fallback: ${fallbackResponse.status}`);
           }
           
           const fallbackData = await fallbackResponse.json();
-          console.log("ai-studio-chat fallback response:", fallbackData);
+          console.log("Réponse du fallback ai-studio-chat:", fallbackData);
           
           if (fallbackData.error) {
             throw new Error(fallbackData.error);
           }
           
-          // Add assistant message to the UI
+          // Ajouter le message de l'assistant à l'interface
           const assistantMessage = { 
             role: 'assistant' as const, 
-            content: fallbackData.response || 'Sorry, I could not generate a response.',
+            content: fallbackData.response || 'Désolé, je n\'ai pas pu générer de réponse.',
             timestamp: new Date()
           };
           
           setMessages(prevMessages => [...prevMessages, assistantMessage]);
           setErrorState(null);
           
-          // Update conversation ID if it was created by the function
+          // Mettre à jour l'ID de conversation s'il a été créé par la fonction
           if (fallbackData.conversationId && !conversationId) {
             setConversationId(fallbackData.conversationId);
           }
           
-          // Reset retry count on success but with fallback
+          // Réinitialiser le compteur de tentatives en cas de succès avec le fallback
           setRetryCount(0);
         } catch (fallbackError: any) {
-          console.error('Fallback also failed:', fallbackError);
+          console.error('Le fallback a également échoué:', fallbackError);
           
           setErrorState('Impossible de communiquer avec l\'agent IA après plusieurs tentatives.');
           
@@ -349,25 +347,37 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
 
   return (
     <div 
-      className={`flex flex-col h-full overflow-hidden ${theme === 'dark' ? 'dark bg-gray-900 text-white' : 'bg-white text-gray-900'}`}
+      className={`flex flex-col h-full overflow-hidden ${theme === 'dark' ? 'dark' : ''} ${theme === 'dark' ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`}
     >
       {agent && (
-        <div className="flex items-center border-b px-4 py-3" style={{ borderColor: theme === 'dark' ? '#374151' : '#e5e7eb' }}>
-          <Avatar className="h-8 w-8 mr-2">
-            <AvatarImage src={agent.avatar_url || ''} />
-            <AvatarFallback 
-              style={{ backgroundColor: accentColor }}
-              className="text-white"
-            >
-              {agent.name?.charAt(0) || <Bot size={16} />}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <span className="font-medium text-sm">{agent.name}</span>
-            {agent.objective && (
-              <span className="text-xs opacity-70 truncate max-w-[180px]">{agent.objective}</span>
-            )}
+        <div className="flex items-center justify-between border-b px-4 py-3" style={{ borderColor: theme === 'dark' ? '#374151' : '#e5e7eb' }}>
+          <div className="flex items-center">
+            <Avatar className="h-8 w-8 mr-2">
+              <AvatarImage src={agent.avatar_url || ''} />
+              <AvatarFallback 
+                style={{ backgroundColor: accentColor }}
+                className="text-white"
+              >
+                {agent.name?.charAt(0) || <Bot size={16} />}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col">
+              <span className="font-medium text-sm">{agent.name}</span>
+              {agent.objective && (
+                <span className="text-xs opacity-70 truncate max-w-[180px]">{agent.objective}</span>
+              )}
+            </div>
           </div>
+          
+          <Badge 
+            variant="outline" 
+            className={`text-xs uppercase ${theme === 'dark' ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-600'}`}
+          >
+            {agent.personality === "expert" && "Expert"}
+            {agent.personality === "friendly" && "Amical"}
+            {agent.personality === "concise" && "Concis"}
+            {agent.personality === "empathetic" && "Empathique"}
+          </Badge>
         </div>
       )}
       
@@ -390,55 +400,19 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
                   <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                   <span>{errorState}</span>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="ml-2 bg-red-100 dark:bg-red-800 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-700 flex items-center gap-1"
-                  onClick={handleRetry}
-                >
-                  <RefreshCw className="h-3 w-3" /> Réessayer
-                </Button>
               </div>
             )}
             
             {messages.map((message, i) => (
               message.role !== 'system' && (
-                <div 
+                <ChatMessage 
                   key={i} 
-                  className={`flex items-start gap-3 ${
-                    message.role === 'assistant' 
-                      ? 'text-gray-800 dark:text-gray-200' 
-                      : ''
-                  } ${
-                    message.isError 
-                      ? 'opacity-70' 
-                      : ''
-                  }`}
-                >
-                  {message.role === 'assistant' ? (
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={agent?.avatar_url || ''} />
-                      <AvatarFallback 
-                        style={{ backgroundColor: message.isError ? '#ef4444' : accentColor }}
-                        className="text-white"
-                      >
-                        {message.isError ? <AlertCircle size={16} /> : (agent?.name?.charAt(0) || <Bot size={16} />)}
-                      </AvatarFallback>
-                    </Avatar>
-                  ) : (
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.user_metadata?.avatar_url || ''} />
-                      <AvatarFallback className="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
-                        <User size={16} />
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div className={`${message.role === 'assistant' ? 'prose dark:prose-invert prose-sm max-w-none' : ''}`}>
-                    <ReactMarkdown>
-                      {message.content}
-                    </ReactMarkdown>
-                  </div>
-                </div>
+                  message={message} 
+                  agentName={agent?.name}
+                  agentAvatar={agent?.avatar_url}
+                  accentColor={accentColor}
+                  onRetry={message.isError ? handleRetry : undefined}
+                />
               )
             ))}
           </>
@@ -469,33 +443,12 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
         className="border-t p-3 pb-4" 
         style={{ borderColor: theme === 'dark' ? '#374151' : '#e5e7eb' }}
       >
-        <div className="flex gap-2">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder="Tapez un message..."
-            className="resize-none h-10 min-h-10 py-2"
-            style={{
-              borderColor: theme === 'dark' ? '#374151' : '#e5e7eb',
-              backgroundColor: theme === 'dark' ? '#1f2937' : '#f9fafb'
-            }}
-            disabled={isLoading || isFetching}
-          />
-          <Button
-            onClick={() => handleSend()}
-            disabled={!input.trim() || isLoading || isFetching}
-            style={{ backgroundColor: accentColor }}
-            className="h-10 px-3"
-          >
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
-        </div>
+        <ChatInput
+          onSendMessage={handleSend}
+          isLoading={isLoading}
+          disabled={isFetching}
+          placeholder="Tapez un message..."
+        />
         
         {!hideCredit && isEmbed && (
           <div className="flex items-center justify-center mt-2 text-xs text-gray-500 dark:text-gray-400">

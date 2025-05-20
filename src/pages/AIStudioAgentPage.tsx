@@ -1,4 +1,3 @@
-
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,8 +39,9 @@ const AIStudioAgentPage = () => {
         setAgent(data);
         
         // Increment view count
+        // Fix the typing issue by explicitly typing the id parameter
         const { error: updateError } = await supabase.rpc('increment_agent_views', {
-          agent_id: agentId
+          agent_id: agentId as string
         });
         
         if (updateError) console.error("Error incrementing views:", updateError);

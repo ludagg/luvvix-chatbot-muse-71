@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -24,11 +25,6 @@ interface EmbedChatProps {
   hideCredit?: boolean;
   startMessage?: string;
   isEmbed?: boolean;
-}
-
-// Define parameter type for the increment_agent_views RPC function
-interface IncrementAgentViewsParams {
-  agent_id: string;
 }
 
 const EmbedChat: React.FC<EmbedChatProps> = ({ 
@@ -84,13 +80,13 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           }
         ]);
         
-        // Increment views counter with proper typing
+        // Increment views counter using direct update instead of RPC
         try {
-          // Use the properly typed interface for the RPC call
-          await supabase.rpc<null, IncrementAgentViewsParams>(
-            'increment_agent_views', 
-            { agent_id: agentId }
-          );
+          // Directly update the views counter - bypassing the RPC function
+          await supabase
+            .from('ai_agents')
+            .update({ views: (data.views || 0) + 1 })
+            .eq('id', agentId);
         } catch (viewError) {
           console.error('Error incrementing agent views:', viewError);
           // Continue even if view counting fails

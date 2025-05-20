@@ -1,5 +1,5 @@
 
-import { supabase, incrementAgentViews } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Agent {
   id: string;
@@ -29,6 +29,21 @@ interface AgentFilter {
   category?: string;
   sortBy?: string;
   searchQuery?: string;
+}
+
+// Export the function directly so it can be imported by name
+export async function incrementAgentViews({ agentId }: { agentId: string }): Promise<void> {
+  try {
+    const { error } = await supabase.rpc('increment_agent_views', {
+      agent_id: agentId
+    });
+    
+    if (error) {
+      console.error('Error incrementing views:', error);
+    }
+  } catch (error) {
+    console.error('Error calling increment_agent_views:', error);
+  }
 }
 
 class AIAgentService {

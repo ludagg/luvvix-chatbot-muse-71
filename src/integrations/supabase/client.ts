@@ -7,17 +7,3 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIU
 
 // Create and export the Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-export const incrementAgentViews = async ({ agentId }: { agentId: string }) => {
-  try {
-    const { error } = await supabase.rpc('increment_agent_views', {
-      agent_id: agentId
-    });
-    
-    if (error) {
-      console.error('Error incrementing views:', error);
-    }
-  } catch (err) {
-    console.error('Error calling increment_agent_views:', err);
-  }
-};

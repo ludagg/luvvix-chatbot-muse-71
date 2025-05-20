@@ -1,20 +1,11 @@
+
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Shield, Zap, Globe, Check, Bot, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
-  // Use try-catch to handle potential context errors
-  let navigate;
-  try {
-    navigate = useNavigate();
-  } catch (error) {
-    console.error("Navigation context not available:", error);
-    // Provide a fallback function that uses window.location
-    navigate = (path: string) => {
-      window.location.href = path;
-    };
-  }
+  const navigate = useNavigate();
 
   // Animation variants
   const fadeIn = {
@@ -34,15 +25,6 @@ const Hero = () => {
         staggerChildren: 0.2,
         delayChildren: 0.3
       }
-    }
-  };
-
-  const handleNavigation = (path: string) => {
-    try {
-      navigate(path);
-    } catch (error) {
-      console.error("Navigation failed:", error);
-      window.location.href = path;
     }
   };
 
@@ -109,7 +91,7 @@ const Hero = () => {
               <motion.div variants={fadeIn}>
                 <Button 
                   size="lg"
-                  onClick={() => handleNavigation("/auth")}
+                  onClick={() => navigate("/auth")}
                   className="bg-gradient-to-r from-[#9f75ff] to-[#7debff] text-white hover:opacity-90 font-medium px-8 h-12 shadow-lg shadow-purple-500/20"
                 >
                   Créer un compte
@@ -213,7 +195,7 @@ const Hero = () => {
               </div>
               
               <Button 
-                onClick={() => handleNavigation("/ai-studio")}
+                onClick={() => navigate("/ai-studio")}
                 className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white w-full"
               >
                 Créer votre assistant IA

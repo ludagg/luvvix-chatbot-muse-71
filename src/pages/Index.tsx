@@ -1,5 +1,4 @@
 
-import React from "react";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Ecosystem from "@/components/Ecosystem";
@@ -21,18 +20,18 @@ const Index = () => {
     <div className="min-h-screen">
       <Navbar />
       
-      <Hero />
-      <AIStudioPromo />
-      <Ecosystem />
-      <FormsPromo />
-      <NewsPreview />
-      <Authentication />
-      <ProductDemos />
-      <DeveloperSection />
-      <LabSection />
-      <CeoSection />
-      <Careers />
-      <Testimonials />
+        <Hero />
+        <AIStudioPromo />
+        <Ecosystem />
+        <FormsPromo />
+        <NewsPreview />
+        <Authentication />
+        <ProductDemos />
+        <DeveloperSection />
+        <LabSection />
+        <CeoSection />
+        <Careers />
+        <Testimonials />
       
       <Footer />
     </div>

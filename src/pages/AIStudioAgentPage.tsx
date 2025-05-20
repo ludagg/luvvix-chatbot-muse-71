@@ -17,6 +17,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { QRCodeSVG } from "qrcode.react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { incrementAgentViews } from "@/services/ai-agent-service";
 
 const AIStudioAgentPage = () => {
   const { agentId } = useParams<{ agentId: string }>();
@@ -34,31 +35,44 @@ const AIStudioAgentPage = () => {
       }
       
       try {
-        const { data, error } = await supabase
+        // Récupérer d'abord les données de l'agent
+        const { data: agentData, error: agentError } = await supabase
           .from("ai_agents")
-          .select("*, user_profiles(*)")
+          .select("*")
           .eq("id", agentId)
           .single();
           
-        if (error) throw error;
+        if (agentError) throw agentError;
         
-        if (!data.is_public) {
+        if (!agentData.is_public) {
           throw new Error("Cet agent n'est pas public");
         }
         
-        setAgent(data);
-        
-        // Incrémenter directement la vue dans la table ai_agents plutôt que d'utiliser la fonction RPC
-        // Cela évite le problème de typage avec la fonction RPC
-        try {
-          const { error: updateError } = await supabase
-            .from('ai_agents')
-            .update({ views: (data.views || 0) + 1 })
-            .eq('id', agentId);
+        // Ensuite, récupérer séparément les informations du profil utilisateur
+        let userData = null;
+        if (agentData.user_id) {
+          const { data: userProfileData, error: userError } = await supabase
+            .from("user_profiles")
+            .select("*")
+            .eq("id", agentData.user_id)
+            .maybeSingle();
           
-          if (updateError) console.error("Error incrementing views:", updateError);
-        } catch (updateError) {
-          console.error("Update Error:", updateError);
+          if (!userError && userProfileData) {
+            userData = userProfileData;
+          }
+        }
+        
+        // Combiner les données
+        const completeAgentData = {
+          ...agentData,
+          user_profiles: userData
+        };
+        
+        setAgent(completeAgentData);
+        
+        // Incrémenter la vue
+        if (agentId) {
+          await incrementAgentViews({ agentId });
         }
         
       } catch (error) {

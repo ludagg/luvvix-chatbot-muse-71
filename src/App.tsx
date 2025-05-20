@@ -29,6 +29,11 @@ import AIStudioEditAgentPage from "./pages/AIStudioEditAgentPage";
 import AIStudioMarketplacePage from "./pages/AIStudioMarketplacePage";
 import AIStudioAdminPage from "./pages/AIStudioAdminPage";
 import AIStudioChatPage from "./pages/AIStudioChatPage";
+import AIEmbedPage from "./pages/AIEmbedPage";
+import PrivacyPage from "./pages/legal/PrivacyPage";
+import TermsPage from "./pages/legal/TermsPage";
+import CookiesPage from "./pages/legal/CookiesPage";
+import DocsPage from "./pages/docs/DocsPage";
 
 const App = () => (
   <HelmetProvider>
@@ -57,11 +62,7 @@ const App = () => (
               <CloudPage />
             </ProtectedRoute>
           } />
-          <Route path="/admin" element={
-            <ProtectedRoute>
-              <AdminPanel />
-            </ProtectedRoute>
-          } />
+          <Route path="/admin" element={<AdminPanel />} />
           
           {/* Routes for LuvviX Forms */}
           <Route path="/forms" element={<FormsPage />} />
@@ -108,6 +109,17 @@ const App = () => (
           <Route path="/ai-studio/marketplace" element={<AIStudioMarketplacePage />} />
           <Route path="/ai-studio/chat/:agentId" element={<AIStudioChatPage />} />
           <Route path="/ai-studio/admin" element={<AIStudioAdminPage />} />
+          
+          {/* AI Embed Routes */}
+          <Route path="/ai-embed/:agentId" element={<AIEmbedPage />} />
+          
+          {/* Legal Pages */}
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/cookies" element={<CookiesPage />} />
+          
+          {/* Documentation */}
+          <Route path="/docs/*" element={<DocsPage />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

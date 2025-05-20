@@ -1,5 +1,5 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, incrementAgentViews } from "@/integrations/supabase/client";
 
 export interface Agent {
   id: string;
@@ -256,6 +256,15 @@ class AIAgentService {
     } catch (error) {
       console.error("Error fetching followed creators:", error);
       return [];
+    }
+  }
+
+  // Function to directly increment agent views
+  async recordAgentView(agentId: string): Promise<void> {
+    try {
+      await incrementAgentViews(agentId);
+    } catch (error) {
+      console.error("Error recording agent view:", error);
     }
   }
 }

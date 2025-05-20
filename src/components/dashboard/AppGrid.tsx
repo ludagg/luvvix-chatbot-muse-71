@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import AppIcon from "./AppIcon";
 import SearchBar from "./SearchBar";
-import { Brain, FileText, Newspaper, CloudSun, Settings, User, ShieldCheck, Cloud } from "lucide-react";
+import { Brain, FileText, Newspaper, CloudSun, Settings, User, ShieldCheck, Cloud, Bot, Sparkles } from "lucide-react";
 
 interface AppDefinition {
   id: string;
@@ -15,6 +15,15 @@ interface AppDefinition {
 }
 
 const apps: AppDefinition[] = [
+  {
+    id: "ai-studio",
+    name: "LuvviX AI Studio",
+    description: "Création d'agents IA",
+    icon: Bot,
+    to: "/ai-studio",
+    color: "bg-violet-500",
+    keywords: ["ia", "intelligence", "artificielle", "ai", "assistant", "chatbot", "studio", "agent"]
+  },
   {
     id: "ai",
     name: "LuvviX AI",

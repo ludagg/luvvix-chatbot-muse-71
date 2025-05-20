@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, Newspaper, Bot, Sparkles } from "lucide-react";
+import { Menu, X, User, Newspaper, Bot, Sparkles, FileText, Search, Cloud, Shield } from "lucide-react";
 import { useAuth } from '@/hooks/useAuth';
 import WeatherWidget from './weather/WeatherWidget';
 import NewsNotification from './news/NewsNotification';
@@ -44,38 +44,66 @@ const Navbar = () => {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
             <div className="flex items-center space-x-6">
-              <a href="#ecosystem" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-                Écosystème
-              </a>
-              <a href="#products" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-                Produits
-              </a>
-              <a href="#developers" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-                Développeurs
-              </a>
-              <Link to="/news" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
-                <Newspaper className="w-4 h-4 mr-1" />
-                News
+              {/* Replace old links with LuvviX tools */}
+              <Link to="/forms" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
+                <FileText className="w-4 h-4 mr-1" />
+                Forms
               </Link>
-              {/* Add AI Studio link with highlight effect */}
               <Link to="/ai-studio" className="text-sm font-medium flex items-center text-indigo-300 hover:text-indigo-200 transition-colors">
                 <Bot className="w-4 h-4 mr-1" />
                 AI Studio
                 <Sparkles className="w-3 h-3 ml-1 text-yellow-300" />
               </Link>
-              <a href="#lab" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-                Lab
-              </a>
-              <a href="#careers" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-                Carrières
-              </a>
+              <Link to="/news" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
+                <Newspaper className="w-4 h-4 mr-1" />
+                News
+              </Link>
+              <Link to="/cloud" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
+                <Cloud className="w-4 h-4 mr-1" />
+                Cloud
+              </Link>
+              <Link to="/docs" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+                Documentation
+              </Link>
+              <div className="relative group">
+                <button className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
+                  Plus
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div className="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 hidden group-hover:block z-50">
+                  <div className="py-1">
+                    <Link to="/weather" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <Cloud className="w-4 h-4 mr-2" />
+                      Météo
+                    </Link>
+                    <Link to="/privacy" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <Shield className="w-4 h-4 mr-2" />
+                      Confidentialité
+                    </Link>
+                    <Link to="/terms" className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <FileText className="w-4 h-4 mr-2" />
+                      CGU
+                    </Link>
+                  </div>
+                </div>
+              </div>
             </div>
             <div className="flex items-center space-x-3">
-              {/* Weather Widget - Positioned at the beginning of this section */}
+              {/* Weather Widget */}
               <WeatherWidget />
               
               {/* News Notifications */}
               <NewsNotification />
+              
+              {/* Search Button */}
+              <button 
+                className="p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-colors"
+                aria-label="Search"
+              >
+                <Search className="h-4 w-4" />
+              </button>
               
               {!loading && (
                 user ? (
@@ -124,31 +152,38 @@ const Navbar = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden pt-4 pb-3 animate-fade-in bg-[#1A1F2C] mt-4 rounded-lg">
             <div className="flex flex-col space-y-4 p-4">
-              <a href="#ecosystem" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-                Écosystème
-              </a>
-              <a href="#products" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-                Produits
-              </a>
-              <a href="#developers" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-                Développeurs
-              </a>
-              <Link to="/news" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
-                <Newspaper className="w-4 h-4 mr-1" />
-                News
+              <Link to="/forms" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
+                <FileText className="w-4 h-4 mr-1" />
+                Forms
               </Link>
-              {/* Add AI Studio link with highlight effect in mobile menu */}
               <Link to="/ai-studio" className="text-sm font-medium flex items-center text-indigo-300 hover:text-indigo-200 transition-colors">
                 <Bot className="w-4 h-4 mr-1" />
                 AI Studio
                 <Sparkles className="w-3 h-3 ml-1 text-yellow-300" />
               </Link>
-              <a href="#lab" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-                Lab
-              </a>
-              <a href="#careers" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
-                Carrières
-              </a>
+              <Link to="/news" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
+                <Newspaper className="w-4 h-4 mr-1" />
+                News
+              </Link>
+              <Link to="/cloud" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
+                <Cloud className="w-4 h-4 mr-1" />
+                Cloud
+              </Link>
+              <Link to="/weather" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
+                <Cloud className="w-4 h-4 mr-1" />
+                Météo
+              </Link>
+              <Link to="/docs" className="text-sm font-medium text-white/80 hover:text-white transition-colors">
+                Documentation
+              </Link>
+              <Link to="/privacy" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
+                <Shield className="w-4 h-4 mr-1" />
+                Confidentialité
+              </Link>
+              <Link to="/terms" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
+                <FileText className="w-4 h-4 mr-1" />
+                CGU
+              </Link>
               
               <div className="flex items-center space-x-4">
                 <NewsNotification />

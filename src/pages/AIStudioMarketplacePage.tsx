@@ -14,6 +14,7 @@ import { Loader2, Search, Heart, MessageSquare, Sliders } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
+// Define a proper interface for user profiles
 interface AgentUserProfile {
   id?: string;
   full_name?: string;
@@ -88,16 +89,22 @@ const AIStudioMarketplacePage = () => {
         const formattedAgents: AIAgent[] = (data || []).map(agent => ({
           id: agent.id,
           name: agent.name,
-          description: agent.objective, // Using objective as description
-          objective: agent.objective,
+          description: agent.objective || '', // Using objective as description
+          objective: agent.objective || '',
           model: 'gpt-4', // Default value as it's required by the interface
           category: agent.avatar_style || 'general', // Using avatar_style as category or default to 'general'
           user_id: agent.user_id,
           is_public: agent.is_public,
-          likes: 0, // Default as it's required by interface but not in the DB response
+          likes: agent.likes || 0, // Default as it's required by interface
           views: agent.views || 0,
           avatar_url: agent.avatar_url,
-          user_profiles: agent.user_profiles
+          // Map the user_profiles object to match our AgentUserProfile interface
+          user_profiles: agent.user_profiles ? {
+            id: agent.user_profiles.id,
+            full_name: agent.user_profiles.full_name,
+            username: agent.user_profiles.username,
+            avatar_url: agent.user_profiles.avatar_url
+          } : undefined
         }));
         
         setAgents(formattedAgents);
@@ -186,7 +193,7 @@ const AIStudioMarketplacePage = () => {
             <h1 className="text-3xl font-semibold text-gray-900 dark:text-gray-100">
               Marketplace des Agents IA
             </h1>
-            <Button onClick={toggleFilters} variant="outline">
+            <Button onClick={() => setShowFilters(!showFilters)} variant="outline">
               <Sliders className="w-4 h-4 mr-2" />
               Filtrer
             </Button>
@@ -214,7 +221,7 @@ const AIStudioMarketplacePage = () => {
                               <TabsTrigger
                                 key={option.value}
                                 value={option.value}
-                                onClick={() => handleCategoryChange(option.value)}
+                                onClick={() => setCategoryFilter(option.value)}
                                 className="text-sm"
                               >
                                 {option.label}
@@ -233,7 +240,7 @@ const AIStudioMarketplacePage = () => {
                               <TabsTrigger
                                 key={option.value}
                                 value={option.value}
-                                onClick={() => handleSortOrderChange(option.value)}
+                                onClick={() => setSortOrder(option.value)}
                                 className="text-sm"
                               >
                                 {option.label}

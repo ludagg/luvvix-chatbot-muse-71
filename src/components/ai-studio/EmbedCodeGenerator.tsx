@@ -3,10 +3,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Code, Copy, Check, QrCode, ExternalLink } from "lucide-react";
+import { Code, Copy, Check, QrCode, ExternalLink, Globe, Sparkles } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
-import { QRCodeSVG } from "qrcode.react"; // Changed this line - using named export
+import { QRCodeSVG } from "qrcode.react";
+import { Badge } from "@/components/ui/badge";
 
 interface EmbedCodeGeneratorProps {
   agentId: string;
@@ -18,11 +19,11 @@ const EmbedCodeGenerator = ({ agentId, agentName, isPublic }: EmbedCodeGenerator
   const [copied, setCopied] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("iframe");
   
-  // Get base URL dynamically
-  const baseUrl = window.location.origin;
+  // Base URL dynamique avec support pour luvvix.it.com
+  const baseUrl = "https://luvvix.it.com";
   const publicUrl = `${baseUrl}/ai-studio/agents/${agentId}`;
 
-  // Define the embed code options
+  // Options d'intégration optimisées
   const embedOptions = {
     iframe: `<iframe
   src="${baseUrl}/ai-embed/${agentId}"
@@ -76,7 +77,10 @@ const EmbedCodeGenerator = ({ agentId, agentName, isPublic }: EmbedCodeGenerator
     <TooltipProvider>
       <Card className="shadow-md bg-slate-800/50 backdrop-blur-md border border-slate-700/50 overflow-hidden">
         <CardHeader className="border-b border-slate-700/50">
-          <CardTitle className="text-slate-200">Intégrer cet agent sur votre site</CardTitle>
+          <CardTitle className="text-slate-200 flex items-center">
+            <Sparkles className="h-5 w-5 mr-2 text-violet-400" />
+            Intégrer cet agent sur votre site
+          </CardTitle>
           <CardDescription className="text-slate-400">
             Choisissez comment partager ou intégrer cet agent d'IA sur votre site web ou application.
           </CardDescription>
@@ -116,6 +120,12 @@ const EmbedCodeGenerator = ({ agentId, agentName, isPublic }: EmbedCodeGenerator
                   <p>Copier le lien public</p>
                 </TooltipContent>
               </Tooltip>
+            </div>
+            <div className="mt-3">
+              <Badge variant="outline" className="bg-slate-800/70 text-violet-300 border-violet-500/30">
+                <Globe className="h-3 w-3 mr-1" />
+                luvvix.it.com
+              </Badge>
             </div>
           </div>
           
@@ -318,7 +328,7 @@ const EmbedCodeGenerator = ({ agentId, agentName, isPublic }: EmbedCodeGenerator
         
         <CardFooter className="border-t border-slate-700/50 bg-slate-900/30 p-4 flex justify-between">
           <p className="text-xs text-slate-400">
-            Note: Les intégrations fonctionnent uniquement pour les agents publics.
+            Note: Les intégrations fonctionnent uniquement pour les agents publics et avec le domaine luvvix.it.com.
           </p>
           <Button
             variant="default"

@@ -6,10 +6,13 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, MessageSquare, Share, Info } from "lucide-react";
+import { Loader2, MessageSquare, Share, Info, Star, Users, Calendar } from "lucide-react";
 import { Link } from "react-router-dom";
 import EmbedCodeGenerator from "@/components/ai-studio/EmbedCodeGenerator";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const AIStudioAgentPage = () => {
   const { agentId } = useParams<{ agentId: string }>();
@@ -27,7 +30,7 @@ const AIStudioAgentPage = () => {
       try {
         const { data, error } = await supabase
           .from("ai_agents")
-          .select("*")
+          .select("*, user_profiles(*)")
           .eq("id", agentId)
           .single();
           
@@ -77,23 +80,46 @@ const AIStudioAgentPage = () => {
               <div className="max-w-4xl mx-auto">
                 <div className="bg-slate-800/40 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg mb-6 overflow-hidden">
                   <div className="p-8">
-                    <h1 className="text-3xl font-bold mb-4 text-slate-100">{agent.name}</h1>
-                    
-                    <div className="flex flex-wrap items-center text-sm text-slate-400 mb-6 gap-4">
-                      <div className="bg-slate-800/70 px-3 py-1 rounded-full flex items-center">
-                        {agent.personality === "expert" && "Expert"}
-                        {agent.personality === "friendly" && "Amical"}
-                        {agent.personality === "concise" && "Concis"}
-                        {agent.personality === "empathetic" && "Empathique"}
-                      </div>
-                      <div className="bg-slate-800/70 px-3 py-1 rounded-full flex items-center">
-                        <span>{agent.views} vues</span>
-                      </div>
-                      {agent.is_paid && (
-                        <div className="bg-emerald-900/30 text-emerald-400 px-3 py-1 rounded-full flex items-center">
-                          {agent.price}€
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className="bg-violet-600/20 rounded-xl p-4 flex items-center justify-center">
+                        <div className="text-4xl">
+                          {agent.avatar_style === "bot" && "🤖"}
+                          {agent.avatar_style === "sparkles" && "✨"}
+                          {!agent.avatar_style && "🧠"}
                         </div>
-                      )}
+                      </div>
+                      <div className="flex-1">
+                        <h1 className="text-3xl font-bold mb-2 text-slate-100">{agent.name}</h1>
+                        
+                        <div className="flex items-center text-sm text-slate-400 mb-2">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          <span>Créé {formatDistanceToNow(new Date(agent.created_at), { addSuffix: true, locale: fr })}</span>
+                        </div>
+                        
+                        <div className="flex flex-wrap items-center text-sm gap-2">
+                          <Badge variant="outline" className="bg-slate-800/70 text-slate-300 border-slate-600">
+                            {agent.personality === "expert" && "Expert"}
+                            {agent.personality === "friendly" && "Amical"}
+                            {agent.personality === "concise" && "Concis"}
+                            {agent.personality === "empathetic" && "Empathique"}
+                          </Badge>
+                          <Badge variant="outline" className="bg-slate-800/70 text-slate-300 border-slate-600">
+                            <Users className="h-3 w-3 mr-1" />
+                            <span>{agent.views || 0} vues</span>
+                          </Badge>
+                          {agent.rating > 0 && (
+                            <Badge variant="outline" className="bg-amber-900/20 text-amber-300 border-amber-800/30">
+                              <Star className="h-3 w-3 mr-1 fill-amber-400 text-amber-400" />
+                              {agent.rating.toFixed(1)}
+                            </Badge>
+                          )}
+                          {agent.is_paid && (
+                            <Badge className="bg-emerald-900/30 text-emerald-400 border-emerald-800/30">
+                              {agent.price}€
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     
                     <p className="text-lg mb-8 text-slate-300">{agent.objective}</p>
@@ -143,11 +169,77 @@ const AIStudioAgentPage = () => {
                     <div className="bg-slate-800/40 backdrop-blur-md rounded-2xl border border-slate-700/50 shadow-lg overflow-hidden">
                       <div className="p-8">
                         <h2 className="text-xl font-semibold mb-4 text-slate-100">À propos de cet agent</h2>
-                        <p className="text-slate-300">
+                        <p className="text-slate-300 mb-6">
                           Cet agent a été conçu pour vous aider dans son domaine d'expertise.
                           Vous pouvez discuter avec lui pour obtenir des informations, des conseils
                           ou simplement pour avoir une conversation intéressante.
                         </p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="bg-slate-700/30 rounded-xl p-5">
+                            <h3 className="text-lg font-medium mb-3 text-slate-200">Personnalité</h3>
+                            <div className="space-y-2">
+                              <div className="flex items-center text-slate-300">
+                                {agent.personality === "expert" && (
+                                  <>
+                                    <span className="bg-blue-500/20 text-blue-400 p-1 rounded mr-2">🎓</span>
+                                    <div>
+                                      <p className="font-medium">Expert</p>
+                                      <p className="text-sm text-slate-400">Répond avec précision et autorité professionnelle</p>
+                                    </div>
+                                  </>
+                                )}
+                                {agent.personality === "friendly" && (
+                                  <>
+                                    <span className="bg-green-500/20 text-green-400 p-1 rounded mr-2">😊</span>
+                                    <div>
+                                      <p className="font-medium">Amical</p>
+                                      <p className="text-sm text-slate-400">Répond de manière chaleureuse et conviviale</p>
+                                    </div>
+                                  </>
+                                )}
+                                {agent.personality === "concise" && (
+                                  <>
+                                    <span className="bg-purple-500/20 text-purple-400 p-1 rounded mr-2">📋</span>
+                                    <div>
+                                      <p className="font-medium">Concis</p>
+                                      <p className="text-sm text-slate-400">Répond de façon directe et sans détour</p>
+                                    </div>
+                                  </>
+                                )}
+                                {agent.personality === "empathetic" && (
+                                  <>
+                                    <span className="bg-pink-500/20 text-pink-400 p-1 rounded mr-2">💖</span>
+                                    <div>
+                                      <p className="font-medium">Empathique</p>
+                                      <p className="text-sm text-slate-400">Répond avec compréhension et compassion</p>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-slate-700/30 rounded-xl p-5">
+                            <h3 className="text-lg font-medium mb-3 text-slate-200">Utilisation</h3>
+                            <p className="text-slate-300 text-sm">
+                              Pour interagir avec cet agent, cliquez simplement sur le bouton "Discuter avec cet agent" 
+                              et commencez à poser vos questions. L'agent répondra en fonction 
+                              de sa programmation et de son domaine d'expertise.
+                            </p>
+                            
+                            <Button 
+                              asChild 
+                              className="mt-4 bg-violet-600 hover:bg-violet-700"
+                              size="sm"
+                            >
+                              <Link to={`/ai-studio/chat/${agent.id}`}>
+                                <MessageSquare className="mr-2 h-4 w-4" />
+                                Commencer une discussion
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </TabsContent>

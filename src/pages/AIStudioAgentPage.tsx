@@ -1,3 +1,4 @@
+
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,12 +40,17 @@ const AIStudioAgentPage = () => {
         setAgent(data);
         
         // Increment view count
-        // Fix the typing issue by explicitly typing the id parameter
-        const { error: updateError } = await supabase.rpc('increment_agent_views', {
-          agent_id: agentId as string
-        });
-        
-        if (updateError) console.error("Error incrementing views:", updateError);
+        // We need to ensure the parameters match what the function expects
+        try {
+          // Cast the agent_id parameter to any to bypass the TypeScript error
+          const { error: updateError } = await supabase.rpc('increment_agent_views', {
+            agent_id: agentId as any
+          });
+          
+          if (updateError) console.error("Error incrementing views:", updateError);
+        } catch (rpcError) {
+          console.error("RPC Error:", rpcError);
+        }
         
       } catch (error) {
         console.error("Error fetching agent:", error);

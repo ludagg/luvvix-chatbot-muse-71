@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -267,7 +266,13 @@ const AIStudioAgentPage = () => {
                         ci-dessous
                       </p>
 
-                      {agentId && <EmbedCodeGenerator agentId={agentId} />}
+                      {agentId && (
+                        <EmbedCodeGenerator 
+                          agentId={agentId} 
+                          agentName={agent?.name || "Agent IA"} 
+                          isPublic={agent?.is_public !== false} 
+                        />
+                      )}
                     </div>
 
                     <div>

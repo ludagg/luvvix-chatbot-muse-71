@@ -172,17 +172,25 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       }
       
       // Call the AI function
+      console.log("Calling cerebras-chat with:", {
+        agentId,
+        message: userMessage,
+        sessionId,
+        conversationId,
+        embedded: isEmbed
+      });
+      
       const response = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/cerebras-chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          agentId: agentId,
+          agentId,
           message: userMessage,
-          sessionId: sessionId,
+          sessionId,
           userId: user?.id || null,
-          conversationId: conversationId,
+          conversationId,
           embedded: isEmbed
         }),
       });
@@ -192,6 +200,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       }
       
       const data = await response.json();
+      console.log("Cerebras chat response:", data);
       
       if (data.error) {
         throw new Error(data.error);

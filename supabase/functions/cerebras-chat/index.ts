@@ -20,7 +20,9 @@ serve(async (req) => {
   }
 
   try {
-    const { conversation, systemPrompt, maxTokens, agentId, message, conversationId, sessionId, embedded = false } = await req.json();
+    const { conversation, systemPrompt, maxTokens, agentId, message, conversationId, sessionId, embedded = false, userId = null } = await req.json();
+    
+    console.log("Request received:", { agentId, message, conversationId, sessionId, embedded });
     
     // Get API key and configuration from Supabase secrets
     const cerebrasApiKey = Deno.env.get('CEREBRAS_API_KEY') || 'csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv';
@@ -34,7 +36,6 @@ serve(async (req) => {
     let finalSystemPrompt = systemPrompt;
     let finalConversation = conversation || [];
     let finalConversationId = conversationId;
-    let userId = null;
     let contextContent = "";
     
     // If agent ID is provided, get system prompt from database
@@ -42,18 +43,16 @@ serve(async (req) => {
       // Get agent from database
       const { data, error } = await supabase
         .from('ai_agents')
-        .select('name, objective, personality, user_id')
+        .select('name, objective, personality, user_id, views')
         .eq('id', agentId)
         .single();
 
       if (error) {
+        console.error("Error fetching agent:", error);
         throw new Error(`Erreur lors de la récupération de l'agent: ${error.message}`);
       }
 
       if (data) {
-        // Store user ID for usage tracking
-        userId = data.user_id;
-        
         // Build system prompt based on agent attributes
         finalSystemPrompt = `Tu es ${data.name}, `;
         
@@ -105,10 +104,10 @@ serve(async (req) => {
             // Use direct update instead of RPC function
             await supabase
               .from('ai_agents')
-              .update({ views: data.views ? data.views + 1 : 1 })
+              .update({ views: (data.views || 0) + 1 })
               .eq('id', agentId);
-          } catch (error) {
-            console.error('Failed to increment views:', error);
+          } catch (viewError) {
+            console.error('Failed to increment views:', viewError);
             // Continue execution even if this fails
           }
         }
@@ -116,12 +115,12 @@ serve(async (req) => {
         // Handle conversation session
         if (sessionId) {
           // Check if conversation exists
-          if (conversationId) {
+          if (finalConversationId) {
             // Get existing messages
             const { data: existingMessages } = await supabase
               .from('ai_messages')
               .select('content, role')
-              .eq('conversation_id', conversationId)
+              .eq('conversation_id', finalConversationId)
               .order('created_at', { ascending: true });
               
             if (existingMessages && existingMessages.length > 0) {
@@ -133,7 +132,7 @@ serve(async (req) => {
               .from('ai_conversations')
               .insert({
                 agent_id: agentId,
-                is_guest: true,
+                is_guest: !userId,
                 session_id: sessionId,
                 user_id: userId
               })
@@ -186,7 +185,7 @@ serve(async (req) => {
     }
     
     // Add conversation messages
-    finalConversation.forEach((msg) => {
+    finalConversation.forEach((msg: any) => {
       messages.push({
         role: msg.role,
         content: msg.content
@@ -194,14 +193,18 @@ serve(async (req) => {
     });
     
     // Add user message if not in conversation
-    if (message && !finalConversation.some(msg => msg.role === 'user' && msg.content === message)) {
+    if (message && !finalConversation.some((msg: any) => msg.role === 'user' && msg.content === message)) {
       messages.push({
         role: 'user',
         content: message
       });
     }
 
-    console.log("Calling Cerebras API with messages:", JSON.stringify(messages));
+    console.log("Calling Cerebras API with:", {
+      model: modelName,
+      messagesCount: messages.length,
+      maxTokens: maxTokens || 2000
+    });
 
     // Call Cerebras API
     const response = await fetch(endpoint, {
@@ -227,8 +230,13 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log("Cerebras API response:", {
+      choices: data.choices?.length || 0,
+      usage: data.usage
+    });
+    
     const assistantReply = data.choices && data.choices[0]?.message?.content || 
-                       "I'm sorry, I couldn't generate a response at this time.";
+                      "I'm sorry, I couldn't generate a response at this time.";
     
     // If this is a conversation with an ID, save the response
     if (finalConversationId) {

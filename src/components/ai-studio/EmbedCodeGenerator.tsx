@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Code, Copy, Check, QrCode, ExternalLink } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
-import QRCode from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react"; // Changed this line - using named export
 
 interface EmbedCodeGeneratorProps {
   agentId: string;
@@ -129,7 +129,7 @@ const EmbedCodeGenerator = ({ agentId, agentName, isPublic }: EmbedCodeGenerator
               Scannez ce QR code pour accéder à l'agent IA depuis un appareil mobile.
             </p>
             <div className="bg-white inline-flex p-4 rounded-md">
-              <QRCode value={publicUrl} size={160} level="H" />
+              <QRCodeSVG value={publicUrl} size={160} level="H" />
             </div>
           </div>
           

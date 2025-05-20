@@ -35,13 +35,15 @@ import {
   Trash2,
   Share,
   ExternalLink,
-  Search
+  Search,
+  Copy,
+  Code
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { DialogClose } from "@radix-ui/react-dialog";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/hooks/use-theme";
-import QRCode from "qrcode.react";
+import { QRCodeSVG } from "qrcode.react"; // Fixed import using named export
 
 const AIStudioDashboardPage = () => {
   const { user } = useAuth();
@@ -458,11 +460,10 @@ const AIStudioDashboardPage = () => {
               <div>
                 <h4 className="text-sm font-medium mb-2 text-slate-300">QR Code</h4>
                 <div className="flex justify-center bg-white p-4 rounded-md w-fit mx-auto">
-                  <QRCode 
+                  <QRCodeSVG 
                     value={`${window.location.origin}/ai-studio/agents/${selectedAgent.id}`}
                     size={150}
                     level="H"
-                    renderAs="svg"
                   />
                 </div>
               </div>

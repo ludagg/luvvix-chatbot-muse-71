@@ -142,20 +142,34 @@ serve(async (req) => {
       });
     }
     
+    // Use Cerebras API with the default API key from the configuration
+    const cerebrasApiKey = adminConfig.api_key || "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv";
+    const cerebrasEndpoint = adminConfig.endpoint_url || "https://api.cerebras.ai/v1/chat/completions";
+    const cerebrasModel = adminConfig.model_name || "llama-4-scout-17b-16e-instruct";
+    
+    console.log("Calling API with model:", cerebrasModel);
+    
     // Call AI model endpoint
-    const modelResponse = await fetch(adminConfig.endpoint_url, {
+    const modelResponse = await fetch(cerebrasEndpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${adminConfig.api_key}`
+        "Authorization": `Bearer ${cerebrasApiKey}`
       },
       body: JSON.stringify({
-        model: adminConfig.model_name,
+        model: cerebrasModel,
         messages: formattedMessages,
-        max_tokens: adminConfig.max_tokens,
-        temperature: 0.7
+        max_tokens: adminConfig.max_tokens || 2000,
+        temperature: 0.7,
+        stream: false
       })
     });
+    
+    if (!modelResponse.ok) {
+      const errorText = await modelResponse.text();
+      console.error("API error response:", errorText);
+      throw new Error(`Error from AI provider: ${modelResponse.status} ${modelResponse.statusText}`);
+    }
     
     const modelData = await modelResponse.json();
     const aiResponse = modelData.choices && modelData.choices[0]?.message?.content || 
@@ -171,7 +185,15 @@ serve(async (req) => {
       });
     
     // Increment view count for the agent
-    await supabase.rpc("increment_agent_views", { agent_id: agentId });
+    try {
+      await supabase
+        .from("ai_agents")
+        .update({ views: (agent.views || 0) + 1 })
+        .eq("id", agentId);
+    } catch (viewError) {
+      console.error("Failed to increment views:", viewError);
+      // Continue execution even if this fails
+    }
     
     // Return the AI response
     return new Response(

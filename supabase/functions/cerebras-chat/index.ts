@@ -24,7 +24,7 @@ serve(async (req) => {
     
     console.log("Request received:", { agentId, message, conversationId, sessionId, embedded });
     
-    // Get API key and configuration from Supabase secrets
+    // Get API key from environment or use the provided key
     const cerebrasApiKey = Deno.env.get('CEREBRAS_API_KEY') || 'csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv';
     const endpoint = Deno.env.get('CEREBRAS_ENDPOINT') || 'https://api.cerebras.ai/v1/chat/completions';
     const modelName = Deno.env.get('CEREBRAS_MODEL') || 'llama-4-scout-17b-16e-instruct';
@@ -101,7 +101,6 @@ serve(async (req) => {
         // Increment view count if not embedded
         if (!embedded) {
           try {
-            // Use direct update instead of RPC function
             await supabase
               .from('ai_agents')
               .update({ views: (data.views || 0) + 1 })
@@ -206,7 +205,7 @@ serve(async (req) => {
       maxTokens: maxTokens || 2000
     });
 
-    // Call Cerebras API
+    // Call Cerebras API with the updated configuration
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {

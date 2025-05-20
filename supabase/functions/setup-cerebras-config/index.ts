@@ -32,7 +32,7 @@ serve(async (req) => {
       max_tokens = 2000
     } = await req.json();
     
-    // Si aucune clé API n'est fournie, utiliser celle qui existe déjà
+    // Si aucune clé API n'est fournie, utiliser celle qui existe déjà ou celle par défaut
     let finalApiKey = api_key;
     if (!finalApiKey) {
       // Utiliser la clé par défaut que vous avez fournie

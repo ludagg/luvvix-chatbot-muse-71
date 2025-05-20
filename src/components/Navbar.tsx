@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Menu, X, User, Newspaper, Bot, Sparkles } from "lucide-react";
@@ -8,11 +8,23 @@ import WeatherWidget from './weather/WeatherWidget';
 import NewsNotification from './news/NewsNotification';
 
 const Navbar = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, loading } = useAuth();
+  // Using React.useState instead of directly importing useState
+  const [isScrolled, setIsScrolled] = React.useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  
+  // Safely access auth with error handling
+  let user, loading;
+  try {
+    const auth = useAuth();
+    user = auth?.user;
+    loading = auth?.loading;
+  } catch (error) {
+    console.error("Auth context not available:", error);
+    user = null;
+    loading = false;
+  }
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > 50) {
         setIsScrolled(true);

@@ -37,15 +37,23 @@ import {
   ExternalLink,
   Search
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { DialogClose } from "@radix-ui/react-dialog";
+import { Input } from "@/components/ui/input";
+import { useTheme } from "@/hooks/use-theme";
+import QRCode from "qrcode.react";
 
 const AIStudioDashboardPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { resolvedTheme } = useTheme();
   
   const [loading, setLoading] = useState(true);
   const [agents, setAgents] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState(null);
   
   useEffect(() => {
     document.title = "Dashboard - LuvviX AI Studio";
@@ -78,7 +86,7 @@ const AIStudioDashboardPage = () => {
     fetchAgents();
   }, [user, toast]);
   
-  const deleteAgent = async (agentId: string) => {
+  const deleteAgent = async (agentId) => {
     try {
       const { error } = await supabase
         .from("ai_agents")
@@ -102,10 +110,74 @@ const AIStudioDashboardPage = () => {
       });
     }
   };
+
+  const handleShareAgent = (agent) => {
+    setSelectedAgent(agent);
+    setShareDialogOpen(true);
+  };
+
+  const copyShareLink = () => {
+    if (!selectedAgent) return;
+    
+    const baseUrl = window.location.origin;
+    const shareUrl = `${baseUrl}/ai-studio/agents/${selectedAgent.id}`;
+    
+    navigator.clipboard.writeText(shareUrl);
+    toast({
+      title: "Lien copié",
+      description: "Le lien de l'agent a été copié dans le presse-papiers."
+    });
+  };
   
   const filteredAgents = agents.filter(agent => 
     agent.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Define the embed code options
+  const getEmbedCode = (type) => {
+    if (!selectedAgent) return '';
+    
+    const baseUrl = window.location.origin;
+    const agentId = selectedAgent.id;
+    const agentName = selectedAgent.name;
+    
+    switch (type) {
+      case 'iframe':
+        return `<iframe
+  src="${baseUrl}/ai-embed/${agentId}"
+  width="100%"
+  height="600px"
+  style="border:1px solid #e5e7eb; border-radius: 0.5rem;"
+  title="${agentName} - LuvviX AI"
+></iframe>`;
+      
+      case 'script':
+        return `<div id="luvvix-ai-${agentId}"></div>
+<script src="${baseUrl}/api/embed.js" data-agent-id="${agentId}"></script>`;
+      
+      case 'floatingWidget':
+        return `<script>
+  window.luvvixSettings = {
+    agentId: "${agentId}",
+    position: "bottom-right",
+    theme: "dark"
+  };
+</script>
+<script src="${baseUrl}/api/embed-floating.js" async></script>`;
+      
+      default:
+        return '';
+    }
+  };
+
+  const copyEmbedCode = (type) => {
+    const code = getEmbedCode(type);
+    navigator.clipboard.writeText(code);
+    toast({
+      title: "Code copié",
+      description: `Le code d'intégration ${type} a été copié dans le presse-papiers.`
+    });
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -199,6 +271,14 @@ const AIStudioDashboardPage = () => {
                                   <span>Discuter</span>
                                 </Link>
                               </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => agent.is_public && handleShareAgent(agent)} 
+                                disabled={!agent.is_public}
+                                className={`flex items-center ${agent.is_public ? 'text-slate-200 hover:bg-slate-700' : 'text-slate-500'}`}
+                              >
+                                <Share className="mr-2 h-4 w-4" />
+                                <span>Partager</span>
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator className="bg-slate-700" />
                               <DropdownMenuItem
                                 onClick={() => deleteAgent(agent.id)}
@@ -247,13 +327,11 @@ const AIStudioDashboardPage = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            asChild
+                            onClick={() => handleShareAgent(agent)}
                             className="text-slate-400 hover:text-slate-200 hover:bg-slate-700/50"
                           >
-                            <Link to={`/ai-studio/agents/${agent.id}`}>
-                              <ExternalLink className="h-4 w-4 mr-2" />
-                              Voir public
-                            </Link>
+                            <Share className="h-4 w-4 mr-2" />
+                            Partager
                           </Button>
                         ) : (
                           <Button
@@ -294,6 +372,7 @@ const AIStudioDashboardPage = () => {
               )}
             </TabsContent>
             
+            {/* Onglets similaires pour "public", "private" et "paid" avec les mêmes améliorations visuelles */}
             <TabsContent value="public" className="mt-6">
               {/* Structure similaire à l'onglet "all" avec les mêmes améliorations visuelles */}
               {!loading && filteredAgents.filter(agent => agent.is_public).length === 0 && (
@@ -349,6 +428,109 @@ const AIStudioDashboardPage = () => {
       </main>
       
       <Footer />
+
+      {/* Dialog for sharing agents */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-slate-800 border-slate-700 text-slate-100">
+          <DialogHeader>
+            <DialogTitle className="text-slate-100">Partager {selectedAgent?.name}</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Copiez le lien ou le code d'intégration pour partager cet agent IA.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedAgent && (
+            <div className="space-y-6 py-4">
+              <div>
+                <h4 className="text-sm font-medium mb-2 text-slate-300">Lien public</h4>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    value={`${window.location.origin}/ai-studio/agents/${selectedAgent.id}`}
+                    readOnly
+                    className="bg-slate-900/50 border-slate-700 text-slate-300"
+                  />
+                  <Button size="icon" variant="outline" onClick={copyShareLink} className="border-slate-700 bg-slate-900/30 hover:bg-slate-700 text-slate-300">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium mb-2 text-slate-300">QR Code</h4>
+                <div className="flex justify-center bg-white p-4 rounded-md w-fit mx-auto">
+                  <QRCode 
+                    value={`${window.location.origin}/ai-studio/agents/${selectedAgent.id}`}
+                    size={150}
+                    level="H"
+                    renderAs="svg"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium mb-2 text-slate-300">Options d'intégration</h4>
+                
+                <div className="grid grid-cols-3 gap-2">
+                  <Button 
+                    onClick={() => copyEmbedCode('iframe')} 
+                    variant="outline"
+                    className="border-slate-700 hover:bg-slate-700 bg-slate-900/30 text-slate-300"
+                  >
+                    <Code className="h-4 w-4 mr-2" />
+                    iFrame
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => copyEmbedCode('script')} 
+                    variant="outline"
+                    className="border-slate-700 hover:bg-slate-700 bg-slate-900/30 text-slate-300"
+                  >
+                    <Code className="h-4 w-4 mr-2" />
+                    Script
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => copyEmbedCode('floatingWidget')} 
+                    variant="outline"
+                    className="border-slate-700 hover:bg-slate-700 bg-slate-900/30 text-slate-300"
+                  >
+                    <Code className="h-4 w-4 mr-2" />
+                    Widget
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="pt-2 text-center">
+                <p className="text-xs text-slate-400">
+                  Pour plus d'options d'intégration, visitez la 
+                  <Link to={`/ai-studio/agents/${selectedAgent.id}`} className="text-violet-400 hover:underline ml-1">
+                    page de l'agent
+                  </Link>
+                  .
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="sm:justify-end">
+            <DialogClose asChild>
+              <Button 
+                variant="outline"
+                className="border-slate-700 hover:bg-slate-700 text-slate-300"
+              >
+                Fermer
+              </Button>
+            </DialogClose>
+            <Button 
+              onClick={() => window.open(`/ai-studio/agents/${selectedAgent?.id}`, '_blank')}
+              className="bg-violet-600 hover:bg-violet-700 text-white"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Voir la page
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

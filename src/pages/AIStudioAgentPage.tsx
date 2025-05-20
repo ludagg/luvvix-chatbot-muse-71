@@ -39,17 +39,17 @@ const AIStudioAgentPage = () => {
         
         setAgent(data);
         
-        // Increment view count
-        // We need to ensure the parameters match what the function expects
+        // Incrémenter directement la vue dans la table ai_agents plutôt que d'utiliser la fonction RPC
+        // Cela évite le problème de typage avec la fonction RPC
         try {
-          // Cast the agent_id parameter to any to bypass the TypeScript error
-          const { error: updateError } = await supabase.rpc('increment_agent_views', {
-            agent_id: agentId as any
-          });
+          const { error: updateError } = await supabase
+            .from('ai_agents')
+            .update({ views: (data.views || 0) + 1 })
+            .eq('id', agentId);
           
           if (updateError) console.error("Error incrementing views:", updateError);
-        } catch (rpcError) {
-          console.error("RPC Error:", rpcError);
+        } catch (updateError) {
+          console.error("Update Error:", updateError);
         }
         
       } catch (error) {

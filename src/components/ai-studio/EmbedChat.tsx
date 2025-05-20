@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -86,7 +85,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
         ]);
         
         // Increment views counter
-        await supabase.rpc<null, IncrementAgentViewsParams>('increment_agent_views', { agent_id: agentId });
+        await supabase.rpc('increment_agent_views', { agent_id: agentId });
       } catch (error) {
         console.error('Error fetching agent:', error);
         setMessages([

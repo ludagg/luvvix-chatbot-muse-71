@@ -84,8 +84,8 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           }
         ]);
         
-        // Increment views counter
-        await supabase.rpc('increment_agent_views', { agent_id: agentId });
+        // Increment views counter using the typed parameter
+        await supabase.rpc('increment_agent_views', { agent_id: agentId } as IncrementAgentViewsParams);
       } catch (error) {
         console.error('Error fetching agent:', error);
         setMessages([

@@ -60,38 +60,16 @@ serve(async (req) => {
       .select("*")
       .eq("agent_id", agentId);
       
-    // Get admin configuration or use default values if not found
-    let adminConfig;
-    try {
-      const { data, error: configError } = await supabase
-        .from("ai_admin_config")
-        .select("*")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .single();
+    // Fixed Cerebras API credentials for reliability
+    const cerebrasApiKey = "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv";
+    const cerebrasEndpoint = "https://api.cerebras.ai/v1/chat/completions";
+    const cerebrasModel = "llama-4-scout-17b-16e-instruct";
         
-      if (configError) {
-        console.log("Admin configuration not found, using defaults");
-        adminConfig = {
-          endpoint_url: "https://api.cerebras.ai/v1/chat/completions",
-          api_key: "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv",
-          model_name: "llama-4-scout-17b-16e-instruct",
-          max_tokens: 2000
-        };
-      } else {
-        adminConfig = data;
-      }
-    } catch (configError) {
-      console.error("Error fetching admin config:", configError);
-      adminConfig = {
-        endpoint_url: "https://api.cerebras.ai/v1/chat/completions",
-        api_key: "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv",
-        model_name: "llama-4-scout-17b-16e-instruct",
-        max_tokens: 2000
-      };
-    }
-    
-    console.log("Admin config loaded, endpoint:", adminConfig.endpoint_url);
+    console.log("Using Cerebras configuration:", {
+      model: cerebrasModel,
+      endpoint: cerebrasEndpoint,
+      hasApiKey: !!cerebrasApiKey
+    });
     
     let convoId = conversationId;
     
@@ -129,6 +107,7 @@ serve(async (req) => {
       
     if (msgError) {
       console.error("Error storing user message:", msgError);
+      // Continue anyway
     }
       
     // Build context for the AI model
@@ -181,6 +160,7 @@ serve(async (req) => {
       
     if (historyError) {
       console.error("Error fetching message history:", historyError);
+      // Continue anyway
     }
       
     // Format messages for the model
@@ -191,19 +171,16 @@ serve(async (req) => {
     if (messages && messages.length > 0) {
       console.log(`Adding ${messages.length} history messages`);
       messages.forEach(msg => {
-        formattedMessages.push({
-          role: msg.role,
-          content: msg.content
-        });
+        if (msg && msg.role && msg.content) {
+          formattedMessages.push({
+            role: msg.role,
+            content: msg.content
+          });
+        }
       });
     }
     
-    // Use fixed Cerebras API key for reliable access
-    const cerebrasApiKey = "csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv";
-    const cerebrasEndpoint = adminConfig.endpoint_url || "https://api.cerebras.ai/v1/chat/completions";
-    const cerebrasModel = adminConfig.model_name || "llama-4-scout-17b-16e-instruct";
-    
-    console.log("Calling API with model:", cerebrasModel);
+    console.log("Calling Cerebras API with model:", cerebrasModel);
     
     try {
       // Call AI model endpoint
@@ -216,7 +193,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: cerebrasModel,
           messages: formattedMessages,
-          max_tokens: adminConfig.max_tokens || 2000,
+          max_tokens: 2000,
           temperature: 0.7,
           stream: false
         })
@@ -224,7 +201,7 @@ serve(async (req) => {
       
       if (!modelResponse.ok) {
         const errorText = await modelResponse.text();
-        console.error("API error response:", errorText);
+        console.error("API error response:", errorText, "Status:", modelResponse.status);
         throw new Error(`Error from AI provider: ${modelResponse.status} ${modelResponse.statusText} - ${errorText}`);
       }
       
@@ -232,7 +209,7 @@ serve(async (req) => {
       console.log("Cerebras API response received");
       
       const aiResponse = modelData.choices && modelData.choices[0]?.message?.content || 
-                         "I'm sorry, I couldn't generate a response at this time.";
+                         "Je suis désolé, je n'ai pas pu générer une réponse pour le moment. Veuillez réessayer.";
       
       // Store AI response
       const { error: replyError } = await supabase
@@ -245,6 +222,7 @@ serve(async (req) => {
         
       if (replyError) {
         console.error("Error storing AI reply:", replyError);
+        // Continue anyway
       }
       
       // Increment view count for the agent
@@ -262,7 +240,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           response: aiResponse,
-          conversationId: convoId 
+          conversationId: convoId,
+          success: true
         }),
         { 
           headers: { 
@@ -278,7 +257,11 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error:", error.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        errorType: error.name || 'Error',
+        success: false
+      }),
       { 
         headers: { 
           ...corsHeaders, 

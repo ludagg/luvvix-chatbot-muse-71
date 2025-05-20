@@ -42,6 +42,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
+  const [maxRetries] = useState(3);  // Maximum number of retries
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const [sessionId, setSessionId] = useState('');
@@ -74,6 +75,10 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           throw error;
         }
         
+        if (!data) {
+          throw new Error("Agent not found");
+        }
+        
         setAgent(data);
         
         // Add system message
@@ -86,7 +91,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
         
         // Increment views counter
         try {
-          // Directly update the views counter instead of using RPC
+          // Directly update the views counter
           await supabase
             .from('ai_agents')
             .update({ views: (data.views || 0) + 1 })
@@ -95,7 +100,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           console.error('Error incrementing agent views:', viewError);
           // Continue even if view counting fails
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching agent:', error);
         setErrorState('Could not load the agent. Please try again later.');
         setMessages([
@@ -144,7 +149,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
   };
 
   const saveMessage = async (message: Message, convId: string) => {
-    if (message.isError) return; // Don't save error messages
+    if (message.isError || message.role === 'system') return; // Don't save error or system messages
     
     try {
       await supabase
@@ -161,19 +166,24 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
 
   const handleRetry = async () => {
     setErrorState(null);
+    setRetryCount(0); // Reset retry count
     await handleSend();
   };
 
   const handleSend = async (text?: string): Promise<void> => {
     const userMessage = text || input;
-    if (!userMessage.trim()) return;
+    if (!userMessage.trim() || isLoading) return;
     
     setErrorState(null);
     
     // Create a conversation if it doesn't exist
-    if (!conversationId) {
+    let currentConversationId = conversationId;
+    if (!currentConversationId) {
       const newConversationId = await createConversation();
-      setConversationId(newConversationId);
+      currentConversationId = newConversationId;
+      if (newConversationId) {
+        setConversationId(newConversationId);
+      }
     }
     
     try {
@@ -189,21 +199,20 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       setMessages(prevMessages => [...prevMessages, newUserMessage]);
       
       // Save user message to the database if we have a conversation ID
-      if (conversationId) {
-        await saveMessage(newUserMessage, conversationId);
+      if (currentConversationId) {
+        await saveMessage(newUserMessage, currentConversationId);
       }
       
-      // Call the AI function
+      // Call the cerebras-chat function first
       console.log("Calling cerebras-chat with:", {
         agentId,
         message: userMessage,
         sessionId,
-        conversationId,
+        conversationId: currentConversationId,
         embedded: isEmbed,
         userId: user?.id || null
       });
       
-      // Try with cerebras-chat endpoint first
       const response = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/cerebras-chat', {
         method: 'POST',
         headers: {
@@ -214,9 +223,11 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           message: userMessage,
           sessionId,
           userId: user?.id || null,
-          conversationId,
-          embedded: isEmbed
+          conversationId: currentConversationId,
+          embedded: isEmbed,
+          maxTokens: 2000
         }),
+        signal: AbortSignal.timeout(15000) // 15 second timeout
       });
       
       if (!response.ok) {
@@ -249,14 +260,14 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
       // Reset retry count on success
       setRetryCount(0);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
       
-      // Fallback to ai-studio-chat if cerebras-chat fails
-      if (retryCount < 1) {
-        setRetryCount(prevCount => prevCount + 1);
+      // Fallback to ai-studio-chat if cerebras-chat fails and we haven't exceeded retries
+      if (retryCount < maxRetries) {
         try {
-          console.log("Trying ai-studio-chat as fallback...");
+          setRetryCount(prevCount => prevCount + 1);
+          console.log(`Retry attempt ${retryCount + 1}/${maxRetries} - Using ai-studio-chat as fallback...`);
           
           const fallbackResponse = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/ai-studio-chat', {
             method: 'POST',
@@ -267,9 +278,10 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
               agentId,
               message: userMessage,
               sessionId,
-              conversationId,
+              conversationId: currentConversationId,
               userId: user?.id || null
             }),
+            signal: AbortSignal.timeout(15000) // 15 second timeout
           });
           
           if (!fallbackResponse.ok) {
@@ -299,29 +311,34 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
           if (fallbackData.conversationId && !conversationId) {
             setConversationId(fallbackData.conversationId);
           }
-        } catch (fallbackError) {
+          
+          // Reset retry count on success but with fallback
+          setRetryCount(0);
+        } catch (fallbackError: any) {
           console.error('Fallback also failed:', fallbackError);
           
-          setErrorState('Failed to get a response from the agent after multiple attempts.');
+          setErrorState('Impossible de communiquer avec l\'agent IA après plusieurs tentatives.');
           
           setMessages(prevMessages => [
             ...prevMessages, 
             { 
               role: 'assistant', 
-              content: 'Sorry, I encountered an error processing your request. Please try again by clicking the retry button.',
-              isError: true
+              content: 'Désolé, une erreur est survenue lors du traitement de votre message. Veuillez cliquer sur le bouton réessayer.',
+              isError: true,
+              timestamp: new Date()
             }
           ]);
         }
       } else {
-        setErrorState('Failed to get a response from the agent. Please try again.');
+        setErrorState('Impossible de communiquer avec l\'agent IA.');
         
         setMessages(prevMessages => [
           ...prevMessages, 
           { 
             role: 'assistant', 
-            content: 'Sorry, I encountered an error processing your request. Please try again by clicking the retry button.',
-            isError: true
+            content: 'Désolé, une erreur est survenue lors du traitement de votre message. Veuillez cliquer sur le bouton réessayer.',
+            isError: true,
+            timestamp: new Date()
           }
         ]);
       }
@@ -368,16 +385,18 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
         ) : (
           <>
             {errorState && (
-              <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-md flex items-center text-red-800 dark:text-red-200 text-sm mb-4">
-                <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                <span>{errorState}</span>
+              <div className="bg-red-50 dark:bg-red-900/30 p-3 rounded-md flex items-center justify-between text-red-800 dark:text-red-200 text-sm mb-4">
+                <div className="flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                  <span>{errorState}</span>
+                </div>
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="ml-auto bg-red-100 dark:bg-red-800 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-700 flex items-center gap-1"
+                  className="ml-2 bg-red-100 dark:bg-red-800 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200 hover:bg-red-200 dark:hover:bg-red-700 flex items-center gap-1"
                   onClick={handleRetry}
                 >
-                  <RefreshCw className="h-3 w-3" /> Retry
+                  <RefreshCw className="h-3 w-3" /> Réessayer
                 </Button>
               </div>
             )}
@@ -460,7 +479,7 @@ const EmbedChat: React.FC<EmbedChatProps> = ({
                 handleSend();
               }
             }}
-            placeholder="Type a message..."
+            placeholder="Tapez un message..."
             className="resize-none h-10 min-h-10 py-2"
             style={{
               borderColor: theme === 'dark' ? '#374151' : '#e5e7eb',

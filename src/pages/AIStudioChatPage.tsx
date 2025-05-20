@@ -48,6 +48,7 @@ const AIStudioChatPage = () => {
   const [sessionId] = useState<string>(uuidv4());
   const [errorState, setErrorState] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [maxRetries] = useState(3); // Maximum number of retries
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -99,6 +100,7 @@ const AIStudioChatPage = () => {
   
   const handleRetry = async () => {
     setErrorState(null);
+    setRetryCount(0); // Reset retry count
     if (messages.length > 0) {
       // Get the last user message
       const lastUserMessage = [...messages].reverse().find(msg => msg.role === "user");
@@ -152,6 +154,7 @@ const AIStudioChatPage = () => {
             conversationId,
             userId: user?.id || null
           }),
+          signal: AbortSignal.timeout(15000) // 15 second timeout
         }
       );
       
@@ -192,10 +195,10 @@ const AIStudioChatPage = () => {
       console.error("Error sending message:", error);
       
       // Fallback to ai-studio-chat if cerebras-chat fails
-      if (retryCount < 1) {
+      if (retryCount < maxRetries) {
         setRetryCount(prevCount => prevCount + 1);
         try {
-          console.log("Trying ai-studio-chat as fallback...");
+          console.log(`Retry attempt ${retryCount + 1}/${maxRetries} - Using ai-studio-chat as fallback...`);
           
           const fallbackResponse = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/ai-studio-chat', {
             method: 'POST',
@@ -209,6 +212,7 @@ const AIStudioChatPage = () => {
               conversationId,
               userId: user?.id || null
             }),
+            signal: AbortSignal.timeout(15000) // 15 second timeout
           });
           
           if (!fallbackResponse.ok) {
@@ -241,6 +245,7 @@ const AIStudioChatPage = () => {
           ]);
           
           setErrorState(null);
+          setRetryCount(0); // Reset retry count on success
         } catch (fallbackError) {
           console.error('Fallback also failed:', fallbackError);
           

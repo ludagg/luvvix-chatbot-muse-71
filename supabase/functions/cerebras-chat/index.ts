@@ -26,7 +26,7 @@ serve(async (req) => {
     let requestData;
     try {
       requestData = await req.json();
-      console.log("Request data parsed:", JSON.stringify(requestData));
+      console.log("Request data parsed successfully");
     } catch (parseError) {
       console.error("Error parsing request data:", parseError);
       throw new Error("Invalid request format: " + parseError.message);
@@ -44,8 +44,17 @@ serve(async (req) => {
       userId = null 
     } = requestData;
     
-    // Get API key and endpoint configuration
-    // Fixed API key for reliable access
+    console.log("Processing request with parameters:", {
+      hasConversation: Array.isArray(conversation),
+      hasSystemPrompt: !!systemPrompt,
+      agentId,
+      hasMessage: !!message,
+      conversationId,
+      sessionId,
+      embedded
+    });
+    
+    // Use a reliable Cerebras API key
     const cerebrasApiKey = 'csk-enyey34chrpw34wmy8md698cxk3crdevnknrxe8649xtkjrv';
     const endpoint = 'https://api.cerebras.ai/v1/chat/completions';
     const modelName = 'llama-4-scout-17b-16e-instruct';
@@ -102,7 +111,7 @@ serve(async (req) => {
               finalSystemPrompt += `with an empathetic and understanding approach. `;
               break;
             default:
-              finalSystemPrompt += `with a ${data.personality} personality. `;
+              finalSystemPrompt += `with a helpful personality. `;
           }
         }
         
@@ -182,6 +191,7 @@ serve(async (req) => {
               
             if (convError) {
               console.error('Error creating conversation:', convError);
+              throw new Error(`Failed to create conversation: ${convError.message}`);
             } else {
               console.log("New conversation created:", newConversation.id);
               finalConversationId = newConversation.id;
@@ -192,13 +202,18 @@ serve(async (req) => {
           if (message && finalConversationId) {
             console.log("Storing user message in database");
             
-            await supabase
+            const { error: msgInsertError } = await supabase
               .from('ai_messages')
               .insert({
                 conversation_id: finalConversationId,
                 content: message,
                 role: 'user'
               });
+              
+            if (msgInsertError) {
+              console.error("Error inserting user message:", msgInsertError);
+              // Continue anyway to try to get a response
+            }
               
             // Add message to current conversation
             finalConversation.push({
@@ -229,18 +244,30 @@ serve(async (req) => {
     }
     
     // Add conversation messages
-    finalConversation.forEach((msg: any) => {
-      messages.push({
-        role: msg.role,
-        content: msg.content
+    if (finalConversation && finalConversation.length > 0) {
+      finalConversation.forEach((msg: any) => {
+        if (msg && msg.role && msg.content) {
+          messages.push({
+            role: msg.role,
+            content: msg.content
+          });
+        }
       });
-    });
+    }
     
     // Add user message if not in conversation
-    if (message && !finalConversation.some((msg: any) => msg.role === 'user' && msg.content === message)) {
+    if (message && (!finalConversation || !finalConversation.some((msg: any) => msg.role === 'user' && msg.content === message))) {
       messages.push({
         role: 'user',
         content: message
+      });
+    }
+
+    // Ensure we have at least one message to send
+    if (messages.length === 0) {
+      messages.push({
+        role: 'system',
+        content: 'Hello, how can I assist you?'
       });
     }
 
@@ -275,25 +302,30 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      console.log("Cerebras API response:", {
+      console.log("Cerebras API response received:", {
         choices: data.choices?.length || 0,
         usage: data.usage
       });
       
       const assistantReply = data.choices && data.choices[0]?.message?.content || 
-                        "I'm sorry, I couldn't generate a response at this time.";
+                        "Je suis désolé, je n'ai pas pu générer une réponse pour le moment. Veuillez réessayer.";
       
       // If this is a conversation with an ID, save the response
       if (finalConversationId) {
         console.log("Storing assistant reply in database");
         
-        await supabase
+        const { error: replyError } = await supabase
           .from('ai_messages')
           .insert({
             conversation_id: finalConversationId,
             content: assistantReply,
             role: 'assistant'
           });
+          
+        if (replyError) {
+          console.error("Error storing assistant reply:", replyError);
+          // Continue anyway to return the response
+        }
       }
       
       return new Response(JSON.stringify({
@@ -309,7 +341,11 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error('Error in cerebras-chat function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      errorType: error.name || 'Error',
+      success: false
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

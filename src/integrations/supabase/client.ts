@@ -14,8 +14,11 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
 // Function to increment agent views
 export const incrementAgentViews = async (agentId: string) => {
   try {
-    // Make a direct RPC call rather than using a string type for agent_id
-    const { error } = await supabase.rpc('increment_agent_views', { agent_id: agentId });
+    // Use object parameter for agent_id to fix TypeScript error
+    const { error } = await supabase.rpc('increment_agent_views', { 
+      agent_id: agentId 
+    });
+    
     if (error) throw error;
   } catch (error) {
     console.error('Error incrementing agent views:', error);

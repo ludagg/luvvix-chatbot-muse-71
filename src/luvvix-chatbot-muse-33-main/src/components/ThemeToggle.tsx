@@ -1,41 +1,44 @@
 
-import { useState, useEffect } from 'react';
-import { Moon, Sun } from 'lucide-react';
-import { Toggle } from '@/components/ui/toggle';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+import { Button } from "@/components/ui/button";
+import { Moon, Sun } from "lucide-react";
+import { useState } from "react";
+import { useLocalStorage } from "@/luvvix-chatbot-muse-33-main/src/hooks/use-local-storage";
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useLocalStorage<'dark' | 'light'>('theme', 'dark');
+  const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('luvvix-ai-theme', 'light');
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
+  // Après le rendu initial, on marque le composant comme monté
+  React.useEffect(() => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    const root = window.document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
-  }, [theme]);
-
   const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    
+    // Synchroniser avec le thème de l'application principale si besoin
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(newTheme);
   };
 
-  if (!mounted) return null;
+  // Si le composant n'est pas monté, retourner un bouton placeholder pour éviter de sauter
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="icon" className="w-9 h-9">
+        <Sun className="h-4 w-4 rotate-0 scale-100 transition-all" />
+      </Button>
+    );
+  }
 
   return (
-    <Toggle 
-      pressed={theme === 'light'} 
-      onPressedChange={toggleTheme}
-      aria-label="Toggle theme"
-      className="h-8 w-8"
-    >
-      {theme === 'dark' ? (
-        <Sun className="h-4 w-4" />
-      ) : (
+    <Button variant="ghost" size="icon" onClick={toggleTheme} className="w-9 h-9">
+      {theme === 'light' ? (
         <Moon className="h-4 w-4" />
+      ) : (
+        <Sun className="h-4 w-4" />
       )}
-    </Toggle>
+      <span className="sr-only">Changer de thème</span>
+    </Button>
   );
 }

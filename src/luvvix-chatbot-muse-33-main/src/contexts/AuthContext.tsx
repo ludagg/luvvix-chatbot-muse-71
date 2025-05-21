@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { nanoid } from "nanoid";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useLocalStorage } from "@/luvvix-chatbot-muse-33-main/src/hooks/use-local-storage";
+import { useAuth as useLuvvixAuth } from "@/hooks/useAuth";
 
 export interface User {
   id: string;
@@ -61,6 +62,9 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  // Utiliser l'authentification de LuvviX ID
+  const luvvixAuth = useLuvvixAuth();
+  
   const [user, setUser] = useLocalStorage<User | null>("luvvix-user", null);
   const [proStatus, setProStatus] = useLocalStorage<boolean>("luvvix-pro-status", false);
   const [isLoading, setIsLoading] = useState(false);
@@ -73,42 +77,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     null
   );
 
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  // Sync with LuvviX ID auth
+  useEffect(() => {
+    if (luvvixAuth.user && luvvixAuth.profile) {
+      // Si l'utilisateur est connecté via LuvviX ID, on met à jour l'utilisateur local
+      setUser({
+        id: luvvixAuth.user.id,
+        email: luvvixAuth.user.email || "",
+        displayName: luvvixAuth.profile?.full_name || luvvixAuth.user.email?.split('@')[0] || "Utilisateur",
+        // On peut ajouter d'autres champs selon les besoins
+      });
       
-      let existingUser = null;
-      const usersJson = localStorage.getItem("luvvix-users");
-      
-      if (usersJson) {
-        const users = JSON.parse(usersJson);
-        existingUser = users.find((u: any) => u.email === email);
-        
-        if (!existingUser || existingUser.password !== password) {
-          throw new Error("Identifiants invalides");
-        }
-      } else {
-        throw new Error("Aucun utilisateur trouvé");
-      }
-      
-      const { password: _, ...userWithoutPassword } = existingUser;
-      setUser(userWithoutPassword);
-      
-      if (email.includes("pro") || email.includes("premium")) {
+      // On peut définir un statut pro en fonction de certaines conditions
+      if (luvvixAuth.user.email?.includes('pro') || luvvixAuth.user.email?.includes('premium')) {
         setProStatus(true);
       }
       
+      // Vérifier si l'utilisateur a des conversations existantes
       const userConversations = conversations.filter(
-        (conv) => conv.id.startsWith(userWithoutPassword.id)
+        (conv) => conv.id.startsWith(luvvixAuth.user.id)
       );
       
       if (userConversations.length > 0) {
         setCurrentConversationId(userConversations[0].id);
       } else {
+        // Créer une nouvelle conversation si l'utilisateur n'en a pas
         const newConvId = createNewConversation();
         setCurrentConversationId(newConvId);
       }
+    } else {
+      // Si l'utilisateur n'est pas connecté, on réinitialise les données
+      if (user !== null) {
+        setUser(null);
+      }
+    }
+  }, [luvvixAuth.user, luvvixAuth.profile]);
+
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      // Utiliser l'authentification de LuvviX ID à la place
+      await luvvixAuth.signIn(email, password);
+      
+      // Le reste de la logique est géré par l'effet useEffect ci-dessus
     } catch (error: any) {
       throw new Error(error.message || "Erreur lors de la connexion");
     } finally {
@@ -125,42 +136,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   ) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Utiliser l'authentification de LuvviX ID à la place
+      await luvvixAuth.signUp(email, password, { 
+        full_name: displayName || email.split('@')[0],
+        username: email.split('@')[0]
+      });
       
-      let users = [];
-      const usersJson = localStorage.getItem("luvvix-users");
-      
-      if (usersJson) {
-        users = JSON.parse(usersJson);
-        const existingUser = users.find((u: any) => u.email === email);
-        
-        if (existingUser) {
-          throw new Error("Cet email est déjà utilisé");
-        }
-      }
-      
-      const newUser = {
-        id: nanoid(),
-        email,
-        password,
-        displayName,
-        age,
-        country,
-        createdAt: new Date(),
-      };
-      
-      users.push(newUser);
-      localStorage.setItem("luvvix-users", JSON.stringify(users));
-      
-      const { password: _, ...userWithoutPassword } = newUser;
-      setUser(userWithoutPassword);
-      
-      if (email.includes("pro") || email.includes("premium")) {
-        setProStatus(true);
-      }
-      
-      const newConvId = createNewConversation();
-      setCurrentConversationId(newConvId);
+      // Le reste de la logique est géré par l'effet useEffect ci-dessus
     } catch (error: any) {
       throw new Error(error.message || "Erreur lors de l'inscription");
     } finally {
@@ -169,13 +151,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
+    luvvixAuth.signOut();
     setUser(null);
     setProStatus(false);
     setCurrentConversationId(null);
   };
 
   const createNewConversation = () => {
-    const newId = user ? `${user.id}-${nanoid()}` : nanoid();
+    const currentUserId = user?.id || luvvixAuth.user?.id || nanoid();
+    const newId = `${currentUserId}-${nanoid()}`;
     
     const newConversation: Conversation = {
       id: newId,

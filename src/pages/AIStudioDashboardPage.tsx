@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -49,7 +48,7 @@ const AIStudioDashboardPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { resolvedTheme } = useTheme();
+  const { theme } = useTheme();
   
   const [loading, setLoading] = useState(true);
   const [agents, setAgents] = useState([]);

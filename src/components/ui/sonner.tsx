@@ -1,32 +1,25 @@
 
-import { useTheme } from "@/hooks/use-theme"
-import { Toaster as Sonner } from "sonner"
+"use client";
 
-type ToasterProps = React.ComponentProps<typeof Sonner>
+import { useTheme } from "@/hooks/use-theme";
+import { Toaster as Sonner } from "sonner";
+
+interface ToasterProps {
+  className?: string;
+  toastOptions?: typeof Sonner.defaultProps;
+}
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { resolvedTheme } = useTheme()
+  const { theme } = useTheme();
 
   return (
     <Sonner
-      theme={resolvedTheme}
+      theme={theme === "light" ? "light" : "light"}
       className="toaster group"
-      toastOptions={{
-        classNames: {
-          toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-muted-foreground",
-          actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-        },
-      }}
+      toastOptions={{ classNames: { toast: "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg" } }}
       {...props}
     />
-  )
-}
+  );
+};
 
-// Export Toaster and toast from sonner directly
-export { Toaster }
-export { toast } from "sonner"
+export { Toaster };

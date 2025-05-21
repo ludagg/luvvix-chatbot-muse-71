@@ -1,4 +1,4 @@
-// Nous ne modifions que le début du composant pour ajouter le padding top
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -12,7 +12,8 @@ import {
   BarChart, 
   Shield, 
   Zap,
-  ChevronRight
+  ChevronRight,
+  UserPlus
 } from "lucide-react";
 
 interface EcosystemCardProps {
@@ -35,14 +36,23 @@ const Ecosystem = () => {
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
             Découvrez notre suite complète d'applications et de services conçus pour transformer votre expérience digitale
           </p>
-          <div className="mt-6">
-            <Button asChild>
+          <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+            <Button asChild className="bg-purple-600 hover:bg-purple-700">
               <Link to="/ecosystem" className="inline-flex items-center gap-2">
                 Découvrir l'écosystème
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </Button>
+            <Button asChild variant="outline" className="border-purple-600 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900">
+              <Link to="/auth?signup=true" className="inline-flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                Créer un compte LuvviX ID
+              </Link>
+            </Button>
           </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+            Accédez à l'ensemble de l'écosystème avec un seul compte LuvviX ID
+          </p>
         </div>
         
         <motion.div 
@@ -127,13 +137,15 @@ const Ecosystem = () => {
           ))}
         </motion.div>
         
-        <div className="mt-12 text-center">
+        <div className="mt-12 text-center bg-purple-50 dark:bg-purple-900/20 p-6 rounded-xl shadow-sm">
+          <h3 className="text-xl font-semibold mb-3 text-purple-800 dark:text-purple-300">Un compte unique pour tout l'écosystème</h3>
           <p className="text-gray-600 dark:text-gray-300 mb-6">
-            Rejoignez notre écosystème et découvrez comment LuvviX peut transformer votre vie numérique.
+            Créez votre compte LuvviX ID et accédez à tous nos services avec une seule connexion.
+            Protection de vos données, personnalisation avancée et synchronisation entre appareils.
           </p>
           <Link to="/auth?signup=true">
-            <Button className="bg-luvvix-purple hover:bg-luvvix-darkpurple text-white">
-              Créer un compte et commencer
+            <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+              Créer un compte LuvviX ID
             </Button>
           </Link>
         </div>

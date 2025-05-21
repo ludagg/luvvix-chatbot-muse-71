@@ -27,7 +27,13 @@ const AIEmbedPage = () => {
         console.log('Parent origin set to:', event.origin);
         
         // Send ready message back to parent
-        event.source?.postMessage({ type: 'EMBED_READY', agentId }, event.origin as string);
+        if (event.source && 'postMessage' in event.source) {
+          // TypeScript fix: Use the correct postMessage signature
+          (event.source as Window).postMessage({ 
+            type: 'EMBED_READY', 
+            agentId 
+          }, event.origin);
+        }
       }
       
       // Handle user message if sent from parent

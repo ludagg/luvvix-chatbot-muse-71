@@ -36,25 +36,12 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
 
     // Pour SSR et rendu initial quand JS n'est pas encore en cours d'exécution
     if (!isMounted) {
-      // Only extract properties that we know exist in props
+      // Create a safe version of props without motion-specific properties
       const { 
-        style, 
-        "data-framer-appear-id": _, 
-        onBeforeLayoutMeasure, 
-        onLayoutMeasure,
-        onPanSessionStart,
-        onUpdate,
-        onAnimationStart,
-        onAnimationComplete,
-        onLayoutAnimationStart,
-        onLayoutAnimationComplete,
-        transition,
-        initial,
-        animate,
-        exit,
-        variants,
-        // Remove transformValues as it doesn't exist on the props type
-        ...safeProps
+        onDrag, onDragStart, onDragEnd, onAnimationStart, 
+        onAnimationComplete, transition, animate, initial, exit, 
+        variants, whileHover, whileTap, whileDrag, whileFocus, 
+        whileInView, ...safeProps 
       } = props;
 
       return (

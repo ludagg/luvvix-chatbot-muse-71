@@ -9,7 +9,7 @@ const AIStudioPromo = () => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col md:flex-row items-center gap-12">
           <div className="flex-1 space-y-6">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-violet-500/20 text-violet-300 text-sm font-medium">
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-violet-500/20 text-black-300 text-sm font-medium">
               <Sparkles size={16} className="mr-2" /> Nouvelle fonctionnalité phare
             </div>
             
@@ -77,7 +77,7 @@ const AIStudioPromo = () => {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white/20 text-white hover:bg-white/5"
+                className="border-white/20 text-black hover:bg-white/5"
                 asChild
               >
                 <Link to="/ai-studio/marketplace">

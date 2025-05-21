@@ -16,7 +16,7 @@ import CeoSection from "@/components/CeoSection";
 import AIStudioPromo from "@/components/ai-studio/AIStudioPromo";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ArrowRight, Grid } from "lucide-react";
+import { ArrowRight, Grid, Bot, FileText, Cloud, Sparkles } from "lucide-react";
 
 const Index = () => {
   return (

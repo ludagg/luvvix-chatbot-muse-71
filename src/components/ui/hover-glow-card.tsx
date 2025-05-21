@@ -5,7 +5,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { motion, HTMLMotionProps } from "framer-motion";
 
-interface HoverGlowCardProps extends Omit<HTMLMotionProps<"div">, "onDrag"> {
+interface HoverGlowCardProps extends HTMLMotionProps<"div"> {
   children: React.ReactNode;
   className?: string;
   glowColor?: string;
@@ -34,20 +34,12 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
       setOpacity(0);
     };
 
-    // Pour SSR et rendu initial quand JS n'est pas encore en cours d'exécution
+    // For SSR and initial rendering when JS is not yet running
     if (!isMounted) {
-      // Only extract properties that are safe for a regular div
-      const { 
-        animate, exit, initial, transition, variants, 
-        // Filter out framer-motion specific props
-        ...safeProps
-      } = props;
-
       return (
         <div 
           ref={ref} 
           className={cn("relative overflow-hidden", className)}
-          {...safeProps}
         >
           {children}
         </div>

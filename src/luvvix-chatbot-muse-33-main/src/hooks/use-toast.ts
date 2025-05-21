@@ -1,8 +1,20 @@
 
-import { useToast as useToastUI } from "@/components/ui/use-toast";
-import type { ToastProps } from "@/components/ui/use-toast";
+import { useToast as useShadcnToast } from "@/hooks/use-toast";
+import { toast as shadcnToast } from "@/hooks/use-toast";
 
-// Re-export the toast hook from the main app to ensure consistent toasts
-export const useToast = useToastUI;
+type ToastProps = {
+  title?: string;
+  description?: string;
+  variant?: "default" | "destructive";
+  duration?: number;
+};
+
+export const useToast = useShadcnToast;
+
+export const toast = (props: ToastProps) => {
+  return shadcnToast(props);
+};
+
+export const sonnerToast = shadcnToast;
 
 export type { ToastProps };

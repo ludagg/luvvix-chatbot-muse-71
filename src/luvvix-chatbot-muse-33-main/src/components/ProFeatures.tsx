@@ -1,43 +1,28 @@
 
-import React from 'react';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { Button } from '@/components/ui/button';
-import { Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Check } from 'lucide-react';
 
-interface ProFeaturesProps {
-  className?: string;
-  children: React.ReactNode;
-  side?: 'top' | 'right' | 'bottom' | 'left';
-  align?: 'start' | 'center' | 'end';
-}
+export function ProFeatures() {
+  const features = [
+    "Conversations illimitées",
+    "Accès prioritaire aux nouveaux modèles",
+    "Upload d'images et analyse de contenu",
+    "Réponses plus rapides",
+    "Support dédié",
+  ];
 
-export function ProFeatures({ className, children, side = 'top', align = 'center' }: ProFeaturesProps) {
   return (
-    <HoverCard>
-      <HoverCardTrigger asChild>
-        <div className={cn("relative cursor-help", className)}>
-          {children}
-          <div className="absolute -right-1 -top-1">
-            <div className="flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-white">
-              <Sparkles className="h-2.5 w-2.5" />
+    <div className="space-y-4">
+      <ul className="space-y-2">
+        {features.map((feature, index) => (
+          <li key={index} className="flex items-start">
+            <div className="mr-2 mt-0.5 bg-amber-100 dark:bg-amber-900/30 rounded-full p-0.5">
+              <Check className="h-4 w-4 text-amber-600 dark:text-amber-400" />
             </div>
-          </div>
-        </div>
-      </HoverCardTrigger>
-      <HoverCardContent side={side} align={align} className="w-80 p-4">
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium">Fonctionnalité PRO</h4>
-          <p className="text-sm text-muted-foreground">
-            Cette fonctionnalité est disponible uniquement avec un abonnement LuvviX PRO.
-          </p>
-          <Button size="sm" variant="default" className="w-full gap-1">
-            <Sparkles className="h-3.5 w-3.5 mr-1" />
-            Passer à PRO
-          </Button>
-        </div>
-      </HoverCardContent>
-    </HoverCard>
+            <span>{feature}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

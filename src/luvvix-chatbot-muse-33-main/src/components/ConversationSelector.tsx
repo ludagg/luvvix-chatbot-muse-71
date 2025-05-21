@@ -1,229 +1,186 @@
-import { useState } from 'react';
-import { Button } from './ui/button';
-import { ScrollArea } from './ui/scroll-area';
-import { useAuth } from '@/contexts/AuthContext';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Loader2, MessageSquarePlus, Trash2 } from 'lucide-react';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
-import { Input } from './ui/input';
+import React from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAuth } from '@/luvvix-chatbot-muse-33-main/src/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { PlusCircle, MessageSquare, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { motion } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
 
 interface ConversationSelectorProps {
   closeMenu?: () => void;
 }
 
 export function ConversationSelector({ closeMenu }: ConversationSelectorProps) {
-  const { 
-    user, 
-    conversations, 
-    currentConversationId, 
-    setCurrentConversation,
-    createNewConversation,
-    deleteConversation,
-    updateConversationTitle 
-  } = useAuth();
-  
-  const [isCreating, setIsCreating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
-  const isMobile = useIsMobile();
+  const { conversations, currentConversationId, setCurrentConversation, createNewConversation, deleteConversation, user } = useAuth();
+  const { toast } = useToast();
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
-  const handleCreateNew = async () => {
-    if (!user) return;
-    setIsCreating(true);
-    try {
-      await createNewConversation();
-      if (closeMenu) closeMenu();
-    } finally {
-      setIsCreating(false);
+  // Format date to readable string
+  const formatDate = (date: Date) => {
+    if (!(date instanceof Date)) {
+      date = new Date(date);
     }
+    
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Same day
+    if (date.toDateString() === today.toDateString()) {
+      return `Aujourd'hui à ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+    
+    // Yesterday
+    if (date.toDateString() === yesterday.toDateString()) {
+      return `Hier à ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+    
+    // Other days
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    };
+    
+    return date.toLocaleDateString('fr-FR', options);
   };
 
+  // Handle conversation selection
   const handleSelectConversation = (id: string) => {
     setCurrentConversation(id);
-    if (closeMenu) closeMenu();
+    if (closeMenu) {
+      closeMenu();
+    }
   };
 
-  const handleStartDelete = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setDeletingId(id);
-    setIsDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!deletingId) return;
+  // Handle new conversation
+  const handleNewConversation = () => {
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Veuillez vous connecter pour créer une nouvelle discussion.",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    setIsDeleting(true);
-    try {
-      await deleteConversation(deletingId);
-    } finally {
-      setIsDeleting(false);
-      setIsDialogOpen(false);
-      setDeletingId(null);
+    createNewConversation();
+    if (closeMenu) {
+      closeMenu();
     }
   };
 
-  const handleStartEdit = (id: string, currentTitle: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingId(id);
-    setEditTitle(currentTitle);
-  };
-
-  const handleSaveEdit = async (id: string, e: React.FormEvent) => {
-    e.preventDefault();
-    if (editTitle.trim()) {
-      await updateConversationTitle(id, editTitle.trim());
-    }
-    setEditingId(null);
+  // Handle delete conversation
+  const handleDeleteConversation = async (id: string) => {
+    await deleteConversation(id);
+    setDeletingId(null);
+    toast({
+      title: "Discussion supprimée",
+      description: "La discussion a été supprimée avec succès.",
+    });
   };
 
   return (
-    <>
-      <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Conversations</h3>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleCreateNew}
-            disabled={isCreating}
-            className="gap-1"
-          >
-            {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquarePlus className="h-4 w-4" />}
-            Nouvelle
-          </Button>
-        </div>
-        
-        <ScrollArea className="flex-1 pr-3 -mr-3">
-          {!user ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              Connectez-vous pour sauvegarder vos discussions
-            </div>
-          ) : conversations.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              Aucune conversation
-            </div>
-          ) : (
-            <div className="space-y-1.5">
-              {conversations.map((conv) => (
-                <div 
-                  key={conv.id}
-                  className={cn(
-                    "group flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors",
-                    currentConversationId === conv.id 
-                      ? "bg-primary/10 text-primary hover:bg-primary/15" 
-                      : "hover:bg-accent"
-                  )}
-                  onClick={() => handleSelectConversation(conv.id)}
-                >
-                  {editingId === conv.id ? (
-                    <form 
-                      onSubmit={(e) => handleSaveEdit(conv.id, e)} 
-                      className="flex-1 flex items-center gap-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Input
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        className="h-7 text-sm"
-                        autoFocus
-                        onBlur={() => setEditingId(null)}
-                      />
-                      <Button 
-                        type="submit" 
-                        size="sm" 
-                        variant="ghost" 
-                        className="h-7 px-2"
-                      >
-                        OK
-                      </Button>
-                    </form>
-                  ) : (
-                    <>
-                      <div className="flex-1 truncate text-sm">
-                        {conv.title || "Nouvelle discussion"}
-                      </div>
-                      
-                      <div className="opacity-0 group-hover:opacity-100 flex items-center">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-7 w-7 rounded-sm"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <span className="sr-only">Actions</span>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-36">
-                            <DropdownMenuItem onClick={(e) => handleStartEdit(conv.id, conv.title || "Nouvelle discussion", e)}>
-                              Renommer
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive focus:text-destructive"
-                              onClick={(e) => handleStartDelete(conv.id, e)}
-                            >
-                              Supprimer
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between px-2 py-4">
+        <h2 className="text-lg font-medium">Mes discussions</h2>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          className="gap-1"
+          onClick={handleNewConversation}
+        >
+          <PlusCircle className="h-4 w-4" />
+          <span className="sr-only md:not-sr-only">Nouvelle</span>
+        </Button>
       </div>
       
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Supprimer la conversation</DialogTitle>
-            <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer cette conversation ? Cette action est irréversible.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsDialogOpen(false)}
-            >
-              Annuler
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={handleConfirmDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Suppression...
-                </>
-              ) : (
-                <>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Supprimer
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+      <ScrollArea className="flex-1">
+        <div className="flex flex-col gap-1 px-2 pb-4">
+          {conversations.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground text-sm">
+              <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>Aucune discussion</p>
+              <p className="text-xs mt-1">Commencez une nouvelle discussion pour discuter avec LuvviX AI</p>
+            </div>
+          ) : (
+            conversations.map((conversation) => (
+              <motion.div 
+                key={conversation.id}
+                layout
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="relative group"
+              >
+                <Button
+                  variant={currentConversationId === conversation.id ? "secondary" : "ghost"}
+                  className="w-full justify-start text-left h-auto py-3 px-4"
+                  onClick={() => handleSelectConversation(conversation.id)}
+                >
+                  <div className="flex flex-col gap-0.5 items-start">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate max-w-[180px]">
+                        {conversation.title}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(conversation.updatedAt)}
+                    </span>
+                  </div>
+                </Button>
+                
+                {/* Delete button */}
+                <AlertDialog open={deletingId === conversation.id} onOpenChange={(open) => !open && setDeletingId(null)}>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingId(conversation.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <span className="sr-only">Supprimer</span>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Supprimer la discussion ?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Cette action ne peut pas être annulée. Cela supprimera définitivement cette discussion.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction 
+                        className="bg-destructive hover:bg-destructive/90"
+                        onClick={() => handleDeleteConversation(conversation.id)}
+                      >
+                        Supprimer
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </motion.div>
+            ))
+          )}
+        </div>
+      </ScrollArea>
+    </div>
   );
 }

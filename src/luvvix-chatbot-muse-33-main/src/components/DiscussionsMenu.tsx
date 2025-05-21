@@ -1,5 +1,4 @@
-
-import { Button } from "@/components/ui/button";
+import React, { useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,141 +6,177 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MessageSquare, MessageSquarePlus, Loader2 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { ScrollArea } from "./ui/scroll-area";
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { MessageSquare, PlusCircle, Trash } from 'lucide-react';
+import { useAuth } from '@/luvvix-chatbot-muse-33-main/src/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export function DiscussionsMenu() {
-  const { 
-    user, 
-    conversations, 
-    currentConversationId, 
-    setCurrentConversation,
-    createNewConversation,
-  } = useAuth();
+  const { conversations, currentConversationId, setCurrentConversation, createNewConversation, deleteConversation, user } = useAuth();
+  const { toast } = useToast();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
-  const [isCreating, setIsCreating] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const isMobile = useIsMobile();
-
-  const handleCreateNew = async () => {
-    if (!user) return;
-    setIsCreating(true);
-    try {
-      await createNewConversation();
-    } finally {
-      setIsCreating(false);
+  // Format date to readable string
+  const formatDate = (date: Date) => {
+    if (!(date instanceof Date)) {
+      date = new Date(date);
     }
+    
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Same day
+    if (date.toDateString() === today.toDateString()) {
+      return `Aujourd'hui à ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+    
+    // Yesterday
+    if (date.toDateString() === yesterday.toDateString()) {
+      return `Hier à ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+    
+    // Other days
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    };
+    
+    return date.toLocaleDateString('fr-FR', options);
   };
-
+  
+  const handleNewConversation = () => {
+    if (!user) {
+      toast({
+        title: "Connexion requise",
+        description: "Veuillez vous connecter pour créer une nouvelle discussion.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    createNewConversation();
+    setIsDropdownOpen(false);
+  };
+  
   const handleSelectConversation = (id: string) => {
     setCurrentConversation(id);
+    setIsDropdownOpen(false);
   };
-
-  const showAllConversations = () => {
-    setIsDialogOpen(true);
+  
+  const confirmDeleteConversation = (id: string) => {
+    setConversationToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDeleteConversation = async () => {
+    if (conversationToDelete) {
+      await deleteConversation(conversationToDelete);
+      setIsDeleteDialogOpen(false);
+      setConversationToDelete(null);
+      setIsDropdownOpen(false);
+      toast({
+        title: "Discussion supprimée",
+        description: "La discussion a été supprimée avec succès.",
+      });
+    }
+  };
+  
+  // Get current conversation title
+  const currentConversationTitle = () => {
+    if (!currentConversationId) return "Nouvelle discussion";
+    const currentConv = conversations.find(c => c.id === currentConversationId);
+    return currentConv?.title || "Nouvelle discussion";
   };
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="text-foreground">
-            <MessageSquare className="h-5 w-5" />
+          <Button variant="outline" size="sm" className="w-40 justify-start truncate">
+            <MessageSquare className="mr-2 h-4 w-4" />
+            <span className="truncate">{currentConversationTitle()}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>Discussions</DropdownMenuLabel>
+          <DropdownMenuLabel>Mes discussions</DropdownMenuLabel>
           <DropdownMenuSeparator />
           
-          <DropdownMenuItem 
-            onClick={handleCreateNew}
-            disabled={isCreating}
-            className="flex items-center gap-2 cursor-pointer"
-          >
-            {isCreating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <MessageSquarePlus className="h-4 w-4" />
-            )}
+          <DropdownMenuItem onClick={handleNewConversation} className="cursor-pointer">
+            <PlusCircle className="mr-2 h-4 w-4" />
             <span>Nouvelle discussion</span>
           </DropdownMenuItem>
           
-          <DropdownMenuSeparator />
+          {conversations.length > 0 && <DropdownMenuSeparator />}
           
-          {!user ? (
-            <div className="text-center py-2 text-xs text-muted-foreground px-2">
-              Connectez-vous pour sauvegarder vos discussions
-            </div>
-          ) : conversations.length === 0 ? (
-            <div className="text-center py-2 text-xs text-muted-foreground">
-              Aucune discussion
-            </div>
-          ) : (
-            <>
-              {conversations.slice(0, 5).map((conv) => (
-                <DropdownMenuItem 
-                  key={conv.id}
-                  className={cn(
-                    "cursor-pointer",
-                    currentConversationId === conv.id && "bg-accent"
-                  )}
-                  onClick={() => handleSelectConversation(conv.id)}
-                >
-                  <div className="w-full truncate text-sm">
-                    {conv.title || "Nouvelle discussion"}
-                  </div>
-                </DropdownMenuItem>
-              ))}
+          {conversations.map((conversation) => (
+            <DropdownMenuItem 
+              key={conversation.id} 
+              className="flex items-start justify-between cursor-pointer group"
+              onSelect={(e) => {
+                e.preventDefault();
+                handleSelectConversation(conversation.id);
+              }}
+            >
+              <div className="flex flex-col">
+                <span className={`truncate ${currentConversationId === conversation.id ? 'font-medium' : ''}`}>
+                  {conversation.title}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {formatDate(conversation.updatedAt)}
+                </span>
+              </div>
               
-              {conversations.length > 5 && (
-                <DropdownMenuItem 
-                  onClick={showAllConversations}
-                  className="text-primary cursor-pointer"
-                >
-                  Voir toutes les discussions...
-                </DropdownMenuItem>
-              )}
-            </>
-          )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  confirmDeleteConversation(conversation.id);
+                }}
+              >
+                <Trash className="h-3 w-3 text-destructive" />
+              </Button>
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Toutes les discussions</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="h-[50vh] pr-4">
-            <div className="space-y-1.5">
-              {conversations.map((conv) => (
-                <div 
-                  key={conv.id}
-                  className={cn(
-                    "group flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors",
-                    currentConversationId === conv.id 
-                      ? "bg-primary/10 text-primary hover:bg-primary/15" 
-                      : "hover:bg-accent"
-                  )}
-                  onClick={() => {
-                    handleSelectConversation(conv.id);
-                    setIsDialogOpen(false);
-                  }}
-                >
-                  <div className="flex-1 truncate text-sm">
-                    {conv.title || "Nouvelle discussion"}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer la discussion ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action ne peut pas être annulée. Cela supprimera définitivement cette discussion.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={handleDeleteConversation}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

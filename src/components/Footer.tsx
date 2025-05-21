@@ -1,7 +1,23 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mail, User, ArrowRight, Twitter, Linkedin, Github, Youtube, Instagram, Facebook } from "lucide-react";
+import { Link } from "react-router-dom";
+import { 
+  Mail, 
+  User, 
+  ArrowRight, 
+  Twitter, 
+  Linkedin, 
+  Github, 
+  Youtube, 
+  Instagram, 
+  Facebook, 
+  Shield, 
+  FileText, 
+  Info, 
+  HelpCircle, 
+  Phone
+} from "lucide-react";
 
 const Footer = () => {
   return (
@@ -9,30 +25,30 @@ const Footer = () => {
       <div className="container mx-auto px-4 py-12 md:py-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-4">
-            <a href="/" className="inline-block mb-6">
+            <Link to="/" className="inline-block mb-6">
               <span className="text-3xl font-bold bg-gradient-to-r from-luvvix-purple to-luvvix-teal inline-block text-transparent bg-clip-text">LuvviX</span>
-            </a>
+            </Link>
             <p className="text-gray-400 mb-6">
               LuvviX Technologies crée des solutions innovantes à l'intersection de l'intelligence artificielle, 
               de la santé numérique et des médias pour construire un futur plus intelligent et plus humain.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors" aria-label="Twitter">
                 <Twitter size={20} />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors" aria-label="LinkedIn">
                 <Linkedin size={20} />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors" aria-label="GitHub">
                 <Github size={20} />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors" aria-label="YouTube">
                 <Youtube size={20} />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors" aria-label="Instagram">
                 <Instagram size={20} />
               </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <a href="#" className="text-gray-400 hover:text-white transition-colors" aria-label="Facebook">
                 <Facebook size={20} />
               </a>
             </div>
@@ -41,44 +57,44 @@ const Footer = () => {
           <div className="lg:col-span-2">
             <h3 className="text-lg font-semibold mb-4">Produits</h3>
             <ul className="space-y-3 text-gray-400">
-              <li><a href="#" className="hover:text-white transition-colors">LuvviX AI</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">LuvviX Medic</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">LuvviX StreamMix</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">LuvviX Cloud</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">LuvviX ID</a></li>
+              <li><Link to="/ai-studio" className="hover:text-white transition-colors flex items-center gap-1"><Bot size={14} /> LuvviX AI</Link></li>
+              <li><Link to="/medecine" className="hover:text-white transition-colors flex items-center gap-1"><Shield size={14} /> LuvviX Medic</Link></li>
+              <li><Link to="/streammix" className="hover:text-white transition-colors flex items-center gap-1"><Youtube size={14} /> LuvviX StreamMix</Link></li>
+              <li><Link to="/cloud" className="hover:text-white transition-colors flex items-center gap-1"><Cloud size={14} /> LuvviX Cloud</Link></li>
+              <li><Link to="/auth" className="hover:text-white transition-colors flex items-center gap-1"><User size={14} /> LuvviX ID</Link></li>
             </ul>
           </div>
           
           <div className="lg:col-span-2">
             <h3 className="text-lg font-semibold mb-4">Ressources</h3>
             <ul className="space-y-3 text-gray-400">
-              <li><a href="#" className="hover:text-white transition-colors">Documentation</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Centre d'aide</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">API Reference</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Événements</a></li>
+              <li><Link to="/docs" className="hover:text-white transition-colors flex items-center gap-1"><FileText size={14} /> Documentation</Link></li>
+              <li><Link to="/help" className="hover:text-white transition-colors flex items-center gap-1"><HelpCircle size={14} /> Centre d'aide</Link></li>
+              <li><Link to="/api-docs" className="hover:text-white transition-colors flex items-center gap-1"><FileText size={14} /> API Reference</Link></li>
+              <li><Link to="/blog" className="hover:text-white transition-colors flex items-center gap-1"><FileText size={14} /> Blog</Link></li>
+              <li><Link to="/events" className="hover:text-white transition-colors flex items-center gap-1"><Calendar size={14} /> Événements</Link></li>
             </ul>
           </div>
           
           <div className="lg:col-span-2">
             <h3 className="text-lg font-semibold mb-4">Entreprise</h3>
             <ul className="space-y-3 text-gray-400">
-              <li><a href="#" className="hover:text-white transition-colors">À propos</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Carrières</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Partenaires</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Investisseurs</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+              <li><Link to="/about" className="hover:text-white transition-colors flex items-center gap-1"><Info size={14} /> À propos</Link></li>
+              <li><Link to="/careers" className="hover:text-white transition-colors flex items-center gap-1"><Briefcase size={14} /> Carrières</Link></li>
+              <li><Link to="/partners" className="hover:text-white transition-colors flex items-center gap-1"><Handshake size={14} /> Partenaires</Link></li>
+              <li><Link to="/investors" className="hover:text-white transition-colors flex items-center gap-1"><TrendingUp size={14} /> Investisseurs</Link></li>
+              <li><Link to="/contact" className="hover:text-white transition-colors flex items-center gap-1"><Phone size={14} /> Contact</Link></li>
             </ul>
           </div>
           
           <div className="lg:col-span-2">
             <h3 className="text-lg font-semibold mb-4">Légal</h3>
             <ul className="space-y-3 text-gray-400">
-              <li><a href="#" className="hover:text-white transition-colors">Confidentialité</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">CGU</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Licences</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Cookies</a></li>
-              <li><a href="#" className="hover:text-white transition-colors">Conformité</a></li>
+              <li><Link to="/privacy" className="hover:text-white transition-colors flex items-center gap-1"><Shield size={14} /> Confidentialité</Link></li>
+              <li><Link to="/terms" className="hover:text-white transition-colors flex items-center gap-1"><FileText size={14} /> CGU</Link></li>
+              <li><Link to="/licenses" className="hover:text-white transition-colors flex items-center gap-1"><FileCheck size={14} /> Licences</Link></li>
+              <li><Link to="/cookies" className="hover:text-white transition-colors flex items-center gap-1"><Cookie size={14} /> Cookies</Link></li>
+              <li><Link to="/compliance" className="hover:text-white transition-colors flex items-center gap-1"><CheckSquare size={14} /> Conformité</Link></li>
             </ul>
           </div>
         </div>

@@ -14,6 +14,8 @@ import AccountSelector from "@/components/AccountSelector";
 import AppGrid from "@/components/dashboard/AppGrid";
 import RecentActivities from "@/components/dashboard/RecentActivities";
 import StatCards from "@/components/dashboard/StatCards";
+import Clock from "@/components/dashboard/Clock";
+import UsageStats from "@/components/dashboard/UsageStats";
 
 interface AppAccess {
   id: string;
@@ -152,7 +154,10 @@ const Dashboard = () => {
                     Bienvenue, {profile?.full_name || user.email}
                   </p>
                 </div>
-                <div className="mt-4 md:mt-0">
+                <div className="mt-4 md:mt-0 flex items-center gap-4">
+                  <div className="hidden md:block">
+                    <Clock />
+                  </div>
                   <AccountSelector 
                     currentUser={{
                       id: user.id,
@@ -197,7 +202,13 @@ const Dashboard = () => {
                       <div className="lg:col-span-2">
                         <RecentActivities userId={user.id} />
                       </div>
-                      <div className="lg:col-span-1">
+                      <div className="lg:col-span-1 space-y-6">
+                        <div className="md:hidden">
+                          <Card className="p-4">
+                            <Clock />
+                          </Card>
+                        </div>
+                        <UsageStats userId={user.id} />
                         <StatCards userId={user.id} />
                       </div>
                     </div>

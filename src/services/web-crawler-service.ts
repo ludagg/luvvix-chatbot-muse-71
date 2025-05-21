@@ -6,6 +6,8 @@ interface CrawlOptions {
   depth?: number;
   timeout?: number;
   userAgent?: string;
+  jsRender?: boolean; // Option pour le rendu JavaScript
+  waitTime?: number;  // Temps d'attente pour le rendu JS
 }
 
 interface CrawlResult {
@@ -47,7 +49,9 @@ class WebCrawlerService {
           maxPages: options.maxPages || 10, 
           depth: options.depth || 2,
           timeout: options.timeout || 60000,
-          userAgent: options.userAgent || "Mozilla/5.0 LuvviX AI WebCrawler Bot/1.0"
+          userAgent: options.userAgent || "Mozilla/5.0 LuvviX AI WebCrawler Bot/1.0",
+          jsRender: options.jsRender !== undefined ? options.jsRender : true, // Activer le rendu JS par défaut
+          waitTime: options.waitTime || 3000 // Attendre 3 secondes par défaut pour le rendu JS
         }
       });
       
@@ -170,7 +174,8 @@ class WebCrawlerService {
           maxPages: 1,
           depth: 0,
           timeout: 10000,
-          testOnly: true
+          testOnly: true,
+          jsRender: true // Tester avec le rendu JavaScript activé
         }
       });
       

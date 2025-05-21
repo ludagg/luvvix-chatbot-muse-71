@@ -1,132 +1,54 @@
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { ThemeProvider } from "@/components/ui/theme-provider"
+import { useAuth } from './hooks/useAuth';
+import Index from './pages/Index';
+import Dashboard from './pages/Dashboard';
+import NewsPage from './pages/NewsPage';
+import AIStudioDashboardPage from './pages/AIStudioDashboardPage';
+import AIStudioAgentPage from './pages/AIStudioAgentPage';
+import AIStudioAgentEditPage from './pages/AIStudioAgentEditPage';
+import AIStudioAgentChatPage from './pages/AIStudioAgentChatPage';
+import AIStudioAgentCreatePage from './pages/AIStudioAgentCreatePage';
+import AIStudioAgentEmbedPage from './pages/AIStudioAgentEmbedPage';
+// Ajoutez l'importation de EcosystemPage
+import EcosystemPage from './pages/EcosystemPage';
 
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/hooks/use-theme";
-import { DecentralizedStorageProvider } from "@/hooks/use-ipfs";
-import { HelmetProvider } from "react-helmet-async";
-import { Routes, Route } from "react-router-dom";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import ApiDocs from "./pages/ApiDocs";
-import AuthPage from "./pages/AuthPage";
-import Dashboard from "./pages/Dashboard";
-import CloudPage from "./pages/CloudPage";
-import NewsPage from "./pages/NewsPage";
-import WeatherPage from "./pages/WeatherPage";
-import OAuth from "./pages/OAuth";
-import AdminPanel from "./pages/AdminPanel";
-import OAuthTest from "./pages/OAuthTest";
-import FormsPage from "./pages/FormsPage";
-import FormEditorPage from "./pages/FormEditorPage";
-import FormViewPage from "./pages/FormViewPage";
-import FormSettingsPage from "./pages/FormSettingsPage";
-import FormResponsesPage from "./pages/FormResponsesPage";
-import AIStudioPage from "./pages/AIStudioPage";
-import AIStudioDashboardPage from "./pages/AIStudioDashboardPage";
-import AIStudioAgentPage from "./pages/AIStudioAgentPage";
-import AIStudioCreateAgentPage from "./pages/AIStudioCreateAgentPage";
-import AIStudioEditAgentPage from "./pages/AIStudioEditAgentPage";
-import AIStudioMarketplacePage from "./pages/AIStudioMarketplacePage";
-import AIStudioAdminPage from "./pages/AIStudioAdminPage";
-import AIStudioChatPage from "./pages/AIStudioChatPage";
-import AIEmbedPage from "./pages/AIEmbedPage";
-import PrivacyPage from "./pages/legal/PrivacyPage";
-import TermsPage from "./pages/legal/TermsPage";
-import CookiesPage from "./pages/legal/CookiesPage";
-import DocsPage from "./pages/docs/DocsPage";
+const App = () => {
+  const { isLoading, user } = useAuth();
+  const [isMounted, setIsMounted] = useState(false);
 
-const App = () => (
-  <HelmetProvider>
-    <ThemeProvider defaultTheme="light">
-      <DecentralizedStorageProvider>
-        <Sonner />
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
+
+  return (
+    <ThemeProvider defaultTheme="system" storageKey="vite-react-ts-gh-pages">
+      <Router>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/api-docs" element={<ApiDocs />} />
-          <Route path="/auth" element={<AuthPage />} />
+          
+          {/* Ajoutez cette nouvelle route pour l'écosystème */}
+          <Route path="/ecosystem" element={<EcosystemPage />} />
+          
           <Route path="/news" element={<NewsPage />} />
-          <Route path="/weather" element={<WeatherPage />} />
-          <Route path="/oauth/authorize" element={
-            <ProtectedRoute>
-              <OAuth />
-            </ProtectedRoute>
-          } />
-          <Route path="/oauth/test" element={<OAuthTest />} />
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/cloud/*" element={
-            <ProtectedRoute>
-              <CloudPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <Navigate to="/" />} />
+          <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
           
-          {/* Routes for LuvviX Forms */}
-          <Route path="/forms" element={<FormsPage />} />
-          <Route path="/forms/create" element={
-            <ProtectedRoute>
-              <FormEditorPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/edit/:formId" element={
-            <ProtectedRoute>
-              <FormEditorPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/view/:formId" element={<FormViewPage />} />
-          <Route path="/forms/settings/:formId" element={
-            <ProtectedRoute>
-              <FormSettingsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/responses/:formId" element={
-            <ProtectedRoute>
-              <FormResponsesPage />
-            </ProtectedRoute>
-          } />
-          
-          {/* Routes for LuvviX AI Studio */}
-          <Route path="/ai-studio" element={<AIStudioPage />} />
-          <Route path="/ai-studio/dashboard" element={
-            <ProtectedRoute>
-              <AIStudioDashboardPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/ai-studio/agents/:agentId" element={<AIStudioAgentPage />} />
-          <Route path="/ai-studio/create" element={
-            <ProtectedRoute>
-              <AIStudioCreateAgentPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/ai-studio/edit/:agentId" element={
-            <ProtectedRoute>
-              <AIStudioEditAgentPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/ai-studio/marketplace" element={<AIStudioMarketplacePage />} />
-          <Route path="/ai-studio/chat/:agentId" element={<AIStudioChatPage />} />
-          <Route path="/ai-studio/admin" element={<AIStudioAdminPage />} />
-          
-          {/* AI Embed Routes */}
-          <Route path="/ai-embed/:agentId" element={<AIEmbedPage />} />
-          
-          {/* Legal Pages */}
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/cookies" element={<CookiesPage />} />
-          
-          {/* Documentation */}
-          <Route path="/docs/*" element={<DocsPage />} />
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="/ai-studio" element={user ? <AIStudioDashboardPage /> : <Navigate to="/auth" />} />
+          <Route path="/ai-studio/agents/:agentId" element={user ? <AIStudioAgentPage /> : <Navigate to="/auth" />} />
+          <Route path="/ai-studio/edit/:agentId" element={user ? <AIStudioAgentEditPage /> : <Navigate to="/auth" />} />
+          <Route path="/ai-studio/chat/:agentId" element={user ? <AIStudioAgentChatPage /> : <Navigate to="/auth" />} />
+          <Route path="/ai-studio/create" element={user ? <AIStudioAgentCreatePage /> : <Navigate to="/auth" />} />
+          <Route path="/ai-embed/:agentId" element={<AIStudioAgentEmbedPage />} />
         </Routes>
-      </DecentralizedStorageProvider>
+      </Router>
     </ThemeProvider>
-  </HelmetProvider>
-);
+  );
+};
 
 export default App;

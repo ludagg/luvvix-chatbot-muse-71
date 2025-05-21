@@ -1,7 +1,8 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { delay } from "https://deno.land/std@0.178.0/async/delay.ts";
+import * as puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,6 +30,26 @@ function setCachedData(key: string, data: any): void {
   });
 }
 
+// Déterminer si une URL est probablement un site JS moderne
+function isLikelyJSFramework(html: string): boolean {
+  // Recherche des indices de frameworks JS
+  const reactPatterns = [
+    'react-root',
+    'react-app',
+    'ReactDOM',
+    '__NEXT_DATA__',
+    'next-page',
+    'nuxt',
+    'ng-app',
+    'vue-app',
+    'svelte',
+    'gatsby',
+    'hydration'
+  ];
+  
+  return reactPatterns.some(pattern => html.includes(pattern));
+}
+
 // Enhanced function to extract text content from HTML
 function extractTextFromHTML(html: string, url: string): { text: string; metadata: any } {
   try {
@@ -45,6 +66,7 @@ function extractTextFromHTML(html: string, url: string): { text: string; metadat
       siteName: document.querySelector("meta[property='og:site_name']")?.getAttribute("content") || new URL(url).hostname,
       favicon: document.querySelector("link[rel='icon']")?.getAttribute("href") || 
               document.querySelector("link[rel='shortcut icon']")?.getAttribute("href") || "",
+      framework: isLikelyJSFramework(html) ? "js-framework" : "static-html" // Détection du framework
     };
     
     // Remove script, style, and irrelevant elements
@@ -60,6 +82,8 @@ function extractTextFromHTML(html: string, url: string): { text: string; metadat
       document.querySelector("#content") ||
       document.querySelector(".main") ||
       document.querySelector("#main") ||
+      document.querySelector("#__next") || // Next.js specific
+      document.querySelector("#app") || // Vue/React specific
       document.body;
     
     if (!mainContent) return { text: "", metadata };
@@ -90,6 +114,24 @@ function extractTextFromHTML(html: string, url: string): { text: string; metadat
         structuredContent += `• ${item.textContent?.trim()}\n`;
       });
       structuredContent += "\n";
+    });
+    
+    // Add div content that might contain important text (common in JS frameworks)
+    const divs = mainContent.querySelectorAll("div");
+    divs.forEach(div => {
+      // Skip divs that only contain other divs or are likely layout/container elements
+      const hasOnlyDivChildren = Array.from(div.children).every(child => child.tagName === 'DIV');
+      const hasNoText = !div.textContent || div.textContent.trim().length === 0;
+      const isTooSmall = div.textContent && div.textContent.trim().length < 50;
+      const hasStructuralElements = div.querySelector('h1, h2, h3, h4, h5, h6, p, ul, ol');
+      
+      // If div has direct text (not just from children) and meets our criteria
+      if (!hasOnlyDivChildren && !hasNoText && !isTooSmall && !hasStructuralElements) {
+        const text = div.textContent?.trim();
+        if (text) {
+          structuredContent += `${text}\n\n`;
+        }
+      }
     });
     
     // If we couldn't extract structured content, fall back to text content
@@ -160,36 +202,101 @@ function extractLinksFromHTML(html: string, baseUrl: string): string[] {
   }
 }
 
-// Advanced crawl function that attempts various techniques
-async function advancedCrawlUrl(url: string): Promise<{ content: string, links: string[], metadata: any }> {
+// Advanced crawl with Puppeteer for JS-heavy sites
+async function puppeteerCrawl(url: string, waitTime: number = 3000): Promise<string> {
+  console.log(`Utilisation de Puppeteer pour l'URL: ${url} avec un temps d'attente de ${waitTime}ms`);
+  
   try {
-    console.log(`Attempting to crawl: ${url}`);
-    
-    // Try with a browser-like user agent first
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Cache-Control": "no-cache",
-        "Pragma": "no-cache"
-      }
+    // Launch a headless browser
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      headless: true
     });
     
-    if (!response.ok) {
-      console.warn(`Failed to fetch ${url} with status ${response.status}`);
-      return { content: "", links: [], metadata: {} };
+    try {
+      const page = await browser.newPage();
+      
+      // Set a realistic user agent
+      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36');
+      
+      // Set viewport to a common size
+      await page.setViewport({ width: 1280, height: 800 });
+      
+      // Navigate to the URL with a timeout
+      await page.goto(url, { timeout: 30000, waitUntil: 'networkidle2' });
+      
+      // Wait for specified time to let JavaScript execute and render content
+      await delay(waitTime);
+      
+      // Get the fully rendered HTML
+      const content = await page.content();
+      
+      return content;
+    } finally {
+      await browser.close();
+    }
+  } catch (error) {
+    console.error(`Erreur lors du rendu avec Puppeteer: ${error}`);
+    throw error;
+  }
+}
+
+// Advanced crawl function that attempts various techniques
+async function advancedCrawlUrl(url: string, jsRender: boolean = false, waitTime: number = 3000): Promise<{ content: string, links: string[], metadata: any }> {
+  try {
+    console.log(`Attempting to crawl: ${url} with jsRender=${jsRender}`);
+    
+    let html = "";
+    
+    if (jsRender) {
+      try {
+        // Try with Puppeteer for JS-based sites first
+        html = await puppeteerCrawl(url, waitTime);
+        console.log("Puppeteer crawl successful");
+      } catch (puppeteerError) {
+        console.warn(`Puppeteer crawl failed, falling back to fetch: ${puppeteerError}`);
+        // Fall back to regular fetch
+        const response = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${url} with status ${response.status}`);
+        }
+        
+        html = await response.text();
+      }
+    } else {
+      // Use standard fetch for non-JS sites
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache"
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ${url} with status ${response.status}`);
+      }
+      
+      html = await response.text();
     }
     
-    const contentType = response.headers.get("content-type") || "";
-    
-    // Skip non-HTML content
-    if (!contentType.includes("text/html")) {
-      console.warn(`Skipping non-HTML content: ${contentType} at ${url}`);
-      return { content: "", links: [], metadata: { title: url, contentType } };
+    // Check if this is likely a JS framework site and we didn't render it
+    const isJSFrameworkSite = isLikelyJSFramework(html);
+    if (isJSFrameworkSite && !jsRender) {
+      console.log("Detected JS framework site but JS rendering was disabled. Content may be incomplete.");
     }
     
-    const html = await response.text();
     const { text, metadata } = extractTextFromHTML(html, url);
     const links = extractLinksFromHTML(html, url);
     
@@ -201,6 +308,10 @@ async function advancedCrawlUrl(url: string): Promise<{ content: string, links: 
         // Ignore favicon URL errors
       }
     }
+    
+    // Add framework detection info
+    metadata.isJSFramework = isJSFrameworkSite;
+    metadata.renderMethod = jsRender ? "puppeteer" : "static";
     
     return { 
       content: text, 
@@ -222,7 +333,9 @@ async function crawlWebsite(
   startUrl: string, 
   maxPages = 10, 
   maxDepth = 2,
-  timeout = 60000
+  timeout = 60000,
+  jsRender = true,
+  waitTime = 3000
 ): Promise<{ content: string, urls: string[], metadata: any[] }> {
   // Enforce a hard timeout
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -258,7 +371,7 @@ async function crawlWebsite(
         visited.add(normalizedUrl);
         visitedUrls.push(url);
         
-        const { content: pageContent, links, metadata } = await advancedCrawlUrl(url);
+        const { content: pageContent, links, metadata } = await advancedCrawlUrl(url, jsRender, waitTime);
         
         if (pageContent) {
           content += `\n\n--- Content from ${url} ---\n\n${pageContent}`;
@@ -293,14 +406,50 @@ serve(async (req) => {
   }
   
   try {
-    const { url, maxPages = 10, depth = 2, timeout = 60000 } = await req.json();
+    const { 
+      url, 
+      maxPages = 10, 
+      depth = 2, 
+      timeout = 60000,
+      jsRender = true,
+      waitTime = 3000,
+      testOnly = false
+    } = await req.json();
     
     if (!url) {
       throw new Error('URL is required');
     }
     
+    // Just testing URL accessibility
+    if (testOnly) {
+      try {
+        const response = await fetch(url, {
+          method: 'HEAD',
+          headers: {
+            "User-Agent": "Mozilla/5.0 LuvviX AI WebCrawler Bot/1.0",
+          }
+        });
+        
+        return new Response(JSON.stringify({ 
+          success: response.ok,
+          status: response.status,
+          statusText: response.statusText
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Error testing URL' 
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+    
     // Check cache first
-    const cacheKey = `${url}_${maxPages}_${depth}`;
+    const cacheKey = `${url}_${maxPages}_${depth}_${jsRender}`;
     const cachedResult = getCachedData(cacheKey);
     
     if (cachedResult) {
@@ -310,10 +459,10 @@ serve(async (req) => {
       });
     }
     
-    console.log(`Starting crawl of ${url} with maxPages=${maxPages}, depth=${depth}`);
+    console.log(`Starting crawl of ${url} with maxPages=${maxPages}, depth=${depth}, jsRender=${jsRender}`);
     
     // Start the crawl
-    const result = await crawlWebsite(url, maxPages, depth, timeout);
+    const result = await crawlWebsite(url, maxPages, depth, timeout, jsRender, waitTime);
     
     // Cache the result
     setCachedData(cacheKey, result);

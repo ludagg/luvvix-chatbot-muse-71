@@ -1,7 +1,7 @@
 
-import { useToast as useToastOriginal } from "@/hooks/use-toast";
-import { toast as toastOriginal } from "@/hooks/use-toast";
-import { sonnerToast as sonnerToastOriginal } from "@/hooks/use-toast";
+import { useToast as useToastOriginal } from "@/components/ui/use-toast";
+import { toast as toastOriginal } from "@/components/ui/use-toast";
+import { sonnerToast as sonnerToastOriginal } from "@/components/ui/use-toast";
 
 // Exportations des types nécessaires
 export type ToastActionElement = React.ReactElement<HTMLButtonElement>;

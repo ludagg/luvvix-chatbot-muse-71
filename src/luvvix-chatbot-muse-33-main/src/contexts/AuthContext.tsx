@@ -37,6 +37,10 @@ interface AuthContextType {
   updateConversation: (id: string, data: Partial<ConversationMetadata>) => void;
   deleteConversation: (id: string) => void;
   getConversation: (id: string) => ConversationMetadata | null;
+  currentConversationId: string | null;
+  setCurrentConversation: (id: string) => void;
+  createNewConversation: () => string;
+  updateConversationTitle: (id: string, title: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -46,6 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isPro, setIsPro] = useState(false);
   const [conversations, setConversations] = useLocalStorage<ConversationMetadata[]>('luvvix_conversations', []);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
   // Initialiser le service d'authentification LuvviX ID
   useEffect(() => {
@@ -213,10 +218,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const deleteConversation = (id: string) => {
     setConversations(conversations.filter(conv => conv.id !== id));
+    if (currentConversationId === id) {
+      setCurrentConversationId(null);
+    }
   };
 
   const getConversation = (id: string) => {
     return conversations.find(conv => conv.id === id) || null;
+  };
+
+  const setCurrentConversation = (id: string) => {
+    setCurrentConversationId(id);
+  };
+
+  const createNewConversation = () => {
+    const id = addConversation();
+    setCurrentConversationId(id);
+    return id;
+  };
+
+  const updateConversationTitle = (id: string, title: string) => {
+    updateConversation(id, { title });
   };
 
   const value = {
@@ -232,6 +254,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     updateConversation,
     deleteConversation,
     getConversation,
+    currentConversationId,
+    setCurrentConversation,
+    createNewConversation,
+    updateConversationTitle,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

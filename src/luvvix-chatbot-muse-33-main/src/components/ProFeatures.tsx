@@ -20,7 +20,7 @@ export const ProFeatures = () => {
     {
       icon: <MessageSquareText className="h-5 w-5 text-amber-500" />,
       title: "Réponses plus détaillées",
-      description: "Obtenez des réponses plus longues et plus détaillées"
+      description: "Obtenez des réponses plus longues et plus détaillées !"
     },
     {
       icon: <Zap className="h-5 w-5 text-amber-500" />,

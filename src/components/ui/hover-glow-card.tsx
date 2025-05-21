@@ -35,11 +35,19 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
     };
 
     if (!isMounted) {
+      // For non-mounted state, return a simple div without motion props
+      // We need to filter out motion-specific props that aren't valid for regular divs
+      const { 
+        onDrag, onDragStart, onDragEnd, onAnimationStart, onAnimationComplete, 
+        transformTemplate, whileHover, whileTap, whileDrag, whileFocus, whileInView,
+        initial, animate, exit, transition, variants, ...validHtmlProps
+      } = props;
+      
       return (
         <div 
           ref={ref} 
           className={cn("relative overflow-hidden", className)} 
-          {...props as React.HTMLAttributes<HTMLDivElement>}
+          {...validHtmlProps}
         >
           {children}
         </div>

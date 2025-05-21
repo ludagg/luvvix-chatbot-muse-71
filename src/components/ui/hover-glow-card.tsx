@@ -34,27 +34,12 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
       setOpacity(0);
     };
 
+    // For SSR and initial render when JS is not yet running
     if (!isMounted) {
-      // For non-mounted state, we need to filter all framer-motion specific props
-      // This is a comprehensive list of motion-specific props that aren't valid for HTML divs
-      const {
-        animate, initial, exit, transition, variants,
-        onAnimationComplete, onAnimationStart, onDrag, onDragEnd, onDragStart,
-        onLayoutAnimationComplete, onLayoutAnimationStart, onLayoutMeasure,
-        onPan, onPanEnd, onPanStart, onTap, onTapCancel, onTapStart,
-        onViewportEnter, onViewportLeave, onUpdate, transformTemplate,
-        whileHover, whileTap, whileFocus, whileDrag, whileInView,
-        dragControls, dragListener, dragConstraints, dragDirectionLock, dragElastic,
-        dragMomentum, dragPropagation, dragSnapToOrigin, dragTransition,
-        layout, layoutDependency, layoutId, layoutRoot, layoutScroll,
-        ...validHtmlProps
-      } = props;
-      
       return (
         <div 
           ref={ref} 
-          className={cn("relative overflow-hidden", className)} 
-          {...validHtmlProps}
+          className={cn("relative overflow-hidden", className)}
         >
           {children}
         </div>

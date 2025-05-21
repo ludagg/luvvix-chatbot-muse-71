@@ -1,7 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
-import { ThemeProvider } from "./components/ui/theme-provider";
 import { useAuth } from './hooks/useAuth';
 import Index from './pages/Index';
 import Dashboard from './pages/Dashboard';
@@ -21,18 +20,16 @@ const App = () => {
     return null;
   }
 
-  // The ThemeProvider now wraps the entire Routes component to ensure all components have access to the theme context
+  // The ThemeProvider is now moved to main.tsx to wrap the entire app
   return (
-    <ThemeProvider defaultTheme="system" storageKey="vite-react-ts-gh-pages">
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/ecosystem" element={<EcosystemPage />} />
-        <Route path="/news" element={<NewsPage />} />
-        <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <Navigate to="/" />} />
-        <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
-        <Route path="/ai-studio" element={user ? <AIStudioDashboardPage /> : <Navigate to="/auth" />} />
-      </Routes>
-    </ThemeProvider>
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/ecosystem" element={<EcosystemPage />} />
+      <Route path="/news" element={<NewsPage />} />
+      <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <Navigate to="/" />} />
+      <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
+      <Route path="/ai-studio" element={user ? <AIStudioDashboardPage /> : <Navigate to="/auth" />} />
+    </Routes>
   );
 };
 

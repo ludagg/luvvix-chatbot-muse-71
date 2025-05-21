@@ -23,12 +23,14 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <App />
-          <Toaster />
-        </TooltipProvider>
-      </AuthProvider>
+      <ThemeProvider defaultTheme="system" storageKey="vite-react-ts-gh-pages">
+        <AuthProvider>
+          <TooltipProvider>
+            <App />
+            <Toaster />
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   </BrowserRouter>
 );

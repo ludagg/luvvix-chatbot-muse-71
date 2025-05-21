@@ -6,6 +6,7 @@ import { AuthProvider } from '@/hooks/useAuth';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ThemeProvider } from "@/components/ui/theme-provider";
+import { ThemeProvider as CustomThemeProvider } from "@/hooks/use-theme"; // Import the custom theme provider
 import App from './App.tsx';
 import './index.css';
 
@@ -25,10 +26,12 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider defaultTheme="system" storageKey="vite-react-ts-gh-pages">
-          <TooltipProvider>
-            <App />
-            <Toaster />
-          </TooltipProvider>
+          <CustomThemeProvider defaultTheme="light" storageKey="luvvix-ui-theme">
+            <TooltipProvider>
+              <App />
+              <Toaster />
+            </TooltipProvider>
+          </CustomThemeProvider>
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>

@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { Clock as ClockIcon } from 'lucide-react';
 
 const Clock = () => {
   const [time, setTime] = useState(new Date());
@@ -33,9 +34,14 @@ const Clock = () => {
   };
 
   return (
-    <div className="text-center">
-      <div className="text-xl font-semibold">{formatTime(time)}</div>
-      <div className="text-sm text-gray-500 capitalize">{formatDate(time)}</div>
+    <div className="flex items-center justify-center gap-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
+      <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-full">
+        <ClockIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+      </div>
+      <div>
+        <div className="text-xl font-semibold">{formatTime(time)}</div>
+        <div className="text-sm text-gray-500 dark:text-gray-400 capitalize">{formatDate(time)}</div>
+      </div>
     </div>
   );
 };

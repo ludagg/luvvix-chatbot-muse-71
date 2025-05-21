@@ -67,6 +67,9 @@ function App() {
               } />
               <Route path="/admin" element={<AdminPanel />} />
               
+              {/* Ajout de la route pour l'écosystème */}
+              <Route path="/ecosystem" element={<EcosystemPage />} />
+              
               {/* Routes for LuvviX Forms */}
               <Route path="/forms" element={<FormsPage />} />
               <Route path="/forms/create" element={

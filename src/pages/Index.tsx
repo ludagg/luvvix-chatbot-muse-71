@@ -15,23 +15,34 @@ import FormsPromo from "@/components/forms/FormsPromo";
 import CeoSection from "@/components/CeoSection";
 import AIStudioPromo from "@/components/ai-studio/AIStudioPromo";
 import LuvvixIdPromo from "@/components/LuvvixIdPromo";
-import { Bot, FileText, Newspaper, Cloud, Sparkles } from "lucide-react";
+import { Bot, FileText, Newspaper, Cloud, Sparkles, AppWindow, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { HoverGlowCard } from "@/components/ui/hover-glow-card";
+import { motion } from "framer-motion";
 
 const Index = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
       
-      <div className="pt-20">
+      <div className="pt-16">
         <Hero />
         
         {/* Section pour diriger vers l'écosystème */}
         <section className="py-16 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">Découvrez l'Écosystème LuvviX</h2>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-10"
+            >
+              <h2 className="text-3xl font-bold mb-4">Découvrez l'Écosystème LuvviX</h2>
+              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                Une suite complète d'applications innovantes pour améliorer votre expérience numérique
+              </p>
+            </motion.div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
@@ -89,9 +100,11 @@ const Index = () => {
             </div>
             
             <div className="text-center mt-10">
-              <Link to="/dashboard">
+              <Link to="/ecosystem">
                 <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white">
-                  Accéder à votre tableau de bord
+                  <AppWindow className="w-5 h-5 mr-2" /> 
+                  Explorer l'écosystème complet
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
             </div>

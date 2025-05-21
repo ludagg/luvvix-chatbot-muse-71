@@ -34,7 +34,7 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
       setOpacity(0);
     };
 
-    // For SSR and initial render when JS is not yet running
+    // Pour SSR et rendu initial quand JS n'est pas encore en cours d'exécution
     if (!isMounted) {
       return (
         <div 

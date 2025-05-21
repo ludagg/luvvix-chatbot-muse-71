@@ -1,9 +1,8 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { NewsApiResponse, NewsItem, NewsSubscription } from '@/types/news';
 import { getCurrentUser } from '@/services/auth-utils';
 
-// Function to get user's location for personalized news
+// Fonction pour obtenir la localisation de l'utilisateur
 export const getUserLocation = async () => {
   try {
     const response = await fetch('https://ipapi.co/json/');
@@ -15,45 +14,103 @@ export const getUserLocation = async () => {
   }
 };
 
-// Function to fetch latest news
+// Fonction pour récupérer les dernières actualités
 export const fetchLatestNews = async (
   category: string = 'all',
   country: string = '',
   query: string = ''
 ): Promise<NewsItem[]> => {
   try {
-    const { data, error } = await supabase.functions.invoke('get-news', {
-      body: { category, country, query },
-    });
-
-    if (error) {
-      console.error('Error fetching news:', error);
-      throw new Error(error.message);
+    // Utilisation d'une API ouverte gratuite (Google News RSS)
+    const countryCode = country || 'fr'; // Par défaut France
+    let feedUrl = `https://news.google.com/rss`;
+    
+    if (country) {
+      feedUrl += `?gl=${country}`;
     }
-
-    const newsResponse = data as NewsApiResponse;
-
-    if (newsResponse.error) {
-      console.error('News API error:', newsResponse.error, newsResponse.details || '');
-      throw new Error(newsResponse.error);
+    
+    if (category !== 'all') {
+      feedUrl += `&ceid=${countryCode}:${category}`;
     }
-
-    if (!newsResponse.items || !Array.isArray(newsResponse.items)) {
-      console.warn('Invalid news data format:', newsResponse);
-      if (newsResponse.message) {
-        throw new Error(newsResponse.message);
-      }
-      throw new Error('Invalid news data received');
+    
+    if (query) {
+      // Encodage de la requête pour l'URL
+      const encodedQuery = encodeURIComponent(query);
+      feedUrl = `https://news.google.com/rss/search?q=${encodedQuery}`;
     }
-
-    return newsResponse.items;
+    
+    // Utilise le proxy RSS2JSON pour convertir le flux RSS en JSON
+    const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`;
+    
+    const response = await fetch(proxyUrl);
+    const data = await response.json();
+    
+    if (data.status !== 'ok') {
+      throw new Error(data.message || 'Failed to fetch news');
+    }
+    
+    // Transformation des données au format NewsItem
+    const items: NewsItem[] = data.items.map((item: any, index: number) => ({
+      id: item.guid || `news-${index}`,
+      title: item.title,
+      summary: item.description.substring(0, 200) + '...',
+      content: item.content || item.description,
+      publishedAt: item.pubDate,
+      source: item.author || data.feed.title,
+      category: category,
+      url: item.link,
+      imageUrl: item.enclosure?.link || item.thumbnail || null,
+      location: country ? { country: country } : undefined
+    }));
+    
+    return items;
   } catch (error) {
     console.error('Error in fetchLatestNews:', error.message || error);
-    throw error;
+    // Si l'API externe échoue, essayons de passer par la fonction edge
+    try {
+      const { data, error: edgeError } = await supabase.functions.invoke('get-news', {
+        body: { category, country, query },
+      });
+
+      if (edgeError) {
+        console.error('Error fetching news from edge function:', edgeError);
+        throw new Error(edgeError.message);
+      }
+
+      const newsResponse = data as NewsApiResponse;
+
+      if (newsResponse.error) {
+        console.error('News API error:', newsResponse.error, newsResponse.details || '');
+        throw new Error(newsResponse.error);
+      }
+
+      if (!newsResponse.items || !Array.isArray(newsResponse.items)) {
+        console.warn('Invalid news data format:', newsResponse);
+        if (newsResponse.message) {
+          throw new Error(newsResponse.message);
+        }
+        throw new Error('Invalid news data received');
+      }
+
+      return newsResponse.items;
+    } catch (fallbackError) {
+      console.error('Both news sources failed:', fallbackError);
+      // Retournons des données statiques en dernier recours
+      return [{
+        id: 'fallback-1',
+        title: 'Impossible de charger les actualités',
+        summary: 'Veuillez réessayer ultérieurement.',
+        content: 'Le service d\'actualités est temporairement indisponible.',
+        publishedAt: new Date().toISOString(),
+        source: 'LuvviX News',
+        category: 'error',
+        url: '#',
+      }];
+    }
   }
 };
 
-// Function to subscribe user to news topics
+// Fonction pour s'abonner aux sujets d'actualités
 export const subscribeToNewsTopics = async (
   topics: string[],
   email: string,
@@ -84,7 +141,7 @@ export const subscribeToNewsTopics = async (
   }
 };
 
-// Function to get current user's subscription
+// Fonction pour obtenir l'abonnement de l'utilisateur actuel
 export const getCurrentUserSubscription = async (): Promise<NewsSubscription | null> => {
   try {
     const user = await getCurrentUser();
@@ -114,7 +171,7 @@ export const getCurrentUserSubscription = async (): Promise<NewsSubscription | n
   }
 };
 
-// Function to unsubscribe from newsletter
+// Fonction pour se désabonner de la newsletter
 export const unsubscribeFromNewsletter = async (): Promise<boolean> => {
   try {
     const user = await getCurrentUser();

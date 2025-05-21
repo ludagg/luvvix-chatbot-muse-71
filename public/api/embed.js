@@ -12,7 +12,8 @@
       
       createIframe: function(container, agentId) {
         const iframe = document.createElement('iframe');
-        iframe.src = `https://luvvix.it.com/ai-embed/${agentId}`;
+        // Correction de l'URL pour utiliser le domaine du site actuel
+        iframe.src = `${window.location.protocol}//${window.location.host}/ai-embed/${agentId}`;
         iframe.width = '100%';
         iframe.height = '600px';
         iframe.style.border = '1px solid #e5e7eb';

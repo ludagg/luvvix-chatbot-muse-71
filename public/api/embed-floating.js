@@ -93,7 +93,8 @@
         `;
         
         const iframe = document.createElement('iframe');
-        iframe.src = `https://luvvix.it.com/ai-embed/${agentId}`;
+        // Important: Correction de l'URL pour utiliser le domaine du site actuel au lieu de luvvix.it.com
+        iframe.src = `${window.location.protocol}//${window.location.host}/ai-embed/${agentId}`;
         iframe.style.cssText = `
           width: 100%;
           height: 100%;

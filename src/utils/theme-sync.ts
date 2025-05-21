@@ -1,33 +1,44 @@
-// This utility helps synchronize theme settings between the main app and the Luvvix AI module
 
-export const syncThemeWithLuvvixAI = () => {
-  // Get current theme from the main app
-  const currentTheme = document.documentElement.classList.contains("dark") ? "dark" : "light";
-  
-  // Store it for Luvvix AI module
-  localStorage.setItem("luvvix-theme", currentTheme);
-  
-  // Set up a mutation observer to keep themes in sync
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (
-        mutation.type === "attributes" &&
-        mutation.attributeName === "class" &&
-        mutation.target === document.documentElement
-      ) {
-        const newTheme = document.documentElement.classList.contains("dark") ? "dark" : "light";
-        localStorage.setItem("luvvix-theme", newTheme);
-      }
-    });
-  });
-  
-  // Start observing changes to the document element's class attribute
-  observer.observe(document.documentElement, { attributes: true });
-  
-  return () => {
-    // Clean up function
-    observer.disconnect();
+/**
+ * Synchronize the theme between the main application and LuvvixAI
+ */
+export function syncThemeWithLuvvixAI(theme: string): void {
+  try {
+    // Store the theme preference in localStorage so it can be accessed by the iframe
+    localStorage.setItem('luvvix-ai-theme', theme);
+    
+    // If there's an iframe with LuvvixAI, we can try to communicate with it
+    const aiFrame = document.querySelector('iframe[src*="luvvix-ai"]') as HTMLIFrameElement;
+    
+    if (aiFrame && aiFrame.contentWindow) {
+      // Send a message to the iframe to update its theme
+      aiFrame.contentWindow.postMessage(
+        { 
+          type: 'THEME_CHANGE', 
+          theme 
+        },
+        '*'
+      );
+    }
+  } catch (error) {
+    console.error('Failed to sync theme with LuvvixAI:', error);
+  }
+}
+
+/**
+ * Listen for theme changes from LuvvixAI
+ */
+export function listenForThemeChanges(setTheme: (theme: string) => void): () => void {
+  const handleMessage = (event: MessageEvent) => {
+    if (event.data && event.data.type === 'THEME_CHANGE') {
+      setTheme(event.data.theme);
+    }
   };
-};
-
-export default { syncThemeWithLuvvixAI };
+  
+  window.addEventListener('message', handleMessage);
+  
+  // Return cleanup function
+  return () => {
+    window.removeEventListener('message', handleMessage);
+  };
+}

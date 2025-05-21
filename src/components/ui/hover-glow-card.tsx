@@ -1,9 +1,9 @@
 
 import { cn } from "@/lib/utils";
 import React, { useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, HTMLMotionProps } from "framer-motion";
 
-export interface HoverGlowCardProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface HoverGlowCardProps extends Omit<HTMLMotionProps<"div">, "ref"> {
   children: React.ReactNode;
   className?: string;
 }
@@ -40,9 +40,6 @@ export const HoverGlowCard: React.FC<HoverGlowCardProps> = ({
     setOpacity(0);
   };
 
-  // Filter out non-Motion props
-  const motionProps = { ...props };
-
   return (
     <motion.div
       ref={divRef}
@@ -53,7 +50,7 @@ export const HoverGlowCard: React.FC<HoverGlowCardProps> = ({
         "relative overflow-hidden rounded-xl border bg-gradient-to-b from-neutral-50 to-neutral-100 dark:from-neutral-800/30 dark:to-neutral-900/30 dark:border-neutral-800",
         className
       )}
-      {...motionProps}
+      {...props}
     >
       {children}
       {isMounted && (

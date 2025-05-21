@@ -1,76 +1,110 @@
 
 "use client";
-
-import * as React from "react";
+import React from "react";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { motion, HTMLMotionProps } from "framer-motion";
 
-interface HoverGlowCardProps extends HTMLMotionProps<"div"> {
-  children: React.ReactNode;
-  className?: string;
+export const HoverGlowCard = ({
+  children,
+  className,
+  containerClassName,
+  style,
+  cardStyle,
+  shadowBlurRadius = 24,
+  shadowColor = "rgba(0, 0, 0, 0.35)",
+  shadowOpacity = 0.5,
+  shadowHoverOpacity = 1,
+  shadowSpread = 8,
+  shadowHoverSpread = 16,
+  glowRadius = 50,
+  glowHoverRadius = 80,
+  glowColor = "rgba(255, 255, 255, 0.6)",
+  glowHoverColor = "rgba(255, 255, 255, 0.8)",
+  throttleAmount = 0.1, // Controls the animation smoothness. Lower values are smoother.
+  containerStyle,
+  ...rest
+}: React.HTMLAttributes<HTMLDivElement> & {
+  containerClassName?: string;
+  cardStyle?: React.CSSProperties;
+  shadowBlurRadius?: number;
+  shadowColor?: string;
+  shadowOpacity?: number;
+  shadowHoverOpacity?: number;
+  shadowSpread?: number;
+  shadowHoverSpread?: number;
+  glowRadius?: number;
+  glowHoverRadius?: number;
   glowColor?: string;
-}
+  glowHoverColor?: string;
+  throttleAmount?: number;
+  containerStyle?: React.CSSProperties;
+}) => {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useTransform(y, [-300, 300], [8, -8]);
+  const rotateY = useTransform(x, [-300, 300], [-8, 8]);
 
-export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps>(
-  ({ className, glowColor = "rgba(125, 125, 255, 0.4)", children, ...props }, ref) => {
-    const [isMounted, setIsMounted] = React.useState(false);
-    const [position, setPosition] = React.useState({ x: 0, y: 0 });
-    const [opacity, setOpacity] = React.useState(0);
-    const cardRef = React.useRef<HTMLDivElement>(null);
+  const diagonalMovement = {
+    x: useSpring(x, { stiffness: 150, damping: 20 }),
+    y: useSpring(y, { stiffness: 150, damping: 20 }),
+  };
 
-    React.useEffect(() => {
-      setIsMounted(true);
-    }, []);
+  function onMouseMove(e: React.MouseEvent<HTMLDivElement> | TouchEvent) {
+    // Check for MouseEvent specifically
+    if ('clientX' in e) {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      const mouseX = e.clientX - rect.left - rect.width / 2;
+      const mouseY = e.clientY - rect.top - rect.height / 2;
+      x.set(mouseX * throttleAmount);
+      y.set(mouseY * throttleAmount);
+    } 
+  }
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!cardRef.current) return;
-      
-      const rect = cardRef.current.getBoundingClientRect();
-      setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-      setOpacity(1);
-    };
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
 
-    const handleMouseLeave = () => {
-      setOpacity(0);
-    };
+  return (
+    <div
+      className={cn("relative", containerClassName)}
+      onMouseMove={onMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={containerStyle}
+    >
+      <motion.div
+        className={cn(
+          "relative z-20 transition-all duration-500 ease-out",
+          className
+        )}
+        style={{
+          ...style,
+          rotateX,
+          rotateY,
+          translateX: diagonalMovement.x,
+          translateY: diagonalMovement.y,
+        }}
+        {...rest}
+      >
+        <div
+          className="absolute inset-0 bg-gradient-to-br rounded-md opacity-0 group-hover:opacity-100 blur transition duration-500"
+          style={{
+            background: `radial-gradient(circle at center, ${glowColor}, transparent ${glowRadius}%)`,
+            boxShadow: `0 0 ${shadowBlurRadius}px ${shadowSpread}px ${shadowColor}`,
+            opacity: shadowOpacity,
+          }}
+        />
 
-    // For SSR and initial rendering when JS is not yet running
-    if (!isMounted) {
-      return (
-        <div 
-          ref={ref} 
-          className={cn("relative overflow-hidden", className)}
+        {/* Card Content */}
+        <div
+          className="relative z-10 w-full h-full bg-card rounded-xl backdrop-blur-md overflow-hidden"
+          style={cardStyle}
         >
           {children}
         </div>
-      );
-    }
-
-    return (
-      <motion.div
-        ref={cardRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        className={cn("relative overflow-hidden", className)}
-        {...props}
-      >
-        <motion.div
-          style={{
-            position: "absolute",
-            background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, ${glowColor}, transparent 40%)`,
-            width: "100%",
-            height: "100%",
-            opacity: opacity,
-            top: 0,
-            left: 0,
-            pointerEvents: "none",
-            zIndex: 1,
-          }}
-        />
-        <div style={{ position: "relative", zIndex: 2 }}>{children}</div>
       </motion.div>
-    );
-  }
-);
+    </div>
+  );
+};
 
-HoverGlowCard.displayName = "HoverGlowCard";
+export default HoverGlowCard;

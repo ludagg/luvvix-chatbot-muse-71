@@ -1,20 +1,19 @@
 
-import { useToast as useShadcnToast } from "@/hooks/use-toast";
-import { toast as shadcnToast } from "@/hooks/use-toast";
+// Import directly from the UI components
+import { useToast as useUIToast } from "@/components/ui/use-toast";
+import { toast as uiToast } from "@/components/ui/use-toast";
+import { toast as sonnerToast } from "sonner";
 
-type ToastProps = {
+export type ToastProps = {
   title?: string;
   description?: string;
   variant?: "default" | "destructive";
   duration?: number;
 };
 
-export const useToast = useShadcnToast;
-
-export const toast = (props: ToastProps) => {
-  return shadcnToast(props);
-};
-
-export const sonnerToast = shadcnToast;
+// Export the hooks and functions
+export const useToast = useUIToast;
+export const toast = uiToast;
+export { sonnerToast };
 
 export type { ToastProps };

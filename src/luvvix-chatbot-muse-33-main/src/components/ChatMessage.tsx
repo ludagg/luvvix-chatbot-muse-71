@@ -60,13 +60,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
             <span>LuvviX AI est en train de réfléchir...</span>
           </div>
         ) : (
-          <ReactMarkdown
-            className="prose dark:prose-invert prose-p:my-1 prose-headings:mb-2 prose-headings:mt-4 max-w-none"
-            remarkPlugins={[remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-          >
-            {message.content}
-          </ReactMarkdown>
+          <div className="prose dark:prose-invert prose-p:my-1 prose-headings:mb-2 prose-headings:mt-4 max-w-none">
+            <ReactMarkdown
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+            >
+              {message.content}
+            </ReactMarkdown>
+          </div>
         )}
       </div>
     </motion.div>

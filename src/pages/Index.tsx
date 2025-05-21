@@ -1,3 +1,4 @@
+
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Ecosystem from "@/components/Ecosystem";
@@ -14,7 +15,7 @@ import FormsPromo from "@/components/forms/FormsPromo";
 import CeoSection from "@/components/CeoSection";
 import AIStudioPromo from "@/components/ai-studio/AIStudioPromo";
 import LuvvixIdPromo from "@/components/LuvvixIdPromo";
-import { Bot } from "lucide-react";
+import { Bot, FileText, Cloud, Newspaper, Sparkles, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { HoverGlowCard } from "@/components/ui/hover-glow-card";
@@ -101,8 +102,7 @@ const Index = () => {
             <div className="text-center mt-10">
               <Link to="/ecosystem">
                 <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white">
-                  <AppWindow className="w-5 h-5 mr-2" /> 
-                  Explorer l'écosystème complet
+                  <span className="mr-2">Explorer l'écosystème complet</span>
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>

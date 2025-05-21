@@ -55,8 +55,7 @@
         
         // Create iframe
         const iframe = document.createElement('iframe');
-        // Utilisation du chemin absolu pour éviter les erreurs 404
-        iframe.src = `${window.location.origin}/ai-embed/${agentId}`;
+        iframe.src = `https://luvvix.it.com/ai-embed/${agentId}`;
         iframe.style.width = '100%';
         iframe.style.height = '100%';
         iframe.style.border = 'none';

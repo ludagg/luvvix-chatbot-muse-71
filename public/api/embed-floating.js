@@ -80,21 +80,19 @@
         widget.style.cssText = `
           ${posStyles[this.position]};
           position: fixed;
-          width: 380px;
-          height: 550px;
+          width: 350px;
+          height: 500px;
           background-color: white;
           border-radius: 12px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
           z-index: 99997;
           overflow: hidden;
           display: none;
-          opacity: 0;
           transition: all 0.3s ease;
         `;
         
         const iframe = document.createElement('iframe');
-        // Utilisation du chemin absolu pour éviter les erreurs 404
-        iframe.src = `${window.location.origin}/ai-embed/${agentId}`;
+        iframe.src = `https://luvvix.it.com/ai-embed/${agentId}`;
         iframe.style.cssText = `
           width: 100%;
           height: 100%;

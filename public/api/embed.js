@@ -12,8 +12,7 @@
       
       createIframe: function(container, agentId) {
         const iframe = document.createElement('iframe');
-        // Utilisation du chemin absolu pour éviter les erreurs 404
-        iframe.src = `${window.location.origin}/ai-embed/${agentId}`;
+        iframe.src = `https://luvvix.it.com/ai-embed/${agentId}`;
         iframe.width = '100%';
         iframe.height = '600px';
         iframe.style.border = '1px solid #e5e7eb';

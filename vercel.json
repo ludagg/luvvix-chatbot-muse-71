@@ -29,6 +29,10 @@
       "destination": "https://luvvi-streammix.vercel.app/:path*"
     },
     {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

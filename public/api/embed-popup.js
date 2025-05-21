@@ -55,8 +55,8 @@
         
         // Create iframe
         const iframe = document.createElement('iframe');
-        // Correction de l'URL pour utiliser le domaine du site actuel
-        iframe.src = `${window.location.protocol}//${window.location.host}/ai-embed/${agentId}`;
+        // Utilisation du chemin absolu pour éviter les erreurs 404
+        iframe.src = `${window.location.origin}/ai-embed/${agentId}`;
         iframe.style.width = '100%';
         iframe.style.height = '100%';
         iframe.style.border = 'none';

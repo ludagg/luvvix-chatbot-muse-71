@@ -10,7 +10,7 @@ import AIStudioDashboardPage from './pages/AIStudioDashboardPage';
 import EcosystemPage from './pages/EcosystemPage';
 
 const App = () => {
-  const { loading, user } = useAuth(); // Changed from isLoading to loading to match the useAuth hook
+  const { loading, user } = useAuth();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -21,18 +21,15 @@ const App = () => {
     return null;
   }
 
+  // The ThemeProvider now wraps the entire Routes component to ensure all components have access to the theme context
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-react-ts-gh-pages">
       <Routes>
         <Route path="/" element={<Index />} />
-        
-        {/* Ajoutez cette nouvelle route pour l'écosystème */}
         <Route path="/ecosystem" element={<EcosystemPage />} />
-        
         <Route path="/news" element={<NewsPage />} />
         <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <Navigate to="/" />} />
         <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
-        
         <Route path="/ai-studio" element={user ? <AIStudioDashboardPage /> : <Navigate to="/auth" />} />
       </Routes>
     </ThemeProvider>

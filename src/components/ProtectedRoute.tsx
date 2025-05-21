@@ -6,9 +6,10 @@ import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: ReactNode;
+  adminOnly?: boolean;
 }
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, adminOnly = false }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   const [initialCheckDone, setInitialCheckDone] = useState(false);
@@ -36,7 +37,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     return <Navigate to={`/auth?return_to=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
-  // Render children if authenticated
+  // If adminOnly is true, check if the user has admin privileges
+  if (adminOnly && (!user.app_metadata?.role || user.app_metadata.role !== 'admin')) {
+    console.log('User is not an admin, redirecting to dashboard');
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Render children if authenticated (and if admin check passes when needed)
   return <>{children}</>;
 };
 

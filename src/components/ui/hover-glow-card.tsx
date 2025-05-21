@@ -3,9 +3,9 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { motion, HTMLMotionProps } from "framer-motion";
 
-interface HoverGlowCardProps extends React.HTMLAttributes<HTMLDivElement> {
+interface HoverGlowCardProps extends Omit<HTMLMotionProps<"div">, "children"> {
   children: React.ReactNode;
   className?: string;
   glowColor?: string;

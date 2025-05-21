@@ -152,10 +152,14 @@ const Navbar = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden pt-4 pb-3 animate-fade-in bg-[#1A1F2C] mt-4 rounded-lg">
             <div className="flex flex-col space-y-4 p-4">
+<Link to="/" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
+                Accueil
+              </Link>
               <Link to="/forms" className="text-sm font-medium text-white/80 hover:text-white transition-colors flex items-center">
                 <FileText className="w-4 h-4 mr-1" />
                 Forms
               </Link>
+              
               <Link to="/ai-studio" className="text-sm font-medium flex items-center text-indigo-300 hover:text-indigo-200 transition-colors">
                 <Bot className="w-4 h-4 mr-1" />
                 AI Studio

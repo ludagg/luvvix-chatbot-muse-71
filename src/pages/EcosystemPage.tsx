@@ -22,7 +22,10 @@ import {
   Sparkles,
   BookOpen,
   Heart,
-  FolderKanban
+  FolderKanban,
+  UserPlus,
+  Shield,
+  Clock
 } from 'lucide-react';
 
 const EcosystemPage = () => {
@@ -246,6 +249,70 @@ const EcosystemPage = () => {
             </p>
           </div>
           
+          {/* Bannière d'inscription pour les utilisateurs non connectés */}
+          {!user && (
+            <Card className="mb-8 border border-slate-200 dark:border-slate-800 bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-2xl flex items-center gap-2">
+                  <UserPlus className="h-6 w-6" />
+                  Créez votre compte LuvviX ID
+                </CardTitle>
+                <CardDescription className="text-white/90">
+                  Accédez à l'ensemble de l'écosystème avec un seul compte sécurisé
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-6">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-md bg-white/20">
+                      <Shield className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Connexion unifiée</h3>
+                      <p className="text-sm text-white/80">Un seul compte pour toutes les applications LuvviX</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-md bg-white/20">
+                      <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Personnalisation</h3>
+                      <p className="text-sm text-white/80">Expérience adaptée à vos préférences et besoins</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-md bg-white/20">
+                      <Clock className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Suivi d'activité</h3>
+                      <p className="text-sm text-white/80">Suivez votre utilisation à travers tous nos produits</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:justify-end">
+                  <Button 
+                    variant="outline" 
+                    className="bg-white/10 text-white border-white/20 hover:bg-white/20"
+                    onClick={() => navigate('/auth')}
+                  >
+                    Se connecter
+                  </Button>
+                  <Button 
+                    className="bg-white text-indigo-600 hover:bg-white/90"
+                    onClick={() => navigate('/auth?signup=true')}
+                  >
+                    Créer un compte LuvviX ID
+                  </Button>
+                </div>
+              </CardFooter>
+            </Card>
+          )}
+          
+          {/* Reste du contenu de la page écosystème */}
           {user && (
             <Card className="mb-8 border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 shadow-md">
               <CardHeader>

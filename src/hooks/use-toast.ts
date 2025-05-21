@@ -1,3 +1,4 @@
+
 import * as React from "react"
 
 import type {
@@ -5,8 +6,8 @@ import type {
   ToastProps,
 } from "@/components/ui/toast"
 
-const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_LIMIT = 5  // Increased limit for better UX
+const TOAST_REMOVE_DELAY = 5000 // Decreased to 5 seconds for better UX
 
 type ToasterToast = ToastProps & {
   id: string
@@ -170,6 +171,46 @@ function toast({ ...props }: Toast) {
 
 // Import toast component from sonner
 import { toast as sonnerToast } from "sonner";
+
+// Enhanced sonner toast configuration
+sonnerToast.success = (message, options) => {
+  return sonnerToast(message, {
+    ...options,
+    style: {
+      background: 'linear-gradient(to right, rgba(110, 89, 165, 0.1), rgba(139, 135, 245, 0.1))',
+      color: '#fff',
+      border: '1px solid rgba(139, 135, 245, 0.2)',
+      backdropFilter: 'blur(8px)',
+      ...options?.style,
+    },
+  });
+};
+
+sonnerToast.error = (message, options) => {
+  return sonnerToast(message, {
+    ...options,
+    style: {
+      background: 'linear-gradient(to right, rgba(239, 68, 68, 0.1), rgba(255, 114, 94, 0.1))',
+      color: '#fff',
+      border: '1px solid rgba(239, 68, 68, 0.2)',
+      backdropFilter: 'blur(8px)',
+      ...options?.style,
+    },
+  });
+};
+
+sonnerToast.info = (message, options) => {
+  return sonnerToast(message, {
+    ...options,
+    style: {
+      background: 'linear-gradient(to right, rgba(51, 195, 240, 0.1), rgba(96, 165, 250, 0.1))',
+      color: '#fff',
+      border: '1px solid rgba(51, 195, 240, 0.2)',
+      backdropFilter: 'blur(8px)',
+      ...options?.style,
+    },
+  });
+};
 
 export { sonnerToast };
 

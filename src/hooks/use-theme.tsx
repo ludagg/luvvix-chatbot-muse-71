@@ -49,6 +49,47 @@ export function ThemeProvider({
     root.setAttribute('data-theme', 'light');
   }, [theme]);
 
+  // Apply any additional custom styling for AI Studio UI
+  useEffect(() => {
+    // Apply additional global styles for AI Studio's modern UI
+    const root = window.document.documentElement;
+    
+    // Ensure smooth scrolling for page transitions
+    root.style.scrollBehavior = 'smooth';
+    
+    // Enhance the scrollbar styling
+    const style = document.createElement('style');
+    style.textContent = `
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 4px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+      
+      body {
+        overflow-x: hidden;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   const value = {
     theme,
     resolvedTheme,

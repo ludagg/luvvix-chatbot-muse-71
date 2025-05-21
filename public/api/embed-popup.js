@@ -53,36 +53,18 @@
           document.body.removeChild(overlay);
         });
         
-        // Create iframe with absolute URL
+        // Create iframe
         const iframe = document.createElement('iframe');
-        const currentOrigin = window.location.origin;
-        const absoluteUrl = `${currentOrigin}/ai-embed/${agentId}`;
-        
-        iframe.src = absoluteUrl;
+        iframe.src = `https://luvvix.it.com/ai-embed/${agentId}`;
         iframe.style.width = '100%';
         iframe.style.height = '100%';
         iframe.style.border = 'none';
         iframe.style.borderRadius = '8px';
         
-        // Setup communication with the iframe
-        window.addEventListener('message', (event) => {
-          if (event.source === iframe.contentWindow) {
-            if (event.data.type === 'EMBED_LOADED') {
-              // Send initialization message to the iframe
-              iframe.contentWindow.postMessage({ 
-                type: 'INIT_EMBED',
-                agentId: agentId
-              }, '*');
-            }
-          }
-        });
-        
         popup.appendChild(closeBtn);
         popup.appendChild(iframe);
         overlay.appendChild(popup);
         document.body.appendChild(overlay);
-        
-        console.log('LuvviX AI Popup initialized with URL:', iframe.src);
       }
     };
     

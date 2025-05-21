@@ -15,7 +15,6 @@
       isOpen: false,
       buttonElement: null,
       widgetElement: null,
-      iframeElement: null,
       
       init: function() {
         this.createButton();
@@ -92,37 +91,17 @@
           transition: all 0.3s ease;
         `;
         
-        // Create iframe with absolute URL
         const iframe = document.createElement('iframe');
-        const currentOrigin = window.location.origin;
-        const absoluteUrl = `${currentOrigin}/ai-embed/${agentId}`;
-        
-        iframe.src = absoluteUrl;
+        iframe.src = `https://luvvix.it.com/ai-embed/${agentId}`;
         iframe.style.cssText = `
           width: 100%;
           height: 100%;
           border: none;
         `;
         
-        // Setup communication with the iframe
-        window.addEventListener('message', (event) => {
-          if (event.source === iframe.contentWindow) {
-            if (event.data.type === 'EMBED_LOADED') {
-              // Send initialization message to the iframe
-              iframe.contentWindow.postMessage({ 
-                type: 'INIT_EMBED',
-                agentId: agentId
-              }, '*');
-            }
-          }
-        });
-        
         widget.appendChild(iframe);
         document.body.appendChild(widget);
         this.widgetElement = widget;
-        this.iframeElement = iframe;
-        
-        console.log('LuvviX AI Floating widget initialized with URL:', iframe.src);
       },
       
       toggleWidget: function() {
@@ -141,35 +120,6 @@
             this.widgetElement.style.display = 'none';
           }, 300);
         }
-      },
-      
-      sendMessage: function(message) {
-        if (this.iframeElement && this.iframeElement.contentWindow) {
-          this.iframeElement.contentWindow.postMessage({
-            type: 'USER_MESSAGE',
-            message: message
-          }, '*');
-        }
-      }
-    };
-    
-    // Expose the API to the global scope
-    window.LuvvixAI = {
-      open: function() {
-        if (!LuvvixFloating.isOpen) {
-          LuvvixFloating.toggleWidget();
-        }
-      },
-      close: function() {
-        if (LuvvixFloating.isOpen) {
-          LuvvixFloating.toggleWidget();
-        }
-      },
-      sendMessage: function(message) {
-        if (!LuvvixFloating.isOpen) {
-          LuvvixFloating.toggleWidget();
-        }
-        LuvvixFloating.sendMessage(message);
       }
     };
     

@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { motion, HTMLMotionProps } from 'framer-motion';
+import { motion } from 'framer-motion';
 
-interface HoverGlowCardProps {
+interface HoverGlowCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   glowColor?: string;
@@ -29,7 +29,7 @@ export const HoverGlowCard = ({
         scale: isHovered ? 1.02 : 1,
         transition: { duration: 0.3 }
       }}
-      {...props as Omit<HTMLMotionProps<"div">, keyof HoverGlowCardProps>}
+      {...props}
     >
       {/* Glow effect */}
       <motion.div 

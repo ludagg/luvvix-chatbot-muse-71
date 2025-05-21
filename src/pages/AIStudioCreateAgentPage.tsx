@@ -37,13 +37,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast"; // Fixed import path
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Loader2, Bot, Sparkles, Upload, Globe, FileText } from "lucide-react";
-import ContentImportForm from "@/components/ai-studio/ContentImportForm";
+import { Loader2, Bot, Sparkles, Upload, TextQuote, Globe } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
@@ -97,20 +96,6 @@ const AIStudioCreateAgentPage = () => {
   });
   
   const isPaid = form.watch("isPaid");
-  
-  const handleContentImported = (content: string, source: string) => {
-    const currentContent = form.getValues("contextText");
-    const sourceInfo = `Source: ${source}\n\n`;
-    const newContent = currentContent 
-      ? `${currentContent}\n\n--- Contenu importé ---\n${sourceInfo}${content}`
-      : `--- Contenu importé ---\n${sourceInfo}${content}`;
-      
-    form.setValue("contextText", newContent);
-    toast({
-      title: "Contenu importé",
-      description: `Le contenu de '${source}' a été ajouté au contexte de l'agent.`,
-    });
-  };
   
   const onSubmit = async (values: FormValues) => {
     if (!user) {
@@ -343,11 +328,6 @@ const AIStudioCreateAgentPage = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-medium mb-3">Importer du contenu</h3>
-                        <ContentImportForm onContentImported={handleContentImported} />
-                      </div>
-                      
                       <FormField
                         control={form.control}
                         name="contextText"
@@ -368,6 +348,21 @@ const AIStudioCreateAgentPage = () => {
                           </FormItem>
                         )}
                       />
+                      
+                      <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-8 text-center">
+                        <div className="flex justify-center mb-4">
+                          <div className="bg-slate-200 dark:bg-slate-700 p-3 rounded-full">
+                            <Upload className="h-6 w-6 text-slate-600 dark:text-slate-300" />
+                          </div>
+                        </div>
+                        <h3 className="text-lg font-medium mb-2">Importer des documents</h3>
+                        <p className="text-slate-500 dark:text-slate-400 mb-4">
+                          Prochainement: importez des PDF, des fichiers texte ou des URL pour enrichir les connaissances de votre agent
+                        </p>
+                        <Button variant="outline" disabled>
+                          Importer des fichiers
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                   

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -20,7 +21,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<boolean>;
   globalSignOut: () => Promise<boolean>;
-  loading: boolean; // Changed from isLoading to loading to be consistent
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true); // Changed from isLoading to loading
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -96,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id);
       }
-      setLoading(false); // Changed from isLoading to loading
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -229,7 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signOut,
       globalSignOut,
-      loading // Changed from isLoading to loading
+      loading
     }}>
       {children}
     </AuthContext.Provider>

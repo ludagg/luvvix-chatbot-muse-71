@@ -28,23 +28,13 @@ const Ecosystem = () => {
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
 
   return (
-    <section id="ecosystem" className="py-16 bg-gray-100 dark:bg-gray-900">
-      <div className="container mx-auto px-4 text-center">
-        <div className="mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Écosystème LuvviX</h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Découvrez notre suite complète d'applications et de services conçus pour transformer votre expérience digitale
-          </p>
-          <div className="mt-6">
-            <Button asChild>
-              <Link to="/ecosystem" className="inline-flex items-center gap-2">
-                Découvrir l'écosystème
-                <ChevronRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-        
+    <section id="ecosystem" className="py-16 pt-24 bg-white dark:bg-gray-900">
+      <div className="container mx-auto px-4">
+        <h2 className="section-heading">Notre Écosystème</h2>
+        <p className="section-subheading">
+          Explorez notre suite d'outils et de services conçus pour répondre à tous vos besoins numériques
+        </p>
+
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           initial={{ opacity: 0 }}

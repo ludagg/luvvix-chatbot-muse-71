@@ -16,7 +16,16 @@ import {
   FileText, 
   Info, 
   HelpCircle, 
-  Phone
+  Phone,
+  Bot,
+  Cloud,
+  Calendar,
+  Briefcase,
+  Handshake,
+  TrendingUp,
+  FileCheck,
+  Cookie,
+  CheckSquare
 } from "lucide-react";
 
 const Footer = () => {

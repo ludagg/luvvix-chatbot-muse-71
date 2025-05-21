@@ -186,11 +186,11 @@ const Navbar = () => {
               
               {/* Theme Toggle */}
               <button 
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                onClick={() => setTheme(theme === 'light' ? 'system' : 'light')}
                 className="p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-colors"
                 aria-label="Toggle theme"
               >
-                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               </button>
               
               {/* Search Button */}

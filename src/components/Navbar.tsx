@@ -64,7 +64,7 @@ const Navbar = () => {
                 <NavigationMenuTrigger 
                   className={cn(
                     "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800",
-                    isScrolled ? 'text-gray-700 dark:text-gray-200' : 'text-white dark:text-gray-200'
+                    isScrolled ? 'text-gray-700 dark:text-gray-200' : 'text-gray dark:text-gray-200'
                   )}
                 >
                   <Sparkles className="w-4 h-4 mr-2" />

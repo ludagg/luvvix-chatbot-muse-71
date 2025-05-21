@@ -1,98 +1,67 @@
 
-"use client";
-
-import * as React from "react";
 import { cn } from "@/lib/utils";
-import { motion, HTMLMotionProps } from "framer-motion";
+import React, { useRef, useState } from "react";
+import { motion } from "framer-motion";
 
-interface HoverGlowCardProps extends HTMLMotionProps<"div"> {
+export interface HoverGlowCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
-  glowColor?: string;
 }
 
-export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps>(
-  ({ className, glowColor = "rgba(125, 125, 255, 0.4)", children, ...props }, ref) => {
-    const [isMounted, setIsMounted] = React.useState(false);
-    const [position, setPosition] = React.useState({ x: 0, y: 0 });
-    const [opacity, setOpacity] = React.useState(0);
-    const cardRef = React.useRef<HTMLDivElement>(null);
+export const HoverGlowCard: React.FC<HoverGlowCardProps> = ({
+  children,
+  className,
+  ...props
+}) => {
+  const divRef = useRef<HTMLDivElement>(null);
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [opacity, setOpacity] = useState<number>(0);
 
-    React.useEffect(() => {
-      setIsMounted(true);
-    }, []);
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!cardRef.current) return;
-      
-      const rect = cardRef.current.getBoundingClientRect();
-      setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-      setOpacity(1);
-    };
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!divRef.current) return;
+    
+    const rect = divRef.current.getBoundingClientRect();
+    setPosition({ 
+      x: e.clientX - rect.left, 
+      y: e.clientY - rect.top 
+    });
+  };
 
-    const handleMouseLeave = () => {
-      setOpacity(0);
-    };
+  const handleMouseEnter = () => {
+    setOpacity(1);
+  };
 
-    // Pour SSR et rendu initial quand JS n'est pas encore en cours d'exécution
-    if (!isMounted) {
-      // Only extract properties that we know exist in props
-      const { 
-        style, 
-        "data-framer-appear-id": _, 
-        onBeforeLayoutMeasure, 
-        onLayoutMeasure,
-        onPanSessionStart,
-        onUpdate,
-        onAnimationStart,
-        onAnimationComplete,
-        onLayoutAnimationStart,
-        onLayoutAnimationComplete,
-        transition,
-        initial,
-        animate,
-        exit,
-        variants,
-        // Remove transformValues as it doesn't exist on the props type
-        ...safeProps
-      } = props;
+  const handleMouseLeave = () => {
+    setOpacity(0);
+  };
 
-      return (
-        <div 
-          ref={ref} 
-          className={cn("relative overflow-hidden", className)}
-          {...safeProps}
-        >
-          {children}
-        </div>
-      );
-    }
-
-    return (
-      <motion.div
-        ref={cardRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        className={cn("relative overflow-hidden", className)}
-        {...props}
-      >
-        <motion.div
+  return (
+    <motion.div
+      ref={divRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={cn(
+        "relative overflow-hidden rounded-xl border bg-gradient-to-b from-neutral-50 to-neutral-100 dark:from-neutral-800/30 dark:to-neutral-900/30 dark:border-neutral-800",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      {isMounted && (
+        <div
+          className="pointer-events-none absolute -inset-px opacity-0 transition duration-300"
           style={{
-            position: "absolute",
-            background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, ${glowColor}, transparent 40%)`,
-            width: "100%",
-            height: "100%",
-            opacity: opacity,
-            top: 0,
-            left: 0,
-            pointerEvents: "none",
-            zIndex: 1,
+            opacity,
+            background: `radial-gradient(500px circle at ${position.x}px ${position.y}px, rgba(120, 100, 255, 0.1), transparent)`,
           }}
         />
-        <div style={{ position: "relative", zIndex: 2 }}>{children}</div>
-      </motion.div>
-    );
-  }
-);
-
-HoverGlowCard.displayName = "HoverGlowCard";
+      )}
+    </motion.div>
+  );
+};

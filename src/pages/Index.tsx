@@ -1,4 +1,3 @@
-
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Ecosystem from "@/components/Ecosystem";
@@ -15,7 +14,7 @@ import FormsPromo from "@/components/forms/FormsPromo";
 import CeoSection from "@/components/CeoSection";
 import AIStudioPromo from "@/components/ai-studio/AIStudioPromo";
 import LuvvixIdPromo from "@/components/LuvvixIdPromo";
-import { Bot, FileText, Newspaper, Cloud, Sparkles, AppWindow, ArrowRight } from "lucide-react";
+import { Bot } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { HoverGlowCard } from "@/components/ui/hover-glow-card";
@@ -50,9 +49,9 @@ const Index = () => {
                   <div className="w-16 h-16 flex items-center justify-center bg-violet-100 dark:bg-violet-900/30 rounded-full mb-4">
                     <Bot className="w-8 h-8 text-violet-600 dark:text-violet-400" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">AI Studio</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">Créez vos propres agents IA pour automatiser vos tâches.</p>
-                  <Link to="/ai-studio">
+                  <h3 className="text-lg font-semibold mb-2">Luvvix AI</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Discutez avec votre assistant IA personnel pour répondre à toutes vos questions.</p>
+                  <Link to="/ai">
                     <Button variant="outline" size="sm">Découvrir</Button>
                   </Link>
                 </div>

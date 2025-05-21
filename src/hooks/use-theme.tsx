@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { createContext, useContext, useEffect, useState } from 'react';
 
@@ -89,6 +88,13 @@ export function ThemeProvider({
       document.head.removeChild(style);
     };
   }, []);
+
+  // Sync the theme with Luvvix AI module
+  useEffect(() => {
+    // Sync the theme with Luvvix AI module
+    const cleanup = syncThemeWithLuvvixAI();
+    return cleanup;
+  }, [theme]);
 
   const value = {
     theme,

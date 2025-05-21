@@ -7,6 +7,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import App from './App.tsx';
 import './index.css';
+import './luvvix-chatbot-muse-33-main/src/index.css';
 
 // Create a query client for React Query
 const queryClient = new QueryClient({

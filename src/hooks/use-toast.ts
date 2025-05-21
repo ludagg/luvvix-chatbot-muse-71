@@ -18,68 +18,115 @@ type ToasterToast = ToastProps & {
 const TOAST_LIMIT = 5;
 let TOASTS: ToasterToast[] = [];
 
+interface ToastOptions {
+  description?: string;
+  variant?: "default" | "destructive";
+  [key: string]: any;
+}
+
 const useToast = () => {
-  // Standardized toast function that handles all toast variants
-  const toast = (props: ToasterToast | string, options?: any) => {
-    // Handle different call patterns
-    if (typeof props === 'string') {
-      // Toast was called with title as first arg and options as second
-      const title = props;
+  // Helper function to generate a unique ID
+  const generateId = () => Math.random().toString(36).substring(2, 9);
+  
+  // Base toast function that handles string and object formats
+  const toast = (titleOrProps: string | Partial<ToasterToast>, options?: ToastOptions) => {
+    if (typeof titleOrProps === 'string') {
+      // Called with title as a string
+      const title = titleOrProps;
+      const id = generateId();
+      const variant = options?.variant || "default";
       const description = options?.description;
       
-      if (options?.variant === 'destructive') {
+      // Call the appropriate sonner toast function
+      if (variant === 'destructive') {
         sonnerToast.error(title, { description });
       } else {
         sonnerToast(title, { description });
       }
       
-      // For compatibility with shadcn toast component
-      const id = Math.random().toString(36).substring(2, 9);
+      // Create toast object for shadcn compatibility
       const newToast = { 
         id, 
         title, 
         description, 
+        variant,
         ...options 
-      };
+      } as ToasterToast;
       
       TOASTS = [newToast, ...TOASTS].slice(0, TOAST_LIMIT);
       return id;
     } else {
-      // Toast was called with full props object
-      if (props.variant === "destructive") {
-        sonnerToast.error(props.title as string, {
-          description: props.description,
+      // Called with an object
+      // Create a new object with an ID if it doesn't have one
+      const id = titleOrProps.id || generateId();
+      const newToast = { ...titleOrProps, id } as ToasterToast;
+      
+      // Call the appropriate sonner toast function
+      if (newToast.variant === "destructive") {
+        sonnerToast.error(newToast.title as string, {
+          description: newToast.description,
         });
       } else {
-        sonnerToast(props.title as string, {
-          description: props.description,
+        sonnerToast(newToast.title as string, {
+          description: newToast.description,
         });
       }
-
-      // For compatibility with shadcn toast component
-      const id = Math.random().toString(36).substring(2, 9);
-      const newToast = { id, ...props };
 
       TOASTS = [newToast, ...TOASTS].slice(0, TOAST_LIMIT);
       return id;
     }
   };
 
-  // Add convenience methods to match sonner's API
-  toast.error = (title: string, options?: any) => {
-    return toast({ title, ...options, variant: "destructive" });
+  // Add convenience methods to match sonner's API and support different calling patterns
+  toast.error = (title: string, options?: ToastOptions) => {
+    return toast(title, { ...options, variant: "destructive" });
   };
   
-  toast.success = (title: string, options?: any) => {
-    return sonnerToast.success(title, options);
+  toast.success = (title: string, options?: ToastOptions) => {
+    sonnerToast.success(title, options);
+    
+    const id = generateId();
+    const newToast = { 
+      id, 
+      title, 
+      description: options?.description,
+      ...options 
+    } as ToasterToast;
+    
+    TOASTS = [newToast, ...TOASTS].slice(0, TOAST_LIMIT);
+    return id;
   };
   
-  toast.warning = (title: string, options?: any) => {
-    return sonnerToast(title, { ...options, className: "bg-yellow-500" });
+  toast.warning = (title: string, options?: ToastOptions) => {
+    sonnerToast.warning ? 
+      sonnerToast.warning(title, options) : 
+      sonnerToast(title, { ...options, className: "bg-yellow-500" });
+    
+    const id = generateId();
+    const newToast = { 
+      id, 
+      title, 
+      description: options?.description,
+      ...options 
+    } as ToasterToast;
+    
+    TOASTS = [newToast, ...TOASTS].slice(0, TOAST_LIMIT);
+    return id;
   };
   
-  toast.info = (title: string, options?: any) => {
-    return sonnerToast.info(title, options);
+  toast.info = (title: string, options?: ToastOptions) => {
+    sonnerToast.info(title, options);
+    
+    const id = generateId();
+    const newToast = { 
+      id, 
+      title, 
+      description: options?.description,
+      ...options 
+    } as ToasterToast;
+    
+    TOASTS = [newToast, ...TOASTS].slice(0, TOAST_LIMIT);
+    return id;
   };
 
   const dismiss = (toastId?: string) => {
@@ -102,5 +149,5 @@ const useToast = () => {
 };
 
 // Export the hook and a singleton instance of toast
-const { toast } = useToast();
-export { useToast, toast };
+const { toast, dismiss, toasts } = useToast();
+export { useToast, toast, dismiss, toasts };

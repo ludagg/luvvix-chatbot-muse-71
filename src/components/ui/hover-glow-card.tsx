@@ -1,76 +1,28 @@
 
-import React from "react";
-import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import * as React from "react"
+import { cn } from "@/lib/utils"
 
-interface HoverGlowCardProps {
-  children: React.ReactNode;
-  className?: string;
-  containerClassName?: string;
-  size?: "sm" | "md" | "lg";
+export interface HoverGlowCardProps {
+  children: React.ReactNode
+  className?: string
 }
 
-export function HoverGlowCard({
-  children,
-  className,
-  containerClassName,
-  size = "md",
-}: HoverGlowCardProps) {
-  const [mousePosition, setMousePosition] = React.useState<{
-    x: number;
-    y: number;
-  }>({ x: 0, y: 0 });
-
-  const sizeStyles = {
-    sm: "p-4",
-    md: "p-6",
-    lg: "p-8",
-  };
-
-  const handleMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    // Get the position relative to the element
-    const rect = e.currentTarget.getBoundingClientRect();
-    setMousePosition({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  }, []);
-
+export const HoverGlowCard = ({ children, className }: HoverGlowCardProps) => {
   return (
     <div
       className={cn(
-        "relative w-full overflow-hidden rounded-xl border bg-background",
-        containerClassName
+        "group relative h-full w-full rounded-xl bg-transparent p-0",
+        className
       )}
-      onMouseMove={handleMouseMove}
     >
       <div
-        className={cn(
-          "relative z-10 transition-colors duration-300",
-          sizeStyles[size],
-          className
-        )}
-      >
-        {children}
-      </div>
-
-      <motion.div
-        className="glow absolute left-0 top-0 z-0 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary/20 to-primary/5 opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100"
-        animate={{
-          x: mousePosition.x,
-          y: mousePosition.y,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 100,
-          damping: 30,
-          mass: 0.5,
-        }}
-        style={{
-          pointerEvents: 'none',  // Fix: Prevent it from capturing mouse events
-          position: 'absolute',  // Fix: Ensure absolute positioning
-        }}
+        aria-hidden="true"
+        className="absolute inset-0 rounded-xl bg-gradient-to-t from-neutral-50 via-neutral-100 to-neutral-50 opacity-0 blur-2xl transition duration-300 group-hover:opacity-100 dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900"
       />
+      <div className="absolute inset-0.5 rounded-xl bg-gradient-to-b from-neutral-50 to-neutral-100 p-px dark:from-neutral-800 dark:to-neutral-900">
+        <div className="absolute inset-0 rounded-xl bg-gradient-to-t from-neutral-50 via-neutral-100 to-neutral-50 opacity-0 transition duration-300 group-hover:opacity-100 dark:from-neutral-800 dark:via-neutral-700 dark:to-neutral-800" />
+      </div>
+      <div className="relative h-full w-full rounded-xl bg-background">{children}</div>
     </div>
-  );
+  )
 }

@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { nanoid } from 'nanoid';
 import { toast } from '../hooks/use-toast';
+import useCrossAppAuth from '@/hooks/use-cross-app-auth';
 
 // Types
 interface Conversation {
@@ -48,20 +49,41 @@ interface AuthContextProps {
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
-// Mock data for demo purposes
-const DEMO_USER: User = {
-  id: '1',
-  email: 'demo@luvvix.com',
-  displayName: 'Utilisateur',
-  isPro: false
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  // Intégration avec LuvviX ID
+  const {
+    user: luvvixUser,
+    isAuthenticated,
+    isLoading: luvvixLoading,
+    login: luvvixLogin,
+    logout: luvvixLogout
+  } = useCrossAppAuth({
+    appName: 'chat',
+    autoInit: true
+  });
+
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isPro, setIsPro] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  
+  // Sync LuvviX ID user with local user
+  useEffect(() => {
+    if (isAuthenticated && luvvixUser) {
+      setUser({
+        id: luvvixUser.id || '1',
+        email: luvvixUser.email || 'utilisateur@luvvix.com',
+        displayName: luvvixUser.full_name || 'Utilisateur',
+        avatar: luvvixUser.avatar_url || undefined,
+        isPro: luvvixUser.is_pro || false
+      });
+      
+      setIsPro(luvvixUser.is_pro || false);
+    } else if (!isAuthenticated && !luvvixLoading) {
+      setUser(null);
+    }
+  }, [isAuthenticated, luvvixUser, luvvixLoading]);
   
   // Load conversations from localStorage on mount
   useEffect(() => {
@@ -105,15 +127,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [currentConversationId]);
 
-  // Auth functions
+  // Auth functions with LuvviX ID
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await luvvixLogin({
+        email,
+        password
+      });
       
-      // For demo, any email/password combo works
-      setUser(DEMO_USER);
       toast({
         title: "Connexion réussie",
         description: "Bienvenue sur LuvviX AI",
@@ -133,16 +155,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (email: string, password: string, displayName: string, age: number, country: string) => {
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // For demo, registration always succeeds
-      setUser({
-        ...DEMO_USER,
+      await luvvixLogin({
         email,
-        displayName,
-        age,
-        country
+        password,
+        signup: true,
+        metadata: {
+          full_name: displayName,
+          age,
+          country
+        }
       });
       
       toast({
@@ -162,6 +183,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
+    luvvixLogout();
     setUser(null);
     toast({
       title: "Déconnexion réussie",

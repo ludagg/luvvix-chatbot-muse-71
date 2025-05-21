@@ -9,11 +9,19 @@ interface CrossAppAuthOptions {
   autoInit?: boolean;
 }
 
+interface LoginOptions {
+  email?: string;
+  password?: string;
+  signup?: boolean;
+  metadata?: Record<string, any>;
+}
+
 interface CrossAppAuthResult {
   isAuthenticated: boolean;
   isInitialized: boolean;
+  isLoading: boolean;
   user: any | null;
-  login: (options?: { signup?: boolean }) => void;
+  login: (options?: LoginOptions) => Promise<void>;
   logout: () => void;
   globalLogout: () => void;
   getAppToken: () => Promise<string | null>;
@@ -26,6 +34,7 @@ interface CrossAppAuthResult {
 export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResult => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any | null>(null);
   const { toast } = useToast();
   
@@ -49,6 +58,8 @@ export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResul
             setUser(profile);
           });
         }
+        
+        setIsLoading(false);
       });
       
       // Ajouter un écouteur pour les changements d'authentification
@@ -81,6 +92,7 @@ export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResul
       
       if (token) {
         try {
+          setIsLoading(true);
           // On nettoie l'URL
           const newUrl = window.location.pathname;
           window.history.replaceState({}, document.title, newUrl);
@@ -103,6 +115,8 @@ export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResul
             title: "Erreur d'authentification",
             description: "Impossible de vous connecter. Veuillez réessayer.",
           });
+        } finally {
+          setIsLoading(false);
         }
       }
     };
@@ -112,9 +126,29 @@ export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResul
     }
   }, [isInitialized, toast]);
   
-  // Fonction pour rediriger vers la page de connexion
-  const login = (loginOptions?: { signup?: boolean }) => {
-    authService.redirectToLogin(loginOptions);
+  // Fonction pour se connecter avec LuvviX ID
+  const login = async (loginOptions: LoginOptions = {}) => {
+    setIsLoading(true);
+    try {
+      if (loginOptions.email && loginOptions.password) {
+        // Si email/mot de passe fournis, tentative de connexion directe
+        // (A implémenter dans le SDK LuvviX ID)
+        console.log('Direct login with credentials is not yet implemented');
+      }
+      
+      // Redirection vers la page de connexion LuvviX ID
+      authService.redirectToLogin({
+        signup: loginOptions.signup,
+        metadata: loginOptions.metadata
+      });
+      
+      // Remarque: aucun besoin de gérer le retour ici
+      // car le composant est rechargé après redirection et 
+      // l'effet checkForCallback traitera le token
+    } catch (error) {
+      setIsLoading(false);
+      throw error;
+    }
   };
   
   // Fonction pour se déconnecter de l'application actuelle
@@ -122,11 +156,6 @@ export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResul
     authService.logout();
     setIsAuthenticated(false);
     setUser(null);
-    
-    toast({
-      title: "Déconnexion réussie",
-      description: "Vous avez été déconnecté avec succès.",
-    });
   };
   
   // Fonction pour se déconnecter de toutes les applications
@@ -144,6 +173,7 @@ export const useCrossAppAuth = (options: CrossAppAuthOptions): CrossAppAuthResul
   return {
     isAuthenticated,
     isInitialized,
+    isLoading,
     user,
     login,
     logout,

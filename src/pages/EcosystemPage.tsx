@@ -348,7 +348,7 @@ const EcosystemPage = () => {
               className="w-full mb-10"
             >
               <div className="flex justify-center mb-8">
-                <TabsList className="grid grid-cols-2 md:grid-cols-6 gap-1">
+                <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-1">
                   {categories.map((category) => (
                     <TabsTrigger 
                       key={category.id} 
@@ -356,93 +356,96 @@ const EcosystemPage = () => {
                       className="flex items-center gap-2 px-4 py-2"
                     >
                       {category.icon}
-                      <span className="hidden sm:inline">{category.name}</span>
+                      <span className="hidden md:inline">{category.name}</span>
                     </TabsTrigger>
                   ))}
                 </TabsList>
               </div>
               
-              {categories.map((category) => (
-                <TabsContent key={category.id} value={category.id} className="mt-2">
-                  <div className="text-center mb-8">
-                    <h3 className="text-lg font-medium flex items-center justify-center gap-2">
-                      {category.icon}
-                      {category.name}
-                    </h3>
-                    <p className="text-gray-500 dark:text-gray-400">{category.description}</p>
-                  </div>
-                  
-                  <motion.div 
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                  >
-                    {filteredApps.map((app) => (
-                      <motion.div key={app.id} variants={itemVariants}>
-                        <Card className="h-full overflow-hidden border-2 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-300">
-                          <div className={`h-2 bg-gradient-to-r ${app.color}`}></div>
-                          <CardHeader>
-                            <div className="flex items-start justify-between">
-                              <div className={`p-3 rounded-lg bg-gradient-to-br ${app.color} text-white`}>
-                                {app.icon}
-                              </div>
-                              <div className="flex gap-1">
-                                {app.isNew && (
-                                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium">
-                                    NOUVEAU
-                                  </span>
-                                )}
-                                {app.isPopular && (
-                                  <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full text-xs font-medium flex items-center">
-                                    <Star className="h-3 w-3 mr-1" /> POPULAIRE
-                                  </span>
-                                )}
-                                {app.isPremium && (
-                                  <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-xs font-medium">
-                                    PREMIUM
-                                  </span>
-                                )}
-                                {app.isComing && (
-                                  <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium">
-                                    BIENTÔT
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <CardTitle className="mt-4">{app.name}</CardTitle>
-                            <CardDescription>{app.description}</CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <ul className="space-y-2">
-                              {app.features?.map((feature, index) => (
-                                <li key={index} className="flex items-start">
-                                  <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                                  <span className="text-sm text-gray-600 dark:text-gray-300">{feature}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </CardContent>
-                          <CardFooter>
-                            {app.isComing ? (
-                              <Button disabled className="w-full">
-                                Bientôt disponible
-                              </Button>
-                            ) : (
-                              <Link to={app.route} className="w-full">
-                                <Button className={`w-full bg-gradient-to-r ${app.color} hover:opacity-90 text-white`}>
-                                  {app.isPremium ? "Essai gratuit" : "Accéder"}
-                                  <ArrowRight className="ml-2 h-4 w-4" />
-                                </Button>
-                              </Link>
+              <div className="text-center mb-8">
+                {categories.map((category) => (
+                  category.id === activeCategory && (
+                    <div key={category.id}>
+                      <h3 className="text-lg font-medium flex items-center justify-center gap-2">
+                        {category.icon}
+                        {category.name}
+                      </h3>
+                      <p className="text-gray-500 dark:text-gray-400">{category.description}</p>
+                    </div>
+                  )
+                ))}
+              </div>
+              
+              <motion.div 
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                key={activeCategory} // Ajout d'une clé pour forcer l'animation à chaque changement
+              >
+                {filteredApps.map((app) => (
+                  <motion.div key={app.id} variants={itemVariants}>
+                    <Card className="h-full overflow-hidden border-2 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-300">
+                      <div className={`h-2 bg-gradient-to-r ${app.color}`}></div>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className={`p-3 rounded-lg bg-gradient-to-br ${app.color} text-white`}>
+                            {app.icon}
+                          </div>
+                          <div className="flex gap-1 flex-wrap">
+                            {app.isNew && (
+                              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium">
+                                NOUVEAU
+                              </span>
                             )}
-                          </CardFooter>
-                        </Card>
-                      </motion.div>
-                    ))}
+                            {app.isPopular && (
+                              <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full text-xs font-medium flex items-center">
+                                <Star className="h-3 w-3 mr-1" /> POPULAIRE
+                              </span>
+                            )}
+                            {app.isPremium && (
+                              <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-xs font-medium">
+                                PREMIUM
+                              </span>
+                            )}
+                            {app.isComing && (
+                              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium">
+                                BIENTÔT
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <CardTitle className="mt-4">{app.name}</CardTitle>
+                        <CardDescription>{app.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2">
+                          {app.features?.map((feature, index) => (
+                            <li key={index} className="flex items-start">
+                              <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                              <span className="text-sm text-gray-600 dark:text-gray-300">{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                      <CardFooter>
+                        {app.isComing ? (
+                          <Button disabled className="w-full">
+                            Bientôt disponible
+                          </Button>
+                        ) : (
+                          <Link to={app.route} className="w-full">
+                            <Button className={`w-full bg-gradient-to-r ${app.color} hover:opacity-90 text-white`}>
+                              {app.isPremium ? "Essai gratuit" : "Accéder"}
+                              <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                          </Link>
+                        )}
+                      </CardFooter>
+                    </Card>
                   </motion.div>
-                </TabsContent>
-              ))}
+                ))}
+              </motion.div>
             </Tabs>
           </div>
         </section>

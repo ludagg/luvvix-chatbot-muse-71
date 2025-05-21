@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { ModeToggle } from "@/components/mode-toggle";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -19,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import WeatherWidget from "@/components/weather/WeatherWidget";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -170,7 +170,7 @@ const Navbar = () => {
           </NavigationMenu>
 
           <div className="flex items-center gap-3">
-            <ModeToggle />
+            <WeatherWidget />
             <ThemeToggle />
             
             {user ? (

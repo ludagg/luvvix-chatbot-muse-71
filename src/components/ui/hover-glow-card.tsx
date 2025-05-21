@@ -36,10 +36,41 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
 
     // Pour SSR et rendu initial quand JS n'est pas encore en cours d'exécution
     if (!isMounted) {
+      const { 
+        style, 
+        "data-framer-appear-id": _, 
+        onBeforeLayoutMeasure, 
+        onLayoutMeasure,
+        onPanSessionStart,
+        onUpdate,
+        onAnimationStart,
+        onAnimationComplete,
+        onLayoutAnimationStart,
+        onLayoutAnimationComplete,
+        transition,
+        initial,
+        animate,
+        exit,
+        variants,
+        transformTemplate,
+        transformValues,
+        onDrag,
+        onDragStart,
+        onDragEnd,
+        onDragTransitionEnd,
+        whileHover,
+        whileTap,
+        whileDrag,
+        whileFocus,
+        whileInView,
+        ...safeProps
+      } = props;
+
       return (
         <div 
           ref={ref} 
           className={cn("relative overflow-hidden", className)}
+          {...safeProps}
         >
           {children}
         </div>

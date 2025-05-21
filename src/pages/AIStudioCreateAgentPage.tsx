@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -37,12 +36,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast"; // Fixed import path
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Loader2, Bot, Sparkles, Upload, TextQuote, Globe } from "lucide-react";
+import { Loader2, Bot, Sparkles } from "lucide-react";
+import ContentImportForm from "@/components/ai-studio/ContentImportForm";
 
 const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
@@ -96,6 +96,20 @@ const AIStudioCreateAgentPage = () => {
   });
   
   const isPaid = form.watch("isPaid");
+  
+  const handleContentImported = (content: string, source: string) => {
+    const currentContent = form.getValues("contextText");
+    const sourceInfo = `Source: ${source}\n\n`;
+    const newContent = currentContent 
+      ? `${currentContent}\n\n--- Contenu importé ---\n${sourceInfo}${content}`
+      : `--- Contenu importé ---\n${sourceInfo}${content}`;
+      
+    form.setValue("contextText", newContent);
+    toast({
+      title: "Contenu importé",
+      description: `Le contenu de '${source}' a été ajouté au contexte de l'agent.`,
+    });
+  };
   
   const onSubmit = async (values: FormValues) => {
     if (!user) {
@@ -328,6 +342,11 @@ const AIStudioCreateAgentPage = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-medium mb-3">Importer du contenu</h3>
+                        <ContentImportForm onContentImported={handleContentImported} />
+                      </div>
+                      
                       <FormField
                         control={form.control}
                         name="contextText"

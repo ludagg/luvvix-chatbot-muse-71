@@ -1,3 +1,4 @@
+
 /**
  * LuvviX ID SDK - Client JavaScript library for LuvviX ID authentication system
  * Version: 1.2.0

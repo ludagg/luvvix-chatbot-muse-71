@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,13 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { LogOut, Key, History, AppWindow, Loader2, Shield, User, Bell, Grid } from "lucide-react";
+import { LogOut, Key, History, AppWindow, Loader2, Shield, User } from "lucide-react";
 import AccountSelector from "@/components/AccountSelector";
 import AppGrid from "@/components/dashboard/AppGrid";
 import RecentActivities from "@/components/dashboard/RecentActivities";
 import StatCards from "@/components/dashboard/StatCards";
-import UsageStats from "@/components/dashboard/UsageStats";
-import WeatherWidget from "@/components/weather/WeatherWidget";
 
 interface AppAccess {
   id: string;
@@ -33,14 +30,12 @@ const Dashboard = () => {
   const [connectedApps, setConnectedApps] = useState<AppAccess[]>([]);
   const [loading, setLoading] = useState(true);
   const [revokeLoading, setRevokeLoading] = useState<string | null>(null);
-  const [notificationCount, setNotificationCount] = useState(3); // Example notification count
   
   useEffect(() => {
     if (!user) {
       navigate('/auth');
     } else {
       fetchConnectedApps();
-      document.title = "Dashboard | LuvviX ID";
     }
   }, [user, navigate]);
   
@@ -146,30 +141,18 @@ const Dashboard = () => {
       <Navbar />
       
       {/* Ajout d'un espace en haut pour éviter que le contenu soit caché par la barre de navigation */}
-      <main className="flex-grow container mx-auto px-4 py-8 pt-28">
+      <main className="flex-grow container mx-auto px-4 py-8 pt-24">
         <div className="max-w-7xl mx-auto">
           {user && (
             <>
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
                 <div>
-                  <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400">Tableau de bord</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Tableau de bord</h1>
                   <p className="text-gray-600 dark:text-gray-400 mt-1">
                     Bienvenue, {profile?.full_name || user.email}
                   </p>
                 </div>
-                
-                <div className="mt-4 md:mt-0 flex items-center space-x-3">
-                  <div className="relative">
-                    <Button variant="outline" size="icon" className="rounded-full bg-white dark:bg-gray-800">
-                      <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
-                      {notificationCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {notificationCount}
-                        </span>
-                      )}
-                    </Button>
-                  </div>
-                  
+                <div className="mt-4 md:mt-0">
                   <AccountSelector 
                     currentUser={{
                       id: user.id,
@@ -182,25 +165,6 @@ const Dashboard = () => {
                       return Promise.resolve();
                     }}
                   />
-                </div>
-              </div>
-              
-              <div className="mb-8">
-                <UsageStats userId={user.id} />
-              </div>
-              
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl p-6 mb-8">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div>
-                    <h2 className="text-xl font-semibold text-purple-800 dark:text-purple-300">Écosystème LuvviX</h2>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm">
-                      Découvrez notre suite complète d'applications et services
-                    </p>
-                  </div>
-                  <Button onClick={() => navigate('/ecosystem')} className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 flex items-center gap-2">
-                    <Grid className="h-4 w-4" />
-                    Explorer l'écosystème
-                  </Button>
                 </div>
               </div>
               
@@ -218,7 +182,7 @@ const Dashboard = () => {
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                           <AppWindow className="h-5 w-5 text-purple-600" />
-                          Applications LuvviX
+                          Écosystème LuvviX
                         </CardTitle>
                         <CardDescription>
                           Accédez à toutes vos applications et services LuvviX
@@ -234,16 +198,7 @@ const Dashboard = () => {
                         <RecentActivities userId={user.id} />
                       </div>
                       <div className="lg:col-span-1">
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-lg flex items-center gap-2">
-                              <WeatherWidget showLabel={true} />
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent className="pt-4">
-                            <StatCards userId={user.id} />
-                          </CardContent>
-                        </Card>
+                        <StatCards userId={user.id} />
                       </div>
                     </div>
                   </div>

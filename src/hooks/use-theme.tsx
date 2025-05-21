@@ -26,10 +26,6 @@ export function ThemeProvider({
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
     () => {
-      if (typeof window === "undefined") {
-        return defaultTheme;
-      }
-      
       const storedTheme = localStorage.getItem(storageKey) as Theme | null;
       // Only allow 'light' or 'system' as valid themes
       return (storedTheme === 'light' || storedTheme === 'system') ? storedTheme : defaultTheme;
@@ -41,8 +37,6 @@ export function ThemeProvider({
   
   // Handle theme changes - always apply light theme
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    
     const root = window.document.documentElement;
     
     // Remove existing theme classes
@@ -57,8 +51,6 @@ export function ThemeProvider({
 
   // Apply any additional custom styling for AI Studio UI
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    
     // Apply additional global styles for AI Studio's modern UI
     const root = window.document.documentElement;
     

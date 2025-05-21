@@ -5,7 +5,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { motion, HTMLMotionProps } from "framer-motion";
 
-interface HoverGlowCardProps extends Omit<HTMLMotionProps<"div">, "children"> {
+interface HoverGlowCardProps extends HTMLMotionProps<"div"> {
   children: React.ReactNode;
   className?: string;
   glowColor?: string;
@@ -36,7 +36,11 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
 
     if (!isMounted) {
       return (
-        <div ref={ref} className={cn("relative overflow-hidden", className)} {...props}>
+        <div 
+          ref={ref} 
+          className={cn("relative overflow-hidden", className)} 
+          {...props as React.HTMLAttributes<HTMLDivElement>}
+        >
           {children}
         </div>
       );

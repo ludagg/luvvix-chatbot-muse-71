@@ -1,23 +1,74 @@
+
 {
   "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "X-Requested-With, Content-Type, Accept"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors *;"
+        }
+      ]
+    },
+    {
+      "source": "/ai-embed/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors *;"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "ALLOWALL"
+        }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
           "value": "default-src 'self' https:; frame-ancestors *;"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
         }
       ]
     }
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/ai/:path*",
+      "destination": "https://luvvi-ai.vercel.app/:path*"
+    },
+    {
+      "source": "/medecine/:path*",
+      "destination": "https://medivox.vercel.app/:path*"
+    },
+    {
+      "source": "/streammix/:path*",
+      "destination": "https://luvvi-streammix.vercel.app/:path*"
+    },
+    {
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "cookies": {
+    "sourcePattern": ".",
+    "domain": ".luvix.it.com"
+  }
 }

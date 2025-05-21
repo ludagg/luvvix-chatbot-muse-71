@@ -23,8 +23,11 @@ const AIEmbedPage = () => {
           return;
         }
 
+        console.log('Fetching agent with ID:', agentId);
+        
         // Use the dedicated getAgentById method with better error handling
         const agentData = await aiAgentService.getAgentById(agentId);
+        console.log('Agent data retrieved:', agentData);
         
         if (!agentData) {
           setError("Agent non trouvé ou non public");

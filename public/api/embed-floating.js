@@ -91,8 +91,10 @@
           transition: all 0.3s ease;
         `;
         
+        // Create iframe with dynamic origin
         const iframe = document.createElement('iframe');
-        iframe.src = `https://luvvix.it.com/ai-embed/${agentId}`;
+        const currentOrigin = window.location.protocol + '//' + window.location.host;
+        iframe.src = `${currentOrigin}/ai-embed/${agentId}`;
         iframe.style.cssText = `
           width: 100%;
           height: 100%;
@@ -102,6 +104,8 @@
         widget.appendChild(iframe);
         document.body.appendChild(widget);
         this.widgetElement = widget;
+        
+        console.log('LuvviX AI Floating widget initialized with URL:', iframe.src);
       },
       
       toggleWidget: function() {

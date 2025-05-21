@@ -53,9 +53,10 @@
           document.body.removeChild(overlay);
         });
         
-        // Create iframe
+        // Create iframe with dynamic origin
         const iframe = document.createElement('iframe');
-        iframe.src = `https://luvvix.it.com/ai-embed/${agentId}`;
+        const currentOrigin = window.location.protocol + '//' + window.location.host;
+        iframe.src = `${currentOrigin}/ai-embed/${agentId}`;
         iframe.style.width = '100%';
         iframe.style.height = '100%';
         iframe.style.border = 'none';
@@ -65,6 +66,8 @@
         popup.appendChild(iframe);
         overlay.appendChild(popup);
         document.body.appendChild(overlay);
+        
+        console.log('LuvviX AI Popup initialized with URL:', iframe.src);
       }
     };
     

@@ -1,12 +1,21 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { AuthProvider as LuvvixAIAuthProvider } from '@/luvvix-chatbot-muse-33-main/src/contexts/AuthContext';
 import LuvvixAIIndex from '@/luvvix-chatbot-muse-33-main/src/pages/Index';
+import { Toaster } from '@/components/ui/sonner';
+import { useTheme } from '@/hooks/use-theme';
 
 const LuvvixAIPage = () => {
+  const { theme } = useTheme();
+
+  // Sync theme with Luvvix AI
+  useEffect(() => {
+    localStorage.setItem('luvvix-ai-theme', theme);
+  }, [theme]);
+
   return (
     <>
       <Helmet>
@@ -21,6 +30,7 @@ const LuvvixAIPage = () => {
         <div className="pt-16">
           <LuvvixAIAuthProvider>
             <LuvvixAIIndex />
+            <Toaster />
           </LuvvixAIAuthProvider>
         </div>
       </div>

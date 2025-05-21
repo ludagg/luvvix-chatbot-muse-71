@@ -1,62 +1,44 @@
 
-import React from "react";
-import { 
-  Image, 
-  MessageSquareText, 
-  Zap, 
-  Clock, 
-  DownloadCloud,
-  Crown
-} from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React from 'react';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Button } from '@/components/ui/button';
+import { Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export const ProFeatures = () => {
-  const features = [
-    {
-      icon: <Image className="h-5 w-5 text-amber-500" />,
-      title: "Envoi d'images",
-      description: "Envoyez des images pour analyse et reconnaissance par l'IA"
-    },
-    {
-      icon: <MessageSquareText className="h-5 w-5 text-amber-500" />,
-      title: "Réponses plus détaillées",
-      description: "Obtenez des réponses plus longues et plus détaillées"
-    },
-    {
-      icon: <Zap className="h-5 w-5 text-amber-500" />,
-      title: "Priorité dans la file d'attente",
-      description: "Vos requêtes sont traitées en priorité"
-    },
-    {
-      icon: <Clock className="h-5 w-5 text-amber-500" />,
-      title: "Conversations plus longues",
-      description: "Stockez plus de conversations et pour plus longtemps"
-    },
-    {
-      icon: <DownloadCloud className="h-5 w-5 text-amber-500" />,
-      title: "Export de données",
-      description: "Exportez vos conversations en différents formats"
-    }
-  ];
+interface ProFeaturesProps {
+  className?: string;
+  children: React.ReactNode;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+  align?: 'start' | 'center' | 'end';
+}
 
+export function ProFeatures({ className, children, side = 'top', align = 'center' }: ProFeaturesProps) {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-center gap-2 mb-2">
-        <Crown className="h-6 w-6 text-amber-500 fill-amber-500" />
-        <h2 className="text-xl font-semibold text-center">Fonctionnalités Pro</h2>
-      </div>
-      
-      <div className="grid grid-cols-1 gap-4">
-        {features.map((feature, index) => (
-          <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-card">
-            <div className="mt-0.5">{feature.icon}</div>
-            <div>
-              <h3 className="font-medium">{feature.title}</h3>
-              <p className="text-sm text-muted-foreground">{feature.description}</p>
+    <HoverCard>
+      <HoverCardTrigger asChild>
+        <div className={cn("relative cursor-help", className)}>
+          {children}
+          <div className="absolute -right-1 -top-1">
+            <div className="flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-white">
+              <Sparkles className="h-2.5 w-2.5" />
             </div>
           </div>
-        ))}
-      </div>
-    </div>
+        </div>
+      </HoverCardTrigger>
+      <HoverCardContent side={side} align={align} className="w-80 p-4">
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium">Fonctionnalité PRO</h4>
+          <p className="text-sm text-muted-foreground">
+            Cette fonctionnalité est disponible uniquement avec un abonnement LuvviX PRO.
+          </p>
+          <Button size="sm" variant="default" className="w-full gap-1">
+            <Sparkles className="h-3.5 w-3.5 mr-1" />
+            Passer à PRO
+          </Button>
+        </div>
+      </HoverCardContent>
+    </HoverCard>
   );
-};
+}
+
+export default ProFeatures;

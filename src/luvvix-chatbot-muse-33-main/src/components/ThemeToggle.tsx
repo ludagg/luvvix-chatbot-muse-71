@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocalStorage } from "@/luvvix-chatbot-muse-33-main/src/hooks/use-local-storage";
 
 export function ThemeToggle() {
@@ -9,7 +9,7 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   // Après le rendu initial, on marque le composant comme monté
-  React.useEffect(() => {
+  useEffect(() => {
     setMounted(true);
   }, []);
 

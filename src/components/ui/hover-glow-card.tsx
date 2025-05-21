@@ -5,7 +5,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import { motion, HTMLMotionProps } from "framer-motion";
 
-interface HoverGlowCardProps extends HTMLMotionProps<"div"> {
+interface HoverGlowCardProps extends Omit<HTMLMotionProps<"div">, "onDrag"> {
   children: React.ReactNode;
   className?: string;
   glowColor?: string;
@@ -36,24 +36,10 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
 
     // Pour SSR et rendu initial quand JS n'est pas encore en cours d'exécution
     if (!isMounted) {
-      // Only extract properties that we know exist in props
+      // Only extract properties that are safe for a regular div
       const { 
-        style, 
-        "data-framer-appear-id": _, 
-        onBeforeLayoutMeasure, 
-        onLayoutMeasure,
-        onPanSessionStart,
-        onUpdate,
-        onAnimationStart,
-        onAnimationComplete,
-        onLayoutAnimationStart,
-        onLayoutAnimationComplete,
-        transition,
-        initial,
-        animate,
-        exit,
-        variants,
-        // Remove transformValues as it doesn't exist on the props type
+        animate, exit, initial, transition, variants, 
+        // Filter out framer-motion specific props
         ...safeProps
       } = props;
 

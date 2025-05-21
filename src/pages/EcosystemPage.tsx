@@ -40,7 +40,8 @@ import {
   Star,
   Clock,
   Newspaper,
-  MessageSquare
+  MessageSquare,
+  Mail
 } from "lucide-react";
 
 // Types

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -66,37 +67,44 @@ const Navbar = () => {
                 <NavigationMenuContent>
                   <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-2">
                     <li>
-                      <NavigationMenuLink>
+                      <NavigationMenuLink asChild>
                         <Link to="/ai-studio" className="block">
                           LuvviX AI
                         </Link>
                       </NavigationMenuLink>
                     </li>
                     <li>
-                      <NavigationMenuLink>
+                      <NavigationMenuLink asChild>
                         <Link to="/medecine" className="block">
                           LuvviX Medic
                         </Link>
                       </NavigationMenuLink>
                     </li>
                     <li>
-                      <NavigationMenuLink>
+                      <NavigationMenuLink asChild>
                         <Link to="/streammix" className="block">
                           LuvviX StreamMix
                         </Link>
                       </NavigationMenuLink>
                     </li>
                     <li>
-                      <NavigationMenuLink>
+                      <NavigationMenuLink asChild>
                         <Link to="/cloud" className="block">
                           LuvviX Cloud
                         </Link>
                       </NavigationMenuLink>
                     </li>
                     <li>
-                      <NavigationMenuLink>
+                      <NavigationMenuLink asChild>
                         <Link to="/auth" className="block">
                           LuvviX ID
+                        </Link>
+                      </NavigationMenuLink>
+                    </li>
+                    <li>
+                      <NavigationMenuLink asChild>
+                        <Link to="/ecosystem" className="block">
+                          Écosystème
                         </Link>
                       </NavigationMenuLink>
                     </li>
@@ -117,15 +125,15 @@ const Navbar = () => {
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <NavigationMenuLink>
-                  <Link to="/blog" className={cn(
+                <Link to="/blog">
+                  <NavigationMenuLink className={cn(
                     "group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none disabled:pointer-events-none disabled:opacity-50",
                     isScrolled ? 'text-gray-700 dark:text-gray-200' : 'text-white dark:text-gray-200',
                     "hover:bg-primary/10 hover:text-primary"
                   )}>
                     Blog
-                  </Link>
-                </NavigationMenuLink>
+                  </NavigationMenuLink>
+                </Link>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
@@ -178,6 +186,7 @@ const Navbar = () => {
                   <Link to="/streammix">LuvviX StreamMix</Link>
                   <Link to="/cloud">LuvviX Cloud</Link>
                   <Link to="/auth">LuvviX ID</Link>
+                  <Link to="/ecosystem">Écosystème</Link>
                   <Link to="/blog">Blog</Link>
                   <Link to="/auth">Se connecter</Link>
                 </div>

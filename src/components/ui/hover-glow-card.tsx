@@ -1,55 +1,72 @@
 
-import React, { useState } from 'react';
-import { cn } from '@/lib/utils';
-import { motion, HTMLMotionProps } from 'framer-motion';
+"use client";
 
-interface HoverGlowCardProps extends Omit<HTMLMotionProps<"div">, "animate"> {
+import * as React from "react";
+import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+
+interface HoverGlowCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   glowColor?: string;
 }
 
-export const HoverGlowCard = ({
-  children,
-  className,
-  glowColor = "rgba(138, 135, 245, 0.2)",
-  ...props
-}: HoverGlowCardProps) => {
-  const [isHovered, setIsHovered] = useState(false);
-  
-  return (
-    <motion.div
-      className={cn(
-        "relative overflow-hidden transition-all duration-300",
-        className
-      )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      animate={{
-        scale: isHovered ? 1.02 : 1,
-        transition: { duration: 0.3 }
-      }}
-      {...props}
-    >
-      {/* Glow effect */}
-      <motion.div 
-        className="absolute inset-0 pointer-events-none"
-        animate={{
-          opacity: isHovered ? 1 : 0,
-          scale: isHovered ? 1.2 : 1
-        }}
-        transition={{ duration: 0.4 }}
+export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps>(
+  ({ className, glowColor = "rgba(125, 125, 255, 0.4)", children, ...props }, ref) => {
+    const [isMounted, setIsMounted] = React.useState(false);
+    const [position, setPosition] = React.useState({ x: 0, y: 0 });
+    const [opacity, setOpacity] = React.useState(0);
+    const cardRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+      setIsMounted(true);
+    }, []);
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!cardRef.current) return;
+      
+      const rect = cardRef.current.getBoundingClientRect();
+      setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      setOpacity(1);
+    };
+
+    const handleMouseLeave = () => {
+      setOpacity(0);
+    };
+
+    if (!isMounted) {
+      return (
+        <div ref={ref} className={cn("relative overflow-hidden", className)} {...props}>
+          {children}
+        </div>
+      );
+    }
+
+    return (
+      <motion.div
+        ref={cardRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        className={cn("relative overflow-hidden", className)}
+        {...props}
       >
-        <div 
-          className="absolute inset-0 rounded-xl"
+        <motion.div
           style={{
-            background: `radial-gradient(circle at 50% 50%, ${glowColor} 0%, transparent 70%)`,
-            filter: 'blur(20px)'
+            position: "absolute",
+            background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, ${glowColor}, transparent 40%)`,
+            width: "100%",
+            height: "100%",
+            opacity: opacity,
+            top: 0,
+            left: 0,
+            pointerEvents: "none",
+            zIndex: 1,
           }}
         />
+        <div style={{ position: "relative", zIndex: 2 }}>{children}</div>
       </motion.div>
-      
-      {children}
-    </motion.div>
-  );
-};
+    );
+  }
+);
+
+HoverGlowCard.displayName = "HoverGlowCard";

@@ -16,6 +16,11 @@ interface WebCrawlResult {
   detectedFramework?: string;
 }
 
+interface FrameworkDetectionResult {
+  isJsFramework: boolean;
+  framework?: string;
+}
+
 export const WebCrawlerService = {
   async extractContentFromUrl(url: string, options: WebCrawlOptions): Promise<WebCrawlResult> {
     try {
@@ -54,10 +59,24 @@ export const WebCrawlerService = {
     }
   },
 
-  detectFrameworkFromUrl(url: string): Promise<{ isJsFramework: boolean; framework?: string }> {
-    // This is a simplified version. The actual detection would be done server-side
-    return supabase.functions.invoke('detect-js-framework', {
-      body: { url }
-    });
+  async detectFrameworkFromUrl(url: string): Promise<FrameworkDetectionResult> {
+    try {
+      const { data, error } = await supabase.functions.invoke('detect-js-framework', {
+        body: { url }
+      });
+      
+      if (error) {
+        console.error("Error detecting framework:", error);
+        return { isJsFramework: false };
+      }
+      
+      return {
+        isJsFramework: !!data.isJsFramework,
+        framework: data.framework
+      };
+    } catch (error) {
+      console.error("Error in framework detection:", error);
+      return { isJsFramework: false };
+    }
   }
 };

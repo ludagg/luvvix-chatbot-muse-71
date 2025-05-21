@@ -1,21 +1,16 @@
+
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { ThemeProvider } from "@/components/ui/theme-provider"
+import { ThemeProvider } from "./components/ui/theme-provider";
 import { useAuth } from './hooks/useAuth';
 import Index from './pages/Index';
 import Dashboard from './pages/Dashboard';
 import NewsPage from './pages/NewsPage';
 import AIStudioDashboardPage from './pages/AIStudioDashboardPage';
-import AIStudioAgentPage from './pages/AIStudioAgentPage';
-import AIStudioAgentEditPage from './pages/AIStudioAgentEditPage';
-import AIStudioAgentChatPage from './pages/AIStudioAgentChatPage';
-import AIStudioAgentCreatePage from './pages/AIStudioAgentCreatePage';
-import AIStudioAgentEmbedPage from './pages/AIStudioAgentEmbedPage';
-// Ajoutez l'importation de EcosystemPage
 import EcosystemPage from './pages/EcosystemPage';
 
 const App = () => {
-  const { isLoading, user } = useAuth();
+  const { loading, user } = useAuth(); // Changed from isLoading to loading to match the useAuth hook
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -40,11 +35,6 @@ const App = () => {
           <Route path="/dashboard" element={user ? <Dashboard /> : <Navigate to="/auth" />} />
           
           <Route path="/ai-studio" element={user ? <AIStudioDashboardPage /> : <Navigate to="/auth" />} />
-          <Route path="/ai-studio/agents/:agentId" element={user ? <AIStudioAgentPage /> : <Navigate to="/auth" />} />
-          <Route path="/ai-studio/edit/:agentId" element={user ? <AIStudioAgentEditPage /> : <Navigate to="/auth" />} />
-          <Route path="/ai-studio/chat/:agentId" element={user ? <AIStudioAgentChatPage /> : <Navigate to="/auth" />} />
-          <Route path="/ai-studio/create" element={user ? <AIStudioAgentCreatePage /> : <Navigate to="/auth" />} />
-          <Route path="/ai-embed/:agentId" element={<AIStudioAgentEmbedPage />} />
         </Routes>
       </Router>
     </ThemeProvider>

@@ -6,6 +6,6 @@ import { useToast, toast, sonnerToast } from '@/hooks/use-toast';
 export { useToast, toast, sonnerToast };
 
 // Re-export the types but rename the conflicting one
-import type { ToastProps as MainToastProps } from '@/hooks/use-toast';
-export type LuvvixToastProps = MainToastProps;
-export type { ToastActionElement } from '@/hooks/use-toast';
+import type { ToastProps, ToastActionElement } from '@/hooks/use-toast';
+export type LuvvixToastProps = ToastProps;
+export type { ToastActionElement };

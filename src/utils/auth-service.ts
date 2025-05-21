@@ -1,9 +1,15 @@
+
 import { LuvviXID } from "@/utils/luvvix-id-sdk";
 
 interface AuthOptions {
   appName: 'main' | 'pharmacy' | 'streaming' | 'chat';
   redirectUrl: string;
   apiBaseUrl?: string;
+}
+
+interface LoginOptions {
+  signup?: boolean;
+  metadata?: Record<string, any>;
 }
 
 /**
@@ -65,7 +71,7 @@ class AuthService {
    * Redirige l'utilisateur vers la page de connexion LuvviX ID
    * @param options Options supplémentaires pour la connexion
    */
-  redirectToLogin(options: { signup?: boolean } = {}): void {
+  redirectToLogin(options: LoginOptions = {}): void {
     try {
       if (!this.luvvixIdClient) {
         throw new Error('AuthService not initialized');

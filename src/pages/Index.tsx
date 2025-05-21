@@ -1,3 +1,4 @@
+
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Ecosystem from "@/components/Ecosystem";
@@ -21,6 +22,13 @@ import { HoverGlowCard } from "@/components/ui/hover-glow-card";
 import { motion } from "framer-motion";
 
 const Index = () => {
+  // Handler for the LuvvixIdPromo component
+  const handleGetStartedWithLuvvixId = () => {
+    // Navigate to auth page or open auth modal
+    console.log('Get started with LuvviX ID clicked');
+    window.location.href = '/auth';
+  };
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -110,7 +118,7 @@ const Index = () => {
           </div>
         </section>
         
-        <LuvvixIdPromo />
+        <LuvvixIdPromo onGetStarted={handleGetStartedWithLuvvixId} />
         <AIStudioPromo />
         <Ecosystem />
         <FormsPromo />

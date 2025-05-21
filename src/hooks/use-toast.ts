@@ -1,9 +1,9 @@
+import { useToast, toast, sonnerToast } from "@/components/ui/use-toast";
 
-import { useToast as useToastOriginal } from "@/components/ui/use-toast";
-import { toast as toastOriginal } from "@/components/ui/use-toast";
-import { sonnerToast as sonnerToastOriginal } from "@/components/ui/use-toast";
+// Re-export des fonctions
+export { useToast, toast, sonnerToast };
 
-// Exportations des types nécessaires
+// Types exportés
 export type ToastActionElement = React.ReactElement<HTMLButtonElement>;
 export type ToastProps = {
   id: string;
@@ -12,8 +12,3 @@ export type ToastProps = {
   action?: ToastActionElement;
   variant?: "default" | "destructive";
 };
-
-// Re-export des fonctions
-export const useToast = useToastOriginal;
-export const toast = toastOriginal;
-export const sonnerToast = sonnerToastOriginal;

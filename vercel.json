@@ -1,4 +1,3 @@
-
 {
   "headers": [
     {
@@ -15,10 +14,6 @@
         {
           "key": "Access-Control-Allow-Headers",
           "value": "X-Requested-With, Content-Type, Accept"
-        },
-        {
-          "key": "Content-Security-Policy",
-          "value": "frame-ancestors *;"
         }
       ]
     },
@@ -47,8 +42,8 @@
   ],
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
     },
     {
       "source": "/ai/:path*",
@@ -67,8 +62,10 @@
       "destination": "/index.html"
     }
   ],
-  "cookies": {
-    "sourcePattern": ".",
-    "domain": ".luvvix.it.com"
-  }
+  "cookies": [
+    {
+      "sourcePattern": ".*",
+      "domain": ".luvvix.it.com"
+    }
+  ]
 }

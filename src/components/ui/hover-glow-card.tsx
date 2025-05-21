@@ -1,110 +1,76 @@
 
-"use client";
 import React from "react";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
-export const HoverGlowCard = ({
+interface HoverGlowCardProps {
+  children: React.ReactNode;
+  className?: string;
+  containerClassName?: string;
+  size?: "sm" | "md" | "lg";
+}
+
+export function HoverGlowCard({
   children,
   className,
   containerClassName,
-  style,
-  cardStyle,
-  shadowBlurRadius = 24,
-  shadowColor = "rgba(0, 0, 0, 0.35)",
-  shadowOpacity = 0.5,
-  shadowHoverOpacity = 1,
-  shadowSpread = 8,
-  shadowHoverSpread = 16,
-  glowRadius = 50,
-  glowHoverRadius = 80,
-  glowColor = "rgba(255, 255, 255, 0.6)",
-  glowHoverColor = "rgba(255, 255, 255, 0.8)",
-  throttleAmount = 0.1, // Controls the animation smoothness. Lower values are smoother.
-  containerStyle,
-  ...rest
-}: React.HTMLAttributes<HTMLDivElement> & {
-  containerClassName?: string;
-  cardStyle?: React.CSSProperties;
-  shadowBlurRadius?: number;
-  shadowColor?: string;
-  shadowOpacity?: number;
-  shadowHoverOpacity?: number;
-  shadowSpread?: number;
-  shadowHoverSpread?: number;
-  glowRadius?: number;
-  glowHoverRadius?: number;
-  glowColor?: string;
-  glowHoverColor?: string;
-  throttleAmount?: number;
-  containerStyle?: React.CSSProperties;
-}) => {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const rotateX = useTransform(y, [-300, 300], [8, -8]);
-  const rotateY = useTransform(x, [-300, 300], [-8, 8]);
+  size = "md",
+}: HoverGlowCardProps) {
+  const [mousePosition, setMousePosition] = React.useState<{
+    x: number;
+    y: number;
+  }>({ x: 0, y: 0 });
 
-  const diagonalMovement = {
-    x: useSpring(x, { stiffness: 150, damping: 20 }),
-    y: useSpring(y, { stiffness: 150, damping: 20 }),
+  const sizeStyles = {
+    sm: "p-4",
+    md: "p-6",
+    lg: "p-8",
   };
 
-  function onMouseMove(e: React.MouseEvent<HTMLDivElement> | TouchEvent) {
-    // Check for MouseEvent specifically
-    if ('clientX' in e) {
-      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const mouseX = e.clientX - rect.left - rect.width / 2;
-      const mouseY = e.clientY - rect.top - rect.height / 2;
-      x.set(mouseX * throttleAmount);
-      y.set(mouseY * throttleAmount);
-    } 
-  }
-
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
+  const handleMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    // Get the position relative to the element
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMousePosition({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  }, []);
 
   return (
     <div
-      className={cn("relative", containerClassName)}
-      onMouseMove={onMouseMove}
-      onMouseLeave={handleMouseLeave}
-      style={containerStyle}
+      className={cn(
+        "relative w-full overflow-hidden rounded-xl border bg-background",
+        containerClassName
+      )}
+      onMouseMove={handleMouseMove}
     >
-      <motion.div
+      <div
         className={cn(
-          "relative z-20 transition-all duration-500 ease-out",
+          "relative z-10 transition-colors duration-300",
+          sizeStyles[size],
           className
         )}
-        style={{
-          ...style,
-          rotateX,
-          rotateY,
-          translateX: diagonalMovement.x,
-          translateY: diagonalMovement.y,
-        }}
-        {...rest}
       >
-        <div
-          className="absolute inset-0 bg-gradient-to-br rounded-md opacity-0 group-hover:opacity-100 blur transition duration-500"
-          style={{
-            background: `radial-gradient(circle at center, ${glowColor}, transparent ${glowRadius}%)`,
-            boxShadow: `0 0 ${shadowBlurRadius}px ${shadowSpread}px ${shadowColor}`,
-            opacity: shadowOpacity,
-          }}
-        />
+        {children}
+      </div>
 
-        {/* Card Content */}
-        <div
-          className="relative z-10 w-full h-full bg-card rounded-xl backdrop-blur-md overflow-hidden"
-          style={cardStyle}
-        >
-          {children}
-        </div>
-      </motion.div>
+      <motion.div
+        className="glow absolute left-0 top-0 z-0 h-40 w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary/20 to-primary/5 opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100"
+        animate={{
+          x: mousePosition.x,
+          y: mousePosition.y,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 100,
+          damping: 30,
+          mass: 0.5,
+        }}
+        style={{
+          pointerEvents: 'none',  // Fix: Prevent it from capturing mouse events
+          position: 'absolute',  // Fix: Ensure absolute positioning
+        }}
+      />
     </div>
   );
-};
-
-export default HoverGlowCard;
+}

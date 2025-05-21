@@ -1,19 +1,10 @@
 
-// Import directly from the UI components
-import { useToast as useUIToast } from "@/components/ui/use-toast";
-import { toast as uiToast } from "@/components/ui/use-toast";
-import { toast as sonnerToast } from "sonner";
+// Re-export the main use-toast hook from the root project
+import { useToast, toast, sonnerToast } from '@/hooks/use-toast';
 
-export type ToastProps = {
-  title?: string;
-  description?: string;
-  variant?: "default" | "destructive";
-  duration?: number;
-};
+// Export everything
+export { useToast, toast, sonnerToast };
 
-// Export the hooks and functions
-export const useToast = useUIToast;
-export const toast = uiToast;
-export { sonnerToast };
-
-export type { ToastProps };
+// Re-export the types but rename the conflicting one
+import { type ToastProps as MainToastProps } from '@/hooks/use-toast';
+export type LuvvixToastProps = MainToastProps;

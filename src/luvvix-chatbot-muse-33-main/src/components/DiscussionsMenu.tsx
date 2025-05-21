@@ -1,4 +1,7 @@
-import React, { useState } from 'react';
+
+import React from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,176 +10,99 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { MessageSquare, PlusCircle, Trash } from 'lucide-react';
-import { useAuth } from '@/luvvix-chatbot-muse-33-main/src/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { MessageCircle, Plus, Trash2 } from 'lucide-react';
+import { toast } from '../hooks/use-toast';
 
 export function DiscussionsMenu() {
-  const { conversations, currentConversationId, setCurrentConversation, createNewConversation, deleteConversation, user } = useAuth();
-  const { toast } = useToast();
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
-  // Format date to readable string
-  const formatDate = (date: Date) => {
-    if (!(date instanceof Date)) {
-      date = new Date(date);
-    }
-    
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    // Same day
-    if (date.toDateString() === today.toDateString()) {
-      return `Aujourd'hui à ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-    }
-    
-    // Yesterday
-    if (date.toDateString() === yesterday.toDateString()) {
-      return `Hier à ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-    }
-    
-    // Other days
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    };
-    
-    return date.toLocaleDateString('fr-FR', options);
-  };
-  
+  const { 
+    conversations, 
+    currentConversationId, 
+    setCurrentConversationId, 
+    createNewConversation, 
+    deleteConversation 
+  } = useAuth();
+
   const handleNewConversation = () => {
-    if (!user) {
-      toast({
-        title: "Connexion requise",
-        description: "Veuillez vous connecter pour créer une nouvelle discussion.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     createNewConversation();
-    setIsDropdownOpen(false);
   };
-  
+
   const handleSelectConversation = (id: string) => {
-    setCurrentConversation(id);
-    setIsDropdownOpen(false);
+    setCurrentConversationId(id);
   };
-  
-  const confirmDeleteConversation = (id: string) => {
-    setConversationToDelete(id);
-    setIsDeleteDialogOpen(true);
-  };
-  
-  const handleDeleteConversation = async () => {
-    if (conversationToDelete) {
-      await deleteConversation(conversationToDelete);
-      setIsDeleteDialogOpen(false);
-      setConversationToDelete(null);
-      setIsDropdownOpen(false);
-      toast({
-        title: "Discussion supprimée",
-        description: "La discussion a été supprimée avec succès.",
-      });
-    }
-  };
-  
-  // Get current conversation title
-  const currentConversationTitle = () => {
-    if (!currentConversationId) return "Nouvelle discussion";
-    const currentConv = conversations.find(c => c.id === currentConversationId);
-    return currentConv?.title || "Nouvelle discussion";
+
+  const handleDeleteConversation = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    deleteConversation(id);
+    toast({
+      description: "Conversation supprimée",
+    });
   };
 
   return (
-    <>
-      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="w-40 justify-start truncate">
-            <MessageSquare className="mr-2 h-4 w-4" />
-            <span className="truncate">{currentConversationTitle()}</span>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-foreground"
+          title="Discussions"
+        >
+          <MessageCircle className="h-5 w-5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-72">
+        <DropdownMenuLabel className="flex justify-between items-center">
+          <span>Conversations</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={handleNewConversation}
+            title="Nouvelle conversation"
+          >
+            <Plus className="h-4 w-4" />
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>Mes discussions</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          
-          <DropdownMenuItem onClick={handleNewConversation} className="cursor-pointer">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            <span>Nouvelle discussion</span>
-          </DropdownMenuItem>
-          
-          {conversations.length > 0 && <DropdownMenuSeparator />}
-          
-          {conversations.map((conversation) => (
-            <DropdownMenuItem 
-              key={conversation.id} 
-              className="flex items-start justify-between cursor-pointer group"
-              onSelect={(e) => {
-                e.preventDefault();
-                handleSelectConversation(conversation.id);
-              }}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        
+        {conversations.length === 0 ? (
+          <div className="text-center py-4 text-muted-foreground">
+            <p>Aucune conversation</p>
+            <Button 
+              variant="outline" 
+              className="mt-2" 
+              size="sm" 
+              onClick={handleNewConversation}
             >
-              <div className="flex flex-col">
-                <span className={`truncate ${currentConversationId === conversation.id ? 'font-medium' : ''}`}>
-                  {conversation.title}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {formatDate(conversation.updatedAt)}
-                </span>
-              </div>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  confirmDeleteConversation(conversation.id);
-                }}
+              <Plus className="mr-2 h-4 w-4" />
+              Nouvelle conversation
+            </Button>
+          </div>
+        ) : (
+          <div className="max-h-72 overflow-y-auto">
+            {conversations.map((conversation) => (
+              <DropdownMenuItem 
+                key={conversation.id} 
+                className={`flex justify-between items-center group ${
+                  currentConversationId === conversation.id ? 'bg-accent' : ''
+                }`}
+                onClick={() => handleSelectConversation(conversation.id)}
               >
-                <Trash className="h-3 w-3 text-destructive" />
-              </Button>
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer la discussion ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action ne peut pas être annulée. Cela supprimera définitivement cette discussion.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction 
-              className="bg-destructive hover:bg-destructive/90"
-              onClick={handleDeleteConversation}
-            >
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+                <span className="truncate flex-1">{conversation.title}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                  onClick={(e) => handleDeleteConversation(conversation.id, e)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                  <span className="sr-only">Supprimer</span>
+                </Button>
+              </DropdownMenuItem>
+            ))}
+          </div>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

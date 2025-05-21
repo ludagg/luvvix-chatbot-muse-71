@@ -1,54 +1,48 @@
 
 import React from 'react';
-import { Moon, Sun } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 
-type Theme = 'dark' | 'light' | 'system';
-
-interface ThemeToggleProps {
-  className?: string;
-}
-
-export function ThemeToggle({ className }: ThemeToggleProps) {
-  const [theme, setTheme] = React.useState<Theme>('light');
-
-  React.useEffect(() => {
-    // Get theme from localStorage
-    const storedTheme = localStorage.getItem('theme') as Theme;
-    if (storedTheme) {
-      setTheme(storedTheme);
-      document.documentElement.classList.toggle('dark', storedTheme === 'dark');
-    } else {
-      // Check system preference
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setTheme(prefersDark ? 'dark' : 'light');
-      document.documentElement.classList.toggle('dark', prefersDark);
-    }
-  }, []);
-
+// This is a simplified version that doesn't depend on the theme provider
+export function ThemeToggle() {
+  const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
+  
+  // Toggle between light and dark
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+    
+    // Save to localStorage so it persists
+    localStorage.setItem('luvvix-ai-theme', newTheme);
+    
+    // Apply the theme to the document
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   };
+  
+  // Initialize from localStorage on component mount
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem('luvvix-ai-theme');
+    if (savedTheme === 'dark') {
+      setTheme('dark');
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
 
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="icon"
       onClick={toggleTheme}
-      className={className}
-      title="Changer de thème"
+      title="Toggle theme"
+      className="text-foreground"
     >
-      <span className="sr-only">Changer de thème</span>
-      {theme === 'light' ? (
-        <Moon className="h-[1.2rem] w-[1.2rem]" />
-      ) : (
-        <Sun className="h-[1.2rem] w-[1.2rem]" />
-      )}
+      <span className="sr-only">Toggle theme</span>
+      <span className="h-4 w-4 rotate-0 scale-100 transition-all">
+        {theme === "light" ? "☀️" : "🌙"}
+      </span>
     </Button>
   );
 }
-
-export default ThemeToggle;

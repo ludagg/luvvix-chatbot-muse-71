@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { ChatContainer } from "../components/ChatContainer";
@@ -12,11 +11,11 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useIsMobile } from "../hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, User, Settings, LogOut, Star } from "lucide-react";
+import { Menu, User, LogOut, Star } from "lucide-react";
 import { ConversationSelector } from "../components/ConversationSelector";
 import { DiscussionsMenu } from "../components/DiscussionsMenu";
 import { ThemeToggle } from "../components/ThemeToggle";
-import { toast } from "../hooks/use-toast";
+import { toast, useToast } from "../hooks/use-toast";
 import { ProFeatures } from "../components/ProFeatures";
 import { ProBadge } from "../components/ProBadge";
 import { 
@@ -56,7 +55,6 @@ const Index = () => {
   const [error, setError] = useState("");
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { toast } = useToast();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),

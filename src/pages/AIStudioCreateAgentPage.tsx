@@ -37,11 +37,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast"; // Fixed import path
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { WebContentExtractor } from "@/components/ai-studio/WebContentExtractor";
 import { Loader2, Bot, Sparkles, Upload, TextQuote, Globe } from "lucide-react";
 
 const formSchema = z.object({
@@ -96,6 +97,11 @@ const AIStudioCreateAgentPage = () => {
   });
   
   const isPaid = form.watch("isPaid");
+  const contextText = form.watch("contextText");
+  
+  const handleWebContentExtracted = (content: string) => {
+    form.setValue("contextText", content);
+  };
   
   const onSubmit = async (values: FormValues) => {
     if (!user) {
@@ -328,6 +334,9 @@ const AIStudioCreateAgentPage = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                      {/* Web Content Extractor Component */}
+                      <WebContentExtractor onContentExtracted={handleWebContentExtracted} />
+                      
                       <FormField
                         control={form.control}
                         name="contextText"

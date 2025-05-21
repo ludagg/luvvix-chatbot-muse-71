@@ -1,9 +1,8 @@
-
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { DecentralizedStorageProvider } from "@/hooks/use-ipfs";
 import { HelmetProvider } from "react-helmet-async";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, BrowserRouter as Router } from "react-router-dom";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -34,99 +33,106 @@ import PrivacyPage from "./pages/legal/PrivacyPage";
 import TermsPage from "./pages/legal/TermsPage";
 import CookiesPage from "./pages/legal/CookiesPage";
 import DocsPage from "./pages/docs/DocsPage";
+import EcosystemPage from "./pages/EcosystemPage";
 
-const App = () => (
-  <HelmetProvider>
-    <ThemeProvider defaultTheme="light">
-      <DecentralizedStorageProvider>
-        <Sonner />
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/api-docs" element={<ApiDocs />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/news" element={<NewsPage />} />
-          <Route path="/weather" element={<WeatherPage />} />
-          <Route path="/oauth/authorize" element={
-            <ProtectedRoute>
-              <OAuth />
-            </ProtectedRoute>
-          } />
-          <Route path="/oauth/test" element={<OAuthTest />} />
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/cloud/*" element={
-            <ProtectedRoute>
-              <CloudPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin" element={<AdminPanel />} />
-          
-          {/* Routes for LuvviX Forms */}
-          <Route path="/forms" element={<FormsPage />} />
-          <Route path="/forms/create" element={
-            <ProtectedRoute>
-              <FormEditorPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/edit/:formId" element={
-            <ProtectedRoute>
-              <FormEditorPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/view/:formId" element={<FormViewPage />} />
-          <Route path="/forms/settings/:formId" element={
-            <ProtectedRoute>
-              <FormSettingsPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/forms/responses/:formId" element={
-            <ProtectedRoute>
-              <FormResponsesPage />
-            </ProtectedRoute>
-          } />
-          
-          {/* Routes for LuvviX AI Studio */}
-          <Route path="/ai-studio" element={<AIStudioPage />} />
-          <Route path="/ai-studio/dashboard" element={
-            <ProtectedRoute>
-              <AIStudioDashboardPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/ai-studio/agents/:agentId" element={<AIStudioAgentPage />} />
-          <Route path="/ai-studio/create" element={
-            <ProtectedRoute>
-              <AIStudioCreateAgentPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/ai-studio/edit/:agentId" element={
-            <ProtectedRoute>
-              <AIStudioEditAgentPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/ai-studio/marketplace" element={<AIStudioMarketplacePage />} />
-          <Route path="/ai-studio/chat/:agentId" element={<AIStudioChatPage />} />
-          <Route path="/ai-studio/admin" element={<AIStudioAdminPage />} />
-          
-          {/* AI Embed Routes */}
-          <Route path="/ai-embed/:agentId" element={<AIEmbedPage />} />
-          
-          {/* Legal Pages */}
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/cookies" element={<CookiesPage />} />
-          
-          {/* Documentation */}
-          <Route path="/docs/*" element={<DocsPage />} />
-          
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </DecentralizedStorageProvider>
-    </ThemeProvider>
-  </HelmetProvider>
-);
+function App() {
+  return (
+    <Router>
+      <div className="app">
+        <HelmetProvider>
+          <ThemeProvider defaultTheme="light">
+            <DecentralizedStorageProvider>
+              <Sonner />
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/api-docs" element={<ApiDocs />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/news" element={<NewsPage />} />
+                <Route path="/weather" element={<WeatherPage />} />
+                <Route path="/oauth/authorize" element={
+                  <ProtectedRoute>
+                    <OAuth />
+                  </ProtectedRoute>
+                } />
+                <Route path="/oauth/test" element={<OAuthTest />} />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/cloud/*" element={
+                  <ProtectedRoute>
+                    <CloudPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin" element={<AdminPanel />} />
+                
+                {/* Routes for LuvviX Forms */}
+                <Route path="/forms" element={<FormsPage />} />
+                <Route path="/forms/create" element={
+                  <ProtectedRoute>
+                    <FormEditorPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/forms/edit/:formId" element={
+                  <ProtectedRoute>
+                    <FormEditorPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/forms/view/:formId" element={<FormViewPage />} />
+                <Route path="/forms/settings/:formId" element={
+                  <ProtectedRoute>
+                    <FormSettingsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/forms/responses/:formId" element={
+                  <ProtectedRoute>
+                    <FormResponsesPage />
+                  </ProtectedRoute>
+                } />
+                
+                {/* Routes for LuvviX AI Studio */}
+                <Route path="/ai-studio" element={<AIStudioPage />} />
+                <Route path="/ai-studio/dashboard" element={
+                  <ProtectedRoute>
+                    <AIStudioDashboardPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/ai-studio/agents/:agentId" element={<AIStudioAgentPage />} />
+                <Route path="/ai-studio/create" element={
+                  <ProtectedRoute>
+                    <AIStudioCreateAgentPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/ai-studio/edit/:agentId" element={
+                  <ProtectedRoute>
+                    <AIStudioEditAgentPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/ai-studio/marketplace" element={<AIStudioMarketplacePage />} />
+                <Route path="/ai-studio/chat/:agentId" element={<AIStudioChatPage />} />
+                <Route path="/ai-studio/admin" element={<AIStudioAdminPage />} />
+                
+                {/* AI Embed Routes */}
+                <Route path="/ai-embed/:agentId" element={<AIEmbedPage />} />
+                
+                {/* Legal Pages */}
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/cookies" element={<CookiesPage />} />
+                
+                {/* Documentation */}
+                <Route path="/docs/*" element={<DocsPage />} />
+                
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </DecentralizedStorageProvider>
+          </ThemeProvider>
+        </HelmetProvider>
+      </div>
+    </Router>
+  );
+}
 
 export default App;

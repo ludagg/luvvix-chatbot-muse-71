@@ -367,21 +367,6 @@ const AIStudioCreateAgentPage = () => {
                           </FormItem>
                         )}
                       />
-                      
-                      <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-8 text-center">
-                        <div className="flex justify-center mb-4">
-                          <div className="bg-slate-200 dark:bg-slate-700 p-3 rounded-full">
-                            <Upload className="h-6 w-6 text-slate-600 dark:text-slate-300" />
-                          </div>
-                        </div>
-                        <h3 className="text-lg font-medium mb-2">Importer des documents</h3>
-                        <p className="text-slate-500 dark:text-slate-400 mb-4">
-                          Prochainement: importez des PDF, des fichiers texte ou des URL pour enrichir les connaissances de votre agent
-                        </p>
-                        <Button variant="outline" disabled>
-                          Importer des fichiers
-                        </Button>
-                      </div>
                     </CardContent>
                   </Card>
                   

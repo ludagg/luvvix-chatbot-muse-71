@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Bot, Sparkles, Code2, FileText, Upload, Plus, Trash2, Save, Settings2, MessageSquare } from "lucide-react";
 import EmbedCodeGenerator from "@/components/ai-studio/EmbedCodeGenerator";
+import ContentImportForm from "@/components/ai-studio/ContentImportForm";
 
 // Define an interface for the parameters object to help TypeScript
 interface AgentParameters {
@@ -609,6 +610,15 @@ const AIStudioEditAgentPage = () => {
                       </CardHeader>
                       
                       <CardContent className="space-y-6">
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-medium mb-3">Importer du contenu</h3>
+                          <ContentImportForm onContentImported={(content, source) => {
+                            // Adapter à la logique existante d'ajout de contexte
+                            setContextText(content);
+                            handleAddContextText();
+                          }} />
+                        </div>
+                        
                         <div className="border rounded-md p-4 bg-white dark:bg-slate-800">
                           <h3 className="font-medium mb-2 flex items-center">
                             <FileText className="h-4 w-4 mr-2 text-slate-500" />

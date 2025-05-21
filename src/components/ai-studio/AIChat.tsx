@@ -2,10 +2,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Loader2, Send, User, Bot } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { showToast } from '@/utils/toast-utils';
 
 interface AIChatProps {
   agent: any;
@@ -19,18 +19,19 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [sessionId] = useState<string>(() => Math.random().toString(36).substring(2, 15));
 
   useEffect(() => {
     // Create a new conversation when the component mounts
-    createConversation();
+    if (agent?.id) {
+      createConversation();
+    }
   }, [agent?.id]);
 
   const createConversation = async () => {
     if (!agent?.id) return;
     
     try {
-      const sessionId = Math.random().toString(36).substring(2, 15);
-      
       const { data, error } = await supabase
         .from('ai_conversations')
         .insert({
@@ -64,6 +65,7 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
       
     } catch (error) {
       console.error('Error creating conversation:', error);
+      showToast.error('Erreur', 'Impossible de créer une conversation');
     }
   };
 
@@ -89,29 +91,57 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
           content: userMessage.content
         });
       
-      // In a real application, here you would call your AI service
-      // For now, we'll simulate a response
-      setTimeout(async () => {
-        const botResponse = {
-          role: 'assistant',
-          content: `Je suis ${agent.name}, votre assistant IA. Je comprends votre message: "${inputValue}". Dans une vraie application, je vous donnerais une réponse intelligente basée sur mes connaissances et mon objectif: ${agent.objective}.`
-        };
-        
-        setMessages(prev => [...prev, botResponse]);
-        setIsLoading(false);
-        
-        // Store bot response in the database
-        await supabase
-          .from('ai_messages')
-          .insert({
-            conversation_id: conversationId,
-            role: 'assistant',
-            content: botResponse.content
-          });
-      }, 1000);
+      // Call the Cerebras chat Edge Function
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cerebras-chat`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            agentId: agent.id,
+            message: inputValue,
+            sessionId,
+            conversationId,
+            embedded
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors de la communication avec l\'IA');
+      }
+
+      const data = await response.json();
       
-    } catch (error) {
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      // Add AI response to chat
+      const botResponse = {
+        role: 'assistant',
+        content: data.reply || "Je n'ai pas pu générer de réponse."
+      };
+      
+      setMessages(prev => [...prev, botResponse]);
+      
+    } catch (error: any) {
       console.error('Error sending message:', error);
+      
+      // Add error message to chat
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: "Désolé, une erreur est survenue lors du traitement de votre message. Veuillez réessayer."
+        }
+      ]);
+      
+      showToast.error('Erreur', error.message || 'Impossible d\'envoyer votre message');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -149,7 +179,7 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
                     </div>
                   </Avatar>
                 )}
-                <div className="flex-1">
+                <div className="flex-1 whitespace-pre-wrap">
                   {message.content}
                 </div>
                 {message.role === 'user' && (
@@ -181,14 +211,18 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
             onKeyPress={handleKeyPress}
             placeholder="Écrivez votre message..."
             className="flex-1"
-            disabled={isLoading}
+            disabled={isLoading || !agent}
           />
           <Button 
             onClick={handleSendMessage} 
-            disabled={isLoading || !inputValue.trim()}
+            disabled={isLoading || !inputValue.trim() || !agent}
             size="icon"
           >
-            <Send className="w-4 h-4" />
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </Button>
         </div>
       </div>

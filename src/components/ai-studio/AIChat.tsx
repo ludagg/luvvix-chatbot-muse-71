@@ -173,15 +173,15 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
               exit="hidden"
             >
               <div 
-                className={`max-w-[80%] rounded-2xl p-4 ${
+                className={`max-w-[90%] rounded-2xl p-4 ${
                   message.role === 'user' 
                     ? 'bg-gradient-to-br from-luvvix-purple to-luvvix-darkpurple text-white shadow-lg' 
                     : 'bg-white/10 backdrop-blur-sm border border-white/10 text-white shadow-md'
                 }`}
               >
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-3">
                   {message.role !== 'user' && (
-                    <Avatar className="w-7 h-7 mt-1 shrink-0">
+                    <Avatar className="w-8 h-8 mt-1 shrink-0">
                       {agent?.avatar_url ? (
                         <img src={agent.avatar_url} alt={agent.name} className="object-cover" />
                       ) : (
@@ -192,10 +192,10 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
                     </Avatar>
                   )}
                   <div className="flex-1">
-                    <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                    <p className="whitespace-pre-wrap text-base leading-relaxed">{message.content}</p>
                   </div>
                   {message.role === 'user' && (
-                    <Avatar className="w-7 h-7 mt-1 shrink-0">
+                    <Avatar className="w-8 h-8 mt-1 shrink-0">
                       <div className="flex items-center justify-center w-full h-full bg-gradient-to-br from-luvvix-lightpurple to-luvvix-purple rounded-full">
                         <User className="w-4 h-4 text-white" />
                       </div>
@@ -225,7 +225,7 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
       
       {/* Input Area */}
       <div className={`p-4 ${embedded ? 'bg-transparent border-t border-white/10' : 'bg-white/5 backdrop-blur-sm border-t border-white/10'}`}>
-        <Card className="bg-white/10 backdrop-blur-md border-white/10 p-1">
+        <Card className="bg-white/10 backdrop-blur-md border-white/10 p-1.5">
           <div className="flex gap-2">
             <Input
               ref={inputRef}

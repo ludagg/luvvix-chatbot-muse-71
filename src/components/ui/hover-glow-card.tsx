@@ -14,7 +14,7 @@ export const HoverGlowCard = ({
   className,
   glowColor = "rgba(138, 135, 245, 0.2)",
   ...props
-}: HoverGlowCardProps) => {
+}: HoverGlowCardProps & Omit<HTMLMotionProps<"div">, keyof HoverGlowCardProps>) => {
   const [isHovered, setIsHovered] = useState(false);
   
   return (
@@ -29,7 +29,7 @@ export const HoverGlowCard = ({
         scale: isHovered ? 1.02 : 1,
         transition: { duration: 0.3 }
       }}
-      {...props as Omit<HTMLMotionProps<"div">, keyof HoverGlowCardProps>}
+      {...props}
     >
       {/* Glow effect */}
       <motion.div 

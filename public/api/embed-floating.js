@@ -80,14 +80,15 @@
         widget.style.cssText = `
           ${posStyles[this.position]};
           position: fixed;
-          width: 350px;
-          height: 500px;
+          width: 380px;
+          height: 550px;
           background-color: white;
           border-radius: 12px;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.15);
           z-index: 99997;
           overflow: hidden;
           display: none;
+          opacity: 0;
           transition: all 0.3s ease;
         `;
         

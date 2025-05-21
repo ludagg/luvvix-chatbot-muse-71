@@ -24,8 +24,7 @@ export function ThemeProvider({
   storageKey = 'luvvix-ui-theme',
   ...props
 }: ThemeProviderProps) {
-  // Fix: Modified useState to use proper React import
-  const [theme, setTheme] = React.useState<Theme>(
+  const [theme, setTheme] = useState<Theme>(
     () => {
       const storedTheme = localStorage.getItem(storageKey) as Theme | null;
       // Only allow 'light' or 'system' as valid themes

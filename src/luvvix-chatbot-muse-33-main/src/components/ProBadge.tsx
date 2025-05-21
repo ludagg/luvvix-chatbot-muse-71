@@ -1,26 +1,33 @@
 
-import React from 'react';
-import { Star } from 'lucide-react';
-import { cn } from '@/luvvix-chatbot-muse-33-main/src/lib/utils';
+import { Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ProBadgeProps {
-  size?: 'sm' | 'default';
   className?: string;
+  size?: "sm" | "md" | "lg";
 }
 
-export function ProBadge({ size = 'default', className }: ProBadgeProps) {
+export const ProBadge = ({ className, size = "md" }: ProBadgeProps) => {
+  const sizeClasses = {
+    sm: "text-[8px] px-1.5 py-0.5 gap-0.5",
+    md: "text-xs px-2 py-0.5 gap-1",
+    lg: "text-sm px-2.5 py-1 gap-1.5"
+  };
+  
+  const iconSizes = {
+    sm: 8,
+    md: 10,
+    lg: 12
+  };
+  
   return (
-    <div className={cn(
-      "flex items-center rounded-full bg-gradient-to-r from-amber-300 to-amber-500 text-black font-semibold",
-      size === 'sm' 
-        ? "text-[0.65rem] py-0.5 px-1.5" 
-        : "text-xs py-1 px-2",
+    <span className={cn(
+      "bg-amber-500/20 text-amber-500 rounded-full flex items-center font-medium",
+      sizeClasses[size],
       className
     )}>
-      <Star className={size === 'sm' ? "w-2.5 h-2.5 mr-0.5" : "w-3 h-3 mr-1"} fill="currentColor" />
-      <span>Pro</span>
-    </div>
+      <Star size={iconSizes[size]} className="fill-amber-500" /> 
+      Pro
+    </span>
   );
-}
-
-export default ProBadge;
+};

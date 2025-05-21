@@ -1,47 +1,61 @@
 
-import React from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { HoverGlowCard } from "@/components/ui/hover-glow-card";
+import { Shield, User, ArrowRight } from "lucide-react";
+import { HoverGlowCard } from '@/components/ui/hover-glow-card';
+import { useAuth } from '@/hooks/useAuth';
 
-interface LuvvixIdPromoProps {
-  onGetStarted: () => void;
-}
+const LuvvixIdPromo = () => {
+  const { user } = useAuth();
+  const [visible, setVisible] = useState(true);
 
-export const LuvvixIdPromo: React.FC<LuvvixIdPromoProps> = ({ onGetStarted }) => {
+  useEffect(() => {
+    // Si l'utilisateur est connecté, on masque la promotion
+    if (user) {
+      setVisible(false);
+    }
+  }, [user]);
+
+  if (!visible) return null;
+
   return (
-    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-      <h2 className="text-2xl font-bold mb-4">LuvviX ID</h2>
-      <p className="text-muted-foreground mb-6 max-w-md">
-        Utilisez un seul compte pour accéder à toutes les applications LuvviX.
-      </p>
-      
-      <div className="mb-8 w-full max-w-md">
-        <HoverGlowCard className="relative overflow-hidden rounded-xl border bg-background p-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-center bg-primary-50 dark:bg-primary-900/20 h-16 w-16 rounded-full mx-auto">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
+    <section className="py-10 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30">
+      <div className="container mx-auto px-4">
+        <HoverGlowCard className="rounded-xl overflow-hidden bg-white dark:bg-gray-800 shadow-lg p-6 md:p-8" glowColor="rgba(138, 135, 245, 0.3)">
+          <div className="flex flex-col md:flex-row items-center gap-6">
+            <div className="flex-shrink-0 bg-indigo-100 dark:bg-indigo-900/30 p-4 rounded-full">
+              <Shield className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
             </div>
-            <h3 className="text-xl font-semibold text-center">Un compte unifié</h3>
-            <p className="text-sm text-muted-foreground text-center">
-              Connectez-vous une seule fois pour accéder à LuvviX AI, LuvviX Santé, 
-              et tous les autres services de l'écosystème LuvviX.
-            </p>
+            
+            <div className="flex-grow">
+              <h3 className="text-xl md:text-2xl font-bold mb-2 text-center md:text-left">
+                Créez votre compte LuvviX ID
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300 text-center md:text-left">
+                Un seul compte pour accéder à tous les services de l'écosystème LuvviX.
+                Simplifiez votre expérience numérique dès aujourd'hui !
+              </p>
+            </div>
+            
+            <div className="flex-shrink-0 flex flex-col sm:flex-row gap-3">
+              <Link to="/auth">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                  <User className="mr-2 h-4 w-4" />
+                  Connexion
+                </Button>
+              </Link>
+              <Link to="/auth?signup=true">
+                <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white w-full sm:w-auto">
+                  Créer un compte
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </HoverGlowCard>
       </div>
-      
-      <Button 
-        onClick={onGetStarted}
-        size="lg"
-        className="font-medium"
-      >
-        Commencer avec LuvviX ID
-      </Button>
-    </div>
+    </section>
   );
 };
 

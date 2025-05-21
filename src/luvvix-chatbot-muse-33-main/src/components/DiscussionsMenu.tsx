@@ -1,7 +1,5 @@
 
-import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,100 +7,141 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MessageCircle, Plus, Trash2 } from 'lucide-react';
-import { toast } from '../hooks/use-toast';
+} from "@/components/ui/dropdown-menu";
+import { MessageSquare, MessageSquarePlus, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { ScrollArea } from "./ui/scroll-area";
 
 export function DiscussionsMenu() {
   const { 
+    user, 
     conversations, 
     currentConversationId, 
-    setCurrentConversationId, 
-    createNewConversation, 
-    deleteConversation 
+    setCurrentConversation,
+    createNewConversation,
   } = useAuth();
+  
+  const [isCreating, setIsCreating] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const isMobile = useIsMobile();
 
-  const handleNewConversation = () => {
-    createNewConversation();
+  const handleCreateNew = async () => {
+    if (!user) return;
+    setIsCreating(true);
+    try {
+      await createNewConversation();
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleSelectConversation = (id: string) => {
-    setCurrentConversationId(id);
+    setCurrentConversation(id);
   };
 
-  const handleDeleteConversation = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    deleteConversation(id);
-    toast({
-      description: "Conversation supprimée",
-    });
+  const showAllConversations = () => {
+    setIsDialogOpen(true);
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-foreground"
-          title="Discussions"
-        >
-          <MessageCircle className="h-5 w-5" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72">
-        <DropdownMenuLabel className="flex justify-between items-center">
-          <span>Conversations</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={handleNewConversation}
-            title="Nouvelle conversation"
-          >
-            <Plus className="h-4 w-4" />
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="text-foreground">
+            <MessageSquare className="h-5 w-5" />
           </Button>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        
-        {conversations.length === 0 ? (
-          <div className="text-center py-4 text-muted-foreground">
-            <p>Aucune conversation</p>
-            <Button 
-              variant="outline" 
-              className="mt-2" 
-              size="sm" 
-              onClick={handleNewConversation}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle conversation
-            </Button>
-          </div>
-        ) : (
-          <div className="max-h-72 overflow-y-auto">
-            {conversations.map((conversation) => (
-              <DropdownMenuItem 
-                key={conversation.id} 
-                className={`flex justify-between items-center group ${
-                  currentConversationId === conversation.id ? 'bg-accent' : ''
-                }`}
-                onClick={() => handleSelectConversation(conversation.id)}
-              >
-                <span className="truncate flex-1">{conversation.title}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                  onClick={(e) => handleDeleteConversation(conversation.id, e)}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>Discussions</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          
+          <DropdownMenuItem 
+            onClick={handleCreateNew}
+            disabled={isCreating}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            {isCreating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <MessageSquarePlus className="h-4 w-4" />
+            )}
+            <span>Nouvelle discussion</span>
+          </DropdownMenuItem>
+          
+          <DropdownMenuSeparator />
+          
+          {!user ? (
+            <div className="text-center py-2 text-xs text-muted-foreground px-2">
+              Connectez-vous pour sauvegarder vos discussions
+            </div>
+          ) : conversations.length === 0 ? (
+            <div className="text-center py-2 text-xs text-muted-foreground">
+              Aucune discussion
+            </div>
+          ) : (
+            <>
+              {conversations.slice(0, 5).map((conv) => (
+                <DropdownMenuItem 
+                  key={conv.id}
+                  className={cn(
+                    "cursor-pointer",
+                    currentConversationId === conv.id && "bg-accent"
+                  )}
+                  onClick={() => handleSelectConversation(conv.id)}
                 >
-                  <Trash2 className="h-3 w-3" />
-                  <span className="sr-only">Supprimer</span>
-                </Button>
-              </DropdownMenuItem>
-            ))}
-          </div>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+                  <div className="w-full truncate text-sm">
+                    {conv.title || "Nouvelle discussion"}
+                  </div>
+                </DropdownMenuItem>
+              ))}
+              
+              {conversations.length > 5 && (
+                <DropdownMenuItem 
+                  onClick={showAllConversations}
+                  className="text-primary cursor-pointer"
+                >
+                  Voir toutes les discussions...
+                </DropdownMenuItem>
+              )}
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Toutes les discussions</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[50vh] pr-4">
+            <div className="space-y-1.5">
+              {conversations.map((conv) => (
+                <div 
+                  key={conv.id}
+                  className={cn(
+                    "group flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors",
+                    currentConversationId === conv.id 
+                      ? "bg-primary/10 text-primary hover:bg-primary/15" 
+                      : "hover:bg-accent"
+                  )}
+                  onClick={() => {
+                    handleSelectConversation(conv.id);
+                    setIsDialogOpen(false);
+                  }}
+                >
+                  <div className="flex-1 truncate text-sm">
+                    {conv.title || "Nouvelle discussion"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

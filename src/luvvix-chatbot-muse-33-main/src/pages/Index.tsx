@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useAuth } from "../contexts/AuthContext";
-import { ChatContainer } from "../components/ChatContainer";
+import { useAuth } from "@/contexts/AuthContext";
+import { ChatContainer } from "@/components/ChatContainer";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -9,15 +9,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useIsMobile } from "../hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, User, LogOut, Star } from "lucide-react";
-import { ConversationSelector } from "../components/ConversationSelector";
-import { DiscussionsMenu } from "../components/DiscussionsMenu";
-import { ThemeToggle } from "../components/ThemeToggle";
-import { toast, useToast } from "../hooks/use-toast";
-import { ProFeatures } from "../components/ProFeatures";
-import { ProBadge } from "../components/ProBadge";
+import { Menu, User, Settings, LogOut, Star } from "lucide-react";
+import { ConversationSelector } from "@/components/ConversationSelector";
+import { DiscussionsMenu } from "@/components/DiscussionsMenu";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useToast } from "@/hooks/use-toast";
+import { ProFeatures } from "@/components/ProFeatures";
+import { ProBadge } from "@/components/ProBadge";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +55,7 @@ const Index = () => {
   const [error, setError] = useState("");
   const isMobile = useIsMobile();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { toast } = useToast();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),

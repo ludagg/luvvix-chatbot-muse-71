@@ -22,13 +22,6 @@ import { HoverGlowCard } from "@/components/ui/hover-glow-card";
 import { motion } from "framer-motion";
 
 const Index = () => {
-  // Handler for the LuvvixIdPromo component
-  const handleGetStartedWithLuvvixId = () => {
-    // Navigate to auth page or open auth modal
-    console.log('Get started with LuvviX ID clicked');
-    window.location.href = '/auth';
-  };
-
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -57,9 +50,9 @@ const Index = () => {
                   <div className="w-16 h-16 flex items-center justify-center bg-violet-100 dark:bg-violet-900/30 rounded-full mb-4">
                     <Bot className="w-8 h-8 text-violet-600 dark:text-violet-400" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">LuvviX AI</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">Notre assistant IA intelligent pour vous aider au quotidien.</p>
-                  <Link to="/luvvix-ai">
+                  <h3 className="text-lg font-semibold mb-2">AI Studio</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Créez vos propres agents IA pour automatiser vos tâches.</p>
+                  <Link to="/ai-studio">
                     <Button variant="outline" size="sm">Découvrir</Button>
                   </Link>
                 </div>
@@ -118,7 +111,7 @@ const Index = () => {
           </div>
         </section>
         
-        <LuvvixIdPromo onGetStarted={handleGetStartedWithLuvvixId} />
+        <LuvvixIdPromo />
         <AIStudioPromo />
         <Ecosystem />
         <FormsPromo />

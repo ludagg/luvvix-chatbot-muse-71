@@ -1,406 +1,536 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/button";
 import { HoverGlowCard } from "@/components/ui/hover-glow-card";
-import { motion } from "framer-motion";
-import { Bot, FileText, Newspaper, Cloud, Sparkles, AppWindow, ArrowRight, Globe, Palette, ShieldCheck, Zap, MessageSquare, Lightbulb, Briefcase, Headphones, PenTool, BarChart, Layers, Smartphone } from "lucide-react";
-import LuvvixAIPromo from "@/components/luvvix-ai/LuvvixAIPromo";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Brain,
+  HeartPulse,
+  Radio,
+  Cloud,
+  FileText,
+  BarChart,
+  Shield,
+  User,
+  Bot,
+  Calendar,
+  Zap,
+  Sparkles,
+  ExternalLink,
+  ArrowRight,
+  Check,
+  Star,
+  Clock,
+  Newspaper,
+  MessageSquare,
+  Mail
+} from "lucide-react";
+
+// Types
+interface AppCategory {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+}
+
+interface AppItem {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  route: string;
+  category: string;
+  isNew?: boolean;
+  isPremium?: boolean;
+  isPopular?: boolean;
+  isComing?: boolean;
+  color: string;
+  features?: string[];
+}
 
 const EcosystemPage = () => {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-
+  const { user } = useAuth();
+  const [recentApps, setRecentApps] = useState<AppItem[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>("all");
+  
   // App categories
-  const appCategories = [
-    {
-      name: "IA & Chatbots",
-      description: "Assistants intelligents et outils de traitement de langage naturel",
-      apps: [
-        {
-          id: "luvvix-ai",
-          name: "Luvvix AI",
-          description: "Assistant IA personnel avec capacités de raisonnement avancées",
-          icon: <Bot className="h-6 w-6" />,
-          color: "bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400",
-          url: "/ai",
-          featured: true
-        },
-        {
-          id: "ai-studio",
-          name: "AI Studio",
-          description: "Créez et personnalisez vos propres agents IA",
-          icon: <Lightbulb className="h-6 w-6" />,
-          color: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
-          url: "/ai-studio",
-          featured: true
-        },
-        {
-          id: "ai-chat",
-          name: "AI Chat",
-          description: "Discutez avec des modèles d'IA spécialisés",
-          icon: <MessageSquare className="h-6 w-6" />,
-          color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
-          url: "/ai-chat",
-          featured: false
-        }
-      ]
-    },
-    {
-      name: "Productivité",
-      description: "Outils pour améliorer votre efficacité quotidienne",
-      apps: [
-        {
-          id: "forms",
-          name: "Forms",
-          description: "Créez et partagez des formulaires intelligents",
-          icon: <FileText className="h-6 w-6" />,
-          color: "bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
-          url: "/forms",
-          featured: true
-        },
-        {
-          id: "cloud",
-          name: "Cloud",
-          description: "Stockage et partage de fichiers sécurisé",
-          icon: <Cloud className="h-6 w-6" />,
-          color: "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
-          url: "/cloud",
-          featured: true
-        },
-        {
-          id: "calendar",
-          name: "Calendar",
-          description: "Planifiez et organisez vos événements",
-          icon: <Layers className="h-6 w-6" />,
-          color: "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
-          url: "/calendar",
-          featured: false
-        }
-      ]
-    },
-    {
-      name: "Information",
-      description: "Restez informé avec des contenus personnalisés",
-      apps: [
-        {
-          id: "news",
-          name: "News",
-          description: "Actualités personnalisées avec IA",
-          icon: <Newspaper className="h-6 w-6" />,
-          color: "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
-          url: "/news",
-          featured: true
-        },
-        {
-          id: "weather",
-          name: "Weather",
-          description: "Prévisions météo précises et localisées",
-          icon: <Globe className="h-6 w-6" />,
-          color: "bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400",
-          url: "/weather",
-          featured: false
-        }
-      ]
-    },
-    {
-      name: "Divertissement",
-      description: "Applications pour vos moments de détente",
-      apps: [
-        {
-          id: "streaming",
-          name: "Streaming",
-          description: "Plateforme de streaming vidéo et audio",
-          icon: <Headphones className="h-6 w-6" />,
-          color: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-          url: "/streaming",
-          featured: false
-        },
-        {
-          id: "games",
-          name: "Games",
-          description: "Jeux en ligne avec IA adaptative",
-          icon: <Zap className="h-6 w-6" />,
-          color: "bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400",
-          url: "/games",
-          featured: false
-        }
-      ]
-    },
-    {
-      name: "Professionnel",
-      description: "Solutions pour les entreprises et professionnels",
-      apps: [
-        {
-          id: "analytics",
-          name: "Analytics",
-          description: "Analyses de données et tableaux de bord",
-          icon: <BarChart className="h-6 w-6" />,
-          color: "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
-          url: "/analytics",
-          featured: false
-        },
-        {
-          id: "design",
-          name: "Design Studio",
-          description: "Création graphique assistée par IA",
-          icon: <Palette className="h-6 w-6" />,
-          color: "bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400",
-          url: "/design",
-          featured: false
-        },
-        {
-          id: "business",
-          name: "Business Suite",
-          description: "Outils de gestion d'entreprise",
-          icon: <Briefcase className="h-6 w-6" />,
-          color: "bg-gray-100 text-gray-600 dark:bg-gray-700/30 dark:text-gray-400",
-          url: "/business",
-          featured: false
-        }
-      ]
-    },
-    {
-      name: "Sécurité",
-      description: "Protection de vos données et de votre vie privée",
-      apps: [
-        {
-          id: "id",
-          name: "LuvviX ID",
-          description: "Authentification sécurisée et gestion d'identité",
-          icon: <ShieldCheck className="h-6 w-6" />,
-          color: "bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400",
-          url: "/id",
-          featured: true
-        },
-        {
-          id: "vault",
-          name: "Vault",
-          description: "Gestionnaire de mots de passe et coffre-fort numérique",
-          icon: <ShieldCheck className="h-6 w-6" />,
-          color: "bg-slate-100 text-slate-600 dark:bg-slate-900/30 dark:text-slate-400",
-          url: "/vault",
-          featured: false
-        }
-      ]
-    },
-    {
-      name: "Mobile",
-      description: "Applications mobiles de l'écosystème LuvviX",
-      apps: [
-        {
-          id: "mobile-app",
-          name: "LuvviX Mobile",
-          description: "Application mobile tout-en-un",
-          icon: <Smartphone className="h-6 w-6" />,
-          color: "bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400",
-          url: "/mobile",
-          featured: false
-        }
-      ]
-    }
+  const categories: AppCategory[] = [
+    { id: "all", name: "Tous", description: "L'ensemble de l'écosystème LuvviX", icon: <Sparkles className="h-5 w-5" /> },
+    { id: "ai", name: "Intelligence Artificielle", description: "Outils propulsés par l'IA", icon: <Brain className="h-5 w-5" /> },
+    { id: "productivity", name: "Productivité", description: "Applications pour le travail", icon: <Zap className="h-5 w-5" /> },
+    { id: "communication", name: "Communication", description: "Services de messagerie et media", icon: <MessageSquare className="h-5 w-5" /> },
+    { id: "health", name: "Santé", description: "Applications médicales", icon: <HeartPulse className="h-5 w-5" /> },
+    { id: "data", name: "Données", description: "Analyse et stockage", icon: <BarChart className="h-5 w-5" /> },
   ];
-
-  // Filter apps by category or show featured apps if no category is selected
-  const filteredApps = activeCategory
-    ? appCategories.find(cat => cat.name === activeCategory)?.apps || []
-    : appCategories.flatMap(cat => cat.apps.filter(app => app.featured));
-
+  
+  // App list
+  const apps: AppItem[] = [
+    {
+      id: "ai-studio",
+      name: "LuvviX AI Studio",
+      description: "Créez et déployez vos propres agents IA intelligents",
+      icon: <Bot className="h-8 w-8" />,
+      route: "/ai-studio",
+      category: "ai",
+      isNew: true,
+      isPopular: true,
+      color: "from-violet-500 to-indigo-500",
+      features: [
+        "Création d'agents IA sans code",
+        "Support pour les sites web JavaScript",
+        "Intégration dans vos propres sites"
+      ]
+    },
+    {
+      id: "medic",
+      name: "LuvviX Medic",
+      description: "Solutions innovantes pour la santé numérique",
+      icon: <HeartPulse className="h-8 w-8" />,
+      route: "/medic",
+      category: "health",
+      color: "from-emerald-500 to-teal-500",
+      features: [
+        "Suivi médical personnalisé",
+        "Rendez-vous avec des spécialistes",
+        "Accès à votre dossier médical"
+      ]
+    },
+    {
+      id: "streammix",
+      name: "LuvviX StreamMix",
+      description: "Plateforme de streaming audio et vidéo",
+      icon: <Radio className="h-8 w-8" />,
+      route: "/streammix",
+      category: "communication",
+      isPremium: true,
+      color: "from-orange-500 to-red-500",
+      features: [
+        "Montage vidéo assisté par IA",
+        "Diffusion en direct",
+        "Collaboration en temps réel"
+      ]
+    },
+    {
+      id: "cloud",
+      name: "LuvviX Cloud",
+      description: "Stockage sécurisé et synchronisation de vos fichiers",
+      icon: <Cloud className="h-8 w-8" />,
+      route: "/cloud",
+      category: "data",
+      isPopular: true,
+      color: "from-blue-500 to-sky-500",
+      features: [
+        "Stockage sécurisé avec chiffrement",
+        "Partage de fichiers facilité",
+        "Synchronisation multi-appareils"
+      ]
+    },
+    {
+      id: "forms",
+      name: "LuvviX Forms",
+      description: "Création et gestion de formulaires intelligents",
+      icon: <FileText className="h-8 w-8" />,
+      route: "/forms",
+      category: "productivity",
+      color: "from-pink-500 to-rose-500",
+      features: [
+        "Formulaires personnalisables",
+        "Analyse des réponses en temps réel",
+        "Intégration avec d'autres services LuvviX"
+      ]
+    },
+    {
+      id: "analytics",
+      name: "LuvviX Analytics",
+      description: "Analyse de données avec visualisations avancées",
+      icon: <BarChart className="h-8 w-8" />,
+      route: "/analytics",
+      category: "data",
+      isComing: true,
+      color: "from-indigo-500 to-purple-500",
+      features: [
+        "Tableaux de bord personnalisables",
+        "Rapports automatisés",
+        "Intégration avec Google Analytics"
+      ]
+    },
+    {
+      id: "id",
+      name: "LuvviX ID",
+      description: "Votre identité numérique sécurisée",
+      icon: <User className="h-8 w-8" />,
+      route: "/auth",
+      category: "productivity",
+      color: "from-gray-700 to-gray-900",
+      features: [
+        "Authentification sécurisée",
+        "Connexion à tout l'écosystème LuvviX",
+        "Protection par double facteur"
+      ]
+    },
+    {
+      id: "news",
+      name: "LuvviX News",
+      description: "Actualités personnalisées et alertes",
+      icon: <Newspaper className="h-8 w-8" />,
+      route: "/news",
+      category: "communication",
+      isNew: true,
+      color: "from-yellow-500 to-amber-500",
+      features: [
+        "Actualités personnalisées par IA",
+        "Alertes en temps réel",
+        "Résumés intelligents des articles"
+      ]
+    },
+    {
+      id: "calendar",
+      name: "LuvviX Calendar",
+      description: "Gestion avancée de votre calendrier",
+      icon: <Calendar className="h-8 w-8" />,
+      route: "/calendar",
+      category: "productivity",
+      isComing: true,
+      color: "from-cyan-500 to-blue-500",
+      features: [
+        "Synchronisation multi-plateformes",
+        "Organisation d'événements collaboratifs",
+        "Rappels intelligents"
+      ]
+    },
+  ];
+  
+  useEffect(() => {
+    // Simulate getting recent apps from database or localStorage
+    if (user) {
+      setRecentApps([
+        apps.find(app => app.id === "ai-studio")!,
+        apps.find(app => app.id === "cloud")!,
+        apps.find(app => app.id === "forms")!
+      ]);
+    }
+  }, [user]);
+  
+  // Filter apps by category
+  const filteredApps = activeCategory === "all" 
+    ? apps 
+    : apps.filter(app => app.category === activeCategory);
+  
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { 
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  };
+  
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+  
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="pt-16">
+      <main className="flex-grow pt-20">
         {/* Hero Section */}
-        <section className="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <section className="bg-gradient-to-b from-indigo-900 to-purple-900 text-white py-16">
           <div className="container mx-auto px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-center max-w-3xl mx-auto"
-            >
-              <h1 className="text-4xl md:text-5xl font-bold mb-6">
-                L'Écosystème <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">LuvviX</span>
-              </h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-                Découvrez notre suite complète d'applications intelligentes et interconnectées pour simplifier votre vie numérique.
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Button size="lg" className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white">
-                  Explorer les applications
-                </Button>
-                <Button size="lg" variant="outline">
-                  En savoir plus
-                </Button>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-        
-        {/* Add Luvvix AI Promo */}
-        <LuvvixAIPromo />
-        
-        {/* App Categories */}
-        <section className="py-16 bg-white dark:bg-gray-900">
-          <div className="container mx-auto px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-center mb-12"
-            >
-              <h2 className="text-3xl font-bold mb-4">Nos Applications</h2>
-              <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Une suite complète d'applications conçues pour travailler ensemble et améliorer votre productivité.
-              </p>
-            </motion.div>
-            
-            {/* Category Filter */}
-            <div className="flex flex-wrap justify-center gap-2 mb-10">
-              <Button
-                variant={activeCategory === null ? "default" : "outline"}
-                size="sm"
-                onClick={() => setActiveCategory(null)}
-                className="rounded-full"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                En vedette
-              </Button>
-              
-              {appCategories.map((category) => (
-                <Button
-                  key={category.name}
-                  variant={activeCategory === category.name ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setActiveCategory(category.name)}
-                  className="rounded-full"
-                >
-                  {category.name}
-                </Button>
-              ))}
-            </div>
-            
-            {/* App Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredApps.map((app) => (
-                <Link to={app.url} key={app.id}>
-                  <HoverGlowCard className="h-full p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-all duration-200 hover:shadow-md">
-                    <div className="flex flex-col h-full">
-                      <div className={`w-12 h-12 flex items-center justify-center rounded-lg ${app.color} mb-4`}>
-                        {app.icon}
-                      </div>
-                      <h3 className="text-lg font-semibold mb-2">{app.name}</h3>
-                      <p className="text-gray-600 dark:text-gray-400 mb-4 flex-grow">{app.description}</p>
-                      <div className="flex items-center text-sm text-indigo-600 dark:text-indigo-400 font-medium">
-                        Découvrir
-                        <ArrowRight className="h-4 w-4 ml-1" />
-                      </div>
-                    </div>
-                  </HoverGlowCard>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-        
-        {/* Integration Section */}
-        <section className="py-16 bg-gray-50 dark:bg-gray-800">
-          <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
+            <div className="max-w-3xl mx-auto text-center">
+              <motion.h1 
+                className="text-4xl md:text-5xl font-bold mb-6"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
               >
-                <h2 className="text-3xl font-bold mb-6">Une expérience unifiée</h2>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
-                  Toutes nos applications sont conçues pour fonctionner ensemble de manière transparente, 
-                  avec une authentification unique et un partage de données sécurisé.
-                </p>
-                <ul className="space-y-4 mb-8">
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 mt-0.5">
-                      <svg className="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <span className="text-gray-700 dark:text-gray-300">Authentification unique avec LuvviX ID</span>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 mt-0.5">
-                      <svg className="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <span className="text-gray-700 dark:text-gray-300">Interface utilisateur cohérente</span>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 mt-0.5">
-                      <svg className="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <span className="text-gray-700 dark:text-gray-300">Partage de données sécurisé entre applications</span>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="flex-shrink-0 h-6 w-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3 mt-0.5">
-                      <svg className="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <span className="text-gray-700 dark:text-gray-300">Intelligence artificielle intégrée dans chaque application</span>
-                  </li>
-                </ul>
-                <Button className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white">
-                  Créer un compte
-                </Button>
-              </motion.div>
-              
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="relative"
+                Écosystème LuvviX
+              </motion.h1>
+              <motion.p 
+                className="text-xl mb-8 text-indigo-200"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <div className="relative rounded-xl overflow-hidden shadow-xl">
-                  <img 
-                    src="/images/ecosystem-integration.png" 
-                    alt="LuvviX Ecosystem Integration" 
-                    className="w-full h-auto"
-                    onError={(e) => {
-                      e.currentTarget.src = "https://via.placeholder.com/800x600/4F46E5/FFFFFF?text=LuvviX+Ecosystem";
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-tr from-indigo-600/20 to-purple-600/20 pointer-events-none" />
-                </div>
-                
-                {/* Decorative elements */}
-                <div className="absolute -z-10 -top-6 -right-6">
-                  <div className="h-24 w-24 rounded-full bg-indigo-500/10 dark:bg-indigo-500/20" />
-                </div>
-                <div className="absolute -z-10 -bottom-6 -left-6">
-                  <div className="h-16 w-16 rounded-full bg-purple-500/10 dark:bg-purple-500/20" />
-                </div>
-              </motion.div>
+                Une suite complète d'applications innovantes pour améliorer votre vie numérique
+              </motion.p>
+              {!user && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4, delay: 0.4 }}
+                >
+                  <Link to="/auth?signup=true">
+                    <Button size="lg" className="bg-white text-indigo-900 hover:bg-gray-100">
+                      Créer votre compte LuvviX ID
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <p className="mt-4 text-sm text-indigo-200">
+                    Accédez à toutes nos applications avec un seul identifiant sécurisé
+                  </p>
+                </motion.div>
+              )}
             </div>
           </div>
         </section>
         
-        {/* CTA Section */}
-        <section className="py-20 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-          <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold mb-6">Prêt à découvrir l'écosystème LuvviX ?</h2>
-            <p className="text-xl opacity-90 max-w-2xl mx-auto mb-8">
-              Rejoignez des milliers d'utilisateurs qui simplifient leur vie numérique avec nos applications intelligentes.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <Button size="lg" variant="secondary">
-                Créer un compte gratuit
-              </Button>
-              <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
-                Voir les tarifs
-              </Button>
+        {/* Recent Apps Section - Only for logged in users */}
+        {user && recentApps.length > 0 && (
+          <section className="py-12 bg-gradient-to-b from-purple-50 to-white dark:from-gray-900 dark:to-gray-900">
+            <div className="container mx-auto px-4">
+              <h2 className="text-2xl font-bold mb-6 flex items-center">
+                <Clock className="mr-2 h-5 w-5 text-purple-600" />
+                Applications récentes
+              </h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {recentApps.map((app) => (
+                  <Link to={app.route} key={app.id}>
+                    <HoverGlowCard className="h-full">
+                      <div className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm h-full flex flex-col border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center mb-4">
+                          <div className={`p-3 rounded-full bg-gradient-to-br ${app.color} mr-4`}>
+                            {app.icon}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-lg">{app.name}</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Utilisé récemment</p>
+                          </div>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 flex-grow">{app.description}</p>
+                        <Button variant="outline" className="mt-auto w-full justify-between">
+                          Continuer <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </HoverGlowCard>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+        
+        {/* Main Categories Section */}
+        <section className="py-16 bg-white dark:bg-gray-900">
+          <div className="container mx-auto px-4">
+            <h2 className="text-3xl font-bold mb-12 text-center">
+              Explorez nos applications par catégorie
+            </h2>
+            
+            <Tabs 
+              defaultValue="all" 
+              value={activeCategory}
+              onValueChange={setActiveCategory}
+              className="w-full mb-10"
+            >
+              <div className="flex justify-center mb-8">
+                <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-1">
+                  {categories.map((category) => (
+                    <TabsTrigger 
+                      key={category.id} 
+                      value={category.id}
+                      className="flex items-center gap-2 px-4 py-2"
+                    >
+                      {category.icon}
+                      <span className="hidden md:inline">{category.name}</span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+              
+              <div className="text-center mb-8">
+                {categories.map((category) => (
+                  category.id === activeCategory && (
+                    <div key={category.id}>
+                      <h3 className="text-lg font-medium flex items-center justify-center gap-2">
+                        {category.icon}
+                        {category.name}
+                      </h3>
+                      <p className="text-gray-500 dark:text-gray-400">{category.description}</p>
+                    </div>
+                  )
+                ))}
+              </div>
+              
+              <motion.div 
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                key={activeCategory} // Ajout d'une clé pour forcer l'animation à chaque changement
+              >
+                {filteredApps.map((app) => (
+                  <motion.div key={app.id} variants={itemVariants}>
+                    <Card className="h-full overflow-hidden border-2 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-300">
+                      <div className={`h-2 bg-gradient-to-r ${app.color}`}></div>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className={`p-3 rounded-lg bg-gradient-to-br ${app.color} text-white`}>
+                            {app.icon}
+                          </div>
+                          <div className="flex gap-1 flex-wrap">
+                            {app.isNew && (
+                              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium">
+                                NOUVEAU
+                              </span>
+                            )}
+                            {app.isPopular && (
+                              <span className="px-2 py-1 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 rounded-full text-xs font-medium flex items-center">
+                                <Star className="h-3 w-3 mr-1" /> POPULAIRE
+                              </span>
+                            )}
+                            {app.isPremium && (
+                              <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full text-xs font-medium">
+                                PREMIUM
+                              </span>
+                            )}
+                            {app.isComing && (
+                              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium">
+                                BIENTÔT
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <CardTitle className="mt-4">{app.name}</CardTitle>
+                        <CardDescription>{app.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2">
+                          {app.features?.map((feature, index) => (
+                            <li key={index} className="flex items-start">
+                              <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
+                              <span className="text-sm text-gray-600 dark:text-gray-300">{feature}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                      <CardFooter>
+                        {app.isComing ? (
+                          <Button disabled className="w-full">
+                            Bientôt disponible
+                          </Button>
+                        ) : (
+                          <Link to={app.route} className="w-full">
+                            <Button className={`w-full bg-gradient-to-r ${app.color} hover:opacity-90 text-white`}>
+                              {app.isPremium ? "Essai gratuit" : "Accéder"}
+                              <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                          </Link>
+                        )}
+                      </CardFooter>
+                    </Card>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </Tabs>
+          </div>
+        </section>
+        
+        {/* Contact Section */}
+        <section className="py-16 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-900 dark:to-indigo-950">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden">
+              <div className="md:flex">
+                <div className="md:w-1/2 bg-gradient-to-br from-indigo-600 to-purple-700 p-8 text-white">
+                  <h3 className="text-2xl font-bold mb-4">Contactez l'équipe LuvviX</h3>
+                  <p className="mb-6">
+                    Vous avez des questions ou des suggestions ? Notre équipe est disponible pour vous aider.
+                  </p>
+                  <div className="space-y-4">
+                    <a href="https://wa.me/237691128422" target="_blank" rel="noopener noreferrer" 
+                      className="flex items-center p-3 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+                      <div className="bg-green-500 p-2 rounded-full mr-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                          <path d="M17.6 6.8a7.8 7.8 0 0 0-5.5-2.3 8 8 0 0 0-8 8c0 1.5.3 3 1 4.1l-1 4.4 4.4-1c1.2.6 2.5.9 3.9.9a8 8 0 0 0 8-8 7.9 7.9 0 0 0-2.8-6.1z"></path>
+                          <path d="M12.5 15.5a2.8 2.8 0 0 1-4-4"></path>
+                          <path d="M15 12.2a2.5 2.5 0 0 0-.6-1.7 2.7 2.7 0 0 0-1.7-.7 2.7 2.7 0 0 0-2.2 1.5"></path>
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="font-medium">WhatsApp</p>
+                        <p className="text-sm opacity-80">+237 691 128 422</p>
+                      </div>
+                    </a>
+                    
+                    <a href="mailto:contact@luvvix.com" 
+                      className="flex items-center p-3 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+                      <div className="bg-blue-500 p-2 rounded-full mr-4">
+                        <Mail className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-medium">Email</p>
+                        <p className="text-sm opacity-80">contact@luvvix.com</p>
+                      </div>
+                    </a>
+                  </div>
+                </div>
+                
+                <div className="md:w-1/2 p-8">
+                  <h3 className="text-2xl font-bold mb-4">Fonctionnalités à venir</h3>
+                  <p className="text-gray-500 dark:text-gray-400 mb-6">
+                    Découvrez nos prochaines innovations et contribuez à leur développement.
+                  </p>
+                  <ul className="space-y-4">
+                    <li className="flex">
+                      <div className="mr-4 bg-purple-100 dark:bg-purple-900/30 p-2 rounded-full">
+                        <Bot className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">LuvviX AI Assistant personnel</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Un assistant IA entièrement personnalisé à vos besoins
+                        </p>
+                      </div>
+                    </li>
+                    <li className="flex">
+                      <div className="mr-4 bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full">
+                        <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">LuvviX Secure</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Protection avancée de vos données avec chiffrement de bout en bout
+                        </p>
+                      </div>
+                    </li>
+                    <li className="flex">
+                      <div className="mr-4 bg-green-100 dark:bg-green-900/30 p-2 rounded-full">
+                        <Zap className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <h4 className="font-medium">LuvviX Connect</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Intégration entre toutes vos applications préférées
+                        </p>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         </section>

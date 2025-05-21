@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, FileText } from "lucide-react";
+import { FileText, Search, Plus } from "lucide-react";
 
 const FormsHeader = () => {
   const [searchQuery, setSearchQuery] = useState("");

@@ -1,6 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { nanoid } from "nanoid";
 import { useLocalStorage } from "@/hooks/use-local-storage";
+import { toast } from "@/components/ui/use-toast";
+import { LuvviXID } from "@/utils/luvvix-id-sdk";
 
 export interface User {
   id: string;
@@ -72,47 +75,80 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     "luvvix-current-conversation-id",
     null
   );
+  const [luvvixIdClient, setLuvvixIdClient] = useState<LuvviXID | null>(null);
+
+  // Initialize LuvviX ID client
+  useEffect(() => {
+    try {
+      const client = new LuvviXID({
+        appName: 'chat',
+        redirectUrl: window.location.origin,
+        cookieDomain: '.luvvix.it.com'
+      });
+      setLuvvixIdClient(client);
+      
+      // Check if user is already authenticated with LuvviX ID
+      const checkAuth = async () => {
+        try {
+          const isAuthenticated = await client.checkSilentAuth();
+          if (isAuthenticated) {
+            const userData = await client.getUserProfile();
+            if (userData) {
+              // Convert LuvviX ID user data to app user format
+              const appUser: User = {
+                id: userData.id || nanoid(),
+                email: userData.email || '',
+                displayName: userData.full_name || userData.username || '',
+              };
+              setUser(appUser);
+              
+              // Set pro status based on subscription or email domain
+              const hasPro = userData.is_pro || !!userData.subscriptions?.length || userData.email?.includes('pro');
+              setProStatus(hasPro);
+              
+              // Load user conversations
+              const userConversations = conversations.filter(
+                (conv) => conv.id.startsWith(appUser.id)
+              );
+              
+              if (userConversations.length > 0) {
+                setCurrentConversationId(userConversations[0].id);
+              } else {
+                // Create a new conversation for this user if none exists
+                const newConvId = createNewConversation(appUser.id);
+                setCurrentConversationId(newConvId);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error checking authentication:", err);
+        }
+      };
+      
+      checkAuth();
+    } catch (error) {
+      console.error("Error initializing LuvviX ID client:", error);
+    }
+  }, []);
 
   const login = async (email: string, password: string) => {
+    if (!luvvixIdClient) {
+      throw new Error("LuvviX ID client not initialized");
+    }
+    
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      let existingUser = null;
-      const usersJson = localStorage.getItem("luvvix-users");
-      
-      if (usersJson) {
-        const users = JSON.parse(usersJson);
-        existingUser = users.find((u: any) => u.email === email);
-        
-        if (!existingUser || existingUser.password !== password) {
-          throw new Error("Identifiants invalides");
-        }
-      } else {
-        throw new Error("Aucun utilisateur trouvé");
-      }
-      
-      const { password: _, ...userWithoutPassword } = existingUser;
-      setUser(userWithoutPassword);
-      
-      if (email.includes("pro") || email.includes("premium")) {
-        setProStatus(true);
-      }
-      
-      const userConversations = conversations.filter(
-        (conv) => conv.id.startsWith(userWithoutPassword.id)
-      );
-      
-      if (userConversations.length > 0) {
-        setCurrentConversationId(userConversations[0].id);
-      } else {
-        const newConvId = createNewConversation();
-        setCurrentConversationId(newConvId);
-      }
+      // Redirect to LuvviX ID login page
+      luvvixIdClient.redirectToLogin();
+      // The redirect will happen, so we don't need to do anything else here
     } catch (error: any) {
-      throw new Error(error.message || "Erreur lors de la connexion");
-    } finally {
       setIsLoading(false);
+      toast({
+        title: "Erreur lors de la connexion",
+        description: error.message || "Une erreur est survenue",
+        variant: "destructive"
+      });
+      throw new Error(error.message || "Erreur lors de la connexion");
     }
   };
 
@@ -123,62 +159,98 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     age?: number,
     country?: string
   ) => {
+    if (!luvvixIdClient) {
+      throw new Error("LuvviX ID client not initialized");
+    }
+    
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      let users = [];
-      const usersJson = localStorage.getItem("luvvix-users");
-      
-      if (usersJson) {
-        users = JSON.parse(usersJson);
-        const existingUser = users.find((u: any) => u.email === email);
-        
-        if (existingUser) {
-          throw new Error("Cet email est déjà utilisé");
-        }
-      }
-      
-      const newUser = {
-        id: nanoid(),
-        email,
-        password,
-        displayName,
-        age,
-        country,
-        createdAt: new Date(),
-      };
-      
-      users.push(newUser);
-      localStorage.setItem("luvvix-users", JSON.stringify(users));
-      
-      const { password: _, ...userWithoutPassword } = newUser;
-      setUser(userWithoutPassword);
-      
-      if (email.includes("pro") || email.includes("premium")) {
-        setProStatus(true);
-      }
-      
-      const newConvId = createNewConversation();
-      setCurrentConversationId(newConvId);
+      // Redirect to LuvviX ID signup page
+      luvvixIdClient.redirectToLogin({ signup: true });
+      // The redirect will happen, so we don't need to do anything else here
     } catch (error: any) {
-      throw new Error(error.message || "Erreur lors de l'inscription");
-    } finally {
       setIsLoading(false);
+      toast({
+        title: "Erreur lors de l'inscription",
+        description: error.message || "Une erreur est survenue",
+        variant: "destructive"
+      });
+      throw new Error(error.message || "Erreur lors de l'inscription");
     }
   };
 
   const logout = () => {
+    if (luvvixIdClient) {
+      luvvixIdClient.logout();
+    }
     setUser(null);
     setProStatus(false);
     setCurrentConversationId(null);
   };
 
-  const createNewConversation = () => {
-    const newId = user ? `${user.id}-${nanoid()}` : nanoid();
+  // Handle OAuth callback from LuvviX ID
+  useEffect(() => {
+    const handleCallback = async () => {
+      if (!luvvixIdClient || !window.location.search.includes('token=')) {
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        const result = await luvvixIdClient.handleCallback();
+        if (result.success && result.user) {
+          const appUser: User = {
+            id: result.user.id || nanoid(),
+            email: result.user.email || '',
+            displayName: result.user.full_name || result.user.username || '',
+          };
+          setUser(appUser);
+          
+          // Set pro status based on subscription or email domain
+          const hasPro = result.user.is_pro || !!result.user.subscriptions?.length || appUser.email.includes('pro');
+          setProStatus(hasPro);
+          
+          // Load or create a conversation for the user
+          const userConversations = conversations.filter(
+            (conv) => conv.id.startsWith(appUser.id)
+          );
+          
+          if (userConversations.length > 0) {
+            setCurrentConversationId(userConversations[0].id);
+          } else {
+            const newConvId = createNewConversation(appUser.id);
+            setCurrentConversationId(newConvId);
+          }
+          
+          toast({
+            title: "Connexion réussie",
+            description: `Bienvenue sur LuvviX AI, ${appUser.displayName || ''}!`,
+          });
+          
+          // Clear the URL params
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      } catch (error: any) {
+        console.error("Error handling callback:", error);
+        toast({
+          title: "Erreur d'authentification",
+          description: error.message || "Une erreur est survenue",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    handleCallback();
+  }, [luvvixIdClient]);
+
+  const createNewConversation = (userId?: string) => {
+    const newId = userId || (user ? user.id : nanoid());
+    const conversationId = `${newId}-${nanoid()}`;
     
     const newConversation: Conversation = {
-      id: newId,
+      id: conversationId,
       title: `Nouvelle conversation ${new Date().toLocaleString()}`,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -194,8 +266,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
     
     setConversations([newConversation, ...conversations]);
-    setCurrentConversationId(newId);
-    return newId;
+    return conversationId;
   };
 
   const saveCurrentConversation = (
@@ -282,7 +353,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isLoading,
         conversations,
         currentConversationId,
-        createNewConversation,
+        createNewConversation: () => createNewConversation(),
         saveCurrentConversation,
         setCurrentConversation,
         deleteConversation,

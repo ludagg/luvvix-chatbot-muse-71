@@ -1,18 +1,31 @@
-import * as React from "react"
 
-import type {
-  ToastActionElement,
-  ToastProps,
-} from "@/components/ui/toast"
+import * as React from "react";
+import { toast as sonnerToast } from "sonner";
 
-const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+export type ToastProps = {
+  id: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  action?: ToastActionElement;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  variant?: "default" | "destructive";
+};
+
+export type ToastActionElement = React.ReactElement<{
+  className?: string;
+  altText?: string;
+  onClick?: () => void;
+}>;
+
+const TOAST_LIMIT = 5;  // Increased limit for better UX
+const TOAST_REMOVE_DELAY = 5000; // Decreased to 5 seconds for better UX
 
 type ToasterToast = ToastProps & {
-  id: string
-  title?: React.ReactNode
-  description?: React.ReactNode
-  action?: ToastActionElement
+  id: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  action?: ToastActionElement;
 }
 
 const actionTypes = {
@@ -137,17 +150,18 @@ function dispatch(action: Action) {
   })
 }
 
-type Toast = Omit<ToasterToast, "id">
+// Add toast type definition for export
+export type Toast = Omit<ToasterToast, "id">;
 
-function toast({ ...props }: Toast) {
-  const id = genId()
+export function toast({ ...props }: Toast) {
+  const id = genId();
 
   const update = (props: ToasterToast) =>
     dispatch({
       type: "UPDATE_TOAST",
       toast: { ...props, id },
-    })
-  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
+    });
+  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id });
 
   dispatch({
     type: "ADD_TOAST",
@@ -156,30 +170,72 @@ function toast({ ...props }: Toast) {
       id,
       open: true,
       onOpenChange: (open) => {
-        if (!open) dismiss()
+        if (!open) dismiss();
       },
     },
-  })
+  });
 
   return {
     id: id,
     dismiss,
     update,
-  }
+  };
 }
 
-function useToast() {
-  const [state, setState] = React.useState<State>(memoryState)
+// Enhanced sonner toast configuration
+sonnerToast.success = (message, options) => {
+  return sonnerToast(message, {
+    ...options,
+    style: {
+      background: 'linear-gradient(to right, rgba(110, 89, 165, 0.1), rgba(139, 135, 245, 0.1))',
+      color: '#fff',
+      border: '1px solid rgba(139, 135, 245, 0.2)',
+      backdropFilter: 'blur(8px)',
+      ...options?.style,
+    },
+  });
+};
+
+sonnerToast.error = (message, options) => {
+  return sonnerToast(message, {
+    ...options,
+    style: {
+      background: 'linear-gradient(to right, rgba(239, 68, 68, 0.1), rgba(255, 114, 94, 0.1))',
+      color: '#fff',
+      border: '1px solid rgba(239, 68, 68, 0.2)',
+      backdropFilter: 'blur(8px)',
+      ...options?.style,
+    },
+  });
+};
+
+sonnerToast.info = (message, options) => {
+  return sonnerToast(message, {
+    ...options,
+    style: {
+      background: 'linear-gradient(to right, rgba(51, 195, 240, 0.1), rgba(96, 165, 250, 0.1))',
+      color: '#fff',
+      border: '1px solid rgba(51, 195, 240, 0.2)',
+      backdropFilter: 'blur(8px)',
+      ...options?.style,
+    },
+  });
+};
+
+export { sonnerToast };
+
+export function useToast() {
+  const [state, setState] = React.useState<State>(memoryState);
 
   React.useEffect(() => {
-    listeners.push(setState)
+    listeners.push(setState);
     return () => {
-      const index = listeners.indexOf(setState)
+      const index = listeners.indexOf(setState);
       if (index > -1) {
-        listeners.splice(index, 1)
+        listeners.splice(index, 1);
       }
     }
-  }, [state])
+  }, [state]);
 
   return {
     ...state,
@@ -187,5 +243,3 @@ function useToast() {
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
   }
 }
-
-export { useToast, toast }

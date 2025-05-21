@@ -22,6 +22,7 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [sessionId] = useState<string>(() => Math.random().toString(36).substring(2, 15));
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Create a new conversation when the component mounts
@@ -79,8 +80,12 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
       content: inputValue
     };
     
-    setMessages(prev => [...prev, userMessage]);
+    // Clear input immediately to prevent double-sending
+    const messageContent = inputValue;
     setInputValue('');
+    
+    // Add user message to chat UI first
+    setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
     
     try {
@@ -100,10 +105,11 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
           },
           body: JSON.stringify({
             agentId: agent.id,
-            message: inputValue,
+            message: messageContent,
             sessionId,
             conversationId,
             embedded
@@ -146,18 +152,23 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
     } finally {
       setIsLoading(false);
       // Focus back on input after sending a message
-      inputRef.current?.focus();
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       handleSendMessage();
     }
   };
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   // Get avatar based on agent type
@@ -182,101 +193,104 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
 
   return (
     <div 
-      className={`flex flex-col h-full ${className} ${
-        embedded ? 'bg-transparent' : 'bg-slate-50 dark:bg-slate-900'
+      className={`flex flex-col h-full ${className} rounded-lg overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 ${
+        embedded ? 'bg-transparent' : 'bg-white dark:bg-slate-800'
       }`}
     >
       {/* Chat header - Only shown when not embedded */}
       {!embedded && agent && (
-        <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center">
-          <Avatar className="h-8 w-8 mr-3 bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
-            <div className="flex items-center justify-center w-full h-full rounded-full">
-              {getAgentAvatar()}
+        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between">
+          <div className="flex items-center">
+            <Avatar className="h-8 w-8 mr-3 bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
+              <div className="flex items-center justify-center w-full h-full rounded-full">
+                {getAgentAvatar()}
+              </div>
+            </Avatar>
+            <div>
+              <h2 className="font-medium text-sm text-slate-900 dark:text-white">
+                {agent.name}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {agent.personality === "expert" && "Expert"}
+                {agent.personality === "friendly" && "Amical"}
+                {agent.personality === "concise" && "Concis"}
+                {agent.personality === "empathetic" && "Empathique"}
+              </p>
             </div>
-          </Avatar>
-          <div>
-            <h2 className="font-medium text-sm text-slate-900 dark:text-white">
-              {agent.name}
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {agent.personality === "expert" && "Expert"}
-              {agent.personality === "friendly" && "Amical"}
-              {agent.personality === "concise" && "Concis"}
-              {agent.personality === "empathetic" && "Empathique"}
-            </p>
           </div>
         </div>
       )}
       
       {/* Messages container */}
-      <ScrollArea className="flex-1 overflow-y-auto">
-        <div className="flex-1 p-3 md:p-5 space-y-5">
-          {messages.map((message, index) => (
+      <ScrollArea 
+        ref={scrollAreaRef}
+        className="flex-1 overflow-y-auto p-3 md:p-5 space-y-5"
+      >
+        {messages.map((message, index) => (
+          <div 
+            key={index} 
+            className={`flex animate-fade-in ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
             <div 
-              key={index} 
-              className={`flex animate-fade-in ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex items-start max-w-[85%] group ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
             >
+              <Avatar className={`h-8 w-8 shrink-0 ${message.role === 'user' ? 'ml-3' : 'mr-3'}`}>
+                <div className={`flex items-center justify-center w-full h-full rounded-full ${
+                  message.role === 'user' 
+                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' 
+                    : 'bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300'
+                }`}>
+                  {message.role === 'user' ? (
+                    <User className="w-4 h-4" />
+                  ) : (
+                    getAgentAvatar()
+                  )}
+                </div>
+              </Avatar>
+              
               <div 
-                className={`flex items-start max-w-[85%] group ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                className={`rounded-2xl p-3 shadow-sm transition-all ${
+                  message.role === 'user' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-900 dark:text-slate-100'
+                }`}
               >
-                <Avatar className={`h-8 w-8 shrink-0 ${message.role === 'user' ? 'ml-3' : 'mr-3'}`}>
-                  <div className={`flex items-center justify-center w-full h-full rounded-full ${
-                    message.role === 'user' 
-                      ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300' 
-                      : 'bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300'
-                  }`}>
-                    {message.role === 'user' ? (
-                      <User className="w-4 h-4" />
-                    ) : (
-                      getAgentAvatar()
-                    )}
-                  </div>
-                </Avatar>
-                
-                <div 
-                  className={`rounded-2xl p-3 shadow-sm ${
-                    message.role === 'user' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-900 dark:text-slate-100'
-                  }`}
-                >
-                  <div className="whitespace-pre-wrap text-sm">
-                    {message.content}
-                  </div>
+                <div className="whitespace-pre-wrap text-sm">
+                  {message.content}
                 </div>
               </div>
             </div>
-          ))}
-          
-          {/* Loading indicator when waiting for AI */}
-          {isLoading && (
-            <div className="flex justify-start animate-fade-in">
-              <div className="flex items-start max-w-[85%] group">
-                <Avatar className="h-8 w-8 mr-3 shrink-0">
-                  <div className="flex items-center justify-center w-full h-full rounded-full bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
-                    {getAgentAvatar()}
-                  </div>
-                </Avatar>
-                
-                <div className="rounded-2xl p-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm">
-                  <div className="flex items-center space-x-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-violet-500 dark:text-violet-400" />
-                    <span className="text-xs text-slate-500 dark:text-slate-400">En train d'écrire...</span>
-                  </div>
+          </div>
+        ))}
+        
+        {/* Loading indicator when waiting for AI */}
+        {isLoading && (
+          <div className="flex justify-start animate-fade-in">
+            <div className="flex items-start max-w-[85%] group">
+              <Avatar className="h-8 w-8 mr-3 shrink-0">
+                <div className="flex items-center justify-center w-full h-full rounded-full bg-violet-100 text-violet-600 dark:bg-violet-900 dark:text-violet-300">
+                  {getAgentAvatar()}
+                </div>
+              </Avatar>
+              
+              <div className="rounded-2xl p-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center space-x-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-violet-500 dark:text-violet-400" />
+                  <span className="text-xs text-slate-500 dark:text-slate-400">En train d'écrire...</span>
                 </div>
               </div>
             </div>
-          )}
-          
-          <div ref={messagesEndRef} />
-        </div>
+          </div>
+        )}
+        
+        <div ref={messagesEndRef} />
       </ScrollArea>
       
       {/* Input area */}
-      <div className={`p-4 border-t ${
+      <div className={`p-3 border-t ${
         embedded ? 'bg-transparent border-slate-200 dark:border-slate-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
       }`}>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 items-center">
           <Input
             ref={inputRef}
             value={inputValue}
@@ -291,7 +305,7 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
             onClick={handleSendMessage} 
             disabled={isLoading || !inputValue.trim() || !agent}
             size="icon"
-            className="bg-violet-600 hover:bg-violet-700 text-white"
+            className="bg-violet-600 hover:bg-violet-700 text-white transition-colors"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

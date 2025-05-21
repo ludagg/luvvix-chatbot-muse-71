@@ -12,15 +12,44 @@ interface AIChatProps {
   agent: any;
   embedded?: boolean;
   className?: string;
+  parentOrigin?: string | null;
 }
 
-const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = '' }) => {
+const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = '', parentOrigin = null }) => {
   const [messages, setMessages] = useState<any[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Listen for messages from parent window when embedded
+  useEffect(() => {
+    if (embedded) {
+      const handleParentMessage = (event: MessageEvent) => {
+        // Verify origin if parentOrigin is set
+        if (parentOrigin && event.origin !== parentOrigin) {
+          return;
+        }
+        
+        if (event.data?.type === 'USER_MESSAGE' && event.data?.message) {
+          handleUserMessageFromParent(event.data.message);
+        }
+      };
+      
+      window.addEventListener('message', handleParentMessage);
+      return () => {
+        window.removeEventListener('message', handleParentMessage);
+      };
+    }
+  }, [embedded, parentOrigin]);
+  
+  // Handle messages coming from parent window
+  const handleUserMessageFromParent = (message: string) => {
+    if (!message.trim() || isLoading) return;
+    setInputValue(message);
+    handleSendMessage(message);
+  };
 
   useEffect(() => {
     // Create a new conversation when the component mounts
@@ -69,12 +98,13 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading || !conversationId) return;
+  const handleSendMessage = async (overrideMessage?: string) => {
+    const messageToSend = overrideMessage || inputValue;
+    if (!messageToSend.trim() || isLoading || !conversationId) return;
     
     const userMessage = {
       role: 'user',
-      content: inputValue
+      content: messageToSend
     };
     
     setMessages(prev => [...prev, userMessage]);
@@ -91,29 +121,53 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
           content: userMessage.content
         });
       
-      // In a real application, here you would call your AI service
-      // For now, we'll simulate a response
-      setTimeout(async () => {
-        const botResponse = {
-          role: 'assistant',
-          content: `Je suis ${agent.name}, votre assistant IA. Je comprends votre message: "${inputValue}". Dans une vraie application, je vous donnerais une réponse intelligente basée sur mes connaissances et mon objectif: ${agent.objective}.`
-        };
-        
-        setMessages(prev => [...prev, botResponse]);
-        setIsLoading(false);
-        
-        // Store bot response in the database
-        await supabase
-          .from('ai_messages')
-          .insert({
-            conversation_id: conversationId,
-            role: 'assistant',
-            content: botResponse.content
-          });
-      }, 1000);
+      // Call the Cerebras Chat API
+      const response = await fetch(`${window.location.origin}/functions/v1/cerebras-chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agentId: agent.id,
+          message: messageToSend,
+          conversationId,
+          embedded: true
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to get AI response');
+      }
+      
+      const result = await response.json();
+      
+      const botResponse = {
+        role: 'assistant',
+        content: result.reply || 'Je suis désolé, je n\'ai pas pu générer une réponse.'
+      };
+      
+      setMessages(prev => [...prev, botResponse]);
+      
+      // Send response to parent if embedded
+      if (embedded && parentOrigin) {
+        window.parent.postMessage({
+          type: 'ASSISTANT_RESPONSE',
+          message: botResponse.content
+        }, parentOrigin);
+      }
       
     } catch (error) {
       console.error('Error sending message:', error);
+      
+      // Add error message
+      const errorMessage = {
+        role: 'assistant',
+        content: 'Désolé, une erreur est survenue. Veuillez réessayer.'
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+      
+    } finally {
       setIsLoading(false);
     }
   };
@@ -237,7 +291,7 @@ const AIChat: React.FC<AIChatProps> = ({ agent, embedded = false, className = ''
               disabled={isLoading}
             />
             <Button 
-              onClick={handleSendMessage} 
+              onClick={() => handleSendMessage()} 
               disabled={isLoading || !inputValue.trim()}
               size="icon"
               className={`rounded-full ${!inputValue.trim() ? 'bg-white/20' : 'bg-gradient-to-r from-luvvix-purple to-luvvix-darkpurple text-white'}`}

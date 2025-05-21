@@ -13,6 +13,40 @@ const AIEmbedPage = () => {
   const [agent, setAgent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [parentOrigin, setParentOrigin] = useState<string | null>(null);
+
+  // Set up message listener for cross-origin communication
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Verify the message is from a trusted origin
+      console.log('Received message from parent:', event.data, 'origin:', event.origin);
+      
+      // Store the parent origin for later communication
+      if (event.data?.type === 'INIT_EMBED' && event.origin) {
+        setParentOrigin(event.origin);
+        console.log('Parent origin set to:', event.origin);
+        
+        // Send ready message back to parent
+        event.source?.postMessage({ type: 'EMBED_READY', agentId }, event.origin as string);
+      }
+      
+      // Handle user message if sent from parent
+      if (event.data?.type === 'USER_MESSAGE' && event.data?.message) {
+        // Here we would trigger the chat function with the message
+        console.log('Received user message from parent:', event.data.message);
+        // You can dispatch this message to your chat component
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    
+    // Announce to parent that the embed is loaded
+    window.parent.postMessage({ type: 'EMBED_LOADED', agentId }, '*');
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [agentId]);
 
   useEffect(() => {
     const fetchAgent = async () => {
@@ -95,6 +129,7 @@ const AIEmbedPage = () => {
           agent={agent} 
           embedded={true}
           className="h-full"
+          parentOrigin={parentOrigin}
         />
       </div>
     </>

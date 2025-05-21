@@ -53,14 +53,29 @@
           document.body.removeChild(overlay);
         });
         
-        // Create iframe with dynamic origin
+        // Create iframe with absolute URL
         const iframe = document.createElement('iframe');
-        const currentOrigin = window.location.protocol + '//' + window.location.host;
-        iframe.src = `${currentOrigin}/ai-embed/${agentId}`;
+        const currentOrigin = window.location.origin;
+        const absoluteUrl = `${currentOrigin}/ai-embed/${agentId}`;
+        
+        iframe.src = absoluteUrl;
         iframe.style.width = '100%';
         iframe.style.height = '100%';
         iframe.style.border = 'none';
         iframe.style.borderRadius = '8px';
+        
+        // Setup communication with the iframe
+        window.addEventListener('message', (event) => {
+          if (event.source === iframe.contentWindow) {
+            if (event.data.type === 'EMBED_LOADED') {
+              // Send initialization message to the iframe
+              iframe.contentWindow.postMessage({ 
+                type: 'INIT_EMBED',
+                agentId: agentId
+              }, '*');
+            }
+          }
+        });
         
         popup.appendChild(closeBtn);
         popup.appendChild(iframe);

@@ -1,4 +1,3 @@
-
 import { LuvviXID } from "@/utils/luvvix-id-sdk";
 
 interface AuthOptions {

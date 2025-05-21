@@ -29,33 +29,80 @@ function setCachedData(key: string, data: any): void {
   });
 }
 
-// Function to extract text content from HTML
-function extractTextFromHTML(html: string): string {
+// Enhanced function to extract text content from HTML
+function extractTextFromHTML(html: string, url: string): { text: string; metadata: any } {
   try {
     const parser = new DOMParser();
     const document = parser.parseFromString(html, "text/html");
     
-    if (!document) return "";
+    if (!document) return { text: "", metadata: {} };
     
-    // Remove script and style elements
-    const scripts = document.querySelectorAll("script, style, nav, footer, header, aside, iframe");
-    scripts.forEach(script => script.remove());
+    // Extract metadata
+    const metadata = {
+      title: document.querySelector("title")?.textContent || "",
+      description: document.querySelector("meta[name='description']")?.getAttribute("content") || 
+                  document.querySelector("meta[property='og:description']")?.getAttribute("content") || "",
+      siteName: document.querySelector("meta[property='og:site_name']")?.getAttribute("content") || new URL(url).hostname,
+      favicon: document.querySelector("link[rel='icon']")?.getAttribute("href") || 
+              document.querySelector("link[rel='shortcut icon']")?.getAttribute("href") || "",
+    };
     
-    // Get main content
-    const mainContent = document.querySelector("main") || document.querySelector("article") || document.body;
+    // Remove script, style, and irrelevant elements
+    const elementsToRemove = document.querySelectorAll("script, style, nav, footer, header, aside, iframe, noscript, svg, form");
+    elementsToRemove.forEach(el => el.remove());
     
-    if (!mainContent) return "";
+    // Get main content with better prioritization
+    const mainContent =
+      document.querySelector("main") ||
+      document.querySelector("article") ||
+      document.querySelector("div[role='main']") ||
+      document.querySelector(".content") ||
+      document.querySelector("#content") ||
+      document.querySelector(".main") ||
+      document.querySelector("#main") ||
+      document.body;
     
-    // Get text content and clean up
-    let text = mainContent.textContent || "";
+    if (!mainContent) return { text: "", metadata };
     
-    // Remove extra whitespace
-    text = text.replace(/\s+/g, " ").trim();
+    // Extract headings and content with structure
+    let structuredContent = "";
     
-    return text;
+    // Add headings
+    const headings = mainContent.querySelectorAll("h1, h2, h3, h4, h5, h6");
+    headings.forEach(heading => {
+      structuredContent += `${heading.textContent?.trim()}\n\n`;
+    });
+    
+    // Add paragraphs
+    const paragraphs = mainContent.querySelectorAll("p");
+    paragraphs.forEach(p => {
+      const text = p.textContent?.trim();
+      if (text && text.length > 20) { // Ignore very short paragraphs that might just be UI elements
+        structuredContent += `${text}\n\n`;
+      }
+    });
+    
+    // Add lists
+    const lists = mainContent.querySelectorAll("ul, ol");
+    lists.forEach(list => {
+      const items = list.querySelectorAll("li");
+      items.forEach(item => {
+        structuredContent += `• ${item.textContent?.trim()}\n`;
+      });
+      structuredContent += "\n";
+    });
+    
+    // If we couldn't extract structured content, fall back to text content
+    if (!structuredContent.trim()) {
+      structuredContent = mainContent.textContent || "";
+      // Clean up whitespace
+      structuredContent = structuredContent.replace(/\s+/g, " ").trim();
+    }
+    
+    return { text: structuredContent, metadata };
   } catch (error) {
     console.error("Error extracting text from HTML:", error);
-    return "";
+    return { text: "", metadata: {} };
   }
 }
 
@@ -69,53 +116,104 @@ function extractLinksFromHTML(html: string, baseUrl: string): string[] {
     
     const links: string[] = [];
     const anchorElements = document.querySelectorAll("a[href]");
+    const baseHostname = new URL(baseUrl).hostname;
     
     anchorElements.forEach(a => {
-      const href = a.getAttribute("href");
-      if (href && !href.startsWith("#") && !href.startsWith("javascript:")) {
-        try {
+      try {
+        const href = a.getAttribute("href");
+        if (href && !href.startsWith("#") && !href.startsWith("javascript:")) {
           // Resolve relative URLs
           const url = new URL(href, baseUrl).toString();
+          const urlObj = new URL(url);
           
-          // Only include URLs from the same domain
-          if (new URL(url).hostname === new URL(baseUrl).hostname) {
-            links.push(url);
+          // Only include URLs from the same domain and ignore query parameters for deduplication
+          if (urlObj.hostname === baseHostname) {
+            // Normalize URL by removing trailing slash and common tracking parameters
+            let normalizedUrl = url.replace(/\/$/, "");
+            
+            // Remove tracking parameters (utm_, ref, fbclid, etc.)
+            try {
+              const cleanUrl = new URL(normalizedUrl);
+              ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "ref", "fbclid", "gclid"].forEach(param => {
+                cleanUrl.searchParams.delete(param);
+              });
+              normalizedUrl = cleanUrl.toString();
+            } catch (e) {
+              // Ignore URL cleaning errors
+            }
+            
+            // Avoid duplicates
+            if (!links.includes(normalizedUrl)) {
+              links.push(normalizedUrl);
+            }
           }
-        } catch (e) {
-          // Skip invalid URLs
         }
+      } catch (e) {
+        // Skip invalid URLs
       }
     });
     
-    // Remove duplicates
-    return [...new Set(links)];
+    return links;
   } catch (error) {
     console.error("Error extracting links from HTML:", error);
     return [];
   }
 }
 
-// Crawl a single URL
-async function crawlUrl(url: string): Promise<{ content: string, links: string[] }> {
+// Advanced crawl function that attempts various techniques
+async function advancedCrawlUrl(url: string): Promise<{ content: string, links: string[], metadata: any }> {
   try {
+    console.log(`Attempting to crawl: ${url}`);
+    
+    // Try with a browser-like user agent first
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 LuvviX AI WebCrawler Bot/1.0"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache"
       }
     });
     
     if (!response.ok) {
-      return { content: "", links: [] };
+      console.warn(`Failed to fetch ${url} with status ${response.status}`);
+      return { content: "", links: [], metadata: {} };
+    }
+    
+    const contentType = response.headers.get("content-type") || "";
+    
+    // Skip non-HTML content
+    if (!contentType.includes("text/html")) {
+      console.warn(`Skipping non-HTML content: ${contentType} at ${url}`);
+      return { content: "", links: [], metadata: { title: url, contentType } };
     }
     
     const html = await response.text();
-    const content = extractTextFromHTML(html);
+    const { text, metadata } = extractTextFromHTML(html, url);
     const links = extractLinksFromHTML(html, url);
     
-    return { content, links };
+    // Try to fix relative paths in metadata
+    if (metadata.favicon && !metadata.favicon.startsWith('http')) {
+      try {
+        metadata.favicon = new URL(metadata.favicon, url).toString();
+      } catch (e) {
+        // Ignore favicon URL errors
+      }
+    }
+    
+    return { 
+      content: text, 
+      links, 
+      metadata: {
+        ...metadata,
+        url,
+        crawledAt: new Date().toISOString()
+      }
+    };
   } catch (error) {
     console.error(`Error crawling ${url}:`, error);
-    return { content: "", links: [] };
+    return { content: "", links: [], metadata: {} };
   }
 }
 
@@ -123,38 +221,69 @@ async function crawlUrl(url: string): Promise<{ content: string, links: string[]
 async function crawlWebsite(
   startUrl: string, 
   maxPages = 10, 
-  maxDepth = 2
-): Promise<{ content: string, urls: string[] }> {
-  const visited = new Set<string>();
-  const queue: Array<{ url: string; depth: number }> = [{ url: startUrl, depth: 0 }];
-  let content = "";
-  const visitedUrls: string[] = [];
+  maxDepth = 2,
+  timeout = 60000
+): Promise<{ content: string, urls: string[], metadata: any[] }> {
+  // Enforce a hard timeout
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error(`Crawl timed out after ${timeout}ms`)), timeout);
+  });
   
-  // Process queue
-  while (queue.length > 0 && visited.size < maxPages) {
-    const { url, depth } = queue.shift()!;
-    
-    if (visited.has(url) || depth > maxDepth) {
-      continue;
-    }
-    
-    console.log(`Crawling ${url} (depth: ${depth})`);
-    visited.add(url);
-    visitedUrls.push(url);
-    
-    const { content: pageContent, links } = await crawlUrl(url);
-    content += `\n\n--- Content from ${url} ---\n\n${pageContent}`;
-    
-    if (depth < maxDepth) {
-      for (const link of links) {
-        if (!visited.has(link) && queue.findIndex(item => item.url === link) === -1) {
-          queue.push({ url: link, depth: depth + 1 });
+  try {
+    // Crawl logic with timeout
+    const crawlPromise = async () => {
+      const visited = new Set<string>();
+      const queue: Array<{ url: string; depth: number }> = [{ url: startUrl, depth: 0 }];
+      let content = "";
+      const visitedUrls: string[] = [];
+      const allMetadata: any[] = [];
+      
+      // Normalize the start URL for proper deduplication
+      const normalizeUrl = (url: string) => {
+        return url.replace(/\/$/, "").split('#')[0];
+      };
+      
+      const normalizedStartUrl = normalizeUrl(startUrl);
+      
+      // Process queue
+      while (queue.length > 0 && visited.size < maxPages) {
+        const { url, depth } = queue.shift()!;
+        const normalizedUrl = normalizeUrl(url);
+        
+        if (visited.has(normalizedUrl) || depth > maxDepth) {
+          continue;
+        }
+        
+        console.log(`Crawling ${url} (depth: ${depth})`);
+        visited.add(normalizedUrl);
+        visitedUrls.push(url);
+        
+        const { content: pageContent, links, metadata } = await advancedCrawlUrl(url);
+        
+        if (pageContent) {
+          content += `\n\n--- Content from ${url} ---\n\n${pageContent}`;
+          allMetadata.push(metadata);
+        }
+        
+        if (depth < maxDepth) {
+          for (const link of links) {
+            const normalizedLink = normalizeUrl(link);
+            if (!visited.has(normalizedLink) && !queue.some(item => normalizeUrl(item.url) === normalizedLink)) {
+              queue.push({ url: link, depth: depth + 1 });
+            }
+          }
         }
       }
-    }
+      
+      return { content: content.trim(), urls: visitedUrls, metadata: allMetadata };
+    };
+    
+    // Race between crawl and timeout
+    return await Promise.race([crawlPromise(), timeoutPromise]);
+  } catch (error) {
+    console.error("Crawl error:", error instanceof Error ? error.message : String(error));
+    throw error;
   }
-  
-  return { content: content.trim(), urls: visitedUrls };
 }
 
 serve(async (req) => {
@@ -164,7 +293,7 @@ serve(async (req) => {
   }
   
   try {
-    const { url, maxPages = 10, depth = 2, timeout = 30000 } = await req.json();
+    const { url, maxPages = 10, depth = 2, timeout = 60000 } = await req.json();
     
     if (!url) {
       throw new Error('URL is required');
@@ -183,16 +312,8 @@ serve(async (req) => {
     
     console.log(`Starting crawl of ${url} with maxPages=${maxPages}, depth=${depth}`);
     
-    // Create a timeout promise
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Crawl timeout')), timeout);
-    });
-    
-    // Race between crawl and timeout
-    const result = await Promise.race([
-      crawlWebsite(url, maxPages, depth),
-      timeoutPromise
-    ]) as { content: string, urls: string[] };
+    // Start the crawl
+    const result = await crawlWebsite(url, maxPages, depth, timeout);
     
     // Cache the result
     setCachedData(cacheKey, result);
@@ -203,7 +324,8 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in website-crawler function:', error);
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'An unknown error occurred'
+      error: error instanceof Error ? error.message : 'An unknown error occurred',
+      success: false
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

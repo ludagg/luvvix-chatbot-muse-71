@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -41,7 +42,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Loader2, Bot, Sparkles, Upload, Globe } from "lucide-react";
+import { Loader2, Bot, Sparkles, Upload, Globe, FileText } from "lucide-react";
 import ContentImportForm from "@/components/ai-studio/ContentImportForm";
 
 const formSchema = z.object({

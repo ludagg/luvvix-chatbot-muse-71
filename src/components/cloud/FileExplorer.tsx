@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -106,7 +107,7 @@ const FileExplorer = ({ folderId, filterType }: FileExplorerProps) => {
         filesList = filesList.filter(file => file.tags && file.tags.length > 0);
       } else {
         // Chargement normal par dossier
-        filesList = await fileService.listFiles(effectiveFolderId);
+        filesList = await fileService.listFiles(effectiveFolderId || "");
       }
       
       setFiles(filesList);
@@ -292,7 +293,7 @@ const FileExplorer = ({ folderId, filterType }: FileExplorerProps) => {
             </Button>
           </div>
           <FileUploader 
-            currentFolderId={params.folderId || folderId} 
+            currentFolderId={params.folderId || folderId || ""} 
             onUploadComplete={() => {
               loadFiles(params.folderId || folderId);
               setShowUploader(false);

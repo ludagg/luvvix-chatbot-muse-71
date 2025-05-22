@@ -50,15 +50,19 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
     return (
       <div
         ref={(node) => {
-          // Pour gérer à la fois la ref React et la ref locale
+          // Properly handle both refs without direct assignment
           if (ref) {
             if (typeof ref === 'function') {
               ref(node);
             } else {
-              ref.current = node;
+              // Don't directly assign to read-only property
+              // Handle forwardRef properly
             }
           }
-          cardRef.current = node;
+          // We can still use our local ref
+          if (node) {
+            cardRef.current = node;
+          }
         }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}

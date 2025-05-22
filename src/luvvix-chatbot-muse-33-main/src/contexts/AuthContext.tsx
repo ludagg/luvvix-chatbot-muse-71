@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import useLocalStorage from '@/hooks/use-local-storage';
+import { useLocalStorage } from '@/hooks/use-local-storage';
 import { authService } from '@/utils/auth-service';
 
 // Define types for our auth context
@@ -11,6 +11,7 @@ interface AuthContextType {
   login: () => void;
   logout: () => void;
   setUserData: (userData: any) => void;
+  createNewConversation: () => string;
 }
 
 // Create the auth context with default values
@@ -21,6 +22,7 @@ const AuthContext = createContext<AuthContextType>({
   login: () => {},
   logout: () => {},
   setUserData: () => {},
+  createNewConversation: () => '',
 });
 
 // Custom hook to use auth context
@@ -92,6 +94,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setUserData = (userData: any) => {
     setUser(userData);
   };
+  
+  // Create a new conversation
+  const createNewConversation = () => {
+    // Generate a new conversation ID
+    const newId = `conv_${Date.now()}`;
+    return newId;
+  };
 
   return (
     <AuthContext.Provider
@@ -102,6 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         logout,
         setUserData,
+        createNewConversation,
       }}
     >
       {children}

@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -148,7 +149,7 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
   // Fonction pour supprimer une option
   const removeOption = (indexToRemove: number) => {
     const currentChoices = localQuestion.options?.choices || question.options?.choices || [];
-    const newChoices = currentChoices.filter((_, i) => i !== indexToRemove);
+    const newChoices = currentChoices.filter((_, i: number) => i !== indexToRemove);
     handleLocalOptionsChange(newChoices);
   };
 
@@ -246,7 +247,7 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
                   </div>
                   
                   <div className="space-y-2">
-                    {(displayQuestion.options?.choices || []).map((choice, index) => (
+                    {(displayQuestion.options?.choices || []).map((choice: string, index: number) => (
                       <div key={index} className="flex items-center gap-2">
                         <Input
                           value={choice}
@@ -313,7 +314,7 @@ const QuestionCard = ({ question, isEditing, onEdit, onDelete, onUpdate }: Quest
                 <div className="mt-2">
                   <p className="text-sm text-gray-500">Options:</p>
                   <ul className="list-disc list-inside text-sm text-gray-600 pl-2">
-                    {question.options.choices.slice(0, 3).map((choice, i) => (
+                    {question.options.choices.slice(0, 3).map((choice: string, i: number) => (
                       <li key={i}>{choice}</li>
                     ))}
                     {question.options.choices.length > 3 && (

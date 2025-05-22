@@ -35,6 +35,7 @@ import TermsPage from "./pages/legal/TermsPage";
 import CookiesPage from "./pages/legal/CookiesPage";
 import DocsPage from "./pages/docs/DocsPage";
 import EcosystemPage from "./pages/EcosystemPage";
+import LuvvixAIIntegrationPage from "./pages/LuvvixAIIntegrationPage";
 
 function App() {
   return (
@@ -69,6 +70,9 @@ function App() {
               
               {/* Ajout de la route pour l'écosystème */}
               <Route path="/ecosystem" element={<EcosystemPage />} />
+              
+              {/* Nouvelle route d'intégration pour LuvviX AI */}
+              <Route path="/ai-integration" element={<LuvvixAIIntegrationPage />} />
               
               {/* Routes for LuvviX Forms */}
               <Route path="/forms" element={<FormsPage />} />

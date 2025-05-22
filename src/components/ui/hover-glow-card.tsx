@@ -34,28 +34,26 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
       setOpacity(0);
     };
 
-    // Pour SSR et rendu initial quand JS n'est pas encore en cours d'exécution
+    // For SSR and initial render when JS isn't running yet
     if (!isMounted) {
-      // Only extract properties that we know exist in props
-      const { 
-        style, 
-        "data-framer-appear-id": _, 
-        onBeforeLayoutMeasure, 
-        onLayoutMeasure,
-        onPanSessionStart,
-        onUpdate,
-        onAnimationStart,
-        onAnimationComplete,
-        onLayoutAnimationStart,
-        onLayoutAnimationComplete,
-        transition,
-        initial,
-        animate,
-        exit,
-        variants,
-        // Remove transformValues as it doesn't exist on the props type
-        ...safeProps
-      } = props;
+      // Create a safe subset of props that can be applied to a regular div
+      const safeProps: React.HTMLAttributes<HTMLDivElement> = {};
+      
+      // Copy over only the props that are valid for HTMLDivElement
+      // This avoids the type error with framer-motion specific props like onDrag
+      const validDivProps = [
+        "id", "className", "style", "onClick", "onMouseEnter", "onMouseLeave", 
+        "onFocus", "onBlur", "onKeyDown", "onKeyUp", "role", "tabIndex", 
+        "aria-label", "aria-labelledby", "aria-describedby", "data-testid"
+      ];
+      
+      // Copy only valid div props
+      for (const key of Object.keys(props)) {
+        if (validDivProps.includes(key)) {
+          // @ts-ignore - We know these props are valid
+          safeProps[key] = props[key];
+        }
+      }
 
       return (
         <div 

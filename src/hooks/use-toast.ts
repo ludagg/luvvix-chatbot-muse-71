@@ -1,9 +1,10 @@
 
 import * as React from "react";
-import { toast as sonnerToast, Toast, ToastActionElement as SonnerToastActionElement } from "sonner";
+import { toast as sonnerToast } from "sonner";
+import type { ExternalToast } from "sonner";
 
-export type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>;
-export type ToastActionElement = SonnerToastActionElement;
+export type ToastProps = React.ComponentPropsWithoutRef<typeof sonnerToast>;
+export type ToastActionElement = React.ReactNode;
 
 export function useToast() {
   return {

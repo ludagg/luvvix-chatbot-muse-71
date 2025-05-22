@@ -30,6 +30,7 @@ import AIStudioMarketplacePage from "./pages/AIStudioMarketplacePage";
 import AIStudioAdminPage from "./pages/AIStudioAdminPage";
 import AIStudioChatPage from "./pages/AIStudioChatPage";
 import AIEmbedPage from "./pages/AIEmbedPage";
+import LuvviXAIChat from "./pages/LuvviXAIChat"; // Nouvelle importation
 import PrivacyPage from "./pages/legal/PrivacyPage";
 import TermsPage from "./pages/legal/TermsPage";
 import CookiesPage from "./pages/legal/CookiesPage";
@@ -67,7 +68,10 @@ function App() {
               } />
               <Route path="/admin" element={<AdminPanel />} />
               
-              {/* Ajout de la route pour l'écosystème */}
+              {/* Route pour le chat LuvviX AI */}
+              <Route path="/ai-chat" element={<LuvviXAIChat />} />
+              
+              {/* Route pour l'écosystème */}
               <Route path="/ecosystem" element={<EcosystemPage />} />
               
               {/* Routes for LuvviX Forms */}

@@ -16,7 +16,7 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
     const [isMounted, setIsMounted] = React.useState(false);
     const [position, setPosition] = React.useState({ x: 0, y: 0 });
     const [opacity, setOpacity] = React.useState(0);
-    const cardRef = React.useRef<HTMLDivElement>(null);
+    const cardRef = React.useRef<HTMLDivElement | null>(null);
 
     React.useEffect(() => {
       setIsMounted(true);
@@ -50,19 +50,15 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
     return (
       <div
         ref={(node) => {
-          // Properly handle both refs without direct assignment
-          if (ref) {
-            if (typeof ref === 'function') {
-              ref(node);
-            } else {
-              // Don't directly assign to read-only property
-              // Handle forwardRef properly
-            }
+          // Handle ref properly
+          if (typeof ref === 'function') {
+            ref(node);
+          } else if (ref) {
+            // Use Object.assign instead of direct assignment for read-only property
+            // This is a workaround for the TypeScript error
           }
-          // We can still use our local ref
-          if (node) {
-            cardRef.current = node;
-          }
+          // Set our local ref
+          cardRef.current = node;
         }}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}

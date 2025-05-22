@@ -3,9 +3,9 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { motion, HTMLMotionProps } from "framer-motion";
 
-interface HoverGlowCardProps extends React.HTMLAttributes<HTMLDivElement> {
+interface HoverGlowCardProps extends HTMLMotionProps<"div"> {
   children: React.ReactNode;
   className?: string;
   glowColor?: string;
@@ -36,11 +36,32 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
 
     // Pour SSR et rendu initial quand JS n'est pas encore en cours d'exécution
     if (!isMounted) {
+      // Only extract properties that we know exist in props
+      const { 
+        style, 
+        "data-framer-appear-id": _, 
+        onBeforeLayoutMeasure, 
+        onLayoutMeasure,
+        onPanSessionStart,
+        onUpdate,
+        onAnimationStart,
+        onAnimationComplete,
+        onLayoutAnimationStart,
+        onLayoutAnimationComplete,
+        transition,
+        initial,
+        animate,
+        exit,
+        variants,
+        // Remove transformValues as it doesn't exist on the props type
+        ...safeProps
+      } = props;
+
       return (
         <div 
           ref={ref} 
           className={cn("relative overflow-hidden", className)}
-          {...props}
+          {...safeProps}
         >
           {children}
         </div>
@@ -48,24 +69,14 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
     }
 
     return (
-      <div
-        ref={(node) => {
-          // Pour gérer à la fois la ref React et la ref locale
-          if (ref) {
-            if (typeof ref === 'function') {
-              ref(node);
-            } else {
-              ref.current = node;
-            }
-          }
-          cardRef.current = node;
-        }}
+      <motion.div
+        ref={cardRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         className={cn("relative overflow-hidden", className)}
         {...props}
       >
-        <div
+        <motion.div
           style={{
             position: "absolute",
             background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, ${glowColor}, transparent 40%)`,
@@ -79,7 +90,7 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
           }}
         />
         <div style={{ position: "relative", zIndex: 2 }}>{children}</div>
-      </div>
+      </motion.div>
     );
   }
 );

@@ -111,7 +111,7 @@ const Footer = () => {
         <div className="mt-12 pt-8 border-t border-gray-800">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div className="text-gray-400 text-sm">
-              © 2025 LuvviX Technologies. Tous droits réservés.
+              © 2023 LuvviX Technologies. Tous droits réservés.
             </div>
             <div>
               <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-4">

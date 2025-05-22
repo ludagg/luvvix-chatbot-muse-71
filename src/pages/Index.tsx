@@ -26,7 +26,7 @@ const Index = () => {
     <div className="min-h-screen">
       <Navbar />
       
-      
+      <div className="pt-16">
         <Hero />
         
         {/* Section pour diriger vers l'écosystème */}
@@ -123,7 +123,7 @@ const Index = () => {
         <CeoSection />
         <Careers />
         <Testimonials />
-      
+      </div>
       
       <Footer />
     </div>

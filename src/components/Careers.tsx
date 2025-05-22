@@ -9,7 +9,7 @@ const jobs = [
     id: 1,
     title: "Ingénieur IA Senior",
     department: "LuvviX AI",
-    location: "Douala, Cameroun",
+    location: "Paris, France",
     type: "CDI",
     remote: true
   },
@@ -17,7 +17,7 @@ const jobs = [
     id: 2,
     title: "Développeur Frontend React",
     department: "LuvviX StreamMix",
-    location: "Douala, Cameroun",
+    location: "Lyon, France",
     type: "CDI",
     remote: true
   },
@@ -25,7 +25,7 @@ const jobs = [
     id: 3,
     title: "Data Scientist",
     department: "LuvviX Medic",
-    location: "Douala, Cameroun",
+    location: "Bordeaux, France",
     type: "CDI",
     remote: false
   },
@@ -33,7 +33,7 @@ const jobs = [
     id: 4,
     title: "Responsable Produit",
     department: "LuvviX Cloud",
-    location: "Douala, Cameroun",
+    location: "Paris, France",
     type: "CDI",
     remote: true
   },

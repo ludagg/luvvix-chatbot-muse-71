@@ -1,504 +1,386 @@
-
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { toast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { formatFileSize, formatDate } from '@/lib/utils';
-import { FileIcon, FolderIcon, MoreVertical, Upload, FolderPlus, Download, Trash2, Edit, Share2, Eye } from 'lucide-react';
+import { Search, Folder, File, Star, Tag, Upload, FolderPlus, ArrowLeft, RefreshCw } from 'lucide-react';
+import { FileMetadata } from '@/services/db-service';
+import { fileService } from '@/services/file-service';
+import { useToast } from '@/hooks/use-toast';
 import FileUploader from './FileUploader';
-import FileViewer from './FileViewer';
-import ShareDialog from './ShareDialog';
+import FilePreview from './FilePreview';
+import { useAuth } from '@/hooks/useAuth';
 
-interface FileItem {
-  id: string;
-  name: string;
-  path: string;
-  parent_path: string;
-  type: 'file' | 'folder';
-  mime_type?: string;
-  size: number;
-  url?: string;
-  is_public?: boolean;
-  shared_with?: string[];
-  user_id: string;
-  created_at: string;
-  updated_at: string;
+interface FileExplorerProps {
+  folderId?: string;
+  filterType?: 'folders' | 'starred' | 'recent' | 'tags';
 }
 
-const FileExplorer = () => {
+const FileExplorer = ({ folderId, filterType }: FileExplorerProps) => {
+  const [files, setFiles] = useState<FileMetadata[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showUploader, setShowUploader] = useState(false);
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
+  const [breadcrumbs, setBreadcrumbs] = useState<Array<{ id?: string; name: string }>>([]);
+  const { toast } = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
-  const [currentPath, setCurrentPath] = useState('/');
-  const [files, setFiles] = useState<FileItem[]>([]);
-  const [selectedFiles, setSelectedFiles] = useState<FileItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
-  const [showCreateFolderDialog, setShowCreateFolderDialog] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
-  const [showFileViewer, setShowFileViewer] = useState(false);
-  const [currentFile, setCurrentFile] = useState<FileItem | null>(null);
-  const [showShareDialog, setShowShareDialog] = useState(false);
-  const [fileToShare, setFileToShare] = useState<FileItem | null>(null);
-  const [sortField, setSortField] = useState('name');
-  const [sortDirection, setSortDirection] = useState('asc');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { fileId } = useParams<{ fileId?: string; folderId?: string }>();
+  const params = useParams();
 
   useEffect(() => {
+    // Si fileId est défini dans les params, il a priorité sur la prop
+    const effectiveFolderId = params.folderId || folderId;
+    
     if (user) {
-      const path = location.pathname.replace('/cloud', '') || '/';
-      setCurrentPath(path);
-      fetchFiles(path);
+      syncWithCloud();
+      loadFiles(effectiveFolderId);
     }
-  }, [location.pathname, user]);
+  }, [user, folderId, params.folderId, filterType]);
 
-  const fetchFiles = async (path: string) => {
-    if (!user) return;
-    
-    setIsLoading(true);
+  useEffect(() => {
+    if (fileId) {
+      setSelectedFileId(fileId);
+    } else {
+      setSelectedFileId(null);
+    }
+  }, [fileId]);
+
+  // Load breadcrumbs when folder changes
+  useEffect(() => {
+    const effectiveFolderId = params.folderId || folderId;
+    loadBreadcrumbs(effectiveFolderId);
+  }, [folderId, params.folderId]);
+
+  const syncWithCloud = async () => {
     try {
-      const { data, error } = await supabase
-        .from('files')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('parent_path', path);
+      setSyncing(true);
+      toast({
+        title: "Synchronisation en cours",
+        description: "Récupération de vos fichiers depuis le cloud..."
+      });
       
-      if (error) throw error;
+      // On first load, sync files from Supabase
+      await fileService.syncFilesFromSupabase();
       
-      setFiles(data || []);
-      setSelectedFiles([]);
+      toast({
+        title: "Synchronisation terminée",
+        description: "Tous vos fichiers sont à jour"
+      });
     } catch (error) {
-      console.error('Error fetching files:', error);
-      toast.error('Impossible de charger les fichiers');
+      console.error('Error syncing with cloud:', error);
+      toast({
+        title: "Erreur de synchronisation",
+        description: "Impossible de synchroniser avec le cloud",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false);
+      setSyncing(false);
     }
   };
 
-  const handleCreateFolder = async () => {
-    if (!newFolderName.trim()) return;
+  const loadFiles = async (effectiveFolderId?: string) => {
+    setLoading(true);
+    try {
+      let filesList: FileMetadata[] = [];
+      
+      if (filterType === 'folders') {
+        // Charger uniquement les dossiers
+        filesList = await fileService.listFiles();
+        filesList = filesList.filter(file => file.type === 'folder');
+      } else if (filterType === 'starred') {
+        // Charger uniquement les fichiers favoris
+        filesList = await fileService.listFiles();
+        filesList = filesList.filter(file => file.starred);
+      } else if (filterType === 'recent') {
+        // Charger les fichiers récents (triés par date de modification)
+        filesList = await fileService.listFiles();
+        filesList.sort((a, b) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
+        filesList = filesList.slice(0, 20); // Limiter aux 20 plus récents
+      } else if (filterType === 'tags') {
+        // Afficher les fichiers avec des tags
+        filesList = await fileService.listFiles();
+        filesList = filesList.filter(file => file.tags && file.tags.length > 0);
+      } else {
+        // Chargement normal par dossier
+        filesList = await fileService.listFiles(effectiveFolderId);
+      }
+      
+      setFiles(filesList);
+      console.log('Files loaded:', filesList.length);
+    } catch (error) {
+      console.error('Error loading files:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les fichiers",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadBreadcrumbs = async (effectiveFolderId?: string) => {
+    if (!effectiveFolderId) {
+      let title = "Mes Fichiers";
+      if (filterType === 'folders') title = "Tous les dossiers";
+      if (filterType === 'starred') title = "Fichiers favoris";
+      if (filterType === 'recent') title = "Fichiers récents";
+      if (filterType === 'tags') title = "Fichiers avec tags";
+      
+      setBreadcrumbs([{ name: title }]);
+      return;
+    }
     
     try {
-      const folderPath = `${currentPath === '/' ? '' : currentPath}/${newFolderName}`;
+      const crumbs: Array<{ id?: string; name: string }> = [{ name: 'Mes Fichiers' }];
+      let currentId = effectiveFolderId;
+      let loopGuard = 0; // Prevent infinite loops
       
-      if (!user) {
-        throw new Error('User not authenticated');
+      while (currentId && loopGuard < 10) {
+        const folder = await fileService.getFile(currentId);
+        if (folder && folder.metadata) {
+          crumbs.unshift({ id: folder.metadata.id, name: folder.metadata.name });
+          currentId = folder.metadata.parentFolderId;
+        } else {
+          break;
+        }
+        loopGuard++;
       }
       
-      const { error } = await supabase
-        .from('files')
-        .insert({
-          name: newFolderName,
-          path: folderPath,
-          parent_path: currentPath,
-          type: 'folder',
-          size: 0,
-          user_id: user.id
-        });
-      
-      if (error) throw error;
-      
-      toast.success(`Le dossier ${newFolderName} a été créé avec succès`);
-      
-      setNewFolderName('');
-      setShowCreateFolderDialog(false);
-      fetchFiles(currentPath);
+      setBreadcrumbs(crumbs);
     } catch (error) {
-      console.error('Error creating folder:', error);
-      toast.error('Impossible de créer le dossier');
+      console.error('Error loading breadcrumbs:', error);
     }
   };
 
-  const handleFileUpload = async (files: File[]) => {
-    if (!files.length) return;
+  const handleFolderClick = (id: string) => {
+    navigate(`/cloud/folder/${id}`);
+  };
+
+  const handleFileClick = (id: string) => {
+    setSelectedFileId(id);
+    navigate(`/cloud/file/${id}`);
+  };
+
+  const handleBreadcrumbClick = (id?: string) => {
+    if (id) {
+      navigate(`/cloud/folder/${id}`);
+    } else {
+      navigate('/cloud');
+    }
+  };
+
+  const handleBackFromPreview = () => {
+    setSelectedFileId(null);
+    const effectiveFolderId = params.folderId || folderId;
+    if (effectiveFolderId) {
+      navigate(`/cloud/folder/${effectiveFolderId}`);
+    } else {
+      navigate('/cloud');
+    }
+  };
+
+  const handleManualSync = async () => {
+    await syncWithCloud();
+    const effectiveFolderId = params.folderId || folderId;
+    loadFiles(effectiveFolderId);
+  };
+
+  const filteredFiles = files.filter(file => {
+    // First apply tab filter
+    if (activeTab === 'starred' && !file.starred) return false;
+    if (activeTab === 'folders' && file.type !== 'folder') return false;
+    if (activeTab === 'files' && file.type === 'folder') return false;
     
-    try {
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-      
-      for (const file of files) {
-        const filePath = `${user.id}${currentPath === '/' ? '' : currentPath}/${file.name}`;
-        
-        // Upload to storage
-        const { error: uploadError } = await supabase.storage
-          .from('user_files')
-          .upload(filePath, file);
-        
-        if (uploadError) throw uploadError;
-        
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from('user_files')
-          .getPublicUrl(filePath);
-        
-        // Add to database
-        const { error: dbError } = await supabase
-          .from('files')
-          .insert({
-            name: file.name,
-            path: `${currentPath === '/' ? '' : currentPath}/${file.name}`,
-            parent_path: currentPath,
-            type: 'file',
-            mime_type: file.type,
-            size: file.size,
-            url: urlData.publicUrl,
-            user_id: user.id
-          });
-        
-        if (dbError) throw dbError;
-      }
-      
-      toast.success(`${files.length} fichier(s) téléchargé(s) avec succès`);
-      
-      setShowUploadDialog(false);
-      fetchFiles(currentPath);
-    } catch (error) {
-      console.error('Error uploading files:', error);
-      toast.error('Impossible de télécharger les fichiers');
+    // Then apply search filter if there's a search term
+    if (searchTerm.trim()) {
+      return file.name.toLowerCase().includes(searchTerm.toLowerCase());
     }
-  };
-
-  const handleFileClick = (file: FileItem) => {
-    if (file.type === 'folder') {
-      navigate(`/cloud${file.path}`);
-    } else {
-      setCurrentFile(file);
-      setShowFileViewer(true);
-    }
-  };
-
-  const handleDownload = async (file: FileItem) => {
-    try {
-      if (!file.url) {
-        toast.error('URL de téléchargement non disponible');
-        return;
-      }
-      
-      const response = await fetch(file.url);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const fileName = file.path.split('/').pop() || 'file'; // Fournir une valeur par défaut
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      toast.error('Impossible de télécharger le fichier');
-    }
-  };
-
-  const handleDelete = async (file: FileItem) => {
-    try {
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-      
-      if (file.type === 'file') {
-        const filePath = `${user.id}${file.path}`;
-        
-        // Delete from storage
-        const { error: storageError } = await supabase.storage
-          .from('user_files')
-          .remove([filePath]);
-        
-        if (storageError) throw storageError;
-      }
-      
-      // Delete from database
-      const { error: dbError } = await supabase
-        .from('files')
-        .delete()
-        .eq('id', file.id);
-      
-      if (dbError) throw dbError;
-      
-      toast.success(`${file.name} a été supprimé avec succès`);
-      
-      fetchFiles(currentPath);
-    } catch (error) {
-      console.error('Error deleting file:', error);
-      toast.error('Impossible de supprimer le fichier');
-    }
-  };
-
-  const handleShare = (file: FileItem) => {
-    setFileToShare(file);
-    setShowShareDialog(true);
-  };
-
-  const handleSelectFile = (file: FileItem) => {
-    if (selectedFiles.some(f => f.id === file.id)) {
-      setSelectedFiles(selectedFiles.filter(f => f.id !== file.id));
-    } else {
-      setSelectedFiles([...selectedFiles, file]);
-    }
-  };
-
-  const handleSelectAll = () => {
-    if (selectedFiles.length === files.length) {
-      setSelectedFiles([]);
-    } else {
-      setSelectedFiles([...files]);
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    if (!selectedFiles.length) return;
     
-    try {
-      for (const file of selectedFiles) {
-        await handleDelete(file);
-      }
-      
-      setSelectedFiles([]);
-    } catch (error) {
-      console.error('Error in bulk delete:', error);
-    }
-  };
-
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const sortedFiles = [...files].sort((a, b) => {
-    // Always sort folders before files
+    return true;
+  });
+  
+  // Sort files: folders first, then by name
+  const sortedFiles = [...filteredFiles].sort((a, b) => {
     if (a.type === 'folder' && b.type !== 'folder') return -1;
     if (a.type !== 'folder' && b.type === 'folder') return 1;
-    
-    // Then sort by the selected field
-    let comparison = 0;
-    if (sortField === 'name') {
-      comparison = a.name.localeCompare(b.name);
-    } else if (sortField === 'size') {
-      comparison = a.size - b.size;
-    } else if (sortField === 'updated_at') {
-      comparison = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
-    }
-    
-    return sortDirection === 'asc' ? comparison : -comparison;
+    return a.name.localeCompare(b.name);
   });
-
-  const breadcrumbs = currentPath.split('/').filter(Boolean);
-
-  return (
-    <div className="container mx-auto p-4">
-      {/* Breadcrumb navigation */}
-      <div className="flex items-center mb-4 overflow-x-auto whitespace-nowrap">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate('/cloud')}
-          className="flex items-center"
-        >
-          <FolderIcon className="mr-1 h-4 w-4" />
-          Accueil
-        </Button>
-        
-        {breadcrumbs.map((crumb, index) => (
-          <React.Fragment key={index}>
-            <span className="mx-2 text-gray-500">/</span>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => navigate(`/cloud/${breadcrumbs.slice(0, index + 1).join('/')}`)}
-            >
-              {crumb}
-            </Button>
-          </React.Fragment>
-        ))}
-      </div>
-      
-      {/* Action buttons */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <Button onClick={() => setShowUploadDialog(true)}>
+  
+  // Get file icon based on type
+  const getFileIcon = (type: string) => {
+    if (type === 'folder') return <Folder className="h-8 w-8 text-blue-500" />;
+    
+    if (type.startsWith('image/')) return <File className="h-8 w-8 text-green-500" />;
+    if (type.startsWith('video/')) return <File className="h-8 w-8 text-red-500" />;
+    if (type.startsWith('audio/')) return <File className="h-8 w-8 text-purple-500" />;
+    if (type.startsWith('text/')) return <File className="h-8 w-8 text-yellow-500" />;
+    if (type === 'application/pdf') return <File className="h-8 w-8 text-red-700" />;
+    
+    return <File className="h-8 w-8 text-gray-500" />;
+  };
+  
+  // Content to display if there are no files
+  const emptyState = (
+    <div className="text-center p-12">
+      <Upload className="mx-auto h-12 w-12 text-gray-400" />
+      <h3 className="mt-2 text-lg font-semibold">Aucun fichier</h3>
+      <p className="mt-1 text-gray-500">Commencez à télécharger des fichiers ou créez un nouveau dossier</p>
+      <div className="mt-6 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+        <Button onClick={() => setShowUploader(true)}>
           <Upload className="mr-2 h-4 w-4" />
           Télécharger
         </Button>
-        
-        <Button variant="outline" onClick={() => setShowCreateFolderDialog(true)}>
+        <Button variant="outline" onClick={() => setShowUploader(true)}>
           <FolderPlus className="mr-2 h-4 w-4" />
           Nouveau dossier
         </Button>
-        
-        {selectedFiles.length > 0 && (
-          <Button variant="destructive" onClick={handleBulkDelete}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            Supprimer ({selectedFiles.length})
-          </Button>
-        )}
+        <Button variant="secondary" onClick={handleManualSync}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+          Synchroniser
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Show single file preview if a file is selected
+  if (selectedFileId) {
+    return (
+      <FilePreview 
+        fileId={selectedFileId} 
+        onBack={handleBackFromPreview}
+        onUpdate={() => loadFiles(params.folderId || folderId)}
+      />
+    );
+  }
+
+  // Déterminer le titre basé sur filterType
+  let pageTitle = "Mes Fichiers";
+  if (filterType === 'folders') pageTitle = "Tous les dossiers";
+  if (filterType === 'starred') pageTitle = "Fichiers favoris";
+  if (filterType === 'recent') pageTitle = "Fichiers récents";
+  if (filterType === 'tags') pageTitle = "Fichiers avec tags";
+
+  return (
+    <div className="space-y-4">
+      {/* Breadcrumbs */}
+      <div className="flex items-center flex-wrap space-x-1 text-sm mb-4">
+        {breadcrumbs.map((crumb, index) => (
+          <div key={index} className="flex items-center">
+            {index > 0 && <span className="mx-1 text-gray-400">/</span>}
+            <button
+              onClick={() => handleBreadcrumbClick(crumb.id)}
+              className={`hover:underline ${index === breadcrumbs.length - 1 ? 'font-bold' : ''}`}
+            >
+              {crumb.name}
+            </button>
+          </div>
+        ))}
       </div>
       
-      {/* Files table */}
-      <div className="border rounded-md">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox 
-                  checked={files.length > 0 && selectedFiles.length === files.length}
-                  onCheckedChange={handleSelectAll}
-                />
-              </TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('name')}>
-                Nom {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </TableHead>
-              <TableHead className="cursor-pointer hidden md:table-cell" onClick={() => handleSort('size')}>
-                Taille {sortField === 'size' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </TableHead>
-              <TableHead className="cursor-pointer hidden md:table-cell" onClick={() => handleSort('updated_at')}>
-                Modifié le {sortField === 'updated_at' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </TableHead>
-              <TableHead className="w-24">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
-                  Chargement...
-                </TableCell>
-              </TableRow>
-            ) : sortedFiles.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
-                  Ce dossier est vide
-                </TableCell>
-              </TableRow>
-            ) : (
-              sortedFiles.map((file) => (
-                <TableRow key={file.id}>
-                  <TableCell>
-                    <Checkbox 
-                      checked={selectedFiles.some(f => f.id === file.id)}
-                      onCheckedChange={() => handleSelectFile(file)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </TableCell>
-                  <TableCell 
-                    className="cursor-pointer flex items-center"
-                    onClick={() => handleFileClick(file)}
-                  >
-                    {file.type === 'folder' ? (
-                      <FolderIcon className="mr-2 h-5 w-5 text-blue-500" />
-                    ) : (
-                      <FileIcon className="mr-2 h-5 w-5 text-gray-500" />
-                    )}
-                    <span>{file.name}</span>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {file.type === 'folder' ? '—' : formatFileSize(file.size)}
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {formatDate(file.updated_at)}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {file.type !== 'folder' && (
-                          <DropdownMenuItem onClick={() => handleFileClick(file)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Visualiser
-                          </DropdownMenuItem>
-                        )}
-                        {file.type !== 'folder' && (
-                          <DropdownMenuItem onClick={() => handleDownload(file)}>
-                            <Download className="mr-2 h-4 w-4" />
-                            Télécharger
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem onClick={() => handleShare(file)}>
-                          <Share2 className="mr-2 h-4 w-4" />
-                          Partager
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(file)}>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-      
-      {/* Upload dialog */}
-      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Télécharger des fichiers</DialogTitle>
-          </DialogHeader>
-          <FileUploader onUpload={handleFileUpload} />
-        </DialogContent>
-      </Dialog>
-      
-      {/* Create folder dialog */}
-      <Dialog open={showCreateFolderDialog} onOpenChange={setShowCreateFolderDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Créer un nouveau dossier</DialogTitle>
-          </DialogHeader>
-          <Input
-            value={newFolderName}
-            onChange={(e) => setNewFolderName(e.target.value)}
-            placeholder="Nom du dossier"
-            className="mb-4"
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateFolderDialog(false)}>
-              Annuler
+      {/* Main content: either uploader or file list */}
+      {showUploader ? (
+        <div>
+          <div className="mb-4 flex justify-between items-center">
+            <Button variant="outline" onClick={() => setShowUploader(false)}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Retour aux fichiers
             </Button>
-            <Button onClick={handleCreateFolder}>Créer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* File viewer */}
-      {currentFile && (
-        <FileViewer
-          file={currentFile}
-          open={showFileViewer}
-          onClose={() => {
-            setShowFileViewer(false);
-            setCurrentFile(null);
-          }}
-        />
-      )}
-      
-      {/* Share dialog */}
-      {fileToShare && (
-        <ShareDialog
-          file={fileToShare}
-          open={showShareDialog}
-          onClose={() => {
-            setShowShareDialog(false);
-            setFileToShare(null);
-          }}
-        />
+          </div>
+          <FileUploader 
+            currentFolderId={params.folderId || folderId} 
+            onUploadComplete={() => {
+              loadFiles(params.folderId || folderId);
+              setShowUploader(false);
+            }} 
+          />
+        </div>
+      ) : (
+        <>
+          {/* Search and actions */}
+          <div className="flex flex-col sm:flex-row justify-between gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Rechercher des fichiers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowUploader(true)}>
+                <Upload className="mr-2 h-4 w-4" />
+                Télécharger
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={handleManualSync}
+                disabled={syncing}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                Synchroniser
+              </Button>
+            </div>
+          </div>
+          
+          {/* Tab filters */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid grid-cols-4">
+              <TabsTrigger value="all">Tous</TabsTrigger>
+              <TabsTrigger value="folders">Dossiers</TabsTrigger>
+              <TabsTrigger value="files">Fichiers</TabsTrigger>
+              <TabsTrigger value="starred">Favoris</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value={activeTab} className="mt-4">
+              {loading ? (
+                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="border rounded-lg p-4 animate-pulse">
+                      <div className="h-8 w-8 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : sortedFiles.length > 0 ? (
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {sortedFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors relative group"
+                      onClick={() => file.type === 'folder' ? handleFolderClick(file.id) : handleFileClick(file.id)}
+                    >
+                      <div className="flex items-center">
+                        {getFileIcon(file.type)}
+                        {file.starred && (
+                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 absolute top-2 right-2" />
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <p className="font-medium truncate" title={file.name}>
+                          {file.name}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {file.type === 'folder' ? 'Dossier' : `${(file.size / 1024).toFixed(1)} KB`}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {new Date(file.modified).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                emptyState
+              )}
+            </TabsContent>
+          </Tabs>
+        </>
       )}
     </div>
   );

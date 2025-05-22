@@ -16,7 +16,7 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
     const [isMounted, setIsMounted] = React.useState(false);
     const [position, setPosition] = React.useState({ x: 0, y: 0 });
     const [opacity, setOpacity] = React.useState(0);
-    const cardRef = React.useRef<HTMLDivElement | null>(null);
+    const cardRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {
       setIsMounted(true);
@@ -50,23 +50,14 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
     return (
       <div
         ref={(node) => {
-          // Correctly handle the ref by using callback ref pattern
+          // Pour gérer à la fois la ref React et la ref locale
           if (ref) {
             if (typeof ref === 'function') {
               ref(node);
             } else {
-              // Instead of direct assignment which causes the read-only error
-              // Only assign if node is not null (React's standard behavior)
-              if (node) {
-                Object.defineProperty(ref, 'current', {
-                  value: node,
-                  writable: true,
-                  configurable: true,
-                });
-              }
+              ref.current = node;
             }
           }
-          // Set our local ref
           cardRef.current = node;
         }}
         onMouseMove={handleMouseMove}

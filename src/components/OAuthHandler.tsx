@@ -129,7 +129,10 @@ const OAuthHandler = () => {
         localStorage.setItem('luvvix_accounts', JSON.stringify(updatedAccounts));
         
         // Redirect to the same OAuth page - the session will be established on next load
-        toast.success(`Connexion avec ${storedAccount.fullName || storedAccount.email} en cours...`);
+        toast({
+          title: "Changement de compte",
+          description: `Connexion avec ${storedAccount.fullName || storedAccount.email} en cours...`
+        });
         
         // Redirect to the same page to allow the auth state to update
         window.location.reload();
@@ -178,7 +181,11 @@ const OAuthHandler = () => {
       window.location.href = finalRedirectUri.toString();
     } catch (error: any) {
       console.error("Erreur lors de l'autorisation:", error);
-      toast.error(error.message || "Une erreur est survenue");
+      toast({
+        variant: "destructive",
+        title: "Échec de l'autorisation",
+        description: error.message || "Une erreur est survenue",
+      });
       setLoading(false);
     }
   };

@@ -1,6 +1,5 @@
 
-// We'll create this as a simple mock version since we don't have access to the actual SDK implementation
-import { LuvviXID } from "./luvvix-id-sdk";
+import { LuvviXID } from "@/utils/luvvix-id-sdk";
 
 interface AuthOptions {
   appName: 'main' | 'pharmacy' | 'streaming' | 'chat';

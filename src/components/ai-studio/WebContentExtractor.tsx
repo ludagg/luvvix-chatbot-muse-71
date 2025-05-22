@@ -21,13 +21,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { WebCrawlerService } from "@/services/web-crawler-service";
 import { Loader2, Globe, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface WebContentExtractorProps {
   onContentExtracted: (content: string) => void;
 }
 
 export const WebContentExtractor = ({ onContentExtracted }: WebContentExtractorProps) => {
+  const { toast } = useToast();
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
@@ -39,7 +40,11 @@ export const WebContentExtractor = ({ onContentExtracted }: WebContentExtractorP
 
   const handleExtractContent = async () => {
     if (!url) {
-      toast.error("Veuillez entrer une URL valide");
+      toast({
+        title: "URL requise",
+        description: "Veuillez entrer une URL valide",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -60,13 +65,24 @@ export const WebContentExtractor = ({ onContentExtracted }: WebContentExtractorP
         
         if (result.isJsFramework) {
           setDetectedFramework(result.detectedFramework || "JavaScript framework");
-          toast.success(`Le site utilise ${result.detectedFramework || "un framework JavaScript"}. Mode JavaScript activé pour une meilleure extraction.`);
+          toast({
+            title: "Site basé sur framework JS détecté",
+            description: `Le site utilise ${result.detectedFramework || "un framework JavaScript"}. Mode JavaScript activé pour une meilleure extraction.`,
+          });
         }
       } else {
-        toast.error(result.error || "Impossible d'extraire le contenu de cette URL");
+        toast({
+          title: "Erreur d'extraction",
+          description: result.error || "Impossible d'extraire le contenu de cette URL",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Une erreur est survenue");
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Une erreur est survenue",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

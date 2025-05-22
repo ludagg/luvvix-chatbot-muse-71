@@ -1,59 +1,58 @@
 
 import { useState, useEffect } from 'react';
 
-export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
-  // Fonction pour récupérer la valeur initiale
-  const getInitialValue = (): T => {
+export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
+  // Get from local storage then
+  // parse stored json or return initialValue
+  const readValue = (): T => {
     if (typeof window === 'undefined') {
       return initialValue;
     }
-    
+
     try {
       const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      return item ? (JSON.parse(item) as T) : initialValue;
     } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
+      console.warn(`Error reading localStorage key "${key}":`, error);
       return initialValue;
     }
   };
 
-  const [storedValue, setStoredValue] = useState<T>(getInitialValue);
+  // State to store our value
+  // Pass initial state function to useState so logic is only executed once
+  const [storedValue, setStoredValue] = useState<T>(readValue);
 
-  // Fonction pour mettre à jour la valeur dans localStorage
-  const setValue = (value: T | ((val: T) => T)) => {
+  // Return a wrapped version of useState's setter function that ...
+  // ... persists the new value to localStorage.
+  const setValue = (value: T) => {
     try {
-      // Permet de passer une fonction comme pour setState
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      
-      // Mettre à jour le state
+      // Allow value to be a function so we have the same API as useState
+      const valueToStore =
+        value instanceof Function ? value(storedValue) : value;
+      // Save to local state
       setStoredValue(valueToStore);
-      
-      // Sauvegarder dans localStorage
+      // Save to local storage
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }
     } catch (error) {
-      console.error(`Error setting localStorage key "${key}":`, error);
+      console.warn(`Error setting localStorage key "${key}":`, error);
     }
   };
 
   useEffect(() => {
-    // Synchroniser avec les autres onglets/fenêtres
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === key && event.newValue) {
-        try {
-          setStoredValue(JSON.parse(event.newValue));
-        } catch (error) {
-          console.error(`Error parsing localStorage event for key "${key}":`, error);
-        }
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === key) {
+        setStoredValue(e.newValue ? JSON.parse(e.newValue) : initialValue);
       }
     };
 
+    // Listen for changes to this localStorage key in other windows
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [key]);
+  }, [key, initialValue]);
 
   return [storedValue, setValue];
 }

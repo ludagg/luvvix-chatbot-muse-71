@@ -1,13 +1,14 @@
 
 import * as React from "react"
+import { toast as sonnerToastOriginal } from "sonner"
 
 import type {
   ToastActionElement,
   ToastProps,
 } from "@/components/ui/toast"
 
-const TOAST_LIMIT = 5  // Increased limit for better UX
-const TOAST_REMOVE_DELAY = 5000 // Decreased to 5 seconds for better UX
+const TOAST_LIMIT = 5
+const TOAST_REMOVE_DELAY = 5000
 
 type ToasterToast = ToastProps & {
   id: string
@@ -91,8 +92,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -138,7 +137,7 @@ function dispatch(action: Action) {
   })
 }
 
-type Toast = Omit<ToasterToast, "id">;
+type Toast = Omit<ToasterToast, "id">
 
 function toast({ ...props }: Toast) {
   const id = genId();
@@ -169,12 +168,11 @@ function toast({ ...props }: Toast) {
   };
 }
 
-// Import toast component from sonner
-import { toast as sonnerToast } from "sonner";
-
 // Enhanced sonner toast configuration
+const sonnerToast = sonnerToastOriginal;
+
 sonnerToast.success = (message, options) => {
-  return sonnerToast(message, {
+  return sonnerToastOriginal(message, {
     ...options,
     style: {
       background: 'linear-gradient(to right, rgba(110, 89, 165, 0.1), rgba(139, 135, 245, 0.1))',
@@ -187,7 +185,7 @@ sonnerToast.success = (message, options) => {
 };
 
 sonnerToast.error = (message, options) => {
-  return sonnerToast(message, {
+  return sonnerToastOriginal(message, {
     ...options,
     style: {
       background: 'linear-gradient(to right, rgba(239, 68, 68, 0.1), rgba(255, 114, 94, 0.1))',
@@ -200,7 +198,7 @@ sonnerToast.error = (message, options) => {
 };
 
 sonnerToast.info = (message, options) => {
-  return sonnerToast(message, {
+  return sonnerToastOriginal(message, {
     ...options,
     style: {
       background: 'linear-gradient(to right, rgba(51, 195, 240, 0.1), rgba(96, 165, 250, 0.1))',
@@ -211,8 +209,6 @@ sonnerToast.info = (message, options) => {
     },
   });
 };
-
-export { sonnerToast };
 
 export function useToast() {
   const [state, setState] = React.useState<State>(memoryState);
@@ -234,4 +230,7 @@ export function useToast() {
   }
 }
 
-export { toast };
+export { toast, sonnerToast };
+
+// Export types
+export type { ToastActionElement, ToastProps };

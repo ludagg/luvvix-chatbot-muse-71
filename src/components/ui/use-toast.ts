@@ -1,6 +1,7 @@
 
-// Import useToast and toast from the hooks directory
-import { useToast, toast, sonnerToast } from "@/hooks/use-toast";
+// Re-export from the hooks directory
+import { useToast, toast, sonnerToast, ToastActionElement, ToastProps } from "@/hooks/use-toast";
 
-// Re-export them
+// Re-export 
 export { useToast, toast, sonnerToast };
+export type { ToastActionElement, ToastProps };

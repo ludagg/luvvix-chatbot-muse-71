@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,24 +16,40 @@ import FileUploader from './FileUploader';
 import FileViewer from './FileViewer';
 import ShareDialog from './ShareDialog';
 
+interface FileItem {
+  id: string;
+  name: string;
+  path: string;
+  parent_path: string;
+  type: 'file' | 'folder';
+  mime_type?: string;
+  size: number;
+  url?: string;
+  is_public?: boolean;
+  shared_with?: string[];
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
 const FileExplorer = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
   const [currentPath, setCurrentPath] = useState('/');
-  const [files, setFiles] = useState([]);
-  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<FileItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [showCreateFolderDialog, setShowCreateFolderDialog] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [showFileViewer, setShowFileViewer] = useState(false);
-  const [currentFile, setCurrentFile] = useState(null);
+  const [currentFile, setCurrentFile] = useState<FileItem | null>(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [fileToShare, setFileToShare] = useState(null);
+  const [fileToShare, setFileToShare] = useState<FileItem | null>(null);
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -42,7 +59,7 @@ const FileExplorer = () => {
     }
   }, [location.pathname, user]);
 
-  const fetchFiles = async (path) => {
+  const fetchFiles = async (path: string) => {
     if (!user) return;
     
     setIsLoading(true);
@@ -59,11 +76,7 @@ const FileExplorer = () => {
       setSelectedFiles([]);
     } catch (error) {
       console.error('Error fetching files:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: 'Impossible de charger les fichiers'
-      });
+      toast.error('Impossible de charger les fichiers');
     } finally {
       setIsLoading(false);
     }
@@ -74,6 +87,10 @@ const FileExplorer = () => {
     
     try {
       const folderPath = `${currentPath === '/' ? '' : currentPath}/${newFolderName}`;
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
       
       const { error } = await supabase
         .from('files')
@@ -88,28 +105,25 @@ const FileExplorer = () => {
       
       if (error) throw error;
       
-      toast({
-        title: 'Dossier créé',
-        description: `Le dossier ${newFolderName} a été créé avec succès`
-      });
+      toast.success(`Le dossier ${newFolderName} a été créé avec succès`);
       
       setNewFolderName('');
       setShowCreateFolderDialog(false);
       fetchFiles(currentPath);
     } catch (error) {
       console.error('Error creating folder:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: 'Impossible de créer le dossier'
-      });
+      toast.error('Impossible de créer le dossier');
     }
   };
 
-  const handleFileUpload = async (files) => {
+  const handleFileUpload = async (files: File[]) => {
     if (!files.length) return;
     
     try {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
       for (const file of files) {
         const filePath = `${user.id}${currentPath === '/' ? '' : currentPath}/${file.name}`;
         
@@ -142,24 +156,17 @@ const FileExplorer = () => {
         if (dbError) throw dbError;
       }
       
-      toast({
-        title: 'Fichiers téléchargés',
-        description: `${files.length} fichier(s) téléchargé(s) avec succès`
-      });
+      toast.success(`${files.length} fichier(s) téléchargé(s) avec succès`);
       
       setShowUploadDialog(false);
       fetchFiles(currentPath);
     } catch (error) {
       console.error('Error uploading files:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: 'Impossible de télécharger les fichiers'
-      });
+      toast.error('Impossible de télécharger les fichiers');
     }
   };
 
-  const handleFileClick = (file) => {
+  const handleFileClick = (file: FileItem) => {
     if (file.type === 'folder') {
       navigate(`/cloud${file.path}`);
     } else {
@@ -168,14 +175,10 @@ const FileExplorer = () => {
     }
   };
 
-  const handleDownload = async (file) => {
+  const handleDownload = async (file: FileItem) => {
     try {
       if (!file.url) {
-        toast({
-          variant: 'destructive',
-          title: 'Erreur',
-          description: 'URL de téléchargement non disponible'
-        });
+        toast.error('URL de téléchargement non disponible');
         return;
       }
       
@@ -192,16 +195,16 @@ const FileExplorer = () => {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Error downloading file:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: 'Impossible de télécharger le fichier'
-      });
+      toast.error('Impossible de télécharger le fichier');
     }
   };
 
-  const handleDelete = async (file) => {
+  const handleDelete = async (file: FileItem) => {
     try {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
       if (file.type === 'file') {
         const filePath = `${user.id}${file.path}`;
         
@@ -221,28 +224,21 @@ const FileExplorer = () => {
       
       if (dbError) throw dbError;
       
-      toast({
-        title: 'Suppression réussie',
-        description: `${file.name} a été supprimé avec succès`
-      });
+      toast.success(`${file.name} a été supprimé avec succès`);
       
       fetchFiles(currentPath);
     } catch (error) {
       console.error('Error deleting file:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: 'Impossible de supprimer le fichier'
-      });
+      toast.error('Impossible de supprimer le fichier');
     }
   };
 
-  const handleShare = (file) => {
+  const handleShare = (file: FileItem) => {
     setFileToShare(file);
     setShowShareDialog(true);
   };
 
-  const handleSelectFile = (file) => {
+  const handleSelectFile = (file: FileItem) => {
     if (selectedFiles.some(f => f.id === file.id)) {
       setSelectedFiles(selectedFiles.filter(f => f.id !== file.id));
     } else {
@@ -272,7 +268,7 @@ const FileExplorer = () => {
     }
   };
 
-  const handleSort = (field) => {
+  const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
@@ -293,7 +289,7 @@ const FileExplorer = () => {
     } else if (sortField === 'size') {
       comparison = a.size - b.size;
     } else if (sortField === 'updated_at') {
-      comparison = new Date(a.updated_at) - new Date(b.updated_at);
+      comparison = new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
     }
     
     return sortDirection === 'asc' ? comparison : -comparison;

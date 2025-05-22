@@ -123,11 +123,7 @@ const AccountSelector = ({ currentUser, onLogout }: AccountSelectorProps) => {
       navigate('/auth');
     } catch (error) {
       console.error('Error during logout:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur de déconnexion",
-        description: "Une erreur est survenue lors de la déconnexion."
-      });
+      toast.error("Une erreur est survenue lors de la déconnexion.");
     }
   };
 
@@ -139,20 +135,13 @@ const AccountSelector = ({ currentUser, onLogout }: AccountSelectorProps) => {
       // Clear all stored accounts
       localStorage.removeItem('luvvix_accounts');
       
-      toast({
-        title: "Déconnexion globale",
-        description: "Vous avez été déconnecté de tous les comptes."
-      });
+      toast.success("Vous avez été déconnecté de tous les comptes.");
       
       // Redirect to login
       navigate('/auth');
     } catch (error) {
       console.error('Error during global logout:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur de déconnexion",
-        description: "Une erreur est survenue lors de la déconnexion globale."
-      });
+      toast.error("Une erreur est survenue lors de la déconnexion globale.");
     }
   };
 
@@ -175,20 +164,13 @@ const AccountSelector = ({ currentUser, onLogout }: AccountSelectorProps) => {
       await supabase.auth.signOut();
       
       // Directly navigate to dashboard - the session will be established on next load
-      toast({
-        title: "Changement de compte",
-        description: `Connexion avec ${account.fullName || account.email} en cours...`
-      });
+      toast.success(`Connexion avec ${account.fullName || account.email} en cours...`);
       
       // Redirect to dashboard, letting the automatic session restoration handle the login
       navigate('/dashboard');
     } catch (error) {
       console.error('Error switching account:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors du changement de compte."
-      });
+      toast.error("Une erreur est survenue lors du changement de compte.");
     }
   };
 

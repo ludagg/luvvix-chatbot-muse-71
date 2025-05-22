@@ -19,7 +19,7 @@ import {
   Download, 
   RefreshCcw
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { fileService } from "@/services/file-service";
 
 interface CloudSidebarProps {
@@ -34,7 +34,6 @@ interface CloudSidebarProps {
 
 const CloudSidebar = ({ toggleSidebar, cloudStatus, onExportCloud }: CloudSidebarProps) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
@@ -53,34 +52,20 @@ const CloudSidebar = ({ toggleSidebar, cloudStatus, onExportCloud }: CloudSideba
 
   const handleSync = async () => {
     try {
-      toast({
-        title: "Synchronisation",
-        description: "Synchronisation avec le cloud en cours...",
-      });
+      toast.success("Synchronisation avec le cloud en cours...");
       
       await fileService.syncFilesFromSupabase();
       
-      toast({
-        title: "Synchronisation terminée",
-        description: "Vos fichiers sont à jour",
-      });
+      toast.success("Vos fichiers sont à jour");
     } catch (error) {
       console.error("Error syncing:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur de synchronisation",
-        description: "Impossible de synchroniser vos fichiers",
-      });
+      toast.error("Impossible de synchroniser vos fichiers");
     }
   };
 
   const handleImport = async () => {
     if (!importFile) {
-      toast({
-        variant: "destructive",
-        title: "Aucun fichier sélectionné",
-        description: "Veuillez sélectionner un fichier d'export LuvviX Cloud",
-      });
+      toast.error("Veuillez sélectionner un fichier d'export LuvviX Cloud");
       return;
     }
     
@@ -92,10 +77,7 @@ const CloudSidebar = ({ toggleSidebar, cloudStatus, onExportCloud }: CloudSideba
       
       await fileService.importFiles(importData);
       
-      toast({
-        title: "Import réussi",
-        description: "Vos fichiers ont été importés avec succès",
-      });
+      toast.success("Vos fichiers ont été importés avec succès");
       
       setShowImportDialog(false);
       setImportFile(null);
@@ -103,11 +85,7 @@ const CloudSidebar = ({ toggleSidebar, cloudStatus, onExportCloud }: CloudSideba
       navigate(0);
     } catch (error) {
       console.error("Error importing cloud:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur d'import",
-        description: "Le fichier d'import semble être invalide ou corrompu",
-      });
+      toast.error("Le fichier d'import semble être invalide ou corrompu");
     } finally {
       setImporting(false);
     }

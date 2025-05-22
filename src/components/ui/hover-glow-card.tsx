@@ -50,12 +50,21 @@ export const HoverGlowCard = React.forwardRef<HTMLDivElement, HoverGlowCardProps
     return (
       <div
         ref={(node) => {
-          // Handle ref properly
-          if (typeof ref === 'function') {
-            ref(node);
-          } else if (ref) {
-            // Use Object.assign instead of direct assignment for read-only property
-            // This is a workaround for the TypeScript error
+          // Correctly handle the ref by using callback ref pattern
+          if (ref) {
+            if (typeof ref === 'function') {
+              ref(node);
+            } else {
+              // Instead of direct assignment which causes the read-only error
+              // Only assign if node is not null (React's standard behavior)
+              if (node) {
+                Object.defineProperty(ref, 'current', {
+                  value: node,
+                  writable: true,
+                  configurable: true,
+                });
+              }
+            }
           }
           // Set our local ref
           cardRef.current = node;

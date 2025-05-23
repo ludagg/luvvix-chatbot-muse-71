@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,19 +24,19 @@ interface AuthenticationProps {
 }
 
 const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps) => {
-  const { signUp, signIn } = useAuth();
+  const { signUp, signIn, signInWithBiometrics } = useAuth();
   const { authenticateWithBiometrics, isAvailable: biometricsAvailable } = useBiometrics({
     onSuccess: () => {
       toast({
-        title: "Authentification biométrique réussie",
-        description: "Vous êtes maintenant connecté"
+        title: "Biometric authentication successful",
+        description: "You are now logged in"
       });
     }
   });
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
-  const [step, setStep] = useState(1); // Pour gestion d'un processus d'inscription en plusieurs étapes
+  const [step, setStep] = useState(1); // For multi-step signup process
   const [enableBiometrics, setEnableBiometrics] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [formData, setFormData] = useState({
@@ -52,16 +53,16 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     acceptMarketing: false
   });
   
-  // Logique de captcha simplifiée pour la démo
+  // Simplified captcha logic for demo
   const [captchaQuestion, setCaptchaQuestion] = useState('');
   const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [userCaptchaAnswer, setUserCaptchaAnswer] = useState('');
   
-  // Générer une simple question mathématique pour le captcha
+  // Generate a simple math question for captcha
   const generateCaptcha = () => {
     const num1 = Math.floor(Math.random() * 10);
     const num2 = Math.floor(Math.random() * 10);
-    setCaptchaQuestion(`Combien font ${num1} + ${num2} ?`);
+    setCaptchaQuestion(`What is ${num1} + ${num2}?`);
     setCaptchaAnswer(String(num1 + num2));
   };
   
@@ -76,10 +77,10 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     } else {
       toast({
         variant: "destructive",
-        title: "Vérification échouée",
-        description: "La réponse du CAPTCHA est incorrecte.",
+        title: "Verification failed",
+        description: "The CAPTCHA response is incorrect.",
       });
-      generateCaptcha(); // Régénérer une nouvelle question
+      generateCaptcha(); // Generate a new question
       return false;
     }
   };
@@ -87,12 +88,12 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Vérifications du formulaire
+    // Form validations
     if (formData.password !== formData.confirmPassword) {
       toast({
         variant: "destructive",
-        title: "Erreur de validation",
-        description: "Les mots de passe ne correspondent pas.",
+        title: "Validation error",
+        description: "Passwords do not match.",
       });
       return;
     }
@@ -100,8 +101,8 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     if (!formData.acceptTerms) {
       toast({
         variant: "destructive",
-        title: "Conditions non acceptées",
-        description: "Vous devez accepter les conditions d'utilisation pour continuer.",
+        title: "Terms not accepted",
+        description: "You must accept the terms of use to continue.",
       });
       return;
     }
@@ -112,7 +113,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     
     setIsLoading(true);
     
-    // Préparer les métadonnées utilisateur enrichies
+    // Prepare enriched user metadata
     const userMetadata = {
       full_name: formData.fullName,
       username: formData.username,
@@ -171,7 +172,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     });
   };
   
-  // Gestion des étapes d'inscription
+  // Handle multi-step signup
   const renderSignupStep = () => {
     switch(step) {
       case 1:
@@ -480,21 +481,22 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     if (!biometricsAvailable) {
       toast({
         variant: "destructive",
-        title: "Authentification biométrique non disponible",
-        description: "Votre appareil ne prend pas en charge l'authentification biométrique"
+        title: "Biometric authentication not available",
+        description: "Your device does not support biometric authentication"
       });
       return;
     }
     
     setBiometricLoading(true);
     try {
-      const userId = await authenticateWithBiometrics();
-      if (userId) {
-        // Connexion réussie via biométrie
-        // Dans une implémentation réelle, nous utiliserions ce userId pour récupérer la session
-        setIsLoading(false);
+      // Call the user's signInWithBiometrics method directly
+      const success = await signInWithBiometrics();
+      
+      if (success) {
+        // Successful login via biometrics
+        setBiometricLoading(false);
         
-        // Redirection après connexion réussie
+        // Redirect after successful login
         setTimeout(() => {
           if (returnTo) {
             navigate(returnTo);
@@ -502,16 +504,17 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
             navigate('/dashboard');
           }
         }, 500);
+      } else {
+        throw new Error("Biometric authentication failed");
       }
     } catch (error) {
-      console.error('Erreur d\'authentification biométrique:', error);
+      console.error('Biometric authentication error:', error);
+      setBiometricLoading(false);
       toast({
         variant: "destructive",
-        title: "Erreur d'authentification",
-        description: "La vérification biométrique a échoué"
+        title: "Authentication error",
+        description: "Biometric verification failed"
       });
-    } finally {
-      setBiometricLoading(false);
     }
   };
 
@@ -522,14 +525,14 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900">LuvviX ID</h2>
             <p className="text-gray-600 mt-2">
-              Un seul compte pour accéder à l'ensemble de notre écosystème technologique
+              One account for the entire technological ecosystem
             </p>
           </div>
 
-          <Tabs defaultValue="signup" className="w-full">
+          <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid grid-cols-2 mb-6">
-              <TabsTrigger value="signup" className="text-gray-700">Créer un compte</TabsTrigger>
-              <TabsTrigger value="login" className="text-gray-700">Connexion</TabsTrigger>
+              <TabsTrigger value="signup" className="text-gray-700">Create account</TabsTrigger>
+              <TabsTrigger value="login" className="text-gray-700">Login</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signup">
@@ -612,14 +615,14 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                           <path d="M9 6.8a6 6 0 0 1 9 5.2c0 .47 0 1.17-.02 2"></path>
                         </svg>
                       )}
-                      Se connecter avec Authentivix
+                      Login with Authentivix
                     </Button>
                     <div className="relative my-4">
                       <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t border-gray-300"></div>
                       </div>
                       <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-white text-gray-500">ou</span>
+                        <span className="px-2 bg-white text-gray-500">or</span>
                       </div>
                     </div>
                   </div>
@@ -666,18 +669,18 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    variant="luvvix" 
+                    variant="default" 
                     disabled={isLoading}
                   >
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Connexion en cours...
+                        Logging in...
                       </>
                     ) : (
                       <>
                         <LogIn className="mr-2 h-4 w-4" />
-                        Se connecter
+                        Login
                       </>
                     )}
                   </Button>

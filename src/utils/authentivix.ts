@@ -1,10 +1,10 @@
 
 /**
- * Authentivix - Système d'authentification biométrique pour LuvviX ID
+ * Authentivix - Biometric authentication system for LuvviX ID
  * Version 1.0.0
  */
 
-// Types pour le système d'authentification biométrique
+// Types for the biometric authentication system
 export interface BiometricCredential {
   id: string;
   userId: string;
@@ -19,7 +19,7 @@ export interface AuthentivixOptions {
   autoPrompt?: boolean;
 }
 
-// Classe principale pour la gestion de l'authentification biométrique
+// Main class for biometric authentication management
 export class Authentivix {
   private options: Required<AuthentivixOptions>;
   
@@ -33,59 +33,57 @@ export class Authentivix {
   }
   
   /**
-   * Vérifie si l'authentification biométrique est disponible sur l'appareil
-   * @returns {Promise<boolean>} True si disponible, False sinon
+   * Check if biometric authentication is available on the device
+   * @returns {Promise<boolean>} True if available, False otherwise
    */
   async isBiometricAvailable(): Promise<boolean> {
     try {
-      // Vérifier si l'API Web Authentication est disponible
-      if (!window.PublicKeyCredential) {
-        return false;
-      }
-      
-      // Vérifier si l'appareil supporte l'authentification biométrique
-      // Note: Cette API est encore expérimentale et peut nécessiter des adaptations
-      if ('PublicKeyCredential' in window &&
-          // @ts-ignore - Cette propriété existe mais n'est pas encore standardisée
-          typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
-        // @ts-ignore
-        return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      // Check if the Web Authentication API is available
+      if (window && 'PublicKeyCredential' in window) {
+        // Check if the device supports biometric authentication
+        // Note: This API is still experimental and may require adaptations
+        if ('PublicKeyCredential' in window &&
+            // @ts-ignore - This property exists but is not yet standardized
+            typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
+          // @ts-ignore
+          return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        }
       }
       
       return false;
     } catch (error) {
-      console.error('Erreur lors de la vérification de la disponibilité biométrique:', error);
+      console.error('Error checking biometric availability:', error);
       return false;
     }
   }
   
   /**
-   * Vérifie si l'utilisateur a déjà configuré l'authentification biométrique
-   * @param {string} userId - Identifiant de l'utilisateur
-   * @returns {boolean} True si configuré, False sinon
+   * Check if the user has already set up biometric authentication
+   * @param {string} userId - User identifier
+   * @returns {boolean} True if configured, False otherwise
    */
   isEnrolled(userId: string): boolean {
     try {
       const storedData = localStorage.getItem(`${this.options.storageKey}_${userId}`);
       return !!storedData;
     } catch (error) {
-      console.error('Erreur lors de la vérification de l\'inscription biométrique:', error);
+      console.error('Error checking biometric enrollment:', error);
       return false;
     }
   }
   
   /**
-   * Enregistre les données biométriques de l'utilisateur
-   * @param {string} userId - Identifiant de l'utilisateur
-   * @param {string} token - Token d'authentification
-   * @returns {Promise<boolean>} True si l'inscription réussit, False sinon
+   * Register the user's biometric data
+   * @param {string} userId - User identifier
+   * @param {string} token - Authentication token
+   * @returns {Promise<boolean>} True if registration succeeds, False otherwise
    */
   async enrollBiometrics(userId: string, token: string): Promise<boolean> {
     try {
-      // Dans un environnement de production, cette opération serait effectuée avec le serveur
-      // et l'API Web Authentication (navigator.credentials.create)
+      // In a production environment, this operation would be performed with the server
+      // and the Web Authentication API (navigator.credentials.create)
       
-      // Simuler l'enregistrement pour la démo
+      // Simulate registration for the demo
       const credential: BiometricCredential = {
         id: Math.random().toString(36).substring(2, 15),
         userId: userId,
@@ -97,27 +95,27 @@ export class Authentivix {
       localStorage.setItem(`${this.options.storageKey}_${userId}`, JSON.stringify(credential));
       return true;
     } catch (error) {
-      console.error('Erreur lors de l\'enregistrement biométrique:', error);
+      console.error('Error during biometric registration:', error);
       return false;
     }
   }
   
   /**
-   * Authentifie l'utilisateur avec ses données biométriques
-   * @param {string} userId - Identifiant de l'utilisateur (optionnel si autoPrompt est true)
-   * @returns {Promise<string|null>} Token d'authentification ou null si échec
+   * Authenticate the user with their biometric data
+   * @param {string} userId - User identifier (optional if autoPrompt is true)
+   * @returns {Promise<string|null>} Authentication token or null if failed
    */
   async authenticateWithBiometrics(userId?: string): Promise<string | null> {
     try {
-      // Vérifier si l'authentification biométrique est disponible
+      // Check if biometric authentication is available
       const isAvailable = await this.isBiometricAvailable();
       if (!isAvailable) {
-        throw new Error("L'authentification biométrique n'est pas disponible sur cet appareil");
+        throw new Error("Biometric authentication is not available on this device");
       }
       
-      // Si userId n'est pas fourni et autoPrompt est activé, chercher tous les credentials stockés
+      // If userId is not provided and autoPrompt is enabled, look for all stored credentials
       if (!userId && this.options.autoPrompt) {
-        // Parcourir le localStorage pour trouver les credentials biométriques
+        // Browse localStorage to find biometric credentials
         const userIds: string[] = [];
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
@@ -128,62 +126,62 @@ export class Authentivix {
         }
         
         if (userIds.length === 0) {
-          throw new Error("Aucune donnée biométrique enregistrée");
+          throw new Error("No biometric data registered");
         }
         
-        // Utiliser le premier utilisateur trouvé
+        // Use the first user found
         userId = userIds[0];
       }
       
       if (!userId) {
-        throw new Error("ID utilisateur requis pour l'authentification biométrique");
+        throw new Error("User ID required for biometric authentication");
       }
       
-      // Vérifier si l'utilisateur a déjà configuré l'authentification biométrique
+      // Check if the user has already set up biometric authentication
       if (!this.isEnrolled(userId)) {
-        throw new Error("L'utilisateur n'a pas configuré l'authentification biométrique");
+        throw new Error("The user has not set up biometric authentication");
       }
       
-      // Dans un environnement de production, cette opération serait effectuée avec le serveur
-      // et l'API Web Authentication (navigator.credentials.get)
+      // In a production environment, this operation would be performed with the server
+      // and the Web Authentication API (navigator.credentials.get)
       
-      // Simuler l'authentification pour la démo
+      // Simulate authentication for the demo
       const storedDataStr = localStorage.getItem(`${this.options.storageKey}_${userId}`);
       if (!storedDataStr) {
-        throw new Error("Données biométriques non trouvées");
+        throw new Error("Biometric data not found");
       }
       
       const storedData: BiometricCredential = JSON.parse(storedDataStr);
       
-      // Mise à jour de la date de dernière utilisation
+      // Update last used date
       storedData.lastUsed = Date.now();
       localStorage.setItem(`${this.options.storageKey}_${userId}`, JSON.stringify(storedData));
       
-      // Générer un token simulé
+      // Generate simulated token
       const simulatedToken = btoa(`${userId}:${Date.now()}`);
       return simulatedToken;
     } catch (error) {
-      console.error('Erreur lors de l\'authentification biométrique:', error);
+      console.error('Error during biometric authentication:', error);
       return null;
     }
   }
   
   /**
-   * Supprime les données biométriques de l'utilisateur
-   * @param {string} userId - Identifiant de l'utilisateur
-   * @returns {boolean} True si la suppression réussit, False sinon
+   * Remove the user's biometric data
+   * @param {string} userId - User identifier
+   * @returns {boolean} True if removal succeeds, False otherwise
    */
   removeBiometrics(userId: string): boolean {
     try {
       localStorage.removeItem(`${this.options.storageKey}_${userId}`);
       return true;
     } catch (error) {
-      console.error('Erreur lors de la suppression des données biométriques:', error);
+      console.error('Error removing biometric data:', error);
       return false;
     }
   }
 }
 
-// Export d'une instance singleton pour une utilisation facile
+// Export a singleton instance for easy use
 export const authentivix = new Authentivix();
 export default authentivix;

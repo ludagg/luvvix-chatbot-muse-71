@@ -15,20 +15,20 @@ export function useBiometrics(options?: BiometricsOptions) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    // Vérifier si l'API Web Authentication est disponible
+    // Check if Web Authentication API is available
     const checkAvailability = async () => {
       try {
         const available = await authentivix.isBiometricAvailable();
         setIsAvailable(available);
         
-        // Si nous avons un ID utilisateur stocké, vérifier si l'utilisateur a déjà configuré la biométrie
+        // If we have a user ID stored, check if user has already set up biometrics
         const userId = localStorage.getItem('luvvix_biometrics_userid');
         if (userId) {
           const enrolled = authentivix.isEnrolled(userId);
           setIsEnrolled(enrolled);
         }
       } catch (err) {
-        console.error("Erreur lors de la vérification de la disponibilité biométrique:", err);
+        console.error("Error checking biometric availability:", err);
         setIsAvailable(false);
       }
     };
@@ -38,13 +38,13 @@ export function useBiometrics(options?: BiometricsOptions) {
 
   const enrollBiometrics = async (userId: string): Promise<boolean> => {
     if (!isAvailable) {
-      const error = new Error("L'authentification biométrique n'est pas disponible sur ce navigateur");
+      const error = new Error("Biometric authentication is not available on this browser");
       setError(error);
       options?.onError?.(error);
       toast({
         variant: "destructive",
-        title: "Authentification biométrique non disponible",
-        description: "Votre appareil ne prend pas en charge l'authentification biométrique"
+        title: "Biometric authentication not available",
+        description: "Your device does not support biometric authentication"
       });
       return false;
     }
@@ -52,31 +52,32 @@ export function useBiometrics(options?: BiometricsOptions) {
     try {
       setIsLoading(true);
       
-      // Générer un token simulé pour la démonstration
+      // Generate a simulated token for the demo
       const token = btoa(`${userId}:${Date.now()}`);
       
-      // Utiliser Authentivix pour enregistrer les données biométriques
+      // Use Authentivix to register biometric data
       const success = await authentivix.enrollBiometrics(userId, token);
       
       if (success) {
         setIsEnrolled(true);
+        localStorage.setItem('luvvix_biometrics_userid', userId);
         options?.onSuccess?.();
         toast({
-          title: "Authentification biométrique activée",
-          description: "Vous pouvez maintenant vous connecter avec votre empreinte digitale"
+          title: "Biometric authentication enabled",
+          description: "You can now log in with your fingerprint"
         });
       } else {
-        throw new Error("Erreur lors de l'enregistrement biométrique");
+        throw new Error("Error during biometric enrollment");
       }
       
       return success;
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Erreur inconnue');
+      const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
       options?.onError?.(error);
       toast({
         variant: "destructive",
-        title: "Erreur d'activation",
+        title: "Activation error",
         description: error.message
       });
       return false;
@@ -85,32 +86,32 @@ export function useBiometrics(options?: BiometricsOptions) {
     }
   };
 
-  const authenticateWithBiometrics = async (): Promise<string | null> => {
+  const authenticateWithBiometrics = async (userId?: string): Promise<string | null> => {
     setIsLoading(true);
     try {
-      // Utiliser Authentivix pour l'authentification biométrique
-      // Si autoPrompt est true, la fonction cherchera automatiquement tous les utilisateurs inscrits
-      const token = await authentivix.authenticateWithBiometrics();
+      // Use Authentivix for biometric authentication
+      // If autoPrompt is true, the function will automatically look for all enrolled users
+      const token = await authentivix.authenticateWithBiometrics(userId);
       
       if (token) {
         options?.onSuccess?.();
         
-        // Extraire l'ID utilisateur du token (dans un environnement réel, ce serait fait de manière plus sécurisée)
+        // Extract user ID from token (in a real environment, this would be done more securely)
         const decodedToken = atob(token);
         const userId = decodedToken.split(':')[0];
         
         return userId;
       } else {
-        throw new Error("L'authentification biométrique a échoué");
+        throw new Error("Biometric authentication failed");
       }
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Erreur inconnue');
+      const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
       options?.onError?.(error);
       toast({
         variant: "destructive",
-        title: "Erreur d'authentification",
-        description: "La vérification biométrique a échoué"
+        title: "Authentication error",
+        description: "Biometric verification failed"
       });
       return null;
     } finally {
@@ -125,22 +126,23 @@ export function useBiometrics(options?: BiometricsOptions) {
       
       if (success) {
         setIsEnrolled(false);
+        localStorage.removeItem('luvvix_biometrics_userid');
         toast({
-          title: "Authentification biométrique désactivée",
-          description: "Vos données biométriques ont été supprimées"
+          title: "Biometric authentication disabled",
+          description: "Your biometric data has been removed"
         });
       } else {
-        throw new Error("Erreur lors de la suppression des données biométriques");
+        throw new Error("Error removing biometric data");
       }
       
       return success;
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Erreur inconnue');
+      const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
       options?.onError?.(error);
       toast({
         variant: "destructive",
-        title: "Erreur de désactivation",
+        title: "Deactivation error",
         description: error.message
       });
       return false;

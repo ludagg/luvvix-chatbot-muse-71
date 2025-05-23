@@ -1,4 +1,3 @@
-
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { DecentralizedStorageProvider } from "@/hooks/use-ipfs";
@@ -74,10 +73,10 @@ function App() {
               } />
               <Route path="/admin" element={<AdminPanel />} />
               
-              {/* Ajout de la route pour l'écosystème */}
+              {/* Ecosystem route */}
               <Route path="/ecosystem" element={<EcosystemPage />} />
               
-              {/* Nouvelle route d'intégration pour LuvviX AI */}
+              {/* LuvviX AI integration route */}
               <Route path="/ai-integration" element={<LuvvixAIIntegrationPage />} />
               
               {/* Routes for LuvviX Forms */}

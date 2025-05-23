@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useBiometrics } from "@/hooks/use-biometrics";
@@ -15,21 +14,27 @@ import { Loader2, Save, Fingerprint, ShieldCheck, User, Mail, Key, Globe, Bell }
 
 const AccountSettings = () => {
   useEffect(() => {
-    document.title = "Paramètres du compte | LuvviX ID";
+    document.title = "Account Settings | LuvviX ID";
   }, []);
 
   const { user, profile, loading } = useAuth();
-  const { isAvailable, isEnrolled, isLoading: biometricLoading, enrollBiometrics, removeBiometrics } = useBiometrics({
+  const { 
+    isAvailable, 
+    isEnrolled, 
+    isLoading: biometricLoading, 
+    enrollBiometrics, 
+    removeBiometrics 
+  } = useBiometrics({
     onSuccess: () => {
       toast({
-        title: "Opération réussie",
-        description: "Vos paramètres biométriques ont été mis à jour",
+        title: "Operation successful",
+        description: "Your biometric settings have been updated",
       });
     },
     onError: (error) => {
       toast({
         variant: "destructive",
-        title: "Erreur",
+        title: "Error",
         description: error.message,
       });
     },
@@ -39,7 +44,7 @@ const AccountSettings = () => {
 
   useEffect(() => {
     if (user) {
-      // Vérifier si l'utilisateur a déjà activé Authentivix
+      // Check if the user has already activated Authentivix
       setIsBiometricEnabled(isEnrolled);
     }
   }, [user, isEnrolled]);
@@ -48,13 +53,13 @@ const AccountSettings = () => {
     if (!user) return;
 
     if (isBiometricEnabled) {
-      // Désactiver Authentivix
+      // Disable Authentivix
       const success = await removeBiometrics(user.id);
       if (success) {
         setIsBiometricEnabled(false);
       }
     } else {
-      // Activer Authentivix
+      // Enable Authentivix
       const success = await enrollBiometrics(user.id);
       if (success) {
         setIsBiometricEnabled(true);
@@ -68,7 +73,7 @@ const AccountSettings = () => {
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <span className="ml-2">Chargement...</span>
+          <span className="ml-2">Loading...</span>
         </div>
         <Footer />
       </div>
@@ -81,9 +86,9 @@ const AccountSettings = () => {
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Accès non autorisé</h1>
-            <p className="mb-6">Vous devez être connecté pour accéder à cette page.</p>
-            <Button onClick={() => window.location.href = "/auth"}>Se connecter</Button>
+            <h1 className="text-2xl font-bold mb-4">Unauthorized access</h1>
+            <p className="mb-6">You must be logged in to access this page.</p>
+            <Button onClick={() => window.location.href = "/auth"}>Login</Button>
           </div>
         </div>
         <Footer />
@@ -94,26 +99,26 @@ const AccountSettings = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <div className="flex-grow container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Paramètres du compte</h1>
+      <div className="flex-grow container mx-auto px-4 py-8 pt-24">
+        <h1 className="text-3xl font-bold mb-6">Account Settings</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-6">
           <div className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle>Paramètres</CardTitle>
-                <CardDescription>Gérez votre compte LuvviX ID</CardDescription>
+                <CardTitle>Settings</CardTitle>
+                <CardDescription>Manage your LuvviX ID account</CardDescription>
               </CardHeader>
               <CardContent className="p-0">
                 <Tabs defaultValue="profile" orientation="vertical" className="w-full">
                   <TabsList className="flex flex-col items-start gap-1 w-full bg-transparent border-r h-auto p-0">
                     <TabsTrigger value="profile" className="w-full justify-start px-4 py-2">
                       <User className="h-4 w-4 mr-2" />
-                      <span>Profil</span>
+                      <span>Profile</span>
                     </TabsTrigger>
                     <TabsTrigger value="security" className="w-full justify-start px-4 py-2">
                       <ShieldCheck className="h-4 w-4 mr-2" />
-                      <span>Sécurité</span>
+                      <span>Security</span>
                     </TabsTrigger>
                     <TabsTrigger value="authentivix" className="w-full justify-start px-4 py-2">
                       <Fingerprint className="h-4 w-4 mr-2" />
@@ -125,7 +130,7 @@ const AccountSettings = () => {
                     </TabsTrigger>
                     <TabsTrigger value="preferences" className="w-full justify-start px-4 py-2">
                       <Globe className="h-4 w-4 mr-2" />
-                      <span>Préférences</span>
+                      <span>Preferences</span>
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>
@@ -134,7 +139,8 @@ const AccountSettings = () => {
           </div>
 
           <div className="space-y-6">
-            <Tabs defaultValue="profile" className="w-full">
+            <Tabs defaultValue="authentivix" className="w-full">
+              {/* Profile Tab */}
               <TabsContent value="profile">
                 <Card>
                   <CardHeader>
@@ -179,6 +185,7 @@ const AccountSettings = () => {
                 </Card>
               </TabsContent>
 
+              {/* Security Tab */}
               <TabsContent value="security">
                 <Card>
                   <CardHeader>
@@ -226,6 +233,7 @@ const AccountSettings = () => {
                 </Card>
               </TabsContent>
 
+              {/* Authentivix Tab */}
               <TabsContent value="authentivix">
                 <Card>
                   <CardHeader>
@@ -234,34 +242,34 @@ const AccountSettings = () => {
                       Authentivix
                     </CardTitle>
                     <CardDescription>
-                      Gérez votre authentification biométrique pour un accès rapide et sécurisé
+                      Manage your biometric authentication for fast and secure access
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <h3 className="font-semibold text-lg mb-2">État du système</h3>
+                      <h3 className="font-semibold text-lg mb-2">System status</h3>
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <span>Biométrie disponible sur cet appareil</span>
+                          <span>Biometrics available on this device</span>
                           {isAvailable ? (
                             <div className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                              Disponible
+                              Available
                             </div>
                           ) : (
                             <div className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">
-                              Non disponible
+                              Not available
                             </div>
                           )}
                         </div>
                         <div className="flex justify-between items-center">
-                          <span>Authentivix activé pour votre compte</span>
+                          <span>Authentivix enabled for your account</span>
                           {isBiometricEnabled ? (
                             <div className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                              Activé
+                              Enabled
                             </div>
                           ) : (
                             <div className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
-                              Désactivé
+                              Disabled
                             </div>
                           )}
                         </div>
@@ -278,27 +286,27 @@ const AccountSettings = () => {
                             disabled={biometricLoading}
                           />
                           <Label htmlFor="authentivix-toggle" className="font-medium">
-                            {isBiometricEnabled ? "Désactiver" : "Activer"} Authentivix
+                            {isBiometricEnabled ? "Disable" : "Enable"} Authentivix
                           </Label>
                           {biometricLoading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="p-4 border rounded-lg">
-                            <h4 className="font-semibold mb-2">Avantages d'Authentivix</h4>
+                            <h4 className="font-semibold mb-2">Authentivix benefits</h4>
                             <ul className="list-disc pl-5 space-y-1 text-sm">
-                              <li>Connexion en un clic à votre compte</li>
-                              <li>Plus besoin de saisir votre mot de passe</li>
-                              <li>Sécurité renforcée grâce à la biométrie</li>
-                              <li>Compatible avec l'écosystème LuvviX</li>
+                              <li>One-click login to your account</li>
+                              <li>No need to enter your password</li>
+                              <li>Enhanced security through biometrics</li>
+                              <li>Compatible with the LuvviX ecosystem</li>
                             </ul>
                           </div>
                           <div className="p-4 border rounded-lg">
-                            <h4 className="font-semibold mb-2">Comment ça marche</h4>
+                            <h4 className="font-semibold mb-2">How it works</h4>
                             <p className="text-sm">
-                              Authentivix utilise les technologies biométriques natives de votre appareil
-                              (empreinte digitale, reconnaissance faciale) pour vous authentifier de manière
-                              rapide et sécurisée. Vos données biométriques ne quittent jamais votre appareil.
+                              Authentivix uses the native biometric technologies of your device
+                              (fingerprint, facial recognition) to authenticate you quickly and securely.
+                              Your biometric data never leaves your device.
                             </p>
                           </div>
                         </div>
@@ -306,12 +314,11 @@ const AccountSettings = () => {
                     ) : (
                       <div className="p-4 border border-yellow-200 bg-yellow-50 rounded-lg">
                         <h3 className="font-semibold text-lg mb-2 text-yellow-800">
-                          Authentivix non disponible
+                          Authentivix not available
                         </h3>
                         <p className="text-yellow-700">
-                          Votre appareil ou navigateur ne prend pas en charge l'authentification biométrique.
-                          Pour utiliser Authentivix, essayez un appareil ou navigateur compatible avec les
-                          technologies WebAuthn.
+                          Your device or browser does not support biometric authentication.
+                          To use Authentivix, try a device or browser that supports WebAuthn technologies.
                         </p>
                       </div>
                     )}
@@ -319,12 +326,13 @@ const AccountSettings = () => {
                   <CardFooter>
                     <Button variant="outline" className="w-full">
                       <Fingerprint className="h-4 w-4 mr-2" />
-                      Consulter l'historique d'utilisation
+                      View usage history
                     </Button>
                   </CardFooter>
                 </Card>
               </TabsContent>
 
+              {/* Notifications Tab */}
               <TabsContent value="notifications">
                 <Card>
                   <CardHeader>
@@ -358,6 +366,7 @@ const AccountSettings = () => {
                 </Card>
               </TabsContent>
 
+              {/* Preferences Tab */}
               <TabsContent value="preferences">
                 <Card>
                   <CardHeader>

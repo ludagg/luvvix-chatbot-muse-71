@@ -1,222 +1,248 @@
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import React from 'react';
+import { Link } from 'react-router-dom';
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2, ExternalLink, CheckCircle, AlertCircle } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Code, Download, ExternalLink, Key, LockKeyhole, Shield } from "lucide-react";
 
 const LuvvixAIIntegrationPage = () => {
-  const { user, session } = useAuth();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [appUrl, setAppUrl] = useState("https://luvvix-ai.com");
-  const [token, setToken] = useState<string | null>(null);
-  
-  useEffect(() => {
-    document.title = "Intégrer LuvviX AI | LuvviX ID";
-    
-    // Rediriger vers la page d'authentification si l'utilisateur n'est pas connecté
-    if (!user && !loading) {
-      navigate("/auth?return_to=/ai-integration");
-    }
-  }, [user, loading, navigate]);
-  
-  // Générer un token temporaire pour l'intégration
-  const generateIntegrationToken = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccess(false);
-    
-    try {
-      if (!session) {
-        throw new Error("Session non disponible");
-      }
-      
-      // Enregistrer l'intention d'intégration dans la base de données
-      const { data, error: insertError } = await supabase
-        .from("application")
-        .upsert({
-          name: "LuvviX AI External",
-          clientid: "luvvix-ai-ext",
-          clientsecret: crypto.randomUUID(),
-          redirecturis: [appUrl + "/auth/callback", "http://localhost:3000/auth/callback"],
-          description: "Intégration externe de LuvviX AI",
-          created_by: user?.id,
-          updated_at: new Date().toISOString()
-        }, { onConflict: "clientid" });
-      
-      if (insertError) {
-        throw new Error("Erreur lors de l'enregistrement de l'application: " + insertError.message);
-      }
-      
-      // Récupérer un token avec une expiration courte
-      const integrationToken = session.access_token;
-      setToken(integrationToken);
-      setSuccess(true);
-      
-      toast({
-        title: "Token généré avec succès",
-        description: "Le token d'intégration a été créé et sera valide pendant 1 heure.",
-      });
-    } catch (err: any) {
-      setError(err.message || "Une erreur est survenue");
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: err.message || "Une erreur est survenue lors de la génération du token",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Construire l'URL d'intégration
-  const getIntegrationUrl = () => {
-    if (!token) return "";
-    const params = new URLSearchParams({
-      token,
-      user_id: user?.id || "",
-      redirect_uri: `${appUrl}/auth/callback`
-    });
-    return `${appUrl}/auth/luvvix?${params.toString()}`;
-  };
-  
-  const handleConnect = () => {
-    const url = getIntegrationUrl();
-    if (url) window.location.href = url;
-  };
-  
-  if (!user) {
-    return (
-      <div className="container mx-auto py-12 flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
-      </div>
-    );
-  }
+  React.useEffect(() => {
+    document.title = "Intégration LuvviX AI | LuvviX ID";
+  }, []);
   
   return (
-    <div className="container mx-auto py-12 px-4">
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">Intégrer LuvviX AI</CardTitle>
-          <CardDescription>
-            Connectez votre application LuvviX AI au système d'authentification LuvviX ID
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-              <span className="font-bold text-blue-600">1</span>
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <main className="flex-grow py-12">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-10">
+              <h1 className="text-3xl font-bold mb-4">Intégration LuvviX AI avec LuvviX ID</h1>
+              <p className="text-gray-600 text-lg">
+                Connectez votre application LuvviX AI externe avec notre système d'authentification centralisé
+              </p>
             </div>
-            <p className="text-gray-700">
-              Générez un token d'intégration pour connecter votre application externe
-            </p>
-          </div>
-          
-          <div className="ml-10">
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="app-url">URL de votre application LuvviX AI</Label>
-                <Input 
-                  id="app-url" 
-                  value={appUrl} 
-                  onChange={(e) => setAppUrl(e.target.value)} 
-                  placeholder="https://luvvix-ai.com"
-                />
-              </div>
+
+            <Tabs defaultValue="integration" className="space-y-8">
+              <TabsList className="grid grid-cols-3 max-w-lg mx-auto">
+                <TabsTrigger value="integration">Présentation</TabsTrigger>
+                <TabsTrigger value="documentation">Documentation</TabsTrigger>
+                <TabsTrigger value="ressources">Ressources</TabsTrigger>
+              </TabsList>
               
-              <Button 
-                onClick={generateIntegrationToken} 
-                disabled={loading}
-                className="w-full sm:w-auto"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Génération en cours...
-                  </>
-                ) : (
-                  "Générer un token d'intégration"
-                )}
-              </Button>
-            </div>
-            
-            {error && (
-              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
+              <TabsContent value="integration">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Comment ça fonctionne</CardTitle>
+                    <CardDescription>
+                      LuvviX AI peut s'intégrer facilement avec LuvviX ID pour une authentification centralisée
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid md:grid-cols-3 gap-6">
+                      <div className="p-4 border rounded-lg text-center">
+                        <div className="bg-luvvix-purple/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                          <LockKeyhole className="text-luvvix-purple h-6 w-6" />
+                        </div>
+                        <h3 className="font-medium">1. Connexion</h3>
+                        <p className="text-sm text-gray-600">L'utilisateur se connecte à LuvviX ID</p>
+                      </div>
+                      <div className="p-4 border rounded-lg text-center">
+                        <div className="bg-luvvix-purple/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                          <Key className="text-luvvix-purple h-6 w-6" />
+                        </div>
+                        <h3 className="font-medium">2. Génération de token</h3>
+                        <p className="text-sm text-gray-600">Un token d'authentification est généré</p>
+                      </div>
+                      <div className="p-4 border rounded-lg text-center">
+                        <div className="bg-luvvix-purple/10 p-3 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                          <Shield className="text-luvvix-purple h-6 w-6" />
+                        </div>
+                        <h3 className="font-medium">3. Accès sécurisé</h3>
+                        <p className="text-sm text-gray-600">L'utilisateur accède à LuvviX AI</p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-b py-6 my-6">
+                      <h3 className="font-semibold text-lg mb-4">Avantages de l'intégration</h3>
+                      <ul className="space-y-3">
+                        <li className="flex items-start">
+                          <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Authentification unifiée dans tout l'écosystème LuvviX</span>
+                        </li>
+                        <li className="flex items-start">
+                          <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Pas besoin de créer un nouveau compte pour LuvviX AI</span>
+                        </li>
+                        <li className="flex items-start">
+                          <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Sécurité renforcée et conformité avec les normes</span>
+                        </li>
+                        <li className="flex items-start">
+                          <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span>Intégration technique simplifiée avec notre SDK</span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg">
+                      <h3 className="font-semibold mb-3">Vous avez déjà un compte LuvviX ID?</h3>
+                      <p className="text-gray-600 mb-4">
+                        Connectez-vous pour accéder directement à LuvviX AI sans créer un nouveau compte.
+                      </p>
+                      <Button className="bg-luvvix-purple hover:bg-luvvix-darkpurple">
+                        <Link to="https://luvvix-ai.example.com/auth/luvvix" className="flex items-center">
+                          Accéder à LuvviX AI
+                          <ExternalLink className="ml-2 h-4 w-4" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="documentation">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Documentation technique</CardTitle>
+                    <CardDescription>
+                      Guide d'implémentation pour les développeurs
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-lg">Installation</h3>
+                      <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
+                        <code className="text-sm">
+                          &lt;script src="https://luvvix.it.com/api/luvvix-auth-integration.js"&gt;&lt;/script&gt;
+                        </code>
+                      </div>
+
+                      <h3 className="font-semibold text-lg mt-6">Configuration de base</h3>
+                      <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md">
+                        <pre className="text-sm overflow-x-auto">
+                          {`// Initialiser l'intégration
+LuvvixAuthIntegration.init({
+  // Options de configuration personnalisées si nécessaire
+});
+
+// Vérifier si l'utilisateur est authentifié
+const isLoggedIn = LuvvixAuthIntegration.isAuthenticated();
+
+// Obtenir les informations de l'utilisateur
+const user = LuvvixAuthIntegration.getUser();`}
+                        </pre>
+                      </div>
+
+                      <h3 className="font-semibold text-lg mt-6">Configuration des routes</h3>
+                      <p className="text-gray-600 mb-2">
+                        Configurez ces deux routes dans votre application pour gérer l'authentification:
+                      </p>
+                      <ul className="list-disc pl-6 space-y-2">
+                        <li><code>/auth/luvvix</code> - Pour recevoir le token depuis LuvviX ID</li>
+                        <li><code>/auth/callback</code> - Pour finaliser l'authentification</li>
+                      </ul>
+
+                      <div className="mt-6 border-t pt-6">
+                        <h3 className="font-semibold text-lg">Événements disponibles</h3>
+                        <ul className="space-y-2 mt-3">
+                          <li className="flex items-start">
+                            <code className="bg-gray-100 dark:bg-gray-800 px-2 rounded mr-2">luvvix_login</code>
+                            <span className="text-gray-600">- Déclenché lors d'une connexion réussie</span>
+                          </li>
+                          <li className="flex items-start">
+                            <code className="bg-gray-100 dark:bg-gray-800 px-2 rounded mr-2">luvvix_logout</code>
+                            <span className="text-gray-600">- Déclenché lors d'une déconnexion</span>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="outline" className="w-full">
+                      <Link to="/docs/LuvvixAIIntegration" className="flex items-center justify-center w-full">
+                        <Code className="mr-2 h-4 w-4" />
+                        Voir la documentation complète
+                      </Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="ressources">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Ressources pour développeurs</CardTitle>
+                    <CardDescription>
+                      Téléchargez nos outils et consultez nos guides pour faciliter l'intégration
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div className="border rounded-lg p-4 flex justify-between items-center">
+                        <div>
+                          <h3 className="font-medium">Script d'intégration LuvviX ID</h3>
+                          <p className="text-sm text-gray-600">Version 1.0.0</p>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <Download className="mr-2 h-4 w-4" />
+                          Télécharger
+                        </Button>
+                      </div>
+                      
+                      <div className="border rounded-lg p-4 flex justify-between items-center">
+                        <div>
+                          <h3 className="font-medium">Exemple d'intégration (React)</h3>
+                          <p className="text-sm text-gray-600">Implémentation React complète</p>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <Download className="mr-2 h-4 w-4" />
+                          Télécharger
+                        </Button>
+                      </div>
+                      
+                      <div className="border rounded-lg p-4 flex justify-between items-center">
+                        <div>
+                          <h3 className="font-medium">Exemple d'intégration (Vue)</h3>
+                          <p className="text-sm text-gray-600">Implémentation Vue.js complète</p>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <Download className="mr-2 h-4 w-4" />
+                          Télécharger
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-8">
+                      <h3 className="font-semibold text-lg mb-4">Support technique</h3>
+                      <p className="text-gray-600 mb-4">
+                        Besoin d'aide avec l'intégration? Notre équipe de support est disponible pour vous assister.
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        <Button variant="outline">Documentation API</Button>
+                        <Button variant="outline">Forum développeurs</Button>
+                        <Button variant="outline">Contacter le support</Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
-          
-          {success && token && (
-            <>
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                  <span className="font-bold text-blue-600">2</span>
-                </div>
-                <p className="text-gray-700">
-                  Connectez-vous à votre application LuvviX AI
-                </p>
-              </div>
-              
-              <div className="ml-10 p-4 bg-green-50 border border-green-200 rounded-md">
-                <div className="flex items-center mb-3">
-                  <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                  <p className="font-medium text-green-800">Token d'intégration généré</p>
-                </div>
-                
-                <p className="text-sm text-gray-600 mb-4">
-                  Vous pouvez maintenant vous connecter à votre application LuvviX AI en utilisant ce token. Ce token sera valide pendant 1 heure.
-                </p>
-                
-                <Button 
-                  onClick={handleConnect} 
-                  className="w-full"
-                >
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  Se connecter à LuvviX AI
-                </Button>
-              </div>
-            </>
-          )}
-          
-          <div className="space-y-3 pt-4 border-t">
-            <h3 className="font-semibold text-lg">Guide d'intégration pour les développeurs</h3>
-            <p className="text-sm text-gray-600">
-              Pour intégrer LuvviX AI avec LuvviX ID, vous devez implémenter le flux d'authentification OAuth suivant dans votre application:
-            </p>
-            
-            <div className="bg-gray-50 p-4 rounded-md">
-              <ol className="list-decimal list-inside text-sm space-y-2">
-                <li>Créez une route <code>/auth/luvvix</code> qui accepte un token LuvviX ID en paramètre</li>
-                <li>Vérifiez la validité du token en appelant l'API LuvviX ID</li>
-                <li>Créez ou récupérez le compte utilisateur correspondant dans votre système</li>
-                <li>Établissez une session authentifiée dans votre système</li>
-                <li>Redirigez l'utilisateur vers la page principale de votre application</li>
-              </ol>
-            </div>
-          </div>
-        </CardContent>
-        
-        <CardFooter className="flex-col space-y-2">
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => navigate("/ecosystem")}
-          >
-            Retour à l'écosystème
-          </Button>
-        </CardFooter>
-      </Card>
+        </div>
+      </main>
+      <Footer />
     </div>
   );
 };

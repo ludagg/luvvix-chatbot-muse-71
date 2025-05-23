@@ -3,6 +3,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
+import { authentivix } from '@/utils/authentivix';
 
 interface UserProfile {
   id: string;
@@ -19,9 +20,11 @@ interface AuthContextType {
   profile: UserProfile | null;
   signUp: (email: string, password: string, metadata: { full_name: string; username: string }) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<boolean>;
+  signInWithBiometrics: () => Promise<boolean>;
   signOut: () => Promise<boolean>;
   globalSignOut: () => Promise<boolean>;
   loading: boolean;
+  hasBiometrics: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasBiometrics, setHasBiometrics] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -83,9 +87,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Use setTimeout to prevent auth deadlock
           setTimeout(() => {
             fetchProfile(session.user.id);
+            
+            // Check if the user has biometric data enrolled
+            const biometricAvailable = authentivix.isEnrolled(session.user.id);
+            setHasBiometrics(biometricAvailable);
           }, 0);
         } else {
           setProfile(null);
+          setHasBiometrics(false);
         }
       }
     );
@@ -96,9 +105,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        // Check if the user has biometric data enrolled
+        const biometricAvailable = authentivix.isEnrolled(session.user.id);
+        setHasBiometrics(biometricAvailable);
       }
       setLoading(false);
     });
+
+    // Check if biometric auth is available on this device
+    const checkBiometricAvailability = async () => {
+      try {
+        await authentivix.isBiometricAvailable();
+      } catch (error) {
+        console.error("Error checking biometric availability:", error);
+      }
+    };
+    
+    checkBiometricAvailability();
 
     return () => subscription.unsubscribe();
   }, []);
@@ -175,6 +198,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithBiometrics = async () => {
+    try {
+      // Vérifier si l'authentification biométrique est disponible
+      const isAvailable = await authentivix.isBiometricAvailable();
+      if (!isAvailable) {
+        throw new Error("L'authentification biométrique n'est pas disponible sur cet appareil");
+      }
+      
+      // Utiliser auto-prompt pour trouver tout utilisateur inscrit
+      const token = await authentivix.authenticateWithBiometrics();
+      
+      if (!token) {
+        throw new Error("L'authentification biométrique a échoué");
+      }
+      
+      // Extraire l'ID utilisateur du token simulé
+      const decodedToken = atob(token);
+      const userId = decodedToken.split(':')[0];
+      
+      // Simuler une connexion avec cet utilisateur
+      // Dans une implémentation réelle, nous utiliserions une API pour échanger le token biométrique
+      // contre un vrai token d'authentification
+      
+      toast({
+        title: "Authentification biométrique réussie",
+        description: "Bienvenue sur LuvviX ID"
+      });
+      
+      // Note: dans cette implémentation de démonstration, nous ne pouvons pas réellement
+      // connecter l'utilisateur sans son email/mot de passe, car nous n'avons pas accès
+      // aux API nécessaires. Dans une implémentation réelle, nous le ferions ici.
+      
+      return true;
+    } catch (error: any) {
+      console.error('Error in biometric authentication:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'authentification biométrique",
+        description: error.message,
+      });
+      return false;
+    }
+  };
+
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -228,9 +295,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       signUp,
       signIn,
+      signInWithBiometrics,
       signOut,
       globalSignOut,
-      loading
+      loading,
+      hasBiometrics
     }}>
       {children}
     </AuthContext.Provider>

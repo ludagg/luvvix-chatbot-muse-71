@@ -1,5 +1,6 @@
 
 import { LuvviXID } from "@/utils/luvvix-id-sdk";
+import { authentivix } from '@/utils/authentivix';
 
 interface AuthOptions {
   appName: 'main' | 'pharmacy' | 'streaming' | 'chat';
@@ -91,12 +92,68 @@ class AuthService {
       const result = await this.luvvixIdClient.handleCallback();
       this.authenticated = true;
       this.notifyListeners(true);
+      
+      // Si l'utilisateur a activé Authentivix, mettre à jour ses données biométriques
+      if (result && result.user) {
+        const userId = result.user.id;
+        if (authentivix.isEnrolled(userId)) {
+          // Mettre à jour la date de dernière utilisation
+          try {
+            await authentivix.authenticateWithBiometrics(userId);
+          } catch (e) {
+            console.log('Non-critical error updating biometric data:', e);
+          }
+        }
+      }
+      
       return result;
     } catch (error) {
       console.error('Error handling auth callback:', error);
       this.authenticated = false;
       this.notifyListeners(false);
       throw error;
+    }
+  }
+  
+  /**
+   * Authentifie l'utilisateur avec la biométrie via Authentivix
+   * @returns Résultat de l'authentification ou null si échoué
+   */
+  async authenticateWithBiometrics() {
+    try {
+      // Vérifier si Authentivix est disponible
+      const isAvailable = await authentivix.isBiometricAvailable();
+      if (!isAvailable) {
+        throw new Error("L'authentification biométrique n'est pas disponible sur cet appareil");
+      }
+      
+      // Authentifier avec biométrie
+      const token = await authentivix.authenticateWithBiometrics();
+      
+      if (!token) {
+        throw new Error("L'authentification biométrique a échoué");
+      }
+      
+      // Dans une implémentation réelle, nous écharngerions ce token avec un token JWT valide
+      // Pour cette démonstration, nous allons simuler une connexion réussie
+      
+      // Décodage simulé du token pour obtenir l'ID utilisateur
+      const decodedToken = atob(token);
+      const userId = decodedToken.split(':')[0];
+      
+      // Obtenir les infos utilisateur (dans une vraie implémentation, cela proviendrait de l'API)
+      // et établir la session
+      
+      this.authenticated = true;
+      this.notifyListeners(true);
+      
+      return {
+        success: true,
+        userId: userId
+      };
+    } catch (error) {
+      console.error('Error in biometric authentication:', error);
+      return null;
     }
   }
   

@@ -36,6 +36,7 @@ import CookiesPage from "./pages/legal/CookiesPage";
 import DocsPage from "./pages/docs/DocsPage";
 import EcosystemPage from "./pages/EcosystemPage";
 import LuvvixAIIntegrationPage from "./pages/LuvvixAIIntegrationPage";
+import AccountSettings from "./pages/AccountSettings";
 
 function App() {
   return (
@@ -59,6 +60,11 @@ function App() {
               <Route path="/dashboard" element={
                 <ProtectedRoute>
                   <Dashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/settings" element={
+                <ProtectedRoute>
+                  <AccountSettings />
                 </ProtectedRoute>
               } />
               <Route path="/cloud/*" element={

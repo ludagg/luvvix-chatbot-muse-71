@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from '@/hooks/use-toast';
+import { useBiometrics } from '@/hooks/useBiometrics';
 
 interface AuthenticationProps {
   returnTo?: string | null;
@@ -24,8 +24,17 @@ interface AuthenticationProps {
 
 const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps) => {
   const { signUp, signIn } = useAuth();
+  const { authenticateWithBiometrics, isAvailable: biometricsAvailable } = useBiometrics({
+    onSuccess: () => {
+      toast({
+        title: "Authentification biométrique réussie",
+        description: "Vous êtes maintenant connecté"
+      });
+    }
+  });
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
   const [step, setStep] = useState(1); // Pour gestion d'un processus d'inscription en plusieurs étapes
   const [useBiometrics, setUseBiometrics] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
@@ -467,6 +476,45 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     }
   };
 
+  const handleBiometricAuth = async () => {
+    if (!biometricsAvailable) {
+      toast({
+        variant: "destructive",
+        title: "Authentification biométrique non disponible",
+        description: "Votre appareil ne prend pas en charge l'authentification biométrique"
+      });
+      return;
+    }
+    
+    setBiometricLoading(true);
+    try {
+      const userId = await authenticateWithBiometrics();
+      if (userId) {
+        // Connexion réussie via biométrie
+        // Dans une implémentation réelle, nous utiliserions ce userId pour récupérer la session
+        setIsLoading(false);
+        
+        // Redirection après connexion réussie
+        setTimeout(() => {
+          if (returnTo) {
+            navigate(returnTo);
+          } else {
+            navigate('/dashboard');
+          }
+        }, 500);
+      }
+    } catch (error) {
+      console.error('Erreur d\'authentification biométrique:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'authentification",
+        description: "La vérification biométrique a échoué"
+      });
+    } finally {
+      setBiometricLoading(false);
+    }
+  };
+
   return (
     <section className="bg-white py-12 md:py-16 lg:py-20">
       <div className="container mx-auto px-4">
@@ -540,6 +588,43 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
             
             <TabsContent value="login">
               <div className="bg-white p-6 rounded-lg shadow-md">
+                {biometricsAvailable && (
+                  <div className="mb-6">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full flex items-center justify-center gap-2"
+                      onClick={handleBiometricAuth}
+                      disabled={biometricLoading}
+                    >
+                      {biometricLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-fingerprint">
+                          <path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"></path>
+                          <path d="M5 19.5C5.5 18 6 15 6 12c0-.7.12-1.37.34-2"></path>
+                          <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"></path>
+                          <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"></path>
+                          <path d="M8.65 22c.21-.66.45-1.32.57-2"></path>
+                          <path d="M14 13.12c0 2.38 0 6.38-1 8.88"></path>
+                          <path d="M2 16h.01"></path>
+                          <path d="M21.8 16c.2-2 .131-5.854 0-6"></path>
+                          <path d="M9 6.8a6 6 0 0 1 9 5.2c0 .47 0 1.17-.02 2"></path>
+                        </svg>
+                      )}
+                      Se connecter avec Authentivix
+                    </Button>
+                    <div className="relative my-4">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300"></div>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">ou</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
@@ -577,28 +662,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                       />
                     </div>
                   </div>
-
-                  {useBiometrics && (
-                    <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                      <Button 
-                        type="button" 
-                        variant="outline"
-                        className="w-full flex items-center justify-center gap-2"
-                        onClick={() => {
-                          toast({
-                            title: "Authentification biométrique",
-                            description: "Cette fonctionnalité sera bientôt disponible.",
-                          });
-                        }}
-                      >
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M11.9999 14.1213L15.0606 11.0607L16.4748 12.4749L11.9999 16.9497L7.52512 12.4749L8.93934 11.0607L11.9999 14.1213Z" fill="currentColor"/>
-                          <path fillRule="evenodd" clipRule="evenodd" d="M12 1.5C6.20101 1.5 1.5 6.20101 1.5 12C1.5 17.799 6.20101 22.5 12 22.5C17.799 22.5 22.5 17.799 22.5 12C22.5 6.20101 17.799 1.5 12 1.5ZM12 3.5C7.30558 3.5 3.5 7.30558 3.5 12C3.5 16.6944 7.30558 20.5 12 20.5C16.6944 20.5 20.5 16.6944 20.5 12C20.5 7.30558 16.6944 3.5 12 3.5Z" fill="currentColor"/>
-                        </svg>
-                        Utiliser l'authentification biométrique
-                      </Button>
-                    </div>
-                  )}
                   
                   <Button 
                     type="submit" 

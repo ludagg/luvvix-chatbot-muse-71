@@ -219,11 +219,7 @@ const Navbar = () => {
                         Se connecter
                       </Button>
                     </Link>
-                    <Link to="/auth?signup=true">
-                      <Button variant="default" size="sm" className="bg-indigo-600 hover:bg-indigo-700">
-                        S'inscrire
-                      </Button>
-                    </Link>
+                    
                   </div>
                 )}
               </>

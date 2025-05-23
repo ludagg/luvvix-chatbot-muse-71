@@ -214,7 +214,7 @@ const Navbar = () => {
                   <div className="flex items-center gap-2">
                     <Link to="/auth">
                       <Button variant="ghost" size="sm" className={cn(
-                        isScrolled ? 'text-gray-700 dark:text-gray-200 hover:text-gray-900' : 'text-white dark:text-gray-200 hover:text-gray-100'
+                        isScrolled ? 'text-gray-700 dark:text-gray-200 hover:text-gray-900' : 'text-gray-700 dark:text-gray-200 hover:text-gray-100'
                       )}>
                         Connexion 
                       </Button>

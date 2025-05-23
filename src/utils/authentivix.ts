@@ -1,35 +1,56 @@
 
 /**
  * Authentivix - Biometric authentication system for LuvviX ID
- * Version 1.1.0
+ * Version 2.0.0 - Integrated with WebAuthn backend
  */
 
+import {
+  startRegistration,
+  startAuthentication,
+} from "@simplewebauthn/browser";
+import type {
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+  RegistrationResponseJSON,
+  AuthenticationResponseJSON,
+} from "@simplewebauthn/browser";
+
 // Types for the biometric authentication system
-export interface BiometricCredential {
-  id: string;
-  userId: string;
-  createdAt: number;
-  lastUsed: number;
-  type: 'fingerprint' | 'face' | 'other';
-}
+// BiometricCredential is now managed server-side. This interface might be removed or adapted later if needed for client-side hints.
+// export interface BiometricCredential { ... } 
 
 export interface AuthentivixOptions {
-  apiUrl?: string;
-  storageKey?: string;
-  autoPrompt?: boolean;
+  apiUrl?: string; // Base URL for the auth API, e.g., https://<project_ref>.supabase.co/functions/v1/auth-api
+  // storageKey is no longer used as credentials are not stored client-side by this class.
+  // autoPrompt might be re-evaluated based on UX flow with WebAuthn.
 }
+
+// Define a type for the session object returned by the backend on successful login
+export interface WebAuthnSession {
+  access_token: string;
+  refresh_token: string;
+  user_id: string;
+  expires_at: number;
+  // Add any other relevant fields from your backend's session response
+}
+
 
 // Main class for biometric authentication management
 export class Authentivix {
-  private options: Required<AuthentivixOptions>;
+  private options: Required<Pick<AuthentivixOptions, "apiUrl">>; // Only apiUrl is strictly required now
   
   constructor(options?: AuthentivixOptions) {
+    const defaultApiUrl = Deno.env.get("SUPABASE_URL") // This is a placeholder, Vite/React uses import.meta.env
+      ? `${Deno.env.get("SUPABASE_URL")}/functions/v1/auth-api` 
+      : 'http://localhost:54321/functions/v1/auth-api'; // Default for local dev if not set
+
     this.options = {
-      apiUrl: 'https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/auth-api',
-      storageKey: 'luvvix_biometrics',
-      autoPrompt: false,
-      ...options
+      apiUrl: options?.apiUrl || import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || defaultApiUrl,
+      // ... other options if any, but make them optional or provide defaults
     };
+    if (!this.options.apiUrl.endsWith('/auth-api')) {
+      this.options.apiUrl = this.options.apiUrl.replace(/\/$/, '') + '/auth-api';
+    }
   }
   
   /**
@@ -41,12 +62,12 @@ export class Authentivix {
       // Check if the Web Authentication API is available
       if (window && 'PublicKeyCredential' in window) {
         // Check if the device supports biometric authentication
-        // @ts-ignore - This property exists but is not yet standardized
         if (typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
-          // @ts-ignore
           return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
         }
       }
+    // Fallback for older syntax or basic check
+    return !!(window.PublicKeyCredential);
       
       return false;
     } catch (error) {
@@ -56,303 +77,175 @@ export class Authentivix {
   }
   
   /**
-   * Check if the user has already set up biometric authentication
-   * @param {string} userId - User identifier
-   * @returns {boolean} True if configured, False otherwise
+   * Check if the user has already set up biometric authentication.
+   * @param {string} _userId - User identifier (currently unused).
+   * @param {string} _authToken - Authentication token (currently unused).
+   * @returns {boolean} True if configured, False otherwise.
+   * @todo This method needs a proper backend implementation or removal.
    */
-  isEnrolled(userId: string): boolean {
+  isEnrolled(_userId?: string, _authToken?: string): boolean {
+    console.warn("Authentivix.isEnrolled() is not fully implemented and currently returns false.");
+    // TODO: Implement a backend call to check for existing WebAuthn credentials for the user.
+    // For now, this will return false. UI logic should adapt.
+    return false;
+  }
+  
+  /**
+   * Register the user's biometric data using WebAuthn.
+   * @param {string} _userId - User identifier (not directly used here as backend gets it from token).
+   * @param {string} authToken - Authentication token (JWT).
+   * @returns {Promise<boolean>} True if registration succeeds, False otherwise.
+   */
+  async enrollBiometrics(_userId: string, authToken: string): Promise<boolean> {
+    if (!authToken) {
+      console.error("Authentication token is required for biometric enrollment.");
+      return false;
+    }
+
     try {
-      const storedData = localStorage.getItem(`${this.options.storageKey}_${userId}`);
-      return !!storedData;
+      // 1. Get registration options from the backend
+      const regStartUrl = `${this.options.apiUrl}/webauthn/register/start`;
+      const regStartResponse = await fetch(regStartUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`,
+        },
+        // body: JSON.stringify({ userId }), // userId is taken from token on backend
+      });
+
+      if (!regStartResponse.ok) {
+        const errorData = await regStartResponse.json().catch(() => ({}));
+        console.error("Failed to get registration options:", regStartResponse.status, errorData);
+        throw new Error(`Failed to get registration options: ${errorData.error || regStartResponse.statusText}`);
+      }
+      
+      const options: PublicKeyCredentialCreationOptionsJSON = (await regStartResponse.json()).data;
+
+      // 2. Call startRegistration (from @simplewebauthn/browser)
+      const attestationResponse = await startRegistration(options);
+
+      // 3. Send attestation response to the backend to finish registration
+      const regFinishUrl = `${this.options.apiUrl}/webauthn/register/finish`;
+      const regFinishResponse = await fetch(regFinishUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(attestationResponse),
+      });
+
+      if (!regFinishResponse.ok) {
+        const errorData = await regFinishResponse.json().catch(() => ({}));
+        console.error("Failed to finish registration:", regFinishResponse.status, errorData);
+        throw new Error(`Failed to finish registration: ${errorData.error || regFinishResponse.statusText}`);
+      }
+      
+      const finishData = await regFinishResponse.json();
+      console.log("Biometric enrollment successful:", finishData);
+      return finishData.success && finishData.data.verified === true;
+
     } catch (error) {
-      console.error('Error checking biometric enrollment:', error);
+      console.error("Error during biometric enrollment:", error);
+      // Ensure the error is an Error instance
+      if (error instanceof Error && error.name === 'InvalidStateError') {
+        alert("Authenticator was probably already registered. Try logging in.");
+      } else {
+        alert(`Enrollment failed: ${error.message}`);
+      }
       return false;
     }
   }
   
   /**
-   * Register the user's biometric data
-   * @param {string} userId - User identifier
-   * @param {string} token - Authentication token
-   * @returns {Promise<boolean>} True if registration succeeds, False otherwise
+   * Authenticate the user with their biometric data using WebAuthn.
+   * @param {string} email - User's email to initiate login.
+   * @returns {Promise<WebAuthnSession | null>} Session object if successful, null otherwise.
    */
-  async enrollBiometrics(userId: string, token: string): Promise<boolean> {
+  async authenticateWithBiometrics(email?: string): Promise<WebAuthnSession | null> {
+    if (!email) {
+      // In some WebAuthn flows (discoverable credentials/passkeys), email might be optional
+      // if the authenticator itself can identify the user.
+      // For this implementation, we require email to start, matching backend.
+      console.warn("Email is currently required for WebAuthn login start.");
+      // Depending on UX, you might prompt for email here or throw an error.
+      // For now, let's proceed assuming the backend might handle user discovery if email is omitted.
+      // However, our current backend /webauthn/login/start expects email.
+      // So, it's better to enforce it or adapt the backend.
+      // For this iteration, let's assume email is provided if needed.
+    }
+
     try {
-      // In a real implementation, we would use the WebAuthn API to register the credential
-      // For this demo, we'll trigger a browser fingerprint prompt if available
+      // 1. Get authentication options from the backend
+      const authStartUrl = `${this.options.apiUrl}/webauthn/login/start`;
+      const authStartResponse = await fetch(authStartUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }), // Send email if provided
+      });
+
+      if (!authStartResponse.ok) {
+        const errorData = await authStartResponse.json().catch(() => ({}));
+        console.error("Failed to get authentication options:", authStartResponse.status, errorData);
+        throw new Error(`Failed to get authentication options: ${errorData.error || authStartResponse.statusText}`);
+      }
+      const options: PublicKeyCredentialRequestOptionsJSON = (await authStartResponse.json()).data;
+
+      // 2. Call startAuthentication (from @simplewebauthn/browser)
+      const assertionResponse = await startAuthentication(options);
+
+      // 3. Send assertion response to the backend to finish authentication
+      const authFinishUrl = `${this.options.apiUrl}/webauthn/login/finish`;
+      const authFinishResponse = await fetch(authFinishUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(assertionResponse),
+      });
+
+      if (!authFinishResponse.ok) {
+        const errorData = await authFinishResponse.json().catch(() => ({}));
+        console.error("Failed to finish authentication:", authFinishResponse.status, errorData);
+        throw new Error(`Failed to finish authentication: ${errorData.error || authFinishResponse.statusText}`);
+      }
       
-      const isAvailable = await this.isBiometricAvailable();
-      if (!isAvailable) {
-        throw new Error("Biometric authentication is not available on this device");
+      const finishData = await authFinishResponse.json();
+      if (finishData.success && finishData.data.verified === true) {
+        console.log("Biometric authentication successful:", finishData.data);
+        return finishData.data as WebAuthnSession; // Contains tokens and user_id
+      } else {
+        throw new Error(finishData.error || "Authentication verification failed");
       }
 
-      // For demo purposes, simulate WebAuthn credential creation
-      // In a real implementation, this would call navigator.credentials.create()
-      const challengeBytes = window.crypto.getRandomValues(new Uint8Array(32));
-      const challenge = this.bufferToBase64URLString(challengeBytes);
-      
-      // This would trigger the actual biometric prompt in a real implementation
-      await this.simulateBiometricPrompt("Enroll your fingerprint for LuvviX ID");
-      
-      // After successful authentication, create a credential record
-      const credential: BiometricCredential = {
-        id: this.generateRandomId(),
-        userId: userId,
-        createdAt: Date.now(),
-        lastUsed: Date.now(),
-        type: 'fingerprint'
-      };
-      
-      localStorage.setItem(`${this.options.storageKey}_${userId}`, JSON.stringify(credential));
-      console.log("Biometric enrollment successful:", credential);
-      return true;
-      
     } catch (error) {
-      console.error('Error during biometric registration:', error);
-      return false;
-    }
-  }
-  
-  /**
-   * Authenticate the user with their biometric data
-   * @param {string} userId - User identifier (optional if autoPrompt is true)
-   * @returns {Promise<string|null>} Authentication token or null if failed
-   */
-  async authenticateWithBiometrics(userId?: string): Promise<string | null> {
-    try {
-      // Check if biometric authentication is available
-      const isAvailable = await this.isBiometricAvailable();
-      if (!isAvailable) {
-        throw new Error("Biometric authentication is not available on this device");
-      }
-      
-      // If userId is not provided and autoPrompt is enabled, look for all stored credentials
-      let userIdToUse = userId;
-      if (!userIdToUse && this.options.autoPrompt) {
-        // Browse localStorage to find biometric credentials
-        const userIds: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key?.startsWith(this.options.storageKey + '_')) {
-            const extractedUserId = key.replace(this.options.storageKey + '_', '');
-            userIds.push(extractedUserId);
-          }
-        }
-        
-        if (userIds.length === 0) {
-          throw new Error("No biometric data registered");
-        }
-        
-        // Use the first user found
-        userIdToUse = userIds[0];
-      }
-      
-      if (!userIdToUse) {
-        throw new Error("User ID required for biometric authentication");
-      }
-      
-      // Check if the user has already set up biometric authentication
-      if (!this.isEnrolled(userIdToUse)) {
-        throw new Error("The user has not set up biometric authentication");
-      }
-      
-      // In a real implementation, this would use navigator.credentials.get to verify the credential
-      // For the demo, trigger a biometric verification prompt
-      await this.simulateBiometricPrompt("Verify your fingerprint to continue");
-      
-      const storedDataStr = localStorage.getItem(`${this.options.storageKey}_${userIdToUse}`);
-      if (!storedDataStr) {
-        throw new Error("Biometric data not found");
-      }
-      
-      const storedData: BiometricCredential = JSON.parse(storedDataStr);
-      
-      // Update last used date
-      storedData.lastUsed = Date.now();
-      localStorage.setItem(`${this.options.storageKey}_${userIdToUse}`, JSON.stringify(storedData));
-      
-      // Generate simulated token
-      const simulatedToken = btoa(`${userIdToUse}:${Date.now()}`);
-      console.log("Biometric authentication successful for user:", userIdToUse);
-      return simulatedToken;
-    } catch (error) {
-      console.error('Error during biometric authentication:', error);
+      console.error("Error during biometric authentication:", error);
+      alert(`Login failed: ${error.message}`);
       return null;
     }
   }
   
   /**
-   * Remove the user's biometric data
-   * @param {string} userId - User identifier
-   * @returns {boolean} True if removal succeeds, False otherwise
+   * Remove the user's biometric data.
+   * @param {string} _userId - User identifier.
+   * @param {string} _authToken - Authentication token.
+   * @returns {boolean} True if removal succeeds, False otherwise.
+   * @todo This method needs a proper backend implementation.
    */
-  removeBiometrics(userId: string): boolean {
-    try {
-      localStorage.removeItem(`${this.options.storageKey}_${userId}`);
-      return true;
-    } catch (error) {
-      console.error('Error removing biometric data:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Helper function to generate a random ID
-   * @returns {string} Random identifier
-   */
-  private generateRandomId(): string {
-    return Math.random().toString(36).substring(2, 15) + 
-           Math.random().toString(36).substring(2, 15);
-  }
-
-  /**
-   * Helper function to convert buffer to base64url string
-   * @param {Uint8Array} buffer - The buffer to convert
-   * @returns {string} Base64URL-encoded string
-   */
-  private bufferToBase64URLString(buffer: Uint8Array): string {
-    const bytes = new Uint8Array(buffer);
-    let str = '';
-    for (const byte of bytes) {
-      str += String.fromCharCode(byte);
-    }
-    
-    // Base64 encode
-    const base64 = btoa(str);
-    
-    // Make base64 string URL-safe
-    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  }
-
-  /**
-   * Simulate a biometric prompt (in a real implementation, this would be triggered by WebAuthn)
-   * @param {string} message - Message to show in the prompt
-   * @returns {Promise<void>}
-   */
-  private async simulateBiometricPrompt(message: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      // Create modal overlay
-      const overlay = document.createElement('div');
-      overlay.style.position = 'fixed';
-      overlay.style.top = '0';
-      overlay.style.left = '0';
-      overlay.style.width = '100%';
-      overlay.style.height = '100%';
-      overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-      overlay.style.zIndex = '9999';
-      overlay.style.display = 'flex';
-      overlay.style.justifyContent = 'center';
-      overlay.style.alignItems = 'center';
-
-      // Create prompt container
-      const container = document.createElement('div');
-      container.style.backgroundColor = 'white';
-      container.style.borderRadius = '8px';
-      container.style.padding = '24px';
-      container.style.width = '320px';
-      container.style.maxWidth = '90%';
-      container.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.2)';
-      container.style.textAlign = 'center';
-
-      // Title
-      const title = document.createElement('h3');
-      title.textContent = 'Biometric Authentication';
-      title.style.margin = '0 0 16px 0';
-      title.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-      title.style.fontWeight = '600';
-
-      // Message
-      const messageEl = document.createElement('p');
-      messageEl.textContent = message;
-      messageEl.style.margin = '0 0 24px 0';
-      messageEl.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-      messageEl.style.fontSize = '14px';
-
-      // Fingerprint icon
-      const icon = document.createElement('div');
-      icon.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 11l5-1"></path>
-          <path d="M5 12a5 5 0 0 0 5 5"></path>
-          <path d="M13 12a5 5 0 0 0-3-5"></path>
-          <path d="M15 6a5 5 0 0 1 2 4"></path>
-          <path d="M18 11a5 5 0 0 0-5-5"></path>
-          <path d="M12 19a2 2 0 0 1-2-2"></path>
-          <path d="M20 12a2 2 0 0 1-2 2"></path>
-          <path d="M14 14a2 2 0 0 1-2 2"></path>
-          <path d="M16 16a2 2 0 0 1-2 2"></path>
-        </svg>
-      `;
-      icon.style.margin = '0 0 24px 0';
-      icon.style.animation = 'pulse 1.5s infinite';
-
-      // Style animation
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes pulse {
-          0% { opacity: 0.6; transform: scale(0.95); }
-          50% { opacity: 1; transform: scale(1.05); }
-          100% { opacity: 0.6; transform: scale(0.95); }
-        }
-      `;
-
-      // Buttons
-      const buttonContainer = document.createElement('div');
-      buttonContainer.style.display = 'flex';
-      buttonContainer.style.justifyContent = 'space-between';
-
-      const cancelBtn = document.createElement('button');
-      cancelBtn.textContent = 'Cancel';
-      cancelBtn.style.padding = '8px 16px';
-      cancelBtn.style.border = 'none';
-      cancelBtn.style.borderRadius = '4px';
-      cancelBtn.style.backgroundColor = '#f3f4f6';
-      cancelBtn.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-      cancelBtn.style.cursor = 'pointer';
-
-      const verifyBtn = document.createElement('button');
-      verifyBtn.textContent = 'Verify';
-      verifyBtn.style.padding = '8px 16px';
-      verifyBtn.style.border = 'none';
-      verifyBtn.style.borderRadius = '4px';
-      verifyBtn.style.backgroundColor = '#6366F1';
-      verifyBtn.style.color = 'white';
-      verifyBtn.style.fontFamily = 'system-ui, -apple-system, sans-serif';
-      verifyBtn.style.cursor = 'pointer';
-
-      // Append elements
-      buttonContainer.appendChild(cancelBtn);
-      buttonContainer.appendChild(verifyBtn);
-      container.appendChild(title);
-      container.appendChild(messageEl);
-      container.appendChild(icon);
-      container.appendChild(buttonContainer);
-      container.appendChild(style);
-      overlay.appendChild(container);
-      document.body.appendChild(overlay);
-
-      // Event handlers
-      cancelBtn.onclick = () => {
-        document.body.removeChild(overlay);
-        reject(new Error('User cancelled biometric authentication'));
-      };
-
-      verifyBtn.onclick = () => {
-        document.body.removeChild(overlay);
-        resolve();
-      };
-
-      // Auto-close after a delay (simulating actual biometric verification)
-      setTimeout(() => {
-        if (document.body.contains(overlay)) {
-          document.body.removeChild(overlay);
-          resolve();
-        }
-      }, 3000);
-    });
+  removeBiometrics(_userId: string, _authToken: string): boolean {
+    console.warn("Authentivix.removeBiometrics() is not implemented.");
+    // TODO: Implement a backend call to delete specific WebAuthn credentials.
+    // This would typically involve:
+    // 1. Fetching all credentials for the user (if multiple are allowed).
+    // 2. User selecting which one to remove (or remove all).
+    // 3. Sending a request to a backend endpoint like `/webauthn/credentials/delete`
+    //    with the `credentialID` to be removed, authorized by `authToken`.
+    return false;
   }
 }
 
 // Export a singleton instance for easy use
-export const authentivix = new Authentivix();
+// Ensure options are passed if defaults are not sufficient or VITE_SUPABASE_FUNCTIONS_URL is not set.
+export const authentivix = new Authentivix({ 
+  apiUrl: import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || 'http://localhost:54321/functions/v1/auth-api'
+});
 export default authentivix;

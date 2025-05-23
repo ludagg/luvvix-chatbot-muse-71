@@ -20,12 +20,14 @@ export function useBiometrics(options?: BiometricsOptions) {
       try {
         const available = await authentivix.isBiometricAvailable();
         setIsAvailable(available);
+        console.log("Biometrics available:", available);
         
         // If we have a user ID stored, check if user has already set up biometrics
         const userId = localStorage.getItem('luvvix_biometrics_userid');
         if (userId) {
           const enrolled = authentivix.isEnrolled(userId);
           setIsEnrolled(enrolled);
+          console.log("Biometrics enrolled for user:", userId, enrolled);
         }
       } catch (err) {
         console.error("Error checking biometric availability:", err);
@@ -51,6 +53,7 @@ export function useBiometrics(options?: BiometricsOptions) {
     
     try {
       setIsLoading(true);
+      console.log("Enrolling biometrics for user:", userId);
       
       // Generate a simulated token for the demo
       const token = btoa(`${userId}:${Date.now()}`);
@@ -66,6 +69,7 @@ export function useBiometrics(options?: BiometricsOptions) {
           title: "Biometric authentication enabled",
           description: "You can now log in with your fingerprint"
         });
+        console.log("Biometric enrollment successful for user:", userId);
       } else {
         throw new Error("Error during biometric enrollment");
       }
@@ -75,6 +79,7 @@ export function useBiometrics(options?: BiometricsOptions) {
       const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
       options?.onError?.(error);
+      console.error("Biometric enrollment error:", error);
       toast({
         variant: "destructive",
         title: "Activation error",
@@ -89,8 +94,10 @@ export function useBiometrics(options?: BiometricsOptions) {
   const authenticateWithBiometrics = async (userId?: string): Promise<string | null> => {
     setIsLoading(true);
     try {
+      console.log("Authenticating with biometrics", userId ? `for user: ${userId}` : "with auto-prompt");
+      
       // Use Authentivix for biometric authentication
-      // If autoPrompt is true, the function will automatically look for all enrolled users
+      // If userId is not provided and autoPrompt is true, the function will automatically look for all enrolled users
       const token = await authentivix.authenticateWithBiometrics(userId);
       
       if (token) {
@@ -99,6 +106,7 @@ export function useBiometrics(options?: BiometricsOptions) {
         // Extract user ID from token (in a real environment, this would be done more securely)
         const decodedToken = atob(token);
         const userId = decodedToken.split(':')[0];
+        console.log("Biometric authentication successful for user:", userId);
         
         return userId;
       } else {
@@ -108,6 +116,7 @@ export function useBiometrics(options?: BiometricsOptions) {
       const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
       options?.onError?.(error);
+      console.error("Biometric authentication error:", error);
       toast({
         variant: "destructive",
         title: "Authentication error",
@@ -122,6 +131,7 @@ export function useBiometrics(options?: BiometricsOptions) {
   const removeBiometrics = async (userId: string): Promise<boolean> => {
     try {
       setIsLoading(true);
+      console.log("Removing biometrics for user:", userId);
       const success = authentivix.removeBiometrics(userId);
       
       if (success) {
@@ -131,6 +141,7 @@ export function useBiometrics(options?: BiometricsOptions) {
           title: "Biometric authentication disabled",
           description: "Your biometric data has been removed"
         });
+        console.log("Biometric data removed for user:", userId);
       } else {
         throw new Error("Error removing biometric data");
       }
@@ -140,6 +151,7 @@ export function useBiometrics(options?: BiometricsOptions) {
       const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
       options?.onError?.(error);
+      console.error("Biometric removal error:", error);
       toast({
         variant: "destructive",
         title: "Deactivation error",

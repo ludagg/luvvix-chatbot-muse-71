@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +17,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: UserProfile | null;
-  signUp: (email: string, password: string, metadata: { full_name: string; username: string }) => Promise<boolean>;
+  signUp: (email: string, password: string, metadata: any) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<boolean>;
   signInWithBiometrics: () => Promise<boolean>;
   signOut: () => Promise<boolean>;
@@ -145,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string, metadata: { full_name: string; username: string }) => {
+  const signUp = async (email: string, password: string, metadata: any) => {
     try {
       const { error, data } = await supabase.auth.signUp({
         email,
@@ -162,6 +161,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         description: "Veuillez vérifier votre email pour confirmer votre compte.",
       });
       
+      // If biometrics is enabled in metadata, set up biometric authentication
+      if (metadata?.use_biometrics && data?.user) {
+        try {
+          // Store user ID for biometric enrollment
+          localStorage.setItem('luvvix_biometrics_userid', data.user.id);
+        } catch (e) {
+          console.error("Error setting up biometrics:", e);
+        }
+      }
+      
       return true;
     } catch (error: any) {
       toast({
@@ -175,7 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -200,37 +209,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithBiometrics = async () => {
     try {
-      // Vérifier si l'authentification biométrique est disponible
+      // First, check if biometric authentication is available
       const isAvailable = await authentivix.isBiometricAvailable();
       if (!isAvailable) {
         throw new Error("L'authentification biométrique n'est pas disponible sur cet appareil");
       }
       
-      // Utiliser auto-prompt pour trouver tout utilisateur inscrit
-      const token = await authentivix.authenticateWithBiometrics();
+      // Try to find an enrolled user ID
+      let userId: string | null = null;
+      const storedUserId = localStorage.getItem('luvvix_biometrics_userid');
       
-      if (!token) {
+      if (storedUserId) {
+        // If we have a stored user ID, use it directly
+        userId = storedUserId;
+      } else {
+        // Otherwise, try to auto-detect enrolled users
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key?.startsWith('luvvix_biometrics_')) {
+            userId = key.replace('luvvix_biometrics_', '');
+            break;
+          }
+        }
+      }
+      
+      if (!userId) {
+        throw new Error("Aucun compte n'a été configuré pour l'authentification biométrique");
+      }
+      
+      // Authenticate with biometrics
+      const biometricToken = await authentivix.authenticateWithBiometrics(userId);
+      
+      if (!biometricToken) {
         throw new Error("L'authentification biométrique a échoué");
       }
       
-      // Extraire l'ID utilisateur du token simulé
-      const decodedToken = atob(token);
-      const userId = decodedToken.split(':')[0];
+      // In a real application, we would exchange the biometric token for an auth token
+      // For this demo, we'll simulate authentication with the stored email
+      const storedAccountsStr = localStorage.getItem('luvvix_accounts');
+      if (storedAccountsStr) {
+        const storedAccounts = JSON.parse(storedAccountsStr);
+        const userAccount = storedAccounts.find((acc: any) => acc.id === userId);
+        
+        if (userAccount && userAccount.email) {
+          // For demo purposes only - in a real application, we would use a secure token exchange
+          // This part is just to simulate a successful login for the demo without requiring password
+          
+          toast({
+            title: "Authentification biométrique réussie",
+            description: "Bienvenue sur LuvviX ID"
+          });
+          
+          return true;
+        }
+      }
       
-      // Simuler une connexion avec cet utilisateur
-      // Dans une implémentation réelle, nous utiliserions une API pour échanger le token biométrique
-      // contre un vrai token d'authentification
-      
-      toast({
-        title: "Authentification biométrique réussie",
-        description: "Bienvenue sur LuvviX ID"
-      });
-      
-      // Note: dans cette implémentation de démonstration, nous ne pouvons pas réellement
-      // connecter l'utilisateur sans son email/mot de passe, car nous n'avons pas accès
-      // aux API nécessaires. Dans une implémentation réelle, nous le ferions ici.
-      
-      return true;
+      throw new Error("Impossible de trouver les informations du compte");
     } catch (error: any) {
       console.error('Error in biometric authentication:', error);
       toast({

@@ -25,20 +25,35 @@ interface AuthenticationProps {
 
 const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps) => {
   const { signUp, signIn, signInWithBiometrics } = useAuth();
-  const { authenticateWithBiometrics, isAvailable: biometricsAvailable } = useBiometrics({
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+  const [step, setStep] = useState(1); // For multi-step signup process
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  
+  const { 
+    isAvailable: biometricsAvailable, 
+    authenticateWithBiometrics,
+    enrollBiometrics,
+    isLoading: biometricsLoading
+  } = useBiometrics({
     onSuccess: () => {
       toast({
         title: "Biometric authentication successful",
         description: "You are now logged in"
       });
+    },
+    onError: (error) => {
+      toast({
+        variant: "destructive",
+        title: "Biometric authentication failed",
+        description: error.message
+      });
     }
   });
-  const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [biometricLoading, setBiometricLoading] = useState(false);
-  const [step, setStep] = useState(1); // For multi-step signup process
+  
   const [enableBiometrics, setEnableBiometrics] = useState(false);
-  const [captchaVerified, setCaptchaVerified] = useState(false);
+  
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -125,29 +140,48 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
       accept_marketing: formData.acceptMarketing
     };
     
-    const success = await signUp(formData.email, formData.password, userMetadata);
-    setIsLoading(false);
-    
-    if (success) {
-      if (returnTo) {
-        navigate(returnTo);
-      } else {
-        navigate('/dashboard');
+    try {
+      const success = await signUp(formData.email, formData.password, userMetadata);
+      
+      if (success) {
+        // If biometrics are enabled, enroll after successful signup
+        if (enableBiometrics && biometricsAvailable) {
+          // We need to get the user ID - for the demo we'll simulate it
+          const simulatedUserId = btoa(formData.email); // In real app, get from auth
+          
+          // Trigger fingerprint enrollment
+          await enrollBiometrics(simulatedUserId);
+        }
+        
+        if (returnTo) {
+          navigate(returnTo);
+        } else {
+          navigate('/dashboard');
+        }
       }
+    } catch (error) {
+      console.error("Error during signup:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const success = await signIn(formData.email, formData.password);
-    setIsLoading(false);
-    if (success) {
-      if (returnTo) {
-        navigate(returnTo);
-      } else {
-        navigate('/dashboard');
+    try {
+      const success = await signIn(formData.email, formData.password);
+      setIsLoading(false);
+      if (success) {
+        if (returnTo) {
+          navigate(returnTo);
+        } else {
+          navigate('/dashboard');
+        }
       }
+    } catch (error) {
+      console.error("Error during sign in:", error);
+      setIsLoading(false);
     }
   };
 
@@ -361,28 +395,30 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
         return (
           <div className="space-y-4">
             {/* Option d'authentification biométrique */}
-            <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-              <h3 className="font-medium mb-2">Authentivix - Sécurité biométrique</h3>
-              <div className="flex items-start space-x-2">
-                <Checkbox
-                  id="enableBiometrics"
-                  checked={enableBiometrics}
-                  onCheckedChange={(checked) => setEnableBiometrics(checked as boolean)}
-                />
-                <div className="grid gap-1.5 leading-none">
-                  <label
-                    htmlFor="enableBiometrics"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Activer l'authentification biométrique
-                  </label>
-                  <p className="text-xs text-gray-500">
-                    Permet de vous connecter avec votre empreinte digitale ou reconnaissance faciale
-                    lorsque cette option est disponible sur votre appareil.
-                  </p>
+            {biometricsAvailable && (
+              <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
+                <h3 className="font-medium mb-2">Authentivix - Sécurité biométrique</h3>
+                <div className="flex items-start space-x-2">
+                  <Checkbox
+                    id="enableBiometrics"
+                    checked={enableBiometrics}
+                    onCheckedChange={(checked) => setEnableBiometrics(checked as boolean)}
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="enableBiometrics"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Activer l'authentification biométrique
+                    </label>
+                    <p className="text-xs text-gray-500">
+                      Permet de vous connecter avec votre empreinte digitale ou reconnaissance faciale
+                      lorsque cette option est disponible sur votre appareil.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
             
             {/* CAPTCHA */}
             <div className="p-4 border rounded-md">
@@ -489,23 +525,30 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     
     setBiometricLoading(true);
     try {
-      // Call the user's signInWithBiometrics method directly
-      const success = await signInWithBiometrics();
+      // First let's try to authenticate with biometrics
+      const userId = await authenticateWithBiometrics();
       
-      if (success) {
-        // Successful login via biometrics
-        setBiometricLoading(false);
+      if (userId) {
+        // If successful, sign in the user using the auth hook
+        const success = await signInWithBiometrics();
         
-        // Redirect after successful login
-        setTimeout(() => {
-          if (returnTo) {
-            navigate(returnTo);
-          } else {
-            navigate('/dashboard');
-          }
-        }, 500);
+        if (success) {
+          // Successful login via biometrics
+          setBiometricLoading(false);
+          
+          // Redirect after successful login
+          setTimeout(() => {
+            if (returnTo) {
+              navigate(returnTo);
+            } else {
+              navigate('/dashboard');
+            }
+          }, 500);
+        } else {
+          throw new Error("Biometric authentication failed");
+        }
       } else {
-        throw new Error("Biometric authentication failed");
+        throw new Error("Biometric authentication failed to retrieve user ID");
       }
     } catch (error) {
       console.error('Biometric authentication error:', error);
@@ -598,21 +641,20 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                       variant="outline"
                       className="w-full flex items-center justify-center gap-2"
                       onClick={handleBiometricAuth}
-                      disabled={biometricLoading}
+                      disabled={biometricLoading || biometricsLoading}
                     >
                       {biometricLoading ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       ) : (
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-fingerprint">
-                          <path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"></path>
-                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path>
-                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
-                          <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"></path>
-                          <path d="M8.65 22c.21-.66.45-1.32.57-2"></path>
-                          <path d="M14 13.12c0 2.38 0 6.38-1 8.88"></path>
-                          <path d="M2 16h.01"></path>
-                          <path d="M21.8 16c.2-2 .131-5.854 0-6"></path>
-                          <path d="M9 6.8a6 6 0 0 1 9 5.2c0 .47 0 1.17-.02 2"></path>
+                          <path d="M2 12a10 10 0 1 0 20 0 10 10 0 1 0-20 0Z"></path>
+                          <path d="M2 12c0 4.42 3.58 8 8 8s8-3.58 8-8"></path>
+                          <path d="M12 20c-4.42 0-8-3.58-8-8"></path>
+                          <path d="M8 16s1.5 2 4 2 4-2 4-2"></path>
+                          <path d="M12 4v4"></path>
+                          <path d="M8 10v8"></path>
+                          <path d="M16 10v8"></path>
+                          <path d="M12 12v8"></path>
                         </svg>
                       )}
                       Login with Authentivix

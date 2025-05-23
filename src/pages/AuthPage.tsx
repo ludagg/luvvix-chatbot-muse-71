@@ -35,13 +35,14 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
+      <div className="pt-24 flex-1">
       <div className="flex-grow">
         <Authentication 
           returnTo={returnTo} 
           addingAccount={addAccount} 
         />
-      </div>
-      <Footer />
+      </div></div>
+      
     </div>
   );
 };

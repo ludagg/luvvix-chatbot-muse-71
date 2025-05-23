@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from '@/hooks/use-toast';
-import { useBiometrics } from '@/hooks/useBiometrics';
+import { useBiometrics } from '@/hooks/use-biometrics';
 
 interface AuthenticationProps {
   returnTo?: string | null;
@@ -36,7 +36,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
   const [isLoading, setIsLoading] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [step, setStep] = useState(1); // Pour gestion d'un processus d'inscription en plusieurs étapes
-  const [useBiometrics, setUseBiometrics] = useState(false);
+  const [enableBiometrics, setEnableBiometrics] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -120,7 +120,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
       country: formData.country,
       birthdate: formData.birthdate,
       gender: formData.gender,
-      use_biometrics: useBiometrics,
+      use_biometrics: enableBiometrics,
       accept_marketing: formData.acceptMarketing
     };
     
@@ -364,13 +364,13 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
               <h3 className="font-medium mb-2">Authentivix - Sécurité biométrique</h3>
               <div className="flex items-start space-x-2">
                 <Checkbox
-                  id="useBiometrics"
-                  checked={useBiometrics}
-                  onCheckedChange={(checked) => setUseBiometrics(checked as boolean)}
+                  id="enableBiometrics"
+                  checked={enableBiometrics}
+                  onCheckedChange={(checked) => setEnableBiometrics(checked as boolean)}
                 />
                 <div className="grid gap-1.5 leading-none">
                   <label
-                    htmlFor="useBiometrics"
+                    htmlFor="enableBiometrics"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     Activer l'authentification biométrique
@@ -602,8 +602,8 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                       ) : (
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-fingerprint">
                           <path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4"></path>
-                          <path d="M5 19.5C5.5 18 6 15 6 12c0-.7.12-1.37.34-2"></path>
-                          <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"></path>
+                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path>
+                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
                           <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"></path>
                           <path d="M8.65 22c.21-.66.45-1.32.57-2"></path>
                           <path d="M14 13.12c0 2.38 0 6.38-1 8.88"></path>

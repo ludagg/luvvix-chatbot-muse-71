@@ -301,11 +301,7 @@ const Navbar = () => {
                             Se connecter
                           </Button>
                         </Link>
-                        <Link to="/auth?signup=true">
-                          <Button className="w-full justify-start">
-                            S'inscrire
-                          </Button>
-                        </Link>
+                        
                       </div>
                     </div>
                   )}

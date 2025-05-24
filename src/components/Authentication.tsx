@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from '@/hooks/use-toast';
+import { toast as displayToast } from '@/hooks/use-toast'; 
 import { useBiometrics } from '@/hooks/use-biometrics';
 
 interface AuthenticationProps {
@@ -23,36 +23,63 @@ interface AuthenticationProps {
 }
 
 const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps) => {
-  const { signUp, signIn, signInWithBiometrics, session } = useAuth();
+  const { signUp, signIn, signInWithBiometrics, session, user } = useAuth(); 
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [biometricLoading, setBiometricLoading] = useState(false);
-  const [step, setStep] = useState(1); // For multi-step signup process
+  const [isLoading, setIsLoading] = useState(false); // For general form loading (email/password)
+  const [biometricLoading, setBiometricLoading] = useState(false); // Used for the biometric login button's local state
+  const [step, setStep] = useState(1); 
   const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [showBiometricEmphasis, setShowBiometricEmphasis] = useState(false); // New state for UI emphasis
   
   const { 
     isAvailable: biometricsAvailable, 
-    authenticateWithBiometrics,
-    enrollBiometrics,
-    isLoading: biometricsLoading
+    authenticateWithBiometrics, 
+    enrollBiometrics,         
+    isLoading: isBiometricsHookLoading // isLoading state from the useBiometrics hook itself
   } = useBiometrics({
     onSuccess: () => {
-      toast({
-        title: "Biometric authentication successful",
-        description: "You are now logged in"
-      });
+      // Toasts are primarily handled by the hook itself or useAuth.
     },
     onError: (error) => {
-      toast({
-        variant: "destructive",
-        title: "Biometric authentication failed",
-        description: error.message
-      });
+      console.error("Error callback from useBiometrics in Authentication.tsx:", error.message);
     }
   });
   
   const [enableBiometrics, setEnableBiometrics] = useState(false);
+
+  // Effect to check if biometric emphasis should be shown
+  useEffect(() => {
+    if (localStorage.getItem('luvvixAuth.hasEnrolledBiometricsHere') === 'true' && biometricsAvailable) {
+      setShowBiometricEmphasis(true);
+    }
+  }, [biometricsAvailable]); // Re-run if biometricsAvailable status changes
   
+  // Effect for pending biometric enrollment, triggers after login if flag is set
+  useEffect(() => {
+    const checkPendingBiometricEnrollment = async () => {
+      const isPending = localStorage.getItem('isBiometricEnrollmentPending');
+      if (isPending === 'true' && user?.id && session?.access_token) {
+        localStorage.removeItem('isBiometricEnrollmentPending'); 
+        
+        displayToast({ 
+          title: "Configuration biométrique en attente...",
+          description: "Tentative d'enregistrement de vos données biométriques.",
+        });
+
+        try {
+          await enrollBiometrics(user.id, session.access_token);
+        } catch (error: any) {
+          console.error("Erreur lors de la tentative d'enregistrement biométrique différé:", error.message);
+        }
+      }
+    };
+
+    if (user && session) {
+      checkPendingBiometricEnrollment();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, session]); 
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -67,12 +94,10 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     acceptMarketing: false
   });
   
-  // Simplified captcha logic for demo
   const [captchaQuestion, setCaptchaQuestion] = useState('');
   const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [userCaptchaAnswer, setUserCaptchaAnswer] = useState('');
   
-  // Generate a simple math question for captcha
   const generateCaptcha = () => {
     const num1 = Math.floor(Math.random() * 10);
     const num2 = Math.floor(Math.random() * 10);
@@ -80,21 +105,21 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     setCaptchaAnswer(String(num1 + num2));
   };
   
-  useState(() => {
+  useEffect(() => { 
     generateCaptcha();
-  });
+  }, []); 
   
   const verifyCaptcha = () => {
     if (userCaptchaAnswer === captchaAnswer) {
       setCaptchaVerified(true);
       return true;
     } else {
-      toast({
+      displayToast({ 
         variant: "destructive",
         title: "Verification failed",
         description: "The CAPTCHA response is incorrect.",
       });
-      generateCaptcha(); // Generate a new question
+      generateCaptcha(); 
       return false;
     }
   };
@@ -102,9 +127,8 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Form validations
     if (formData.password !== formData.confirmPassword) {
-      toast({
+      displayToast({ 
         variant: "destructive",
         title: "Validation error",
         description: "Passwords do not match.",
@@ -113,7 +137,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     }
     
     if (!formData.acceptTerms) {
-      toast({
+      displayToast({ 
         variant: "destructive",
         title: "Terms not accepted",
         description: "You must accept the terms of use to continue.",
@@ -127,7 +151,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     
     setIsLoading(true);
     
-    // Prepare enriched user metadata
     const userMetadata = {
       full_name: formData.fullName,
       username: formData.username,
@@ -135,7 +158,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
       country: formData.country,
       birthdate: formData.birthdate,
       gender: formData.gender,
-      use_biometrics: enableBiometrics,
+      use_biometrics: enableBiometrics, 
       accept_marketing: formData.acceptMarketing
     };
     
@@ -143,22 +166,27 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
       const success = await signUp(formData.email, formData.password, userMetadata);
       
       if (success) {
-        // If biometrics are enabled, enroll after successful signup
-        if (enableBiometrics && biometricsAvailable && session?.access_token) {
-          const simulatedUserId = btoa(formData.email); // In real app, get from auth
-          
-          // Trigger fingerprint enrollment with userId and access token
-          await enrollBiometrics(simulatedUserId, session.access_token);
+        if (enableBiometrics && biometricsAvailable) {
+          localStorage.setItem('isBiometricEnrollmentPending', 'true');
+          displayToast({ 
+            title: "Configuration biométrique en attente",
+            description: "La configuration de la biométrie se fera après la confirmation de votre email et votre première connexion.",
+            duration: 5000, 
+          });
         }
         
         if (returnTo) {
           navigate(returnTo);
         } else {
-          navigate('/dashboard');
+          navigate('/dashboard'); 
+          displayToast({
+            title: "Inscription réussie!",
+            description: "Veuillez vérifier votre email pour confirmer votre compte.",
+          });
         }
       }
     } catch (error) {
-      console.error("Error during signup:", error);
+      console.error("Error during signup flow in component:", error);
     } finally {
       setIsLoading(false);
     }
@@ -169,7 +197,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     setIsLoading(true);
     try {
       const success = await signIn(formData.email, formData.password);
-      setIsLoading(false);
       if (success) {
         if (returnTo) {
           navigate(returnTo);
@@ -178,7 +205,8 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
         }
       }
     } catch (error) {
-      console.error("Error during sign in:", error);
+      console.error("Error during sign in flow in component:", error);
+    } finally {
       setIsLoading(false);
     }
   };
@@ -204,8 +232,8 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     });
   };
   
-  // Handle multi-step signup
   const renderSignupStep = () => {
+    // ... (renderSignupStep content remains unchanged)
     switch(step) {
       case 1:
         return (
@@ -392,7 +420,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
       case 3:
         return (
           <div className="space-y-4">
-            {/* Option d'authentification biométrique */}
             {biometricsAvailable && (
               <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
                 <h3 className="font-medium mb-2">Authentivix - Sécurité biométrique</h3>
@@ -418,7 +445,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
               </div>
             )}
             
-            {/* CAPTCHA */}
             <div className="p-4 border rounded-md">
               <h3 className="font-medium mb-2">Vérification - Je ne suis pas un robot</h3>
               <p className="text-sm mb-2">{captchaQuestion}</p>
@@ -431,7 +457,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
               />
             </div>
             
-            {/* Termes et conditions */}
             <div className="space-y-2">
               <div className="flex items-start space-x-2">
                 <Checkbox
@@ -513,49 +538,35 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
 
   const handleBiometricAuth = async () => {
     if (!biometricsAvailable) {
-      toast({
+      displayToast({
         variant: "destructive",
         title: "Biometric authentication not available",
-        description: "Your device does not support biometric authentication"
+        description: "Your device does not support biometric authentication or it's not enabled."
       });
       return;
     }
     
     setBiometricLoading(true);
     try {
-      // First let's try to authenticate with biometrics - note: now takes email parameter
-      const userId = await authenticateWithBiometrics(formData.email);
+      const webAuthnSession = await authenticateWithBiometrics(formData.email); 
       
-      if (userId) {
-        // If successful, sign in the user using the auth hook
-        const success = await signInWithBiometrics();
+      if (webAuthnSession) {
+        const supabaseLoginSuccess = await signInWithBiometrics(webAuthnSession);
         
-        if (success) {
-          // Successful login via biometrics
-          setBiometricLoading(false);
-          
-          // Redirect after successful login
+        if (supabaseLoginSuccess) {
           setTimeout(() => {
             if (returnTo) {
               navigate(returnTo);
             } else {
               navigate('/dashboard');
             }
-          }, 500);
-        } else {
-          throw new Error("Biometric authentication failed");
+          }, 100); 
         }
-      } else {
-        throw new Error("Biometric authentication failed to retrieve user ID");
       }
-    } catch (error) {
-      console.error('Biometric authentication error:', error);
+    } catch (error: any) {
+      console.error('Critical error during biometric authentication flow:', error);
+    } finally {
       setBiometricLoading(false);
-      toast({
-        variant: "destructive",
-        title: "Authentication error",
-        description: "Biometric verification failed"
-      });
     }
   };
 
@@ -581,8 +592,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                 <form onSubmit={handleSignUp} className="space-y-4">
                   {renderSignupStep()}
                 </form>
-                
-                {/* ... keep existing code (OAuth buttons for step 1) */}
               </div>
             </TabsContent>
             
@@ -592,12 +601,12 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                   <div className="mb-6">
                     <Button
                       type="button"
-                      variant="outline"
+                      variant={showBiometricEmphasis ? "luvvix" : "outline"} // Conditional variant
                       className="w-full flex items-center justify-center gap-2"
                       onClick={handleBiometricAuth}
-                      disabled={biometricLoading || biometricsLoading}
+                      disabled={biometricLoading || isBiometricsHookLoading} 
                     >
-                      {biometricLoading ? (
+                      {biometricLoading || isBiometricsHookLoading ? ( 
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       ) : (
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-fingerprint">
@@ -613,6 +622,11 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                       )}
                       Login with Authentivix
                     </Button>
+                    {showBiometricEmphasis && !isLoading && !biometricLoading && !isBiometricsHookLoading && (
+                      <p className="text-xs text-luvvix-purple dark:text-luvvix-purple-light text-center mt-1">
+                        Quick login with your saved biometric.
+                      </p>
+                    )}
                     <div className="relative my-4">
                       <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t border-gray-300"></div>
@@ -666,7 +680,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                     type="submit" 
                     className="w-full" 
                     variant="default" 
-                    disabled={isLoading}
+                    disabled={isLoading} // isLoading is for the main email/password form
                   >
                     {isLoading ? (
                       <>
@@ -681,8 +695,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                     )}
                   </Button>
                 </form>
-                
-                {/* ... keep existing code (OAuth buttons) */}
               </div>
             </TabsContent>
           </Tabs>

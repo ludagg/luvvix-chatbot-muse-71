@@ -3,7 +3,7 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
-import { authentivix } from '@/utils/authentivix';
+import { authentivix, WebAuthnSession } from '@/utils/authentivix'; // Import WebAuthnSession
 
 interface UserProfile {
   id: string;
@@ -20,7 +20,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   signUp: (email: string, password: string, metadata: any) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<boolean>;
-  signInWithBiometrics: () => Promise<boolean>;
+  signInWithBiometrics: (webAuthnSession: WebAuthnSession | null) => Promise<boolean>; // Updated signature
   signOut: () => Promise<boolean>;
   globalSignOut: () => Promise<boolean>;
   refreshUser: () => Promise<void>;
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event);
+        // console.log("Auth state changed:", event); // Removed debug log
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -250,70 +250,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithBiometrics = async () => {
+  const signInWithBiometrics = async (webAuthnSession: WebAuthnSession | null) => {
     try {
-      // First, check if biometric authentication is available
-      const isAvailable = await authentivix.isBiometricAvailable();
-      if (!isAvailable) {
-        throw new Error("L'authentification biométrique n'est pas disponible sur cet appareil");
-      }
-      
-      // Try to find an enrolled user ID
-      let userId: string | null = null;
-      const storedUserId = localStorage.getItem('luvvix_biometrics_userid');
-      
-      if (storedUserId) {
-        // If we have a stored user ID, use it directly
-        userId = storedUserId;
-      } else {
-        // Otherwise, try to auto-detect enrolled users
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key?.startsWith('luvvix_biometrics_')) {
-            userId = key.replace('luvvix_biometrics_', '');
-            break;
-          }
-        }
-      }
-      
-      if (!userId) {
-        throw new Error("Aucun compte n'a été configuré pour l'authentification biométrique");
-      }
-      
-      // Authenticate with biometrics
-      const biometricToken = await authentivix.authenticateWithBiometrics(userId);
-      
-      if (!biometricToken) {
-        throw new Error("L'authentification biométrique a échoué");
-      }
-      
-      // In a real application, we would exchange the biometric token for an auth token
-      // For this demo, we'll simulate authentication with the stored email
-      const storedAccountsStr = localStorage.getItem('luvvix_accounts');
-      if (storedAccountsStr) {
-        const storedAccounts = JSON.parse(storedAccountsStr);
-        const userAccount = storedAccounts.find((acc: any) => acc.id === userId);
+      if (webAuthnSession && webAuthnSession.access_token) {
+        toast({ // Optional: Inform user that WebAuthn part was successful and Supabase login is starting
+          title: "Vérification biométrique réussie",
+          description: "Connexion à votre compte en cours...",
+        });
+
+        const loginSuccess = await loginWithToken(webAuthnSession.access_token, webAuthnSession.refresh_token);
         
-        if (userAccount && userAccount.email) {
-          // For demo purposes only - in a real application, we would use a secure token exchange
-          // This part is just to simulate a successful login for the demo without requiring password
-          
+        if (loginSuccess) {
           toast({
-            title: "Authentification biométrique réussie",
-            description: "Bienvenue sur LuvviX ID"
+            title: "Connexion biométrique réussie",
+            description: "Session établie avec Supabase.",
           });
-          
           return true;
+        } else {
+          // loginWithToken already shows a toast on failure, but we can add a more specific one if needed
+          toast({
+            variant: "destructive",
+            title: "Erreur de connexion biométrique",
+            description: "Impossible d'établir la session avec Supabase après la vérification biométrique.",
+          });
+          return false;
         }
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erreur de connexion biométrique",
+          description: "Aucune donnée de session reçue du service biométrique.",
+        });
+        return false;
       }
-      
-      throw new Error("Impossible de trouver les informations du compte");
     } catch (error: any) {
-      console.error('Error in biometric authentication:', error);
+      console.error('Error in signInWithBiometrics:', error);
       toast({
         variant: "destructive",
         title: "Erreur d'authentification biométrique",
-        description: error.message,
+        description: error.message || "Une erreur inattendue est survenue.",
       });
       return false;
     }

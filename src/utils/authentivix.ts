@@ -1,4 +1,3 @@
-
 /**
  * Authentivix - Biometric authentication system for LuvviX ID
  * Version 2.0.0 - Integrated with WebAuthn backend
@@ -11,8 +10,6 @@ import {
 import type {
   PublicKeyCredentialCreationOptionsJSON,
   PublicKeyCredentialRequestOptionsJSON,
-  RegistrationResponseJSON,
-  AuthenticationResponseJSON,
 } from "@simplewebauthn/browser";
 
 // Types for the biometric authentication system
@@ -29,12 +26,19 @@ export interface WebAuthnSession {
   // Add any other relevant fields from your backend's session response
 }
 
+// Custom error for when an authenticator is already registered
+export class AuthenticatorRegisteredError extends Error {
+  constructor(message?: string) {
+    super(message || "This authenticator is already registered.");
+    this.name = "AuthenticatorRegisteredError";
+  }
+}
+
 // Main class for biometric authentication management
 export class Authentivix {
-  private options: Required<Pick<AuthentivixOptions, "apiUrl">>; // Only apiUrl is strictly required now
+  private options: Required<Pick<AuthentivixOptions, "apiUrl">>; 
   
   constructor(options?: AuthentivixOptions) {
-    // Use proper Vite environment variables instead of Deno
     const defaultApiUrl = 'https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/auth-api';
 
     this.options = {
@@ -45,81 +49,56 @@ export class Authentivix {
     }
   }
   
-  /**
-   * Check if biometric authentication is available on the device
-   * @returns {Promise<boolean>} True if available, False otherwise
-   */
   async isBiometricAvailable(): Promise<boolean> {
     try {
-      // Check if the Web Authentication API is available
       if (window && 'PublicKeyCredential' in window) {
-        // Check if the device supports biometric authentication
         if (typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
           return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
         }
-        // Fallback for older syntax or basic check
         return !!(window.PublicKeyCredential);
       }
-      
       return false;
     } catch (error) {
-      console.error('Error checking biometric availability:', error);
-      return false;
+      console.error('Error checking biometric availability:', error); // Keep critical error log
+      return false; 
     }
   }
   
-  /**
-   * Check if the user has already set up biometric authentication.
-   * @param {string} _userId - User identifier (currently unused).
-   * @param {string} _authToken - Authentication token (currently unused).
-   * @returns {boolean} True if configured, False otherwise.
-   * @todo This method needs a proper backend implementation or removal.
-   */
   isEnrolled(_userId?: string, _authToken?: string): boolean {
-    console.warn("Authentivix.isEnrolled() is not fully implemented and currently returns false.");
-    // TODO: Implement a backend call to check for existing WebAuthn credentials for the user.
-    // For now, this will return false. UI logic should adapt.
+    // This method is a stub and should be implemented properly or removed.
+    // For now, it doesn't interact with WebAuthn directly so no specific errors to throw.
+    console.warn("Authentivix.isEnrolled() is not fully implemented and currently returns false."); // Keep warning
     return false;
   }
   
-  /**
-   * Register the user's biometric data using WebAuthn.
-   * @param {string} _userId - User identifier (not directly used here as backend gets it from token).
-   * @param {string} authToken - Authentication token (JWT).
-   * @returns {Promise<boolean>} True if registration succeeds, False otherwise.
-   */
   async enrollBiometrics(_userId: string, authToken: string): Promise<boolean> {
     if (!authToken) {
-      console.error("Authentication token is required for biometric enrollment.");
-      return false;
+      throw new Error("Authentication token is required for biometric enrollment.");
     }
 
+    let regStartResponse: Response;
+    let regFinishResponse: Response;
+
     try {
-      // 1. Get registration options from the backend
       const regStartUrl = `${this.options.apiUrl}/webauthn/register/start`;
-      const regStartResponse = await fetch(regStartUrl, {
+      regStartResponse = await fetch(regStartUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${authToken}`,
         },
-        // body: JSON.stringify({ userId }), // userId is taken from token on backend
       });
 
       if (!regStartResponse.ok) {
-        const errorData = await regStartResponse.json().catch(() => ({}));
-        console.error("Failed to get registration options:", regStartResponse.status, errorData);
-        throw new Error(`Failed to get registration options: ${errorData.error || regStartResponse.statusText}`);
+        const errorData = await regStartResponse.json().catch(() => ({ message: regStartResponse.statusText }));
+        throw new Error(`Enrollment failed: Failed to get registration options. Server said: ${errorData.error || errorData.message}`);
       }
       
       const options: PublicKeyCredentialCreationOptionsJSON = (await regStartResponse.json()).data;
-
-      // 2. Call startRegistration (from @simplewebauthn/browser) with correct format
       const attestationResponse = await startRegistration({ optionsJSON: options });
 
-      // 3. Send attestation response to the backend to finish registration
       const regFinishUrl = `${this.options.apiUrl}/webauthn/register/finish`;
-      const regFinishResponse = await fetch(regFinishUrl, {
+      regFinishResponse = await fetch(regFinishUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -129,100 +108,84 @@ export class Authentivix {
       });
 
       if (!regFinishResponse.ok) {
-        const errorData = await regFinishResponse.json().catch(() => ({}));
-        console.error("Failed to finish registration:", regFinishResponse.status, errorData);
-        throw new Error(`Failed to finish registration: ${errorData.error || regFinishResponse.statusText}`);
+        const errorData = await regFinishResponse.json().catch(() => ({ message: regFinishResponse.statusText }));
+        throw new Error(`Enrollment failed: Failed to finish registration. Server said: ${errorData.error || errorData.message}`);
       }
       
       const finishData = await regFinishResponse.json();
-      console.log("Biometric enrollment successful:", finishData);
-      return finishData.success && finishData.data.verified === true;
-
-    } catch (error) {
-      console.error("Error during biometric enrollment:", error);
-      // Ensure the error is an Error instance
-      if (error instanceof Error && error.name === 'InvalidStateError') {
-        alert("Authenticator was probably already registered. Try logging in.");
+      if (finishData.success && finishData.data.verified === true) {
+        // console.log("Biometric enrollment successful:", finishData); // Removed debug log
+        return true;
       } else {
-        alert(`Enrollment failed: ${error.message}`);
+        throw new Error(`Enrollment failed: ${finishData.error || "Verification by backend failed."}`);
       }
-      return false;
+
+    } catch (error: any) {
+      console.error("Error during biometric enrollment:", error); // Keep critical error log
+      if (error.name === 'InvalidStateError') {
+        throw new AuthenticatorRegisteredError("This authenticator has already been registered with this user account.");
+      }
+      if (error instanceof AuthenticatorRegisteredError || error.message.startsWith("Enrollment failed:")) {
+        throw error; 
+      }
+      throw new Error(`Enrollment process failed: ${error.message || "An unknown error occurred."}`);
     }
   }
   
-  /**
-   * Authenticate the user with their biometric data using WebAuthn.
-   * @param {string} email - User's email to initiate login.
-   * @returns {Promise<WebAuthnSession | null>} Session object if successful, null otherwise.
-   */
   async authenticateWithBiometrics(email?: string): Promise<WebAuthnSession | null> {
-    if (!email) {
-      console.warn("Email is currently required for WebAuthn login start.");
-    }
+    let authStartResponse: Response;
+    let authFinishResponse: Response;
 
     try {
-      // 1. Get authentication options from the backend
       const authStartUrl = `${this.options.apiUrl}/webauthn/login/start`;
-      const authStartResponse = await fetch(authStartUrl, {
+      authStartResponse = await fetch(authStartUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }), // Send email if provided
+        body: JSON.stringify({ email }), 
       });
 
       if (!authStartResponse.ok) {
-        const errorData = await authStartResponse.json().catch(() => ({}));
-        console.error("Failed to get authentication options:", authStartResponse.status, errorData);
-        throw new Error(`Failed to get authentication options: ${errorData.error || authStartResponse.statusText}`);
+        const errorData = await authStartResponse.json().catch(() => ({ message: authStartResponse.statusText }));
+        throw new Error(`Login failed: Failed to get authentication options. Server said: ${errorData.error || errorData.message}`);
       }
       const options: PublicKeyCredentialRequestOptionsJSON = (await authStartResponse.json()).data;
-
-      // 2. Call startAuthentication (from @simplewebauthn/browser) with correct format
       const assertionResponse = await startAuthentication({ optionsJSON: options });
 
-      // 3. Send assertion response to the backend to finish authentication
       const authFinishUrl = `${this.options.apiUrl}/webauthn/login/finish`;
-      const authFinishResponse = await fetch(authFinishUrl, {
+      authFinishResponse = await fetch(authFinishUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(assertionResponse),
       });
 
       if (!authFinishResponse.ok) {
-        const errorData = await authFinishResponse.json().catch(() => ({}));
-        console.error("Failed to finish authentication:", authFinishResponse.status, errorData);
-        throw new Error(`Failed to finish authentication: ${errorData.error || authFinishResponse.statusText}`);
+        const errorData = await authFinishResponse.json().catch(() => ({ message: authFinishResponse.statusText }));
+        throw new Error(`Login failed: Failed to finish authentication. Server said: ${errorData.error || errorData.message}`);
       }
       
       const finishData = await authFinishResponse.json();
-      if (finishData.success && finishData.data.verified === true) {
-        console.log("Biometric authentication successful:", finishData.data);
-        return finishData.data as WebAuthnSession; // Contains tokens and user_id
+      if (finishData.success && finishData.data.verified === true && finishData.data.access_token) {
+        // console.log("Biometric authentication successful:", finishData.data); // Removed debug log
+        return finishData.data as WebAuthnSession;
       } else {
-        throw new Error(finishData.error || "Authentication verification failed");
+        throw new Error(`Login failed: ${finishData.error || "Authentication verification by backend failed."}`);
       }
 
-    } catch (error) {
-      console.error("Error during biometric authentication:", error);
-      alert(`Login failed: ${error.message}`);
-      return null;
+    } catch (error: any) {
+      console.error("Error during biometric authentication:", error); // Keep critical error log
+      if (error.message.startsWith("Login failed:")) {
+        throw error; 
+      }
+      throw new Error(`Authentication process failed: ${error.message || "An unknown error occurred."}`);
     }
   }
   
-  /**
-   * Remove the user's biometric data.
-   * @param {string} _userId - User identifier.
-   * @param {string} _authToken - Authentication token.
-   * @returns {boolean} True if removal succeeds, False otherwise.
-   * @todo This method needs a proper backend implementation.
-   */
   removeBiometrics(_userId: string, _authToken: string): boolean {
-    console.warn("Authentivix.removeBiometrics() is not implemented.");
-    // TODO: Implement a backend call to delete specific WebAuthn credentials.
+    console.warn("Authentivix.removeBiometrics() is not implemented."); // Keep warning
     return false;
   }
 }
 
-// Export a singleton instance for easy use
 export const authentivix = new Authentivix({ 
   apiUrl: 'https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/auth-api'
 });

@@ -1,6 +1,5 @@
-
 import { LuvviXID } from "@/utils/luvvix-id-sdk";
-import { authentivix } from '@/utils/authentivix';
+import { authentivix, WebAuthnSession } from '@/utils/authentivix';
 
 interface AuthOptions {
   appName: 'main' | 'pharmacy' | 'streaming' | 'chat';
@@ -99,7 +98,7 @@ class AuthService {
         if (authentivix.isEnrolled(userId)) {
           // Mettre à jour la date de dernière utilisation
           try {
-            await authentivix.authenticateWithBiometrics(userId);
+            await authentivix.authenticateWithBiometrics(result.user.email);
           } catch (e) {
             console.log('Non-critical error updating biometric data:', e);
           }
@@ -128,18 +127,17 @@ class AuthService {
       }
       
       // Authentifier avec biométrie
-      const token = await authentivix.authenticateWithBiometrics();
+      const webAuthnSession = await authentivix.authenticateWithBiometrics();
       
-      if (!token) {
+      if (!webAuthnSession) {
         throw new Error("L'authentification biométrique a échoué");
       }
       
       // Dans une implémentation réelle, nous écharngerions ce token avec un token JWT valide
       // Pour cette démonstration, nous allons simuler une connexion réussie
       
-      // Décodage simulé du token pour obtenir l'ID utilisateur
-      const decodedToken = atob(token);
-      const userId = decodedToken.split(':')[0];
+      // Simuler l'extraction de l'ID utilisateur depuis la session
+      const userId = webAuthnSession.user_id;
       
       // Obtenir les infos utilisateur (dans une vraie implémentation, cela proviendrait de l'API)
       // et établir la session

@@ -114,8 +114,8 @@ export class Authentivix {
       
       const options: PublicKeyCredentialCreationOptionsJSON = (await regStartResponse.json()).data;
 
-      // 2. Call startRegistration (from @simplewebauthn/browser)
-      const attestationResponse = await startRegistration(options);
+      // 2. Call startRegistration (from @simplewebauthn/browser) with correct format
+      const attestationResponse = await startRegistration({ optionsJSON: options });
 
       // 3. Send attestation response to the backend to finish registration
       const regFinishUrl = `${this.options.apiUrl}/webauthn/register/finish`;
@@ -176,8 +176,8 @@ export class Authentivix {
       }
       const options: PublicKeyCredentialRequestOptionsJSON = (await authStartResponse.json()).data;
 
-      // 2. Call startAuthentication (from @simplewebauthn/browser)
-      const assertionResponse = await startAuthentication(options);
+      // 2. Call startAuthentication (from @simplewebauthn/browser) with correct format
+      const assertionResponse = await startAuthentication({ optionsJSON: options });
 
       // 3. Send assertion response to the backend to finish authentication
       const authFinishUrl = `${this.options.apiUrl}/webauthn/login/finish`;

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, createContext, useContext } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +23,8 @@ interface AuthContextType {
   signInWithBiometrics: () => Promise<boolean>;
   signOut: () => Promise<boolean>;
   globalSignOut: () => Promise<boolean>;
+  refreshUser: () => Promise<void>;
+  loginWithToken: (accessToken: string, refreshToken?: string) => Promise<boolean>;
   loading: boolean;
   hasBiometrics: boolean;
 }
@@ -141,6 +144,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(data);
     } catch (error) {
       console.error('Error in fetchProfile:', error);
+    }
+  };
+
+  const refreshUser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        await fetchProfile(user.id);
+      }
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+    }
+  };
+
+  const loginWithToken = async (accessToken: string, refreshToken?: string) => {
+    try {
+      const { data, error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken || '',
+      });
+
+      if (error) throw error;
+
+      setSession(data.session);
+      setUser(data.user);
+      
+      if (data.user) {
+        await fetchProfile(data.user.id);
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error('Error logging in with token:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur de connexion",
+        description: error.message,
+      });
+      return false;
     }
   };
 
@@ -332,6 +375,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signInWithBiometrics,
       signOut,
       globalSignOut,
+      refreshUser,
+      loginWithToken,
       loading,
       hasBiometrics
     }}>

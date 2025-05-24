@@ -1254,6 +1254,66 @@ export type Database = {
         }
         Relationships: []
       }
+      user_webauthn_credentials: {
+        Row: {
+          created_at: string | null
+          credential_id: string
+          friendly_name: string | null
+          id: string
+          last_used_at: string | null
+          public_key: string
+          sign_count: number
+          transports: string[] | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          credential_id: string
+          friendly_name?: string | null
+          id?: string
+          last_used_at?: string | null
+          public_key: string
+          sign_count?: number
+          transports?: string[] | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          credential_id?: string
+          friendly_name?: string | null
+          id?: string
+          last_used_at?: string | null
+          public_key?: string
+          sign_count?: number
+          transports?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      webauthn_challenges: {
+        Row: {
+          challenge: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          challenge: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          challenge?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

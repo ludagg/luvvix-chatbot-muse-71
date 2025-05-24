@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 import {
@@ -47,6 +48,11 @@ function hexToUint8Array(hexString: string): Uint8Array {
     buffer[i / 2] = parseInt(hexString.substring(i, i + 2), 16);
   }
   return buffer;
+}
+
+// Helper to convert string to Uint8Array for userID
+function stringToUint8Array(str: string): Uint8Array {
+  return new TextEncoder().encode(str);
 }
 
 // Types d'applications autorisées
@@ -470,7 +476,7 @@ serve(async (req) => {
         const opts: GenerateRegistrationOptionsOpts = {
           rpName: RP_NAME,
           rpID: RP_ID,
-          userID: user.id,
+          userID: stringToUint8Array(user.id), // Convert string to Uint8Array
           userName: user.email || `user-${user.id}`,
           attestationType: "none",
           excludeCredentials: existingCredentials?.map(cred => ({

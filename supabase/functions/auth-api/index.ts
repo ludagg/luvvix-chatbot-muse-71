@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.23.0";
 import {
@@ -6,7 +5,7 @@ import {
   verifyRegistrationResponse,
   generateAuthenticationOptions,
   verifyAuthenticationResponse,
-} from "https://esm.sh/@simplewebauthn/server@10.0.0"; // Updated to a recent version
+} from "https://esm.sh/@simplewebauthn/server@10.0.0";
 import type {
   GenerateRegistrationOptionsOpts,
   VerifyRegistrationResponseOpts,
@@ -23,10 +22,9 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
 // WebAuthn Configuration
-// TODO: Move these to environment variables
-const RP_ID = Deno.env.get("WEBAUTHN_RP_ID") || "luvvix.it.com"; // Updated to match your domain
+const RP_ID = Deno.env.get("WEBAUTHN_RP_ID") || "luvvix.it.com";
 const RP_NAME = Deno.env.get("WEBAUTHN_RP_NAME") || "LuvviX ID";
-const ORIGIN = Deno.env.get("WEBAUTHN_ORIGIN") || `https://${RP_ID}`; // Expected origin of the request
+const ORIGIN = Deno.env.get("WEBAUTHN_ORIGIN") || `https://${RP_ID}`;
 
 // Challenge timeout (e.g., 5 minutes)
 const CHALLENGE_EXPIRY_MS = 5 * 60 * 1000;
@@ -74,6 +72,27 @@ const corsHeaders = {
   "Content-Type": "application/json",
 };
 
+// Helper function to check if tables exist
+async function ensureTablesExist(supabase: SupabaseClient) {
+  try {
+    // Try to query the tables to see if they exist
+    const { error: challengeError } = await supabase.from("webauthn_challenges").select("id").limit(1);
+    const { error: credentialError } = await supabase.from("user_webauthn_credentials").select("id").limit(1);
+    
+    if (challengeError || credentialError) {
+      console.error("Database tables missing. Please run the WebAuthn migration:", {
+        challengeError: challengeError?.message,
+        credentialError: credentialError?.message
+      });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("Error checking tables:", error);
+    return false;
+  }
+}
+
 serve(async (req) => {
   // Gérer les requêtes OPTIONS (CORS)
   if (req.method === "OPTIONS") {
@@ -85,8 +104,6 @@ serve(async (req) => {
   
   // Extraire le chemin de l'URL pour déterminer quelle action effectuer
   const url = new URL(req.url);
-  // Use the full path for routing, removing the base function path part if necessary
-  // Example: /auth-api/webauthn/register/start -> /webauthn/register/start
   const requestPath = url.pathname.replace(/^\/auth-api/, ""); 
 
   try {
@@ -417,6 +434,15 @@ serve(async (req) => {
 
     // 8. WebAuthn - Start Registration
     if (requestPath === "/webauthn/register/start" && req.method === "POST") {
+      // Check if tables exist first
+      const tablesExist = await ensureTablesExist(supabase);
+      if (!tablesExist) {
+        return jsonResponse({ 
+          success: false, 
+          error: "Database not properly configured. Please ensure WebAuthn tables are created." 
+        }, 500);
+      }
+
       const authHeader = req.headers.get("Authorization");
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return jsonResponse({ success: false, error: "Missing or invalid token" }, 401);
@@ -429,48 +455,55 @@ serve(async (req) => {
         return jsonResponse({ success: false, error: "Invalid token" }, 401);
       }
 
-      const { data: existingCredentials, error: credError } = await supabase
-        .from("user_webauthn_credentials")
-        .select("credential_id")
-        .eq("user_id", user.id);
+      try {
+        const { data: existingCredentials, error: credError } = await supabase
+          .from("user_webauthn_credentials")
+          .select("credential_id")
+          .eq("user_id", user.id);
 
-      if (credError) {
+        if (credError) {
+          console.error("Error querying credentials:", credError);
+          logRequest(requestPath, user.id, false);
+          return jsonResponse({ success: false, error: "Failed to query credentials: " + credError.message }, 500);
+        }
+
+        const opts: GenerateRegistrationOptionsOpts = {
+          rpName: RP_NAME,
+          rpID: RP_ID,
+          userID: user.id,
+          userName: user.email || `user-${user.id}`,
+          attestationType: "none",
+          excludeCredentials: existingCredentials?.map(cred => ({
+            id: cred.credential_id,
+            type: 'public-key',
+          })) || [],
+          authenticatorSelection: {
+            residentKey: "preferred",
+            userVerification: "preferred",
+            requireResidentKey: false,
+          },
+        };
+        const options = await generateRegistrationOptions(opts);
+
+        // Store challenge
+        const expires_at = new Date(Date.now() + CHALLENGE_EXPIRY_MS).toISOString();
+        const { error: challengeError } = await supabase
+          .from("webauthn_challenges")
+          .insert({ user_id: user.id, challenge: options.challenge, expires_at });
+
+        if (challengeError) {
+          console.error("Error storing challenge:", challengeError);
+          logRequest(requestPath, user.id, false);
+          return jsonResponse({ success: false, error: "Failed to store challenge: " + challengeError.message }, 500);
+        }
+        
+        logRequest(requestPath, user.id, true);
+        return jsonResponse({ success: true, data: options });
+      } catch (error) {
+        console.error("Error in registration start:", error);
         logRequest(requestPath, user.id, false);
-        return jsonResponse({ success: false, error: "Failed to query credentials" }, 500);
+        return jsonResponse({ success: false, error: "Registration setup failed: " + error.message }, 500);
       }
-
-      const opts: GenerateRegistrationOptionsOpts = {
-        rpName: RP_NAME,
-        rpID: RP_ID,
-        userID: user.id, // UUID string
-        userName: user.email || `user-${user.id}`, // Use email or a generated username
-        attestationType: "none",
-        excludeCredentials: existingCredentials?.map(cred => ({
-          id: cred.credential_id,
-          type: 'public-key',
-          // transports: undefined, // Optional: add if you store and use transports
-        })) || [],
-        authenticatorSelection: {
-          residentKey: "preferred",
-          userVerification: "preferred",
-          requireResidentKey: false,
-        },
-      };
-      const options = await generateRegistrationOptions(opts);
-
-      // Store challenge
-      const expires_at = new Date(Date.now() + CHALLENGE_EXPIRY_MS).toISOString();
-      const { error: challengeError } = await supabase
-        .from("webauthn_challenges")
-        .insert({ user_id: user.id, challenge: options.challenge, expires_at });
-
-      if (challengeError) {
-        logRequest(requestPath, user.id, false);
-        return jsonResponse({ success: false, error: "Failed to store challenge: " + challengeError.message }, 500);
-      }
-      
-      logRequest(requestPath, user.id, true);
-      return jsonResponse({ success: true, data: options });
     }
 
     // 9. WebAuthn - Finish Registration

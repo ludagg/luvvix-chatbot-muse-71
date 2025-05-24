@@ -16,13 +16,8 @@ import type {
 } from "@simplewebauthn/browser";
 
 // Types for the biometric authentication system
-// BiometricCredential is now managed server-side. This interface might be removed or adapted later if needed for client-side hints.
-// export interface BiometricCredential { ... } 
-
 export interface AuthentivixOptions {
   apiUrl?: string; // Base URL for the auth API, e.g., https://<project_ref>.supabase.co/functions/v1/auth-api
-  // storageKey is no longer used as credentials are not stored client-side by this class.
-  // autoPrompt might be re-evaluated based on UX flow with WebAuthn.
 }
 
 // Define a type for the session object returned by the backend on successful login
@@ -34,19 +29,16 @@ export interface WebAuthnSession {
   // Add any other relevant fields from your backend's session response
 }
 
-
 // Main class for biometric authentication management
 export class Authentivix {
   private options: Required<Pick<AuthentivixOptions, "apiUrl">>; // Only apiUrl is strictly required now
   
   constructor(options?: AuthentivixOptions) {
-    const defaultApiUrl = Deno.env.get("SUPABASE_URL") // This is a placeholder, Vite/React uses import.meta.env
-      ? `${Deno.env.get("SUPABASE_URL")}/functions/v1/auth-api` 
-      : 'http://localhost:54321/functions/v1/auth-api'; // Default for local dev if not set
+    // Use proper Vite environment variables instead of Deno
+    const defaultApiUrl = 'https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/auth-api';
 
     this.options = {
-      apiUrl: options?.apiUrl || import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || defaultApiUrl,
-      // ... other options if any, but make them optional or provide defaults
+      apiUrl: options?.apiUrl || defaultApiUrl,
     };
     if (!this.options.apiUrl.endsWith('/auth-api')) {
       this.options.apiUrl = this.options.apiUrl.replace(/\/$/, '') + '/auth-api';
@@ -65,9 +57,9 @@ export class Authentivix {
         if (typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
           return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
         }
+        // Fallback for older syntax or basic check
+        return !!(window.PublicKeyCredential);
       }
-    // Fallback for older syntax or basic check
-    return !!(window.PublicKeyCredential);
       
       return false;
     } catch (error) {
@@ -165,15 +157,7 @@ export class Authentivix {
    */
   async authenticateWithBiometrics(email?: string): Promise<WebAuthnSession | null> {
     if (!email) {
-      // In some WebAuthn flows (discoverable credentials/passkeys), email might be optional
-      // if the authenticator itself can identify the user.
-      // For this implementation, we require email to start, matching backend.
       console.warn("Email is currently required for WebAuthn login start.");
-      // Depending on UX, you might prompt for email here or throw an error.
-      // For now, let's proceed assuming the backend might handle user discovery if email is omitted.
-      // However, our current backend /webauthn/login/start expects email.
-      // So, it's better to enforce it or adapt the backend.
-      // For this iteration, let's assume email is provided if needed.
     }
 
     try {
@@ -234,18 +218,12 @@ export class Authentivix {
   removeBiometrics(_userId: string, _authToken: string): boolean {
     console.warn("Authentivix.removeBiometrics() is not implemented.");
     // TODO: Implement a backend call to delete specific WebAuthn credentials.
-    // This would typically involve:
-    // 1. Fetching all credentials for the user (if multiple are allowed).
-    // 2. User selecting which one to remove (or remove all).
-    // 3. Sending a request to a backend endpoint like `/webauthn/credentials/delete`
-    //    with the `credentialID` to be removed, authorized by `authToken`.
     return false;
   }
 }
 
 // Export a singleton instance for easy use
-// Ensure options are passed if defaults are not sufficient or VITE_SUPABASE_FUNCTIONS_URL is not set.
 export const authentivix = new Authentivix({ 
-  apiUrl: import.meta.env.VITE_SUPABASE_FUNCTIONS_URL || 'http://localhost:54321/functions/v1/auth-api'
+  apiUrl: 'https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/auth-api'
 });
 export default authentivix;

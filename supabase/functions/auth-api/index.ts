@@ -17,7 +17,6 @@ import type {
   RegistrationResponseJSON,
   AuthenticationResponseJSON,
 } from "https://esm.sh/@simplewebauthn/server@10.0.0";
-import { Buffer } from "https://deno.land/std@0.168.0/io/buffer.ts"; // For ArrayBuffer to hex/base64
 
 // Constants et types
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
@@ -25,59 +24,12 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "
 
 // WebAuthn Configuration
 // TODO: Move these to environment variables
-const RP_ID = Deno.env.get("WEBAUTHN_RP_ID") || "localhost"; // Should be your website's domain
+const RP_ID = Deno.env.get("WEBAUTHN_RP_ID") || "luvvix.it.com"; // Updated to match your domain
 const RP_NAME = Deno.env.get("WEBAUTHN_RP_NAME") || "LuvviX ID";
-const ORIGIN = Deno.env.get("WEBAUTHN_ORIGIN") || `http://${RP_ID}:3000`; // Expected origin of the request, e.g., https://yourdomain.com
+const ORIGIN = Deno.env.get("WEBAUTHN_ORIGIN") || `https://${RP_ID}`; // Expected origin of the request
 
 // Challenge timeout (e.g., 5 minutes)
 const CHALLENGE_EXPIRY_MS = 5 * 60 * 1000;
-
-/*
-SQL for webauthn_challenges table (run this in your Supabase SQL editor):
-
-CREATE TABLE IF NOT EXISTS webauthn_challenges (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
-    challenge TEXT NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    expires_at TIMESTAMPTZ NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_webauthn_challenges_user_id ON webauthn_challenges(user_id);
-CREATE INDEX IF NOT EXISTS idx_webauthn_challenges_expires_at ON webauthn_challenges(expires_at);
-
--- RLS (ensure service_role can operate and users can create if needed):
-ALTER TABLE webauthn_challenges ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Service role can access challenges"
-ON webauthn_challenges FOR ALL
-USING (true) -- Or specific checks if needed
-WITH CHECK (true);
-
-CREATE POLICY "Users can create their own challenges"
-ON webauthn_challenges FOR INSERT
-WITH CHECK (auth.uid() = user_id);
-
-
-SQL for user_webauthn_credentials table (from previous subtask):
-CREATE TABLE user_webauthn_credentials (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    credential_id TEXT NOT NULL UNIQUE,
-    public_key BYTEA NOT NULL, -- Store as hex string, e.g., E'\\xDEADBEEF'
-    sign_count BIGINT NOT NULL DEFAULT 0,
-    transports TEXT[],
-    friendly_name TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    last_used_at TIMESTAMPTZ
-);
-CREATE INDEX idx_user_webauthn_credentials_credential_id ON user_webauthn_credentials(credential_id);
-CREATE INDEX idx_user_webauthn_credentials_user_id ON user_webauthn_credentials(user_id);
-ALTER TABLE user_webauthn_credentials ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow users to view their own credentials" ON user_webauthn_credentials FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Allow users to insert their own credentials" ON user_webauthn_credentials FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Allow users to update their own credentials" ON user_webauthn_credentials FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Allow users to delete their own credentials" ON user_webauthn_credentials FOR DELETE USING (auth.uid() = user_id);
-*/
 
 // Helper to convert ArrayBuffer to hex string for BYTEA
 function arrayBufferToHex(buffer: ArrayBuffer): string {
@@ -137,7 +89,6 @@ serve(async (req) => {
   // Example: /auth-api/webauthn/register/start -> /webauthn/register/start
   const requestPath = url.pathname.replace(/^\/auth-api/, ""); 
 
-
   try {
     // Clean up expired challenges (could be a cron job in a real app)
     await supabase.from("webauthn_challenges").delete().lt("expires_at", new Date().toISOString());
@@ -163,7 +114,7 @@ serve(async (req) => {
     }
     
     // 2. Obtenir les infos d'un utilisateur
-    if (path === "get-user-info") {
+    if (requestPath === "/get-user-info") {
       const { token } = await req.json();
       
       if (!token) {
@@ -206,7 +157,7 @@ serve(async (req) => {
     }
     
     // 3. Autoriser une application
-    if (path === "authorize-app") {
+    if (requestPath === "/authorize-app") {
       const { token, app_name } = await req.json();
       
       if (!token || !app_name) {
@@ -270,7 +221,7 @@ serve(async (req) => {
     }
     
     // 4. Obtenir les applications associées à un utilisateur
-    if (path === "get-user-apps") {
+    if (requestPath === "/get-user-apps") {
       const { token } = await req.json();
       
       if (!token) {
@@ -302,7 +253,7 @@ serve(async (req) => {
     }
     
     // 5. Révoquer l'accès d'une application
-    if (path === "revoke-app") {
+    if (requestPath === "/revoke-app") {
       const { token, app_access_id } = await req.json();
       
       if (!token || !app_access_id) {
@@ -361,7 +312,7 @@ serve(async (req) => {
     }
 
     // 6. NOUVEL ENDPOINT: Générer un token d'accès pour une application
-    if (path === "generate-app-token") {
+    if (requestPath === "/generate-app-token") {
       const { token, app_name } = await req.json();
       
       if (!token || !app_name) {
@@ -593,6 +544,11 @@ serve(async (req) => {
         // Clean up challenge
         await supabase.from("webauthn_challenges").delete().eq("challenge", expectedChallenge);
         
+        // Update user metadata to indicate they have WebAuthn credentials
+        await supabase.auth.admin.updateUserById(user.id, {
+          app_metadata: { has_webauthn_credentials: true }
+        });
+        
         logRequest(requestPath, user.id, true);
         return jsonResponse({ success: true, data: { verified: true } });
       } else {
@@ -611,18 +567,21 @@ serve(async (req) => {
         return jsonResponse({ success: false, error: "Email is required to start login" }, 400);
       }
 
-      // Find user by email
-      const { data: users, error: userLookupError } = await supabase
-        .from("users") // Assuming 'users' is the table name in 'auth' schema, adjust if public.users
-        .select("id")
-        .eq("email", email)
-        .limit(1);
+      // Find user by email using admin function
+      const { data: { users }, error: userLookupError } = await supabase.auth.admin.listUsers();
 
-      if (userLookupError || !users || users.length === 0) {
+      if (userLookupError) {
+        logRequest(requestPath, `email: ${email}`, false);
+        return jsonResponse({ success: false, error: "Error looking up user" }, 500);
+      }
+
+      const user = users?.find(u => u.email === email);
+      if (!user) {
         logRequest(requestPath, `email: ${email}`, false);
         return jsonResponse({ success: false, error: "User not found" }, 404);
       }
-      const userId = users[0].id;
+      
+      const userId = user.id;
       
       const { data: userCredentials, error: credError } = await supabase
         .from("user_webauthn_credentials")

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
@@ -80,9 +80,11 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     setCaptchaAnswer(String(num1 + num2));
   };
   
-  useState(() => {
+  useEffect(() => {
     generateCaptcha();
-  });
+    console.log("Biometrics available:", biometricsAvailable);
+    console.log("Biometrics loading:", biometricsLoading);
+  }, [biometricsAvailable, biometricsLoading]);
   
   const verifyCaptcha = () => {
     if (userCaptchaAnswer === captchaAnswer) {
@@ -198,15 +200,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
   };
 
   const handleBiometricAuth = async () => {
-    if (!biometricsAvailable) {
-      toast({
-        variant: "destructive",
-        title: "Authentification biométrique non disponible",
-        description: "Votre appareil ne prend pas en charge l'authentification biométrique"
-      });
-      return;
-    }
-    
+    console.log("Attempting biometric authentication...");
     setBiometricLoading(true);
     try {
       const session = await authenticateWithBiometrics(formData.email || undefined);
@@ -589,32 +583,41 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
             
             <TabsContent value="login">
               <div className="bg-white p-6 rounded-lg shadow-md">
-                {biometricsAvailable && (
-                  <div className="mb-6">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full flex items-center justify-center gap-2 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
-                      onClick={handleBiometricAuth}
-                      disabled={biometricLoading || biometricsLoading}
-                    >
-                      {biometricLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Fingerprint className="mr-2 h-4 w-4 text-purple-600" />
-                      )}
-                      Se connecter avec Authentivix
-                    </Button>
-                    <div className="relative my-4">
-                      <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-300"></div>
-                      </div>
-                      <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-white text-gray-500">ou</span>
-                      </div>
+                {/* Afficher le bouton Authentivix même si biometricsAvailable est false pour tester */}
+                <div className="mb-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full flex items-center justify-center gap-2 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
+                    onClick={handleBiometricAuth}
+                    disabled={biometricLoading || biometricsLoading}
+                  >
+                    {biometricLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Fingerprint className="mr-2 h-4 w-4 text-purple-600" />
+                    )}
+                    Se connecter avec Authentivix
+                    {!biometricsAvailable && (
+                      <span className="text-xs text-gray-500 ml-1">(Test)</span>
+                    )}
+                  </Button>
+                  
+                  {!biometricsAvailable && (
+                    <p className="text-xs text-amber-600 mt-2 text-center">
+                      ⚠️ Biométriques non disponibles sur cet appareil
+                    </p>
+                  )}
+                  
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">ou</span>
                     </div>
                   </div>
-                )}
+                </div>
 
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">

@@ -137,7 +137,7 @@ const LuvvixTranslate = () => {
       
       toast({
         title: "Traduction terminée",
-        description: `Traduit avec ${Math.round(newTranslation.confidence * 100)}% de confiance par Gemini AI`
+        description: `Traduit avec ${Math.round(newTranslation.confidence * 100)}% de confiance par LuvviX AI`
       });
       
     } catch (error: any) {
@@ -207,7 +207,7 @@ const LuvvixTranslate = () => {
             </h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
-            Traduction instantanée alimentée par Gemini AI avec reconnaissance vocale, 
+            Traduction instantanée alimentée par LuvviX AI avec reconnaissance vocale, 
             traduction en temps réel et intelligence contextuelle
           </p>
           
@@ -215,7 +215,7 @@ const LuvvixTranslate = () => {
           <div className="flex flex-wrap justify-center gap-2 mt-4">
             <Badge variant="secondary" className="bg-blue-100 text-blue-800">
               <Brain className="w-4 h-4 mr-1" />
-              Gemini AI
+              LuvviX AI
             </Badge>
             <Badge variant="secondary" className="bg-green-100 text-green-800">
               <Mic className="w-4 h-4 mr-1" />

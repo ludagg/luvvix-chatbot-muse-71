@@ -16,11 +16,11 @@ const TranslatePage = () => {
       <div className="min-h-screen flex flex-col">
         <Navbar />
       <div className="pt-45 flex-1">
-      <div className="pt-24 flex-1">
+      
         <main className="flex-1">
           <LuvvixTranslate />
         </main>
-<div></div>
+<div>
         <Footer />
       </div>
     </>

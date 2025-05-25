@@ -1,4 +1,3 @@
-
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Ecosystem from "@/components/Ecosystem";
@@ -15,7 +14,7 @@ import FormsPromo from "@/components/forms/FormsPromo";
 import CeoSection from "@/components/CeoSection";
 import AIStudioPromo from "@/components/ai-studio/AIStudioPromo";
 import LuvvixIdPromo from "@/components/LuvvixIdPromo";
-import { Bot, FileText, Newspaper, Cloud, Sparkles, AppWindow, ArrowRight, Languages } from "lucide-react";
+import { Bot, FileText, Newspaper, Cloud, Sparkles, AppWindow, ArrowRight, Languages, Network } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { HoverGlowCard } from "@/components/ui/hover-glow-card";
@@ -43,7 +42,7 @@ const Index = () => {
               </p>
             </motion.div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
               <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
                 <div className="flex flex-col items-center text-center">
                   <div className="w-16 h-16 flex items-center justify-center bg-violet-100 dark:bg-violet-900/30 rounded-full mb-4">
@@ -78,6 +77,19 @@ const Index = () => {
                   <h3 className="text-lg font-semibold mb-2">Translate</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Traduction IA instantanée avec reconnaissance vocale.</p>
                   <Link to="/translate">
+                    <Button variant="outline" size="sm">Découvrir</Button>
+                  </Link>
+                </div>
+              </HoverGlowCard>
+              
+              <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/30 rounded-full mb-4">
+                    <Network className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">MindMap</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Cartes mentales intelligentes pour organiser vos idées.</p>
+                  <Link to="/mindmap">
                     <Button variant="outline" size="sm">Découvrir</Button>
                   </Link>
                 </div>

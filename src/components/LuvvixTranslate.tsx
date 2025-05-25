@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +21,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Translation {
   id: string;
@@ -101,59 +101,51 @@ const LuvvixTranslate = () => {
     setIsTranslating(true);
     
     try {
-      // Simulation d'une traduction IA avancée
-      const translations = {
-        'fr-en': {
-          'Bonjour comment allez-vous ?': 'Hello, how are you?',
-          'Je suis heureux de vous rencontrer': 'I am happy to meet you',
-          'Pouvez-vous m\'aider s\'il vous plaît ?': 'Can you help me please?'
-        },
-        'en-fr': {
-          'Hello how are you?': 'Bonjour comment allez-vous ?',
-          'I am happy to meet you': 'Je suis heureux de vous rencontrer',
-          'Can you help me please?': 'Pouvez-vous m\'aider s\'il vous plaît ?'
+      console.log('Translating with Gemini AI:', text);
+      
+      const { data, error } = await supabase.functions.invoke('gemini-translate', {
+        body: {
+          text,
+          fromLanguage,
+          toLanguage,
+          context: 'General conversation'
         }
-      };
+      });
 
-      // Simulation d'appel API avec intelligence contextuelle
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const translationKey = `${fromLanguage === 'auto' ? 'fr' : fromLanguage}-${toLanguage}`;
-      let translated = (translations as any)[translationKey]?.[text] || 
-                      `[Traduction IA] ${text.split('').reverse().join('')}`;
-      
-      // Simulation d'amélioration contextuelle
-      if (text.toLowerCase().includes('bonjour')) {
-        translated = toLanguage === 'en' ? 'Hello! How can I help you today?' : 
-                    toLanguage === 'es' ? '¡Hola! ¿Cómo puedo ayudarte hoy?' :
-                    translated;
+      if (error) {
+        console.error('Translation error:', error);
+        throw new Error(error.message || 'Erreur de traduction');
       }
 
-      setTranslatedText(translated);
+      if (!data || !data.translatedText) {
+        throw new Error('Aucune traduction reçue');
+      }
+
+      setTranslatedText(data.translatedText);
       
-      // Ajouter à l'historique
       const newTranslation: Translation = {
         id: Date.now().toString(),
         originalText: text,
-        translatedText: translated,
-        fromLanguage: fromLanguage === 'auto' ? 'fr' : fromLanguage,
-        toLanguage,
+        translatedText: data.translatedText,
+        fromLanguage: data.detectedLanguage || data.fromLanguage,
+        toLanguage: data.toLanguage,
         timestamp: new Date(),
-        confidence: Math.random() * 0.2 + 0.8 // 80-100%
+        confidence: data.confidence || 0.95
       };
       
       setRecentTranslations(prev => [newTranslation, ...prev.slice(0, 4)]);
       
       toast({
         title: "Traduction terminée",
-        description: `Traduit avec ${Math.round(newTranslation.confidence * 100)}% de confiance`
+        description: `Traduit avec ${Math.round(newTranslation.confidence * 100)}% de confiance par Gemini AI`
       });
       
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Translation error:', error);
       toast({
         variant: "destructive",
         title: "Erreur de traduction",
-        description: "Impossible de traduire le texte. Veuillez réessayer."
+        description: error.message || "Impossible de traduire le texte. Veuillez réessayer."
       });
     } finally {
       setIsTranslating(false);
@@ -215,7 +207,7 @@ const LuvvixTranslate = () => {
             </h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
-            Traduction instantanée alimentée par l'IA avec reconnaissance vocale, 
+            Traduction instantanée alimentée par Gemini AI avec reconnaissance vocale, 
             traduction en temps réel et intelligence contextuelle
           </p>
           
@@ -223,7 +215,7 @@ const LuvvixTranslate = () => {
           <div className="flex flex-wrap justify-center gap-2 mt-4">
             <Badge variant="secondary" className="bg-blue-100 text-blue-800">
               <Brain className="w-4 h-4 mr-1" />
-              IA Avancée
+              Gemini AI
             </Badge>
             <Badge variant="secondary" className="bg-green-100 text-green-800">
               <Mic className="w-4 h-4 mr-1" />
@@ -246,7 +238,7 @@ const LuvvixTranslate = () => {
             <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl text-gray-800">Traduction Instantanée</CardTitle>
+                  <CardTitle className="text-xl text-gray-800">Traduction IA Avancée</CardTitle>
                   <div className="flex items-center gap-2">
                     <Button
                       variant={isRealTimeMode ? "default" : "outline"}
@@ -348,12 +340,12 @@ const LuvvixTranslate = () => {
                   {isTranslating ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      Traduction en cours...
+                      Traduction par Gemini AI...
                     </>
                   ) : (
                     <>
-                      <Languages className="w-4 h-4 mr-2" />
-                      Traduire
+                      <Brain className="w-4 h-4 mr-2" />
+                      Traduire avec Gemini AI
                     </>
                   )}
                 </Button>
@@ -362,7 +354,7 @@ const LuvvixTranslate = () => {
                 {translatedText && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium text-gray-700">Traduction</label>
+                      <label className="text-sm font-medium text-gray-700">Traduction par Gemini AI</label>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -435,13 +427,13 @@ const LuvvixTranslate = () => {
             {/* Features */}
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-lg">Fonctionnalités Premium</CardTitle>
+                <CardTitle className="text-lg">Powered by Gemini AI</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center text-sm">
                     <Brain className="w-4 h-4 mr-2 text-purple-600" />
-                    <span>IA contextuelle avancée</span>
+                    <span>Intelligence contextuelle avancée</span>
                   </div>
                   <div className="flex items-center text-sm">
                     <Mic className="w-4 h-4 mr-2 text-blue-600" />
@@ -449,11 +441,7 @@ const LuvvixTranslate = () => {
                   </div>
                   <div className="flex items-center text-sm">
                     <Camera className="w-4 h-4 mr-2 text-green-600" />
-                    <span>Traduction d'images</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <FileText className="w-4 h-4 mr-2 text-orange-600" />
-                    <span>Documents et fichiers</span>
+                    <span>Traduction d'images (bientôt)</span>
                   </div>
                   <div className="flex items-center text-sm">
                     <Zap className="w-4 h-4 mr-2 text-yellow-600" />

@@ -38,6 +38,7 @@ import EcosystemPage from "./pages/EcosystemPage";
 import LuvvixAIIntegrationPage from "./pages/LuvvixAIIntegrationPage";
 import AccountSettings from "./pages/AccountSettings";
 import TranslatePage from "./pages/TranslatePage";
+import MindMapPage from "./pages/MindMapPage";
 
 function App() {
   return (
@@ -53,6 +54,7 @@ function App() {
               <Route path="/news" element={<NewsPage />} />
               <Route path="/weather" element={<WeatherPage />} />
               <Route path="/translate" element={<TranslatePage />} />
+              <Route path="/mindmap" element={<MindMapPage />} />
               <Route path="/oauth/authorize" element={
                 <ProtectedRoute>
                   <OAuth />

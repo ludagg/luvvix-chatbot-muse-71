@@ -14,7 +14,8 @@ import {
   Zap,
   ChevronRight,
   ExternalLink,
-  Languages
+  Languages,
+  Network
 } from "lucide-react";
 
 interface EcosystemCardProps {
@@ -64,13 +65,21 @@ const Ecosystem = () => {
             {
               id: 3,
               title: "LuvviX Translate",
-              description: "Traduction instantanée alimentée par l'IA avec reconnaissance vocale et traduction en temps réel.",
+              description: "Traduction instantanée alimentée par Gemini AI avec reconnaissance vocale et traduction en temps réel.",
               icon: <Languages size={48} />,
               link: "/translate",
               color: "bg-gradient-to-br from-blue-500 to-purple-500",
             },
             {
               id: 4,
+              title: "LuvviX MindMap",
+              description: "Créez des cartes mentales intelligentes avec l'IA pour organiser vos idées et stimuler votre créativité.",
+              icon: <Network size={48} />,
+              link: "/mindmap",
+              color: "bg-gradient-to-br from-indigo-500 to-purple-500",
+            },
+            {
+              id: 5,
               title: "LuvviX Medic",
               description: "Solutions de santé innovantes pour une meilleure gestion de votre bien-être.",
               icon: <HeartPulse size={48} />,
@@ -78,7 +87,7 @@ const Ecosystem = () => {
               color: "bg-gradient-to-br from-green-500 to-teal-500",
             },
             {
-              id: 5,
+              id: 6,
               title: "LuvviX StreamMix",
               description: "Plateforme de streaming audio et vidéo pour une expérience multimédia immersive.",
               icon: <Radio size={48} />,
@@ -86,7 +95,7 @@ const Ecosystem = () => {
               color: "bg-gradient-to-br from-orange-500 to-red-500",
             },
             {
-              id: 6,
+              id: 7,
               title: "LuvviX Cloud",
               description: "Stockage en nuage sécurisé et accessible pour tous vos fichiers importants.",
               icon: <Cloud size={48} />,
@@ -94,7 +103,7 @@ const Ecosystem = () => {
               color: "bg-gradient-to-br from-yellow-500 to-amber-500",
             },
             {
-              id: 7,
+              id: 8,
               title: "LuvviX Forms",
               description: "Créez des formulaires personnalisés et collectez des données en toute simplicité.",
               icon: <FileText size={48} />,
@@ -102,7 +111,7 @@ const Ecosystem = () => {
               color: "bg-gradient-to-br from-pink-500 to-rose-500",
             },
             {
-              id: 8,
+              id: 9,
               title: "LuvviX Analytics",
               description: "Outils d'analyse de données pour prendre des décisions éclairées et optimiser vos performances.",
               icon: <BarChart size={48} />,

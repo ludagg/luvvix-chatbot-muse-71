@@ -202,7 +202,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
 
   const handleBiometricAuth = async () => {
     console.log("Attempting biometric authentication...");
-    console.log("Email:", formData.email);
     setBiometricLoading(true);
     try {
       const session = await authenticateWithBiometrics(formData.email || undefined);
@@ -253,7 +252,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
       [name]: checked
     });
   };
-  
+
   const renderSignupStep = () => {
     switch(step) {
       case 1:

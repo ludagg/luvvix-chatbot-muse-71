@@ -340,7 +340,7 @@ const LuvvixTranslate = () => {
                   {isTranslating ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      Traduction par Gemini AI...
+                      Traduction par LuvviX AI...
                     </>
                   ) : (
                     <>
@@ -427,7 +427,7 @@ const LuvvixTranslate = () => {
             {/* Features */}
             <Card className="shadow-lg">
               <CardHeader>
-                <CardTitle className="text-lg">Powered by Gemini AI</CardTitle>
+                <CardTitle className="text-lg">Powered by LuvviX AI</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">

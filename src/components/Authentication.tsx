@@ -82,6 +82,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
   
   useEffect(() => {
     generateCaptcha();
+    console.log("Authentication component loaded");
     console.log("Biometrics available:", biometricsAvailable);
     console.log("Biometrics loading:", biometricsLoading);
   }, [biometricsAvailable, biometricsLoading]);
@@ -201,6 +202,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
 
   const handleBiometricAuth = async () => {
     console.log("Attempting biometric authentication...");
+    console.log("Email:", formData.email);
     setBiometricLoading(true);
     try {
       const session = await authenticateWithBiometrics(formData.email || undefined);
@@ -583,7 +585,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
             
             <TabsContent value="login">
               <div className="bg-white p-6 rounded-lg shadow-md">
-                {/* Afficher le bouton Authentivix même si biometricsAvailable est false pour tester */}
+                {/* Bouton Authentivix toujours visible */}
                 <div className="mb-6">
                   <Button
                     type="button"

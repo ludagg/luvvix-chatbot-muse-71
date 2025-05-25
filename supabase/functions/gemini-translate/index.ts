@@ -87,7 +87,7 @@ Translation:`;
     if (fromLanguage === 'auto') {
       const detectPrompt = `Detect the language of this text and respond with ONLY the language code (en, fr, es, de, etc.): "${text}"`;
       
-      const detectResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${GEMINI_API_KEY}`, {
+      const detectResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,3 +1,4 @@
+
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { DecentralizedStorageProvider } from "@/hooks/use-ipfs";
@@ -36,6 +37,7 @@ import DocsPage from "./pages/docs/DocsPage";
 import EcosystemPage from "./pages/EcosystemPage";
 import LuvvixAIIntegrationPage from "./pages/LuvvixAIIntegrationPage";
 import AccountSettings from "./pages/AccountSettings";
+import TranslatePage from "./pages/TranslatePage";
 
 function App() {
   return (
@@ -50,6 +52,7 @@ function App() {
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/news" element={<NewsPage />} />
               <Route path="/weather" element={<WeatherPage />} />
+              <Route path="/translate" element={<TranslatePage />} />
               <Route path="/oauth/authorize" element={
                 <ProtectedRoute>
                   <OAuth />

@@ -441,32 +441,30 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
       case 3:
         return (
           <div className="space-y-4">
-            {biometricsAvailable && (
-              <div className="p-4 border rounded-md bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
-                <div className="flex items-center space-x-3 mb-3">
-                  <Fingerprint className="h-6 w-6 text-purple-600" />
-                  <h3 className="font-medium text-gray-900 dark:text-gray-100">Authentivix - Sécurité biométrique</h3>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <Checkbox
-                    id="enableBiometrics"
-                    checked={enableBiometrics}
-                    onCheckedChange={(checked) => setEnableBiometrics(checked as boolean)}
-                  />
-                  <div className="grid gap-1.5 leading-none">
-                    <label
-                      htmlFor="enableBiometrics"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      Activer l'authentification biométrique
-                    </label>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Utilisez votre empreinte digitale ou reconnaissance faciale pour vous connecter rapidement et en toute sécurité.
-                    </p>
-                  </div>
+            <div className="p-4 border rounded-md bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+              <div className="flex items-center space-x-3 mb-3">
+                <Fingerprint className="h-6 w-6 text-purple-600" />
+                <h3 className="font-medium text-gray-900 dark:text-gray-100">Authentivix - Sécurité biométrique</h3>
+              </div>
+              <div className="flex items-start space-x-2">
+                <Checkbox
+                  id="enableBiometrics"
+                  checked={enableBiometrics}
+                  onCheckedChange={(checked) => setEnableBiometrics(checked as boolean)}
+                />
+                <div className="grid gap-1.5 leading-none">
+                  <label
+                    htmlFor="enableBiometrics"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Activer l'authentification biométrique
+                  </label>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Utilisez votre empreinte digitale ou reconnaissance faciale pour vous connecter rapidement et en toute sécurité.
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
             
             <div className="p-4 border rounded-md">
               <h3 className="font-medium mb-2">Vérification - Je ne suis pas un robot</h3>
@@ -585,14 +583,14 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
             
             <TabsContent value="login">
               <div className="bg-white p-6 rounded-lg shadow-md">
-                {/* Bouton Authentivix toujours visible */}
+                {/* Bouton Authentivix toujours disponible */}
                 <div className="mb-6">
                   <Button
                     type="button"
                     variant="outline"
                     className="w-full flex items-center justify-center gap-2 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
                     onClick={handleBiometricAuth}
-                    disabled={biometricLoading || biometricsLoading}
+                    disabled={biometricLoading}
                   >
                     {biometricLoading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -600,16 +598,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                       <Fingerprint className="mr-2 h-4 w-4 text-purple-600" />
                     )}
                     Se connecter avec Authentivix
-                    {!biometricsAvailable && (
-                      <span className="text-xs text-gray-500 ml-1">(Test)</span>
-                    )}
                   </Button>
-                  
-                  {!biometricsAvailable && (
-                    <p className="text-xs text-amber-600 mt-2 text-center">
-                      ⚠️ Biométriques non disponibles sur cet appareil
-                    </p>
-                  )}
                   
                   <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center">

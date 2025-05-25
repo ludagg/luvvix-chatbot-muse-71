@@ -20,7 +20,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   signUp: (email: string, password: string, metadata: any) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<boolean>;
-  signInWithBiometrics: () => Promise<boolean>;
+  signInWithBiometrics: (email?: string) => Promise<boolean>;
   signOut: () => Promise<boolean>;
   globalSignOut: () => Promise<boolean>;
   refreshUser: () => Promise<void>;
@@ -46,52 +46,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // If we have a session, check if this account is in localStorage
         if (session?.user) {
-          try {
-            const storedAccountsStr = localStorage.getItem('luvvix_accounts');
-            if (storedAccountsStr) {
-              const storedAccounts = JSON.parse(storedAccountsStr);
-              const hasCurrentUser = storedAccounts.some((acc: any) => acc.id === session.user.id);
-              
-              if (!hasCurrentUser) {
-                // Add this account to stored accounts
-                const newAccount = {
-                  id: session.user.id,
-                  email: session.user.email,
-                  avatarUrl: profile?.avatar_url,
-                  fullName: profile?.full_name,
-                  lastUsed: new Date().toISOString(),
-                  isActive: true
-                };
-                
-                const updatedAccounts = storedAccounts.map((acc: any) => ({
-                  ...acc,
-                  isActive: false
-                }));
-                
-                updatedAccounts.push(newAccount);
-                localStorage.setItem('luvvix_accounts', JSON.stringify(updatedAccounts));
-              } else {
-                // Update the active status of accounts
-                const updatedAccounts = storedAccounts.map((acc: any) => ({
-                  ...acc,
-                  isActive: acc.id === session.user.id,
-                  lastUsed: acc.id === session.user.id ? new Date().toISOString() : acc.lastUsed
-                }));
-                localStorage.setItem('luvvix_accounts', JSON.stringify(updatedAccounts));
-              }
-            }
-          } catch (error) {
-            console.error('Error updating stored accounts:', error);
-          }
-          
           // Use setTimeout to prevent auth deadlock
           setTimeout(() => {
             fetchProfile(session.user.id);
             
             // Check if the user has biometric data enrolled
-            const biometricAvailable = authentivix.isEnrolled(session.user.id);
+            const biometricAvailable = session.user.app_metadata?.has_webauthn_credentials === true;
             setHasBiometrics(biometricAvailable);
           }, 0);
         } else {
@@ -107,8 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
-        // Check if the user has biometric data enrolled
-        const biometricAvailable = authentivix.isEnrolled(session.user.id);
+        const biometricAvailable = session.user.app_metadata?.has_webauthn_credentials === true;
         setHasBiometrics(biometricAvailable);
       }
       setLoading(false);
@@ -153,6 +113,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (user) {
         setUser(user);
         await fetchProfile(user.id);
+        const biometricAvailable = user.app_metadata?.has_webauthn_credentials === true;
+        setHasBiometrics(biometricAvailable);
       }
     } catch (error) {
       console.error('Error refreshing user:', error);
@@ -173,6 +135,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (data.user) {
         await fetchProfile(data.user.id);
+        const biometricAvailable = data.user.app_metadata?.has_webauthn_credentials === true;
+        setHasBiometrics(biometricAvailable);
       }
 
       return true;
@@ -203,16 +167,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         title: "Compte créé avec succès",
         description: "Veuillez vérifier votre email pour confirmer votre compte.",
       });
-      
-      // If biometrics is enabled in metadata, set up biometric authentication
-      if (metadata?.use_biometrics && data?.user) {
-        try {
-          // Store user ID for biometric enrollment
-          localStorage.setItem('luvvix_biometrics_userid', data.user.id);
-        } catch (e) {
-          console.error("Error setting up biometrics:", e);
-        }
-      }
       
       return true;
     } catch (error: any) {
@@ -250,7 +204,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithBiometrics = async () => {
+  const signInWithBiometrics = async (email?: string) => {
     try {
       // First, check if biometric authentication is available
       const isAvailable = await authentivix.isBiometricAvailable();
@@ -258,56 +212,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error("L'authentification biométrique n'est pas disponible sur cet appareil");
       }
       
-      // Try to find an enrolled user ID
-      let userId: string | null = null;
-      const storedUserId = localStorage.getItem('luvvix_biometrics_userid');
-      
-      if (storedUserId) {
-        // If we have a stored user ID, use it directly
-        userId = storedUserId;
-      } else {
-        // Otherwise, try to auto-detect enrolled users
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key?.startsWith('luvvix_biometrics_')) {
-            userId = key.replace('luvvix_biometrics_', '');
-            break;
-          }
-        }
-      }
-      
-      if (!userId) {
-        throw new Error("Aucun compte n'a été configuré pour l'authentification biométrique");
-      }
-      
       // Authenticate with biometrics
-      const biometricToken = await authentivix.authenticateWithBiometrics(userId);
+      const webAuthnSession = await authentivix.authenticateWithBiometrics(email);
       
-      if (!biometricToken) {
+      if (!webAuthnSession) {
         throw new Error("L'authentification biométrique a échoué");
       }
       
-      // In a real application, we would exchange the biometric token for an auth token
-      // For this demo, we'll simulate authentication with the stored email
-      const storedAccountsStr = localStorage.getItem('luvvix_accounts');
-      if (storedAccountsStr) {
-        const storedAccounts = JSON.parse(storedAccountsStr);
-        const userAccount = storedAccounts.find((acc: any) => acc.id === userId);
-        
-        if (userAccount && userAccount.email) {
-          // For demo purposes only - in a real application, we would use a secure token exchange
-          // This part is just to simulate a successful login for the demo without requiring password
-          
-          toast({
-            title: "Authentification biométrique réussie",
-            description: "Bienvenue sur LuvviX ID"
-          });
-          
-          return true;
-        }
+      // Use the tokens from WebAuthn session to log in
+      const success = await loginWithToken(
+        webAuthnSession.access_token, 
+        webAuthnSession.refresh_token
+      );
+      
+      if (success) {
+        toast({
+          title: "Authentification biométrique réussie",
+          description: "Bienvenue sur LuvviX ID"
+        });
+        return true;
       }
       
-      throw new Error("Impossible de trouver les informations du compte");
+      throw new Error("Impossible d'établir la session");
     } catch (error: any) {
       console.error('Error in biometric authentication:', error);
       toast({
@@ -340,14 +266,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Function for global sign out of all accounts
   const globalSignOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
-      // Clear all accounts from localStorage
-      localStorage.removeItem('luvvix_accounts');
       
       toast({
         title: "Déconnexion globale réussie",

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, LogIn, UserPlus, Mail, Lock, User, Phone, MapPin, Calendar } from 'lucide-react';
+import { Loader2, LogIn, UserPlus, Mail, Lock, User, Phone, MapPin, Calendar, Fingerprint } from 'lucide-react';
 import { 
   Select, 
   SelectContent, 
@@ -23,11 +23,11 @@ interface AuthenticationProps {
 }
 
 const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps) => {
-  const { signUp, signIn, signInWithBiometrics, session } = useAuth();
+  const { signUp, signIn, session } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
-  const [step, setStep] = useState(1); // For multi-step signup process
+  const [step, setStep] = useState(1);
   const [captchaVerified, setCaptchaVerified] = useState(false);
   
   const { 
@@ -38,14 +38,14 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
   } = useBiometrics({
     onSuccess: () => {
       toast({
-        title: "Biometric authentication successful",
-        description: "You are now logged in"
+        title: "Authentification biométrique réussie",
+        description: "Vous êtes maintenant connecté"
       });
     },
     onError: (error) => {
       toast({
         variant: "destructive",
-        title: "Biometric authentication failed",
+        title: "Erreur d'authentification biométrique",
         description: error.message
       });
     }
@@ -76,7 +76,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
   const generateCaptcha = () => {
     const num1 = Math.floor(Math.random() * 10);
     const num2 = Math.floor(Math.random() * 10);
-    setCaptchaQuestion(`What is ${num1} + ${num2}?`);
+    setCaptchaQuestion(`Combien font ${num1} + ${num2} ?`);
     setCaptchaAnswer(String(num1 + num2));
   };
   
@@ -91,10 +91,11 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     } else {
       toast({
         variant: "destructive",
-        title: "Verification failed",
-        description: "The CAPTCHA response is incorrect.",
+        title: "Vérification échouée",
+        description: "La réponse au CAPTCHA est incorrecte.",
       });
-      generateCaptcha(); // Generate a new question
+      generateCaptcha();
+      setUserCaptchaAnswer('');
       return false;
     }
   };
@@ -102,12 +103,11 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Form validations
     if (formData.password !== formData.confirmPassword) {
       toast({
         variant: "destructive",
-        title: "Validation error",
-        description: "Passwords do not match.",
+        title: "Erreur de validation",
+        description: "Les mots de passe ne correspondent pas.",
       });
       return;
     }
@@ -115,8 +115,8 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     if (!formData.acceptTerms) {
       toast({
         variant: "destructive",
-        title: "Terms not accepted",
-        description: "You must accept the terms of use to continue.",
+        title: "Conditions non acceptées",
+        description: "Vous devez accepter les conditions d'utilisation pour continuer.",
       });
       return;
     }
@@ -127,7 +127,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     
     setIsLoading(true);
     
-    // Prepare enriched user metadata
     const userMetadata = {
       full_name: formData.fullName,
       username: formData.username,
@@ -143,12 +142,27 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
       const success = await signUp(formData.email, formData.password, userMetadata);
       
       if (success) {
-        // If biometrics are enabled, enroll after successful signup
+        // Si les biométriques sont activées, s'inscrire après la création du compte
         if (enableBiometrics && biometricsAvailable && session?.access_token) {
-          const simulatedUserId = btoa(formData.email); // In real app, get from auth
+          toast({
+            title: "Configuration de l'authentification biométrique",
+            description: "Veuillez configurer votre authentification biométrique maintenant.",
+          });
           
-          // Trigger fingerprint enrollment with userId and access token
-          await enrollBiometrics(simulatedUserId, session.access_token);
+          // Attendre un moment pour que la session soit établie
+          setTimeout(async () => {
+            try {
+              const enrolled = await enrollBiometrics(session.user.id, session.access_token);
+              if (enrolled) {
+                toast({
+                  title: "Authentivix activé",
+                  description: "Vous pouvez maintenant vous connecter avec votre biométrie.",
+                });
+              }
+            } catch (error) {
+              console.error("Erreur lors de l'inscription biométrique:", error);
+            }
+          }, 2000);
         }
         
         if (returnTo) {
@@ -158,7 +172,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
         }
       }
     } catch (error) {
-      console.error("Error during signup:", error);
+      console.error("Erreur lors de l'inscription:", error);
     } finally {
       setIsLoading(false);
     }
@@ -178,8 +192,48 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
         }
       }
     } catch (error) {
-      console.error("Error during sign in:", error);
+      console.error("Erreur lors de la connexion:", error);
       setIsLoading(false);
+    }
+  };
+
+  const handleBiometricAuth = async () => {
+    if (!biometricsAvailable) {
+      toast({
+        variant: "destructive",
+        title: "Authentification biométrique non disponible",
+        description: "Votre appareil ne prend pas en charge l'authentification biométrique"
+      });
+      return;
+    }
+    
+    setBiometricLoading(true);
+    try {
+      const session = await authenticateWithBiometrics(formData.email || undefined);
+      
+      if (session) {
+        toast({
+          title: "Connexion réussie",
+          description: "Authentification biométrique effectuée avec succès"
+        });
+        
+        setTimeout(() => {
+          if (returnTo) {
+            navigate(returnTo);
+          } else {
+            navigate('/dashboard');
+          }
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Erreur d\'authentification biométrique:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'authentification",
+        description: "La vérification biométrique a échoué"
+      });
+    } finally {
+      setBiometricLoading(false);
     }
   };
 
@@ -204,7 +258,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     });
   };
   
-  // Handle multi-step signup
   const renderSignupStep = () => {
     switch(step) {
       case 1:
@@ -392,10 +445,12 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
       case 3:
         return (
           <div className="space-y-4">
-            {/* Option d'authentification biométrique */}
             {biometricsAvailable && (
-              <div className="p-4 border rounded-md bg-gray-50 dark:bg-gray-800">
-                <h3 className="font-medium mb-2">Authentivix - Sécurité biométrique</h3>
+              <div className="p-4 border rounded-md bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+                <div className="flex items-center space-x-3 mb-3">
+                  <Fingerprint className="h-6 w-6 text-purple-600" />
+                  <h3 className="font-medium text-gray-900 dark:text-gray-100">Authentivix - Sécurité biométrique</h3>
+                </div>
                 <div className="flex items-start space-x-2">
                   <Checkbox
                     id="enableBiometrics"
@@ -409,16 +464,14 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                     >
                       Activer l'authentification biométrique
                     </label>
-                    <p className="text-xs text-gray-500">
-                      Permet de vous connecter avec votre empreinte digitale ou reconnaissance faciale
-                      lorsque cette option est disponible sur votre appareil.
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Utilisez votre empreinte digitale ou reconnaissance faciale pour vous connecter rapidement et en toute sécurité.
                     </p>
                   </div>
                 </div>
               </div>
             )}
             
-            {/* CAPTCHA */}
             <div className="p-4 border rounded-md">
               <h3 className="font-medium mb-2">Vérification - Je ne suis pas un robot</h3>
               <p className="text-sm mb-2">{captchaQuestion}</p>
@@ -431,7 +484,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
               />
             </div>
             
-            {/* Termes et conditions */}
             <div className="space-y-2">
               <div className="flex items-start space-x-2">
                 <Checkbox
@@ -449,8 +501,8 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                   </label>
                   <p className="text-xs text-gray-500">
                     En cochant cette case, vous acceptez nos{" "}
-                    <a href="/terms" className="text-luvvix-purple hover:underline">Conditions d'utilisation</a> et notre{" "}
-                    <a href="/privacy" className="text-luvvix-purple hover:underline">Politique de confidentialité</a>.
+                    <a href="/terms" className="text-purple-600 hover:underline">Conditions d'utilisation</a> et notre{" "}
+                    <a href="/privacy" className="text-purple-600 hover:underline">Politique de confidentialité</a>.
                   </p>
                 </div>
               </div>
@@ -486,8 +538,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
               
               <Button 
                 type="submit" 
-                className="w-1/2"
-                variant="luvvix" 
+                className="w-1/2 bg-purple-600 hover:bg-purple-700"
                 disabled={isLoading || !formData.acceptTerms}
               >
                 {isLoading ? (
@@ -511,54 +562,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     }
   };
 
-  const handleBiometricAuth = async () => {
-    if (!biometricsAvailable) {
-      toast({
-        variant: "destructive",
-        title: "Biometric authentication not available",
-        description: "Your device does not support biometric authentication"
-      });
-      return;
-    }
-    
-    setBiometricLoading(true);
-    try {
-      // First let's try to authenticate with biometrics - note: now takes email parameter
-      const userId = await authenticateWithBiometrics(formData.email);
-      
-      if (userId) {
-        // If successful, sign in the user using the auth hook
-        const success = await signInWithBiometrics();
-        
-        if (success) {
-          // Successful login via biometrics
-          setBiometricLoading(false);
-          
-          // Redirect after successful login
-          setTimeout(() => {
-            if (returnTo) {
-              navigate(returnTo);
-            } else {
-              navigate('/dashboard');
-            }
-          }, 500);
-        } else {
-          throw new Error("Biometric authentication failed");
-        }
-      } else {
-        throw new Error("Biometric authentication failed to retrieve user ID");
-      }
-    } catch (error) {
-      console.error('Biometric authentication error:', error);
-      setBiometricLoading(false);
-      toast({
-        variant: "destructive",
-        title: "Authentication error",
-        description: "Biometric verification failed"
-      });
-    }
-  };
-
   return (
     <section className="bg-white py-12 md:py-16 lg:py-20">
       <div className="container mx-auto px-4">
@@ -566,14 +569,14 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-gray-900">LuvviX ID</h2>
             <p className="text-gray-600 mt-2">
-              One account for the entire technological ecosystem
+              Un compte pour tout l'écosystème technologique
             </p>
           </div>
 
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid grid-cols-2 mb-6">
-              <TabsTrigger value="signup" className="text-gray-700">Create account</TabsTrigger>
-              <TabsTrigger value="login" className="text-gray-700">Login</TabsTrigger>
+              <TabsTrigger value="signup" className="text-gray-700">Créer un compte</TabsTrigger>
+              <TabsTrigger value="login" className="text-gray-700">Connexion</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signup">
@@ -581,8 +584,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                 <form onSubmit={handleSignUp} className="space-y-4">
                   {renderSignupStep()}
                 </form>
-                
-                {/* ... keep existing code (OAuth buttons for step 1) */}
               </div>
             </TabsContent>
             
@@ -593,32 +594,23 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full flex items-center justify-center gap-2"
+                      className="w-full flex items-center justify-center gap-2 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
                       onClick={handleBiometricAuth}
                       disabled={biometricLoading || biometricsLoading}
                     >
                       {biometricLoading ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-fingerprint">
-                          <path d="M2 12a10 10 0 1 0 20 0 10 10 0 1 0-20 0Z"></path>
-                          <path d="M2 12c0 4.42 3.58 8 8 8s8-3.58 8-8"></path>
-                          <path d="M12 20c-4.42 0-8-3.58-8-8"></path>
-                          <path d="M8 16s1.5 2 4 2 4-2 4-2"></path>
-                          <path d="M12 4v4"></path>
-                          <path d="M8 10v8"></path>
-                          <path d="M16 10v8"></path>
-                          <path d="M12 12v8"></path>
-                        </svg>
+                        <Fingerprint className="mr-2 h-4 w-4 text-purple-600" />
                       )}
-                      Login with Authentivix
+                      Se connecter avec Authentivix
                     </Button>
                     <div className="relative my-4">
                       <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t border-gray-300"></div>
                       </div>
                       <div className="relative flex justify-center text-sm">
-                        <span className="px-2 bg-white text-gray-500">or</span>
+                        <span className="px-2 bg-white text-gray-500">ou</span>
                       </div>
                     </div>
                   </div>
@@ -644,8 +636,8 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password">Mot de passe</Label>
-                      <a href="#" className="text-xs text-luvvix-purple hover:underline">
-                        Mot de passe oublié?
+                      <a href="#" className="text-xs text-purple-600 hover:underline">
+                        Mot de passe oublié ?
                       </a>
                     </div>
                     <div className="relative">
@@ -664,53 +656,25 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                   
                   <Button 
                     type="submit" 
-                    className="w-full" 
-                    variant="default" 
+                    className="w-full bg-purple-600 hover:bg-purple-700"
                     disabled={isLoading}
                   >
                     {isLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Logging in...
+                        Connexion en cours...
                       </>
                     ) : (
                       <>
                         <LogIn className="mr-2 h-4 w-4" />
-                        Login
+                        Se connecter
                       </>
                     )}
                   </Button>
                 </form>
-                
-                {/* ... keep existing code (OAuth buttons) */}
               </div>
             </TabsContent>
           </Tabs>
-          
-          <div className="mt-8 text-center">
-            <p className="text-sm text-gray-600">
-              En créant un compte ou en vous connectant, vous acceptez nos{" "}
-              <a href="/terms" className="text-luvvix-purple hover:underline">Conditions d'utilisation</a> et notre{" "}
-              <a href="/privacy" className="text-luvvix-purple hover:underline">Politique de confidentialité</a>
-            </p>
-          </div>
-          
-          <div className="mt-12 border-t pt-6">
-            <h3 className="text-lg font-semibold text-center mb-4">Pour les développeurs</h3>
-            <div className="flex justify-center">
-              <Button 
-                variant="outline" 
-                className="flex items-center gap-2"
-                onClick={() => navigate('/api-docs')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m18 16-4-4 4-4" />
-                  <path d="m6 8 4 4-4 4" />
-                </svg>
-                Documentation API
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </section>

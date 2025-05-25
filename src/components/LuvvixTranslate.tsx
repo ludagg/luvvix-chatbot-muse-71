@@ -354,7 +354,7 @@ const LuvvixTranslate = () => {
                 {translatedText && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium text-gray-700">Traduction par Gemini AI</label>
+                      <label className="text-sm font-medium text-gray-700">Traduction par LuvviX AI</label>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"

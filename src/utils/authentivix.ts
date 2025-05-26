@@ -90,8 +90,8 @@ export class Authentivix {
         attestation: "direct"
       };
 
-      // Start WebAuthn registration
-      const registrationResponse = await startRegistration(registrationOptions);
+      // Start WebAuthn registration - Fix: wrap options in optionsJSON property
+      const registrationResponse = await startRegistration({ optionsJSON: registrationOptions });
       
       // Store credential information
       const credentialData = {
@@ -138,8 +138,8 @@ export class Authentivix {
         rpId: window.location.hostname
       };
 
-      // Start WebAuthn authentication
-      const authenticationResponse = await startAuthentication(authenticationOptions);
+      // Start WebAuthn authentication - Fix: wrap options in optionsJSON property
+      const authenticationResponse = await startAuthentication({ optionsJSON: authenticationOptions });
       
       // Verify the authentication
       if (authenticationResponse) {

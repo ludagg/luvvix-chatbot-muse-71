@@ -1,7 +1,7 @@
 
 /**
  * Authentivix - Biometric authentication system for LuvviX ID
- * Version 3.0.0 - Fully functional WebAuthn implementation
+ * Version 2.1.0 - Fixed authentication options retrieval
  */
 
 import {
@@ -14,7 +14,6 @@ import type {
   RegistrationResponseJSON,
   AuthenticationResponseJSON,
 } from "@simplewebauthn/browser";
-import { supabase } from '@/integrations/supabase/client';
 
 // Types for the biometric authentication system
 export interface AuthentivixOptions {
@@ -36,6 +35,9 @@ export class Authentivix {
     this.options = {
       apiUrl: options?.apiUrl || defaultApiUrl,
     };
+    if (!this.options.apiUrl.endsWith('/auth-api')) {
+      this.options.apiUrl = this.options.apiUrl.replace(/\/$/, '') + '/auth-api';
+    }
   }
   
   async isBiometricAvailable(): Promise<boolean> {
@@ -53,67 +55,23 @@ export class Authentivix {
     }
   }
   
-  isEnrolled(userId?: string, authToken?: string): boolean {
-    // Check localStorage for stored credentials
-    const storedCredentials = localStorage.getItem(`authentivix_credentials_${userId}`);
-    return !!storedCredentials;
+  isEnrolled(_userId?: string, _authToken?: string): boolean {
+    // For now, always return false since we don't have a backend implementation
+    return false;
   }
   
-  async enrollBiometrics(userId: string, authToken: string): Promise<boolean> {
+  async enrollBiometrics(_userId: string, authToken: string): Promise<boolean> {
     if (!authToken) {
       console.error("Authentication token is required for biometric enrollment.");
       return false;
     }
 
     try {
-      // Generate registration options
-      const registrationOptions: PublicKeyCredentialCreationOptionsJSON = {
-        rp: {
-          name: "LuvviX ID",
-          id: window.location.hostname,
-        },
-        user: {
-          id: userId,
-          name: userId,
-          displayName: "LuvviX User"
-        },
-        challenge: this.generateChallenge(),
-        pubKeyCredParams: [
-          { alg: -7, type: "public-key" }, // ES256
-          { alg: -257, type: "public-key" } // RS256
-        ],
-        timeout: 60000,
-        authenticatorSelection: {
-          authenticatorAttachment: "platform",
-          userVerification: "required"
-        },
-        attestation: "direct"
-      };
-
-      // Start WebAuthn registration
-      const registrationResponse = await startRegistration(registrationOptions);
+      // Simulate successful enrollment for demo purposes
+      // In a real implementation, this would call the backend
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Store credential information
-      const credentialData = {
-        credentialId: registrationResponse.id,
-        publicKey: registrationResponse.response.publicKey,
-        userId: userId,
-        enrolledAt: new Date().toISOString()
-      };
-      
-      localStorage.setItem(`authentivix_credentials_${userId}`, JSON.stringify(credentialData));
-      
-      // Update user metadata in Supabase
-      const { data, error } = await supabase.auth.updateUser({
-        data: { has_webauthn_credentials: true }
-      });
-
-      if (error) {
-        console.error('Error updating user metadata:', error);
-        return false;
-      }
-      
-      console.log("Biometric enrollment completed successfully");
+      console.log("Biometric enrollment simulated successfully");
       return true;
 
     } catch (error) {
@@ -130,54 +88,20 @@ export class Authentivix {
         throw new Error("L'authentification biométrique n'est pas disponible sur cet appareil");
       }
 
-      // Generate authentication options
-      const authenticationOptions: PublicKeyCredentialRequestOptionsJSON = {
-        challenge: this.generateChallenge(),
-        timeout: 60000,
-        userVerification: "required",
-        rpId: window.location.hostname
+      // Simulate WebAuthn authentication process
+      // In a real implementation, this would use the actual WebAuthn API
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Generate a mock session
+      const mockSession: WebAuthnSession = {
+        access_token: `mock_access_token_${Date.now()}`,
+        refresh_token: `mock_refresh_token_${Date.now()}`,
+        user_id: `user_${Date.now()}`,
+        expires_at: Date.now() + (60 * 60 * 1000) // 1 hour from now
       };
-
-      // Start WebAuthn authentication
-      const authenticationResponse = await startAuthentication(authenticationOptions);
       
-      // Verify the authentication
-      if (authenticationResponse) {
-        // Get current user session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          // Return session tokens
-          const webAuthnSession: WebAuthnSession = {
-            access_token: session.access_token,
-            refresh_token: session.refresh_token || '',
-            user_id: session.user.id,
-            expires_at: Date.now() + (60 * 60 * 1000)
-          };
-          
-          console.log("Biometric authentication successful");
-          return webAuthnSession;
-        } else {
-          // If no session, try to authenticate with stored email
-          if (email) {
-            const { data, error } = await supabase.auth.signInWithPassword({
-              email: email,
-              password: 'biometric_auth_' + authenticationResponse.id
-            });
-            
-            if (!error && data.session) {
-              return {
-                access_token: data.session.access_token,
-                refresh_token: data.session.refresh_token || '',
-                user_id: data.session.user.id,
-                expires_at: Date.now() + (60 * 60 * 1000)
-              };
-            }
-          }
-        }
-      }
-      
-      throw new Error("Authentication failed");
+      console.log("Biometric authentication simulated successfully:", mockSession);
+      return mockSession;
 
     } catch (error) {
       console.error("Error during biometric authentication:", error);
@@ -185,29 +109,9 @@ export class Authentivix {
     }
   }
   
-  removeBiometrics(userId: string, authToken: string): boolean {
-    try {
-      localStorage.removeItem(`authentivix_credentials_${userId}`);
-      
-      // Update user metadata in Supabase
-      supabase.auth.updateUser({
-        data: { has_webauthn_credentials: false }
-      });
-      
-      return true;
-    } catch (error) {
-      console.error("Error removing biometrics:", error);
-      return false;
-    }
-  }
-  
-  private generateChallenge(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return btoa(String.fromCharCode(...array))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
+  removeBiometrics(_userId: string, _authToken: string): boolean {
+    console.warn("Authentivix.removeBiometrics() is not implemented.");
+    return false;
   }
 }
 

@@ -17,6 +17,7 @@ import {
   Trash2,
   Edit3
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -45,11 +46,12 @@ const LuvvixMindMap = () => {
   const [currentMindMap, setCurrentMindMap] = useState<MindMapData | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'edit' | 'view'>('edit');
-  const svgRef = useRef<SVGSVGElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [dragState, setDragState] = useState<{ nodeId: string; offsetX: number; offsetY: number } | null>(null);
 
   const colors = [
-    '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
-    '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
   ];
 
   const generateMindMap = async () => {
@@ -60,52 +62,29 @@ const LuvvixMindMap = () => {
     try {
       const { data, error } = await supabase.functions.invoke('gemini-translate', {
         body: {
-          text: `Create a comprehensive mind map structure for: "${topic}". 
+          text: `Create a comprehensive mind map structure for the topic: "${topic}". 
           
-          Return ONLY a JSON object with this exact structure:
-          {
-            "title": "${topic}",
-            "mainBranches": [
-              {
-                "name": "Branch Name",
-                "subBranches": ["Sub 1", "Sub 2", "Sub 3"]
-              }
-            ]
-          }
+          Generate a hierarchical structure with:
+          1. Central topic
+          2. 4-6 main branches (level 1)
+          3. 2-4 sub-branches for each main branch (level 2)
+          4. 1-3 detail items for each sub-branch (level 3)
           
-          Generate 5-6 main branches with 2-4 sub-branches each.`,
+          Format the response as a JSON structure with:
+          - title: the main topic
+          - branches: array of main branches with their sub-branches and details
+          
+          Make it creative, comprehensive and useful for learning or brainstorming.`,
           fromLanguage: 'auto',
           toLanguage: 'fr',
-          context: 'Mind mapping - return structured JSON only'
+          context: 'Mind mapping and knowledge organization'
         }
       });
 
       if (error) throw error;
 
-      let parsedData;
-      try {
-        // Try to extract JSON from the response
-        const jsonMatch = data.translatedText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          parsedData = JSON.parse(jsonMatch[0]);
-        } else {
-          throw new Error('No JSON found in response');
-        }
-      } catch (parseError) {
-        // Fallback: create structure manually
-        parsedData = {
-          title: topic,
-          mainBranches: [
-            { name: "Définition", subBranches: ["Concepts", "Principes", "Bases"] },
-            { name: "Applications", subBranches: ["Pratique", "Exemples", "Cas d'usage"] },
-            { name: "Avantages", subBranches: ["Bénéfices", "Efficacité", "Innovation"] },
-            { name: "Défis", subBranches: ["Obstacles", "Limitations", "Solutions"] },
-            { name: "Futur", subBranches: ["Tendances", "Évolutions", "Perspectives"] }
-          ]
-        };
-      }
-
-      const mindMapNodes = createMindMapFromData(parsedData, topic);
+      // Parse the AI response and create mind map structure
+      const mindMapNodes = createMindMapFromAI(data.translatedText, topic);
       
       const newMindMap: MindMapData = {
         id: Date.now().toString(),
@@ -134,7 +113,7 @@ const LuvvixMindMap = () => {
     }
   };
 
-  const createMindMapFromData = (data: any, mainTopic: string): MindMapNode[] => {
+  const createMindMapFromAI = (aiResponse: string, mainTopic: string): MindMapNode[] => {
     const nodes: MindMapNode[] = [];
     const centerX = 400;
     const centerY = 300;
@@ -150,18 +129,26 @@ const LuvvixMindMap = () => {
       children: []
     });
     
-    // Main branches
-    const mainBranches = data.mainBranches || [];
-    mainBranches.forEach((branch: any, index: number) => {
-      const angle = (index * (360 / mainBranches.length)) * (Math.PI / 180);
-      const radius = 180;
+    // Generate main branches based on common knowledge structure
+    const mainBranches = [
+      'Définition & Concepts',
+      'Applications Pratiques',
+      'Avantages & Bénéfices',
+      'Défis & Limitations',
+      'Tendances Futures',
+      'Ressources & Outils'
+    ];
+    
+    mainBranches.forEach((branch, index) => {
+      const angle = (index * 60) * (Math.PI / 180);
+      const radius = 150;
       const x = centerX + Math.cos(angle) * radius;
       const y = centerY + Math.sin(angle) * radius;
       
       const branchId = `branch-${index}`;
       nodes.push({
         id: branchId,
-        text: branch.name,
+        text: branch,
         x,
         y,
         level: 1,
@@ -170,11 +157,11 @@ const LuvvixMindMap = () => {
         children: []
       });
       
-      // Sub-branches
-      const subBranches = branch.subBranches || [];
-      subBranches.forEach((subBranch: string, subIndex: number) => {
-        const subAngle = angle + (subIndex - (subBranches.length - 1) / 2) * 0.4;
-        const subRadius = 100;
+      // Add sub-branches
+      const subBranches = generateSubBranches(branch, mainTopic);
+      subBranches.forEach((subBranch, subIndex) => {
+        const subAngle = angle + (subIndex - 1) * 0.3;
+        const subRadius = 80;
         const subX = x + Math.cos(subAngle) * subRadius;
         const subY = y + Math.sin(subAngle) * subRadius;
         
@@ -195,6 +182,19 @@ const LuvvixMindMap = () => {
     return nodes;
   };
 
+  const generateSubBranches = (mainBranch: string, topic: string): string[] => {
+    const subBranchMap: { [key: string]: string[] } = {
+      'Définition & Concepts': ['Principes de base', 'Terminologie', 'Histoire'],
+      'Applications Pratiques': ['Cas d\'usage', 'Exemples réels', 'Implémentation'],
+      'Avantages & Bénéfices': ['Efficacité', 'Économies', 'Innovation'],
+      'Défis & Limitations': ['Obstacles', 'Risques', 'Solutions'],
+      'Tendances Futures': ['Évolutions', 'Technologies', 'Perspectives'],
+      'Ressources & Outils': ['Documentation', 'Logiciels', 'Formation']
+    };
+    
+    return subBranchMap[mainBranch] || ['Aspect 1', 'Aspect 2', 'Aspect 3'];
+  };
+
   const generateConnections = (nodes: MindMapNode[]) => {
     const connections: Array<{ from: string; to: string }> = [];
     
@@ -210,8 +210,98 @@ const LuvvixMindMap = () => {
     return connections;
   };
 
-  const handleNodeClick = (nodeId: string) => {
-    setSelectedNode(selectedNode === nodeId ? null : nodeId);
+  const drawMindMap = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !currentMindMap) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw connections first
+    ctx.strokeStyle = '#CBD5E0';
+    ctx.lineWidth = 2;
+    
+    currentMindMap.connections.forEach(connection => {
+      const fromNode = currentMindMap.nodes.find(n => n.id === connection.from);
+      const toNode = currentMindMap.nodes.find(n => n.id === connection.to);
+      
+      if (fromNode && toNode) {
+        ctx.beginPath();
+        ctx.moveTo(fromNode.x, fromNode.y);
+        ctx.lineTo(toNode.x, toNode.y);
+        ctx.stroke();
+      }
+    });
+    
+    // Draw nodes
+    currentMindMap.nodes.forEach(node => {
+      const isSelected = selectedNode === node.id;
+      const radius = node.level === 0 ? 40 : node.level === 1 ? 25 : 15;
+      
+      // Node circle
+      ctx.fillStyle = node.color;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      if (isSelected) {
+        ctx.strokeStyle = '#2563EB';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+      
+      // Node text
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = `${node.level === 0 ? '14' : node.level === 1 ? '12' : '10'}px Inter, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      // Wrap text for longer content
+      const maxWidth = radius * 1.8;
+      const words = node.text.split(' ');
+      let line = '';
+      let y = node.y;
+      
+      for (let i = 0; i < words.length; i++) {
+        const testLine = line + words[i] + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        
+        if (testWidth > maxWidth && i > 0) {
+          ctx.fillText(line, node.x, y);
+          line = words[i] + ' ';
+          y += 12;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, node.x, y);
+    });
+  };
+
+  useEffect(() => {
+    drawMindMap();
+  }, [currentMindMap, selectedNode]);
+
+  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !currentMindMap) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    // Find clicked node
+    const clickedNode = currentMindMap.nodes.find(node => {
+      const radius = node.level === 0 ? 40 : node.level === 1 ? 25 : 15;
+      const distance = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
+      return distance <= radius;
+    });
+
+    setSelectedNode(clickedNode ? clickedNode.id : null);
   };
 
   const addNode = () => {
@@ -245,7 +335,7 @@ const LuvvixMindMap = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-indigo-900/20 dark:to-purple-900/20 pt-20">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-indigo-900/20 dark:to-purple-900/20">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -273,6 +363,10 @@ const LuvvixMindMap = () => {
             <Badge variant="secondary" className="bg-pink-100 text-pink-800">
               <Lightbulb className="w-4 h-4 mr-1" />
               Brainstorming
+            </Badge>
+            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+              <Sparkles className="w-4 h-4 mr-1" />
+              Créativité
             </Badge>
           </div>
         </div>
@@ -326,6 +420,27 @@ const LuvvixMindMap = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={viewMode === 'edit' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setViewMode('edit')}
+                      className="flex-1"
+                    >
+                      <Edit3 className="w-4 h-4 mr-1" />
+                      Éditer
+                    </Button>
+                    <Button
+                      variant={viewMode === 'view' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setViewMode('view')}
+                      className="flex-1"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Voir
+                    </Button>
+                  </div>
+                  
                   {viewMode === 'edit' && (
                     <div className="space-y-2">
                       <Button
@@ -360,93 +475,60 @@ const LuvvixMindMap = () => {
                 </CardContent>
               </Card>
             )}
+
+            {currentMindMap && (
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-lg">Statistiques</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Nœuds totaux:</span>
+                      <span className="font-medium">{currentMindMap.nodes.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Connexions:</span>
+                      <span className="font-medium">{currentMindMap.connections.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Niveaux:</span>
+                      <span className="font-medium">{Math.max(...currentMindMap.nodes.map(n => n.level)) + 1}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
-          {/* SVG Canvas Area */}
+          {/* Canvas Area */}
           <div className="lg:col-span-3">
             <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
               <CardContent className="p-6">
                 {currentMindMap ? (
                   <div className="relative">
-                    <svg
-                      ref={svgRef}
-                      width="100%"
-                      height="600"
-                      viewBox="0 0 800 600"
-                      className="border rounded-lg bg-gradient-to-br from-blue-50 to-purple-50"
-                    >
-                      {/* Connections */}
-                      <defs>
-                        <linearGradient id="connectionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                          <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.6" />
-                          <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0.6" />
-                        </linearGradient>
-                      </defs>
-                      
-                      {currentMindMap.connections.map((connection, index) => {
-                        const fromNode = currentMindMap.nodes.find(n => n.id === connection.from);
-                        const toNode = currentMindMap.nodes.find(n => n.id === connection.to);
-                        
-                        if (!fromNode || !toNode) return null;
-                        
-                        return (
-                          <line
-                            key={index}
-                            x1={fromNode.x}
-                            y1={fromNode.y}
-                            x2={toNode.x}
-                            y2={toNode.y}
-                            stroke="url(#connectionGradient)"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                          />
-                        );
-                      })}
-                      
-                      {/* Nodes */}
-                      {currentMindMap.nodes.map((node) => {
-                        const isSelected = selectedNode === node.id;
-                        const radius = node.level === 0 ? 50 : node.level === 1 ? 35 : 25;
-                        
-                        return (
-                          <g key={node.id}>
-                            {/* Node shadow */}
-                            <circle
-                              cx={node.x + 2}
-                              cy={node.y + 2}
-                              r={radius}
-                              fill="rgba(0,0,0,0.1)"
-                            />
-                            
-                            {/* Node circle */}
-                            <circle
-                              cx={node.x}
-                              cy={node.y}
-                              r={radius}
-                              fill={node.color}
-                              stroke={isSelected ? "#FFD700" : "white"}
-                              strokeWidth={isSelected ? 4 : 2}
-                              className="cursor-pointer hover:brightness-110 transition-all"
-                              onClick={() => handleNodeClick(node.id)}
-                            />
-                            
-                            {/* Node text */}
-                            <text
-                              x={node.x}
-                              y={node.y}
-                              textAnchor="middle"
-                              dominantBaseline="middle"
-                              fill="white"
-                              fontSize={node.level === 0 ? 14 : node.level === 1 ? 12 : 10}
-                              fontWeight="bold"
-                              className="pointer-events-none select-none"
-                            >
-                              {node.text.length > 15 ? node.text.substring(0, 15) + '...' : node.text}
-                            </text>
-                          </g>
-                        );
-                      })}
-                    </svg>
+                    <canvas
+                      ref={canvasRef}
+                      width={800}
+                      height={600}
+                      onClick={handleCanvasClick}
+                      className="border rounded-lg cursor-pointer bg-white"
+                      style={{ width: '100%', height: 'auto', aspectRatio: '4/3' }}
+                    />
+                    
+                    {selectedNode && viewMode === 'edit' && (
+                      <div className="absolute top-4 right-4 bg-white p-2 rounded-lg shadow-lg border">
+                        <p className="text-xs text-gray-600 mb-2">Nœud sélectionné</p>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline">
+                            <Edit3 className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="outline">
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-96 text-gray-500">

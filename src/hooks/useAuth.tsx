@@ -39,51 +39,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [hasBiometrics, setHasBiometrics] = useState(false);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    console.log("AuthProvider: Setting up auth listener");
+    
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("Auth state changed:", event);
+        console.log("Auth state changed:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Use setTimeout to prevent auth deadlock
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-            
-            // Check if the user has biometric data enrolled
+          try {
+            await fetchProfile(session.user.id);
             const biometricAvailable = session.user.app_metadata?.has_webauthn_credentials === true;
             setHasBiometrics(biometricAvailable);
-          }, 0);
+          } catch (error) {
+            console.error("Error fetching profile:", error);
+          }
         } else {
           setProfile(null);
           setHasBiometrics(false);
         }
+        
+        setLoading(false);
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-        const biometricAvailable = session.user.app_metadata?.has_webauthn_credentials === true;
-        setHasBiometrics(biometricAvailable);
-      }
-      setLoading(false);
-    });
-
-    // Check if biometric auth is available on this device
-    const checkBiometricAvailability = async () => {
+    // Check for existing session
+    const initializeAuth = async () => {
       try {
-        await authentivix.isBiometricAvailable();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("Error getting session:", error);
+        } else {
+          console.log("Initial session:", session?.user?.id);
+          setSession(session);
+          setUser(session?.user ?? null);
+          if (session?.user) {
+            await fetchProfile(session.user.id);
+            const biometricAvailable = session.user.app_metadata?.has_webauthn_credentials === true;
+            setHasBiometrics(biometricAvailable);
+          }
+        }
       } catch (error) {
-        console.error("Error checking biometric availability:", error);
+        console.error("Error initializing auth:", error);
+      } finally {
+        setLoading(false);
       }
     };
-    
-    checkBiometricAvailability();
+
+    initializeAuth();
 
     return () => subscription.unsubscribe();
   }, []);
@@ -96,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .single();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
         return;
       }
@@ -206,20 +211,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithBiometrics = async (email?: string) => {
     try {
-      // First, check if biometric authentication is available
       const isAvailable = await authentivix.isBiometricAvailable();
       if (!isAvailable) {
         throw new Error("L'authentification biométrique n'est pas disponible sur cet appareil");
       }
       
-      // Authenticate with biometrics
       const webAuthnSession = await authentivix.authenticateWithBiometrics(email);
       
       if (!webAuthnSession) {
         throw new Error("L'authentification biométrique a échoué");
       }
       
-      // Use the tokens from WebAuthn session to log in
       const success = await loginWithToken(
         webAuthnSession.access_token, 
         webAuthnSession.refresh_token
@@ -286,6 +288,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
   };
+
+  console.log("AuthProvider render - loading:", loading, "user:", !!user);
 
   return (
     <AuthContext.Provider value={{

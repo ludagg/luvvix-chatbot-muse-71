@@ -13,31 +13,38 @@ import TranslatePage from "./pages/TranslatePage";
 import MindMapPage from "./pages/MindMapPage";
 import CodeStudioPage from "./pages/CodeStudioPage";
 import AccountSettings from "./pages/AccountSettings";
+import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/translate" element={<TranslatePage />} />
-              <Route path="/mindmap" element={<MindMapPage />} />
-              <Route path="/code-studio" element={<CodeStudioPage />} />
-              <Route path="/settings" element={<AccountSettings />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </HelmetProvider>
-);
+const App = () => {
+  useEffect(() => {
+    console.log("App component mounted");
+  }, []);
+
+  return (
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/translate" element={<TranslatePage />} />
+                <Route path="/mindmap" element={<MindMapPage />} />
+                <Route path="/code-studio" element={<CodeStudioPage />} />
+                <Route path="/settings" element={<AccountSettings />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
+  );
+};
 
 export default App;

@@ -1,3 +1,5 @@
+
+import { useEffect } from 'react';
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Ecosystem from "@/components/Ecosystem";
@@ -21,6 +23,10 @@ import { HoverGlowCard } from "@/components/ui/hover-glow-card";
 import { motion } from "framer-motion";
 
 const Index = () => {
+  useEffect(() => {
+    console.log("Index page loaded");
+  }, []);
+
   return (
     <div className="min-h-screen">
       <Navbar />

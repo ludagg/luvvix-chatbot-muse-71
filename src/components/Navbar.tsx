@@ -12,7 +12,7 @@ import {
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Sparkles, Bot, Cloud, FileText, User, ChevronDown, AppWindow, Newspaper, Radio, HeartPulse } from "lucide-react";
+import { Menu, Sparkles, Bot, Cloud, FileText, User, ChevronDown, AppWindow, Newspaper, Radio, HeartPulse, Network } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -126,13 +126,22 @@ const Navbar = () => {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Actualités personnalisées</p>
                       </div>
                     </Link>
-                    <Link to="/ecosystem" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors col-span-2 mt-2">
+                    <Link to="/orchestrator" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      <div className="bg-cyan-100 dark:bg-cyan-900/30 p-2 rounded-full">
+                        <Network className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Orchestrateur</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Gestion d'écosystème avancée</p>
+                      </div>
+                    </Link>
+                    <Link to="/ecosystem" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                       <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-full">
                         <AppWindow className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <div>
                         <h3 className="font-medium">Écosystème complet</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Découvrez toutes nos applications et services</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Découvrez toutes nos applications</p>
                       </div>
                     </Link>
                   </div>
@@ -201,6 +210,10 @@ const Navbar = () => {
                   <DropdownMenuItem onClick={() => navigate("/ai-studio/dashboard")}>
                     <Bot className="mr-2 h-4 w-4" />
                     AI Studio
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/orchestrator")}>
+                    <Network className="mr-2 h-4 w-4" />
+                    Orchestrateur
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()}>
@@ -278,6 +291,11 @@ const Navbar = () => {
                     <Link to="/news" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Newspaper className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                       <span>LuvviX News</span>
+                    </Link>
+                    
+                    <Link to="/orchestrator" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <Network className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                      <span>Orchestrateur</span>
                     </Link>
                     
                     <div className="border-t my-4"></div>

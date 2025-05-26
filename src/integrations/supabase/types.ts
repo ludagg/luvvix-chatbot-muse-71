@@ -712,6 +712,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ecosystem_interactions: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          interaction_type: string
+          metadata: Json | null
+          processed_at: string | null
+          source_app: string
+          status: string
+          target_app: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          interaction_type: string
+          metadata?: Json | null
+          processed_at?: string | null
+          source_app: string
+          status?: string
+          target_app?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          interaction_type?: string
+          metadata?: Json | null
+          processed_at?: string | null
+          source_app?: string
+          status?: string
+          target_app?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           book_id: string

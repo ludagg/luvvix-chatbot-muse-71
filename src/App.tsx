@@ -39,6 +39,7 @@ import LuvvixAIIntegrationPage from "./pages/LuvvixAIIntegrationPage";
 import AccountSettings from "./pages/AccountSettings";
 import TranslatePage from "./pages/TranslatePage";
 import MindMapPage from "./pages/MindMapPage";
+import EcosystemOrchestratorPage from "./pages/EcosystemOrchestratorPage";
 
 function App() {
   return (
@@ -55,6 +56,11 @@ function App() {
               <Route path="/weather" element={<WeatherPage />} />
               <Route path="/translate" element={<TranslatePage />} />
               <Route path="/mindmap" element={<MindMapPage />} />
+              <Route path="/orchestrator" element={
+                <ProtectedRoute>
+                  <EcosystemOrchestratorPage />
+                </ProtectedRoute>
+              } />
               <Route path="/oauth/authorize" element={
                 <ProtectedRoute>
                   <OAuth />

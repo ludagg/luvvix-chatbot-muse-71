@@ -15,11 +15,19 @@ import CodeStudioPage from "./pages/CodeStudioPage";
 import AccountSettings from "./pages/AccountSettings";
 import { useEffect } from "react";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 const App = () => {
   useEffect(() => {
-    console.log("App component mounted");
+    console.log("App component mounted successfully");
   }, []);
 
   return (

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,21 +40,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     console.log("AuthProvider: Setting up auth listener");
     
+    let mounted = true;
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        if (!mounted) return;
+        
         console.log("Auth state changed:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          try {
-            await fetchProfile(session.user.id);
-            const biometricAvailable = session.user.app_metadata?.has_webauthn_credentials === true;
-            setHasBiometrics(biometricAvailable);
-          } catch (error) {
-            console.error("Error fetching profile:", error);
-          }
+          // Defer profile fetching to avoid blocking the main thread
+          setTimeout(() => {
+            if (mounted) {
+              fetchProfile(session.user.id).catch(console.error);
+              const biometricAvailable = session.user.app_metadata?.has_webauthn_credentials === true;
+              setHasBiometrics(biometricAvailable);
+            }
+          }, 0);
         } else {
           setProfile(null);
           setHasBiometrics(false);
@@ -71,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error("Error getting session:", error);
-        } else {
+        } else if (mounted) {
           console.log("Initial session:", session?.user?.id);
           setSession(session);
           setUser(session?.user ?? null);
@@ -84,13 +88,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error("Error initializing auth:", error);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchProfile = async (userId: string) => {

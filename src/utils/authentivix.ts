@@ -1,7 +1,7 @@
 
 /**
  * Authentivix - Biometric authentication system for LuvviX ID
- * Version 3.0.0 - Full WebAuthn implementation
+ * Version 3.1.0 - Enhanced WebAuthn implementation with better error handling
  */
 
 import {
@@ -43,12 +43,16 @@ export class Authentivix {
   
   async isBiometricAvailable(): Promise<boolean> {
     try {
-      if (window && 'PublicKeyCredential' in window) {
-        if (typeof window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable === 'function') {
-          return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-        }
-        return !!(window.PublicKeyCredential);
+      if (typeof window === 'undefined') return false;
+      
+      if ('PublicKeyCredential' in window) {
+        // Check if WebAuthn is supported
+        const isSupported = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        console.log('WebAuthn platform authenticator available:', isSupported);
+        return isSupported;
       }
+      
+      console.log('PublicKeyCredential not supported');
       return false;
     } catch (error) {
       console.error('Error checking biometric availability:', error);
@@ -72,7 +76,10 @@ export class Authentivix {
         },
       });
 
-      if (!response.ok) return false;
+      if (!response.ok) {
+        console.error('Failed to check enrollment:', response.status);
+        return false;
+      }
       
       const result = await response.json();
       return result.success && result.data && result.data.length > 0;
@@ -89,6 +96,14 @@ export class Authentivix {
     }
 
     try {
+      console.log('Starting biometric enrollment for user:', userId);
+      
+      // Check if biometrics are available first
+      const isAvailable = await this.isBiometricAvailable();
+      if (!isAvailable) {
+        throw new Error("L'authentification biométrique n'est pas disponible sur cet appareil");
+      }
+
       // Start registration process
       const startResponse = await fetch(`${this.options.apiUrl}/webauthn/register/start`, {
         method: 'POST',
@@ -96,10 +111,15 @@ export class Authentivix {
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          user_id: userId
+        }),
       });
 
       if (!startResponse.ok) {
-        throw new Error('Failed to start registration');
+        const errorText = await startResponse.text();
+        console.error('Registration start failed:', errorText);
+        throw new Error(`Échec du démarrage de l'inscription: ${startResponse.status}`);
       }
 
       const startResult = await startResponse.json();
@@ -107,8 +127,12 @@ export class Authentivix {
         throw new Error(startResult.error || 'Failed to start registration');
       }
 
+      console.log('Registration options received, starting WebAuthn registration...');
+
       // Start WebAuthn registration
       const registrationResponse = await startRegistration(startResult.data);
+
+      console.log('WebAuthn registration completed, finishing...');
 
       // Finish registration
       const finishResponse = await fetch(`${this.options.apiUrl}/webauthn/register/finish`, {
@@ -121,7 +145,9 @@ export class Authentivix {
       });
 
       if (!finishResponse.ok) {
-        throw new Error('Failed to finish registration');
+        const errorText = await finishResponse.text();
+        console.error('Registration finish failed:', errorText);
+        throw new Error(`Échec de finalisation de l'inscription: ${finishResponse.status}`);
       }
 
       const finishResult = await finishResponse.json();
@@ -132,14 +158,28 @@ export class Authentivix {
       console.log("Biometric enrollment completed successfully");
       return true;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error during biometric enrollment:", error);
-      return false;
+      
+      // Handle specific WebAuthn errors
+      if (error.name === 'NotAllowedError') {
+        throw new Error("L'utilisateur a annulé l'authentification biométrique");
+      } else if (error.name === 'NotSupportedError') {
+        throw new Error("L'authentification biométrique n'est pas supportée sur cet appareil");
+      } else if (error.name === 'SecurityError') {
+        throw new Error("Erreur de sécurité lors de l'authentification biométrique");
+      } else if (error.name === 'InvalidStateError') {
+        throw new Error("Un authenticateur est déjà enregistré pour cet utilisateur");
+      }
+      
+      throw error;
     }
   }
   
   async authenticateWithBiometrics(email?: string): Promise<WebAuthnSession | null> {
     try {
+      console.log('Starting biometric authentication for:', email);
+      
       // Check if biometrics are available
       const isAvailable = await this.isBiometricAvailable();
       if (!isAvailable) {
@@ -160,7 +200,9 @@ export class Authentivix {
       });
 
       if (!startResponse.ok) {
-        throw new Error('Failed to start authentication');
+        const errorText = await startResponse.text();
+        console.error('Authentication start failed:', errorText);
+        throw new Error(`Échec du démarrage de l'authentification: ${startResponse.status}`);
       }
 
       const startResult = await startResponse.json();
@@ -168,8 +210,12 @@ export class Authentivix {
         throw new Error(startResult.error || 'Failed to start authentication');
       }
 
+      console.log('Authentication options received, starting WebAuthn authentication...');
+
       // Start WebAuthn authentication
       const authenticationResponse = await startAuthentication(startResult.data);
+
+      console.log('WebAuthn authentication completed, finishing...');
 
       // Finish authentication
       const finishResponse = await fetch(`${this.options.apiUrl}/webauthn/login/finish`, {
@@ -181,7 +227,9 @@ export class Authentivix {
       });
 
       if (!finishResponse.ok) {
-        throw new Error('Failed to finish authentication');
+        const errorText = await finishResponse.text();
+        console.error('Authentication finish failed:', errorText);
+        throw new Error(`Échec de finalisation de l'authentification: ${finishResponse.status}`);
       }
 
       const finishResult = await finishResponse.json();
@@ -199,8 +247,20 @@ export class Authentivix {
       console.log("Biometric authentication completed successfully");
       return session;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error during biometric authentication:", error);
+      
+      // Handle specific WebAuthn errors
+      if (error.name === 'NotAllowedError') {
+        throw new Error("L'utilisateur a annulé l'authentification biométrique");
+      } else if (error.name === 'NotSupportedError') {
+        throw new Error("L'authentification biométrique n'est pas supportée sur cet appareil");
+      } else if (error.name === 'SecurityError') {
+        throw new Error("Erreur de sécurité lors de l'authentification biométrique");
+      } else if (error.name === 'InvalidStateError') {
+        throw new Error("Aucun authenticateur trouvé pour cet utilisateur");
+      }
+      
       throw error;
     }
   }

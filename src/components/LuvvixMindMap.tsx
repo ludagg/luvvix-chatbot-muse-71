@@ -1,500 +1,585 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Download, Share2, Zap, Brain, Network, Sparkles } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import React, { useCallback, useEffect, useState } from 'react';
+import ReactFlow, {
+  Node,
+  Edge,
+  addEdge,
+  Connection,
+  useNodesState,
+  useEdgesState,
+  Controls,
+  Background,
+  MiniMap,
+  Panel,
+  Position,
+  MarkerType,
+} from 'reactflow';
+import 'reactflow/dist/style.css';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Brain, 
+  Smartphone, 
+  Cloud, 
+  Shield, 
+  Zap, 
+  Users, 
+  Code, 
+  Database,
+  Cpu,
+  Globe,
+  Lock,
+  FileText,
+  Bot,
+  Sparkles,
+  BarChart3,
+  Settings,
+  RefreshCw
+} from 'lucide-react';
 
-interface MindMapNode {
-  id: string;
-  text: string;
-  x: number;
-  y: number;
-  color: string;
-  level: number;
-  connections: string[];
-}
+const iconMap = {
+  Brain, Smartphone, Cloud, Shield, Zap, Users, Code, Database,
+  Cpu, Globe, Lock, FileText, Bot, Sparkles, BarChart3, Settings
+};
 
-interface Connection {
-  from: string;
-  to: string;
-}
+// Enhanced node styles with better visibility
+const nodeStyles = {
+  core: {
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    color: 'white',
+    border: '3px solid #4c51bf',
+    borderRadius: '20px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    padding: '20px',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+    minWidth: '200px',
+    minHeight: '80px'
+  },
+  platform: {
+    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    color: 'white',
+    border: '2px solid #e53e3e',
+    borderRadius: '15px',
+    fontSize: '14px',
+    fontWeight: '600',
+    padding: '15px',
+    boxShadow: '0 8px 20px rgba(0,0,0,0.25)',
+    minWidth: '160px'
+  },
+  service: {
+    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    color: 'white',
+    border: '2px solid #0ea5e9',
+    borderRadius: '12px',
+    fontSize: '13px',
+    fontWeight: '500',
+    padding: '12px',
+    boxShadow: '0 6px 15px rgba(0,0,0,0.2)',
+    minWidth: '140px'
+  },
+  feature: {
+    background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    color: 'white',
+    border: '2px solid #10b981',
+    borderRadius: '10px',
+    fontSize: '12px',
+    fontWeight: '500',
+    padding: '10px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    minWidth: '120px'
+  },
+  integration: {
+    background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+    color: 'white',
+    border: '2px solid #f59e0b',
+    borderRadius: '8px',
+    fontSize: '11px',
+    fontWeight: '500',
+    padding: '8px',
+    boxShadow: '0 3px 10px rgba(0,0,0,0.1)',
+    minWidth: '100px'
+  }
+};
 
-const LuvvixMindMap = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [nodes, setNodes] = useState<MindMapNode[]>([
-    {
-      id: '1',
-      text: 'LuvviX Ecosystem',
-      x: 400,
-      y: 300,
-      color: '#8B5CF6',
-      level: 0,
-      connections: ['2', '3', '4', '5']
+// Custom node component with enhanced styling
+const CustomNode = ({ data }: { data: any }) => {
+  const IconComponent = iconMap[data.icon as keyof typeof iconMap];
+  
+  return (
+    <div style={nodeStyles[data.type as keyof typeof nodeStyles]} className="flex flex-col items-center text-center">
+      {IconComponent && <IconComponent className="h-6 w-6 mb-2" />}
+      <div className="font-semibold">{data.label}</div>
+      {data.description && (
+        <div className="text-xs opacity-90 mt-1">{data.description}</div>
+      )}
+      {data.status && (
+        <Badge className="mt-2 text-xs" variant={data.status === 'active' ? 'default' : 'secondary'}>
+          {data.status}
+        </Badge>
+      )}
+    </div>
+  );
+};
+
+const nodeTypes = {
+  custom: CustomNode,
+};
+
+const initialNodes: Node[] = [
+  {
+    id: '1',
+    type: 'custom',
+    position: { x: 500, y: 300 },
+    data: { 
+      label: 'LuvviX Ecosystem', 
+      type: 'core',
+      icon: 'Brain',
+      description: 'Écosystème technologique unifié'
     },
-    {
-      id: '2',
-      text: 'LuvviX AI',
-      x: 200,
-      y: 150,
-      color: '#06B6D4',
-      level: 1,
-      connections: ['6', '7']
+    style: nodeStyles.core
+  },
+  {
+    id: '2',
+    type: 'custom',
+    position: { x: 200, y: 100 },
+    data: { 
+      label: 'LuvviX ID', 
+      type: 'platform',
+      icon: 'Shield',
+      description: 'Authentification centralisée',
+      status: 'active'
     },
-    {
-      id: '3',
-      text: 'LuvviX Cloud',
-      x: 600,
-      y: 150,
-      color: '#10B981',
-      level: 1,
-      connections: ['8', '9']
+    style: nodeStyles.platform
+  },
+  {
+    id: '3',
+    type: 'custom',
+    position: { x: 800, y: 100 },
+    data: { 
+      label: 'LuvviX Cloud', 
+      type: 'platform',
+      icon: 'Cloud',
+      description: 'Stockage et synchronisation',
+      status: 'active'
     },
-    {
-      id: '4',
-      text: 'LuvviX Forms',
-      x: 200,
-      y: 450,
-      color: '#F59E0B',
-      level: 1,
-      connections: ['10']
+    style: nodeStyles.platform
+  },
+  {
+    id: '4',
+    type: 'custom',
+    position: { x: 50, y: 300 },
+    data: { 
+      label: 'LuvviX AI Studio', 
+      type: 'service',
+      icon: 'Bot',
+      description: 'Agents IA intelligents',
+      status: 'active'
     },
-    {
-      id: '5',
-      text: 'LuvviX News',
-      x: 600,
-      y: 450,
-      color: '#EF4444',
-      level: 1,
-      connections: ['11']
+    style: nodeStyles.service
+  },
+  {
+    id: '5',
+    type: 'custom',
+    position: { x: 950, y: 300 },
+    data: { 
+      label: 'LuvviX Forms', 
+      type: 'service',
+      icon: 'FileText',
+      description: 'Formulaires dynamiques',
+      status: 'active'
     },
-    {
-      id: '6',
-      text: 'Agents IA',
-      x: 100,
-      y: 80,
-      color: '#06B6D4',
-      level: 2,
-      connections: []
+    style: nodeStyles.service
+  },
+  {
+    id: '6',
+    type: 'custom',
+    position: { x: 350, y: 500 },
+    data: { 
+      label: 'LuvviX Code Studio', 
+      type: 'service',
+      icon: 'Code',
+      description: 'Développement IA avancé',
+      status: 'active'
     },
-    {
-      id: '7',
-      text: 'Chat Intelligence',
-      x: 300,
-      y: 80,
-      color: '#06B6D4',
-      level: 2,
-      connections: []
+    style: nodeStyles.service
+  },
+  {
+    id: '7',
+    type: 'custom',
+    position: { x: 650, y: 500 },
+    data: { 
+      label: 'Orchestrateur', 
+      type: 'service',
+      icon: 'Settings',
+      description: 'Gestion des interactions',
+      status: 'active'
     },
-    {
-      id: '8',
-      text: 'Stockage IPFS',
-      x: 500,
-      y: 80,
-      color: '#10B981',
-      level: 2,
-      connections: []
+    style: nodeStyles.service
+  },
+  {
+    id: '8',
+    type: 'custom',
+    position: { x: 100, y: 50 },
+    data: { 
+      label: 'Authentivix', 
+      type: 'feature',
+      icon: 'Lock',
+      description: 'Biométrie WebAuthn'
     },
-    {
-      id: '9',
-      text: 'Chiffrement',
-      x: 700,
-      y: 80,
-      color: '#10B981',
-      level: 2,
-      connections: []
+    style: nodeStyles.feature
+  },
+  {
+    id: '9',
+    type: 'custom',
+    position: { x: 300, y: 50 },
+    data: { 
+      label: 'OAuth 2.0', 
+      type: 'feature',
+      icon: 'Shield',
+      description: 'Connexion sécurisée'
     },
-    {
-      id: '10',
-      text: 'Formulaires Intelligents',
-      x: 100,
-      y: 520,
-      color: '#F59E0B',
-      level: 2,
-      connections: []
+    style: nodeStyles.feature
+  },
+  {
+    id: '10',
+    type: 'custom',
+    position: { x: 700, y: 50 },
+    data: { 
+      label: 'API REST', 
+      type: 'feature',
+      icon: 'Globe',
+      description: 'Interface programmable'
     },
-    {
-      id: '11',
-      text: 'Actualités Personnalisées',
-      x: 700,
-      y: 520,
-      color: '#EF4444',
-      level: 2,
-      connections: []
-    }
-  ]);
+    style: nodeStyles.feature
+  },
+  {
+    id: '11',
+    type: 'custom',
+    position: { x: 900, y: 50 },
+    data: { 
+      label: 'Chiffrement', 
+      type: 'feature',
+      icon: 'Lock',
+      description: 'Données sécurisées'
+    },
+    style: nodeStyles.feature
+  },
+  {
+    id: '12',
+    type: 'custom',
+    position: { x: 250, y: 600 },
+    data: { 
+      label: 'Gemini AI', 
+      type: 'integration',
+      icon: 'Sparkles',
+      description: 'IA générative'
+    },
+    style: nodeStyles.integration
+  },
+  {
+    id: '13',
+    type: 'custom',
+    position: { x: 400, y: 650 },
+    data: { 
+      label: 'Supabase', 
+      type: 'integration',
+      icon: 'Database',
+      description: 'Backend as a Service'
+    },
+    style: nodeStyles.integration
+  },
+  {
+    id: '14',
+    type: 'custom',
+    position: { x: 550, y: 600 },
+    data: { 
+      label: 'WebAuthn', 
+      type: 'integration',
+      icon: 'Shield',
+      description: 'Standard biométrique'
+    },
+    style: nodeStyles.integration
+  },
+  {
+    id: '15',
+    type: 'custom',
+    position: { x: 750, y: 650 },
+    data: { 
+      label: 'Analytics', 
+      type: 'integration',
+      icon: 'BarChart3',
+      description: 'Métriques temps réel'
+    },
+    style: nodeStyles.integration
+  }
+];
 
-  const [selectedNode, setSelectedNode] = useState<MindMapNode | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newNodeText, setNewNodeText] = useState('');
-  const [newNodeDescription, setNewNodeDescription] = useState('');
-  const [draggedNode, setDraggedNode] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+const initialEdges: Edge[] = [
+  // Core connections avec des styles améliorés
+  { 
+    id: 'e1-2', 
+    source: '1', 
+    target: '2', 
+    animated: true,
+    style: { stroke: '#667eea', strokeWidth: 3 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#667eea' }
+  },
+  { 
+    id: 'e1-3', 
+    source: '1', 
+    target: '3', 
+    animated: true,
+    style: { stroke: '#667eea', strokeWidth: 3 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#667eea' }
+  },
+  { 
+    id: 'e1-4', 
+    source: '1', 
+    target: '4', 
+    animated: true,
+    style: { stroke: '#667eea', strokeWidth: 3 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#667eea' }
+  },
+  { 
+    id: 'e1-5', 
+    source: '1', 
+    target: '5', 
+    animated: true,
+    style: { stroke: '#667eea', strokeWidth: 3 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#667eea' }
+  },
+  { 
+    id: 'e1-6', 
+    source: '1', 
+    target: '6', 
+    animated: true,
+    style: { stroke: '#667eea', strokeWidth: 3 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#667eea' }
+  },
+  { 
+    id: 'e1-7', 
+    source: '1', 
+    target: '7', 
+    animated: true,
+    style: { stroke: '#667eea', strokeWidth: 3 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#667eea' }
+  },
+  
+  // Feature connections
+  { 
+    id: 'e2-8', 
+    source: '2', 
+    target: '8',
+    style: { stroke: '#f093fb', strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#f093fb' }
+  },
+  { 
+    id: 'e2-9', 
+    source: '2', 
+    target: '9',
+    style: { stroke: '#f093fb', strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#f093fb' }
+  },
+  { 
+    id: 'e3-10', 
+    source: '3', 
+    target: '10',
+    style: { stroke: '#f093fb', strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#f093fb' }
+  },
+  { 
+    id: 'e3-11', 
+    source: '3', 
+    target: '11',
+    style: { stroke: '#f093fb', strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#f093fb' }
+  },
+  
+  // Integration connections
+  { 
+    id: 'e6-12', 
+    source: '6', 
+    target: '12',
+    style: { stroke: '#4facfe', strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#4facfe' }
+  },
+  { 
+    id: 'e1-13', 
+    source: '1', 
+    target: '13',
+    style: { stroke: '#43e97b', strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#43e97b' }
+  },
+  { 
+    id: 'e8-14', 
+    source: '8', 
+    target: '14',
+    style: { stroke: '#fa709a', strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#fa709a' }
+  },
+  { 
+    id: 'e7-15', 
+    source: '7', 
+    target: '15',
+    style: { stroke: '#4facfe', strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#4facfe' }
+  }
+];
 
-  const colors = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#8B5A2B'];
+const LuvvixMindMap: React.FC = () => {
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [isAnimated, setIsAnimated] = useState(true);
 
-  useEffect(() => {
-    drawMindMap();
-  }, [nodes]);
+  const onConnect = useCallback(
+    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    [setEdges]
+  );
 
-  const drawMindMap = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear canvas with gradient background
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, '#1a1a2e');
-    gradient.addColorStop(0.5, '#16213e');
-    gradient.addColorStop(1, '#0f172a');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw connections first (behind nodes)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([5, 5]);
-
-    nodes.forEach(node => {
-      node.connections.forEach(connectionId => {
-        const targetNode = nodes.find(n => n.id === connectionId);
-        if (targetNode) {
-          // Add glow effect to connections
-          ctx.shadowColor = node.color;
-          ctx.shadowBlur = 10;
-          
-          ctx.beginPath();
-          ctx.moveTo(node.x, node.y);
-          
-          // Create curved connection
-          const midX = (node.x + targetNode.x) / 2;
-          const midY = (node.y + targetNode.y) / 2;
-          const offsetY = node.level === targetNode.level ? 0 : -50;
-          
-          ctx.quadraticCurveTo(midX, midY + offsetY, targetNode.x, targetNode.y);
-          ctx.stroke();
-          
-          ctx.shadowBlur = 0;
-        }
-      });
-    });
-
-    ctx.setLineDash([]);
-
-    // Draw nodes
-    nodes.forEach(node => {
-      const radius = node.level === 0 ? 80 : 60;
-      
-      // Node shadow/glow
-      ctx.shadowColor = node.color;
-      ctx.shadowBlur = 20;
-      
-      // Node background with gradient
-      const nodeGradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, radius);
-      nodeGradient.addColorStop(0, node.color);
-      nodeGradient.addColorStop(1, node.color + '80');
-      
-      ctx.fillStyle = nodeGradient;
-      ctx.beginPath();
-      ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI);
-      ctx.fill();
-
-      // Node border
-      ctx.strokeStyle = node.color;
-      ctx.lineWidth = 3;
-      ctx.stroke();
-      
-      ctx.shadowBlur = 0;
-
-      // Node text
-      ctx.fillStyle = '#ffffff';
-      ctx.font = node.level === 0 ? 'bold 16px Arial' : 'bold 12px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      
-      // Multi-line text for long labels
-      const words = node.text.split(' ');
-      const maxWidth = radius * 1.5;
-      let line = '';
-      let y = node.y;
-      
-      if (words.length > 2) {
-        y = node.y - 10;
-      }
-      
-      for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' ';
-        const metrics = ctx.measureText(testLine);
-        const testWidth = metrics.width;
-        
-        if (testWidth > maxWidth && n > 0) {
-          ctx.fillText(line, node.x, y);
-          line = words[n] + ' ';
-          y += 16;
-        } else {
-          line = testLine;
-        }
-      }
-      ctx.fillText(line, node.x, y);
-    });
+  const toggleAnimation = () => {
+    setIsAnimated(!isAnimated);
+    setEdges(edges => 
+      edges.map(edge => ({
+        ...edge,
+        animated: !isAnimated
+      }))
+    );
   };
 
-  const handleCanvasClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    // Check if clicked on a node
-    const clickedNode = nodes.find(node => {
-      const radius = node.level === 0 ? 80 : 60;
-      const distance = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
-      return distance <= radius;
-    });
-
-    if (clickedNode) {
-      setSelectedNode(clickedNode);
-      toast({
-        title: "Nœud sélectionné",
-        description: `${clickedNode.text} - Niveau ${clickedNode.level}`,
-      });
-    }
-  };
-
-  const handleMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    const clickedNode = nodes.find(node => {
-      const radius = node.level === 0 ? 80 : 60;
-      const distance = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2);
-      return distance <= radius;
-    });
-
-    if (clickedNode) {
-      setDraggedNode(clickedNode.id);
-      setDragOffset({
-        x: x - clickedNode.x,
-        y: y - clickedNode.y
-      });
-    }
-  };
-
-  const handleMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!draggedNode) return;
-
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-
-    setNodes(prev => prev.map(node => 
-      node.id === draggedNode 
-        ? { ...node, x: x - dragOffset.x, y: y - dragOffset.y }
-        : node
-    ));
-  };
-
-  const handleMouseUp = () => {
-    setDraggedNode(null);
-  };
-
-  const addNode = () => {
-    if (!newNodeText.trim()) return;
-
-    const newNode: MindMapNode = {
-      id: Date.now().toString(),
-      text: newNodeText,
-      x: 400 + Math.random() * 200 - 100,
-      y: 300 + Math.random() * 200 - 100,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      level: selectedNode ? selectedNode.level + 1 : 1,
-      connections: []
-    };
-
-    if (selectedNode) {
-      setNodes(prev => prev.map(node => 
-        node.id === selectedNode.id 
-          ? { ...node, connections: [...node.connections, newNode.id] }
-          : node
-      ).concat(newNode));
-    } else {
-      setNodes(prev => [...prev, newNode]);
-    }
-
-    setNewNodeText('');
-    setNewNodeDescription('');
-    setIsDialogOpen(false);
-    
-    toast({
-      title: "Nouveau nœud ajouté",
-      description: `"${newNodeText}" a été ajouté à la carte mentale`,
-    });
-  };
-
-  const exportMindMap = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const link = document.createElement('a');
-    link.download = 'luvvix-mindmap.png';
-    link.href = canvas.toDataURL();
-    link.click();
-
-    toast({
-      title: "Carte mentale exportée",
-      description: "L'image a été téléchargée avec succès",
-    });
+  const resetLayout = () => {
+    setNodes(initialNodes);
+    setEdges(initialEdges);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
       <div className="max-w-7xl mx-auto">
-        <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
-          <CardHeader className="text-center">
-            <CardTitle className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent flex items-center justify-center gap-3">
-              <Brain className="h-10 w-10 text-purple-400" />
-              LuvviX MindMap
-              <Sparkles className="h-10 w-10 text-pink-400" />
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <div className="p-3 bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl">
+              <Brain className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-white">
+              LuvviX Mind Map
+            </h1>
+          </div>
+          <p className="text-xl text-purple-200 max-w-3xl mx-auto">
+            Visualisation interactive de l'écosystème technologique LuvviX avec tous ses composants et intégrations
+          </p>
+        </div>
+
+        <Card className="bg-white/10 backdrop-blur-lg border-white/20 mb-6">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Contrôles de la Mind Map
             </CardTitle>
-            <CardDescription className="text-gray-300 text-lg">
-              Visualisez et explorez l'écosystème LuvviX de manière interactive
+            <CardDescription className="text-purple-200">
+              Explorez les connexions et interactions entre les composants de l'écosystème
             </CardDescription>
           </CardHeader>
-          
-          <CardContent className="space-y-6">
-            <div className="flex flex-wrap justify-center gap-4">
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Ajouter un nœud
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="bg-slate-800 border-slate-700">
-                  <DialogHeader>
-                    <DialogTitle className="text-white">Créer un nouveau nœud</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <Input
-                      placeholder="Nom du nœud"
-                      value={newNodeText}
-                      onChange={(e) => setNewNodeText(e.target.value)}
-                      className="bg-slate-700 border-slate-600 text-white"
-                    />
-                    <Textarea
-                      placeholder="Description (optionnel)"
-                      value={newNodeDescription}
-                      onChange={(e) => setNewNodeDescription(e.target.value)}
-                      className="bg-slate-700 border-slate-600 text-white"
-                    />
-                    <Button onClick={addNode} className="w-full bg-gradient-to-r from-purple-500 to-pink-500">
-                      <Zap className="w-4 h-4 mr-2" />
-                      Créer le nœud
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Button onClick={exportMindMap} variant="outline" className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-white">
-                <Download className="w-4 h-4 mr-2" />
-                Exporter
+          <CardContent>
+            <div className="flex flex-wrap gap-4">
+              <Button
+                onClick={toggleAnimation}
+                variant="outline"
+                className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                {isAnimated ? 'Désactiver' : 'Activer'} animations
               </Button>
-
-              <Button variant="outline" className="border-pink-400 text-pink-400 hover:bg-pink-400 hover:text-white">
-                <Share2 className="w-4 h-4 mr-2" />
-                Partager
+              <Button
+                onClick={resetLayout}
+                variant="outline"
+                className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Réinitialiser
               </Button>
-            </div>
-
-            {selectedNode && (
-              <div className="bg-white/5 backdrop-blur rounded-lg p-4 border border-white/10">
-                <h3 className="text-white font-semibold mb-2 flex items-center gap-2">
-                  <Network className="w-5 h-5" />
-                  Nœud sélectionné: {selectedNode.text}
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary" style={{ backgroundColor: selectedNode.color + '40', color: selectedNode.color }}>
-                    Niveau {selectedNode.level}
-                  </Badge>
-                  <Badge variant="outline" className="text-gray-300 border-gray-500">
-                    {selectedNode.connections.length} connexions
-                  </Badge>
-                </div>
+              <div className="flex gap-2 flex-wrap">
+                <Badge className="bg-purple-600">Core: Composants principaux</Badge>
+                <Badge className="bg-pink-600">Platform: Plateformes</Badge>
+                <Badge className="bg-blue-600">Service: Services</Badge>
+                <Badge className="bg-green-600">Feature: Fonctionnalités</Badge>
+                <Badge className="bg-orange-600">Integration: Intégrations</Badge>
               </div>
-            )}
-
-            <div className="relative">
-              <canvas
-                ref={canvasRef}
-                width={800}
-                height={600}
-                className="w-full h-auto border border-white/20 rounded-lg bg-gradient-to-br from-slate-800 to-slate-900 cursor-crosshair shadow-2xl"
-                onClick={handleCanvasClick}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-              />
-              
-              <div className="absolute top-4 left-4 bg-black/30 backdrop-blur rounded-lg p-3">
-                <p className="text-white text-sm font-medium">💡 Astuce</p>
-                <p className="text-gray-300 text-xs">Cliquez pour sélectionner, glissez pour déplacer</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-white/5 backdrop-blur border-white/10">
-                <CardContent className="p-4">
-                  <h4 className="text-white font-semibold mb-2">🎯 Fonctionnalités</h4>
-                  <ul className="text-gray-300 text-sm space-y-1">
-                    <li>• Glisser-déposer interactif</li>
-                    <li>• Connexions dynamiques</li>
-                    <li>• Export haute qualité</li>
-                  </ul>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/5 backdrop-blur border-white/10">
-                <CardContent className="p-4">
-                  <h4 className="text-white font-semibold mb-2">🌟 Statistiques</h4>
-                  <ul className="text-gray-300 text-sm space-y-1">
-                    <li>• {nodes.length} nœuds total</li>
-                    <li>• {nodes.filter(n => n.level === 0).length} nœud central</li>
-                    <li>• {nodes.filter(n => n.level === 1).length} branches principales</li>
-                  </ul>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/5 backdrop-blur border-white/10">
-                <CardContent className="p-4">
-                  <h4 className="text-white font-semibold mb-2">🚀 Actions</h4>
-                  <div className="space-y-2">
-                    <Button size="sm" variant="outline" className="w-full text-xs border-purple-400 text-purple-400">
-                      Réorganiser
-                    </Button>
-                    <Button size="sm" variant="outline" className="w-full text-xs border-pink-400 text-pink-400">
-                      Thème personnalisé
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </CardContent>
         </Card>
+
+        <div className="h-[800px] bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl border border-white/20 shadow-2xl">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            nodeTypes={nodeTypes}
+            fitView
+            attributionPosition="bottom-left"
+            className="rounded-xl"
+          >
+            <Background 
+              color="#ffffff" 
+              gap={20} 
+              size={1}
+              variant="dots" 
+              style={{ opacity: 0.1 }}
+            />
+            <Controls 
+              className="bg-white/10 backdrop-blur-lg border-white/20"
+              style={{ 
+                button: { 
+                  backgroundColor: 'rgba(255,255,255,0.1)', 
+                  color: 'white',
+                  border: '1px solid rgba(255,255,255,0.2)'
+                }
+              }}
+            />
+            <MiniMap 
+              nodeColor={(node) => {
+                switch (node.data.type) {
+                  case 'core': return '#667eea';
+                  case 'platform': return '#f093fb';
+                  case 'service': return '#4facfe';
+                  case 'feature': return '#43e97b';
+                  case 'integration': return '#fa709a';
+                  default: return '#667eea';
+                }
+              }}
+              className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg"
+            />
+            <Panel position="top-right" className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-lg p-4">
+              <div className="text-white">
+                <h3 className="font-semibold mb-2">Légende</h3>
+                <div className="space-y-1 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                    <span>Écosystème central</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-pink-500"></div>
+                    <span>Plateformes</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    <span>Services</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span>Fonctionnalités</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                    <span>Intégrations</span>
+                  </div>
+                </div>
+              </div>
+            </Panel>
+          </ReactFlow>
+        </div>
       </div>
     </div>
   );

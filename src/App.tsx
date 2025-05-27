@@ -1,4 +1,3 @@
-
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { DecentralizedStorageProvider } from "@/hooks/use-ipfs";
@@ -40,6 +39,7 @@ import AccountSettings from "./pages/AccountSettings";
 import TranslatePage from "./pages/TranslatePage";
 import MindMapPage from "./pages/MindMapPage";
 import EcosystemOrchestratorPage from "./pages/EcosystemOrchestratorPage";
+import CodeStudioPage from "./pages/CodeStudioPage";
 
 function App() {
   return (
@@ -56,6 +56,7 @@ function App() {
               <Route path="/weather" element={<WeatherPage />} />
               <Route path="/translate" element={<TranslatePage />} />
               <Route path="/mindmap" element={<MindMapPage />} />
+              <Route path="/code-studio" element={<CodeStudioPage />} />
               <Route path="/orchestrator" element={
                 <ProtectedRoute>
                   <EcosystemOrchestratorPage />

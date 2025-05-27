@@ -12,7 +12,7 @@ import {
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Sparkles, Bot, Cloud, FileText, User, ChevronDown, AppWindow, Newspaper, Radio, HeartPulse, Network } from "lucide-react";
+import { Menu, Sparkles, Bot, Cloud, FileText, User, ChevronDown, AppWindow, Newspaper, Radio, HeartPulse, Network, Languages, Code } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -46,7 +46,7 @@ const Navbar = () => {
       className={cn(
         "fixed top-0 w-full z-50 transition-all duration-300",
         isScrolled
-          ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-sm"
+          ? "bg-white/95 dark:bg-gray-900/95 backdrop-blur-md shadow-lg border-b border-gray-200 dark:border-gray-800"
           : "bg-transparent"
       )}
     >
@@ -58,7 +58,7 @@ const Navbar = () => {
             </span>
           </Link>
 
-          <NavigationMenu className="hidden md:block">
+          <NavigationMenu className="hidden lg:block">
             <NavigationMenuList>
               <NavigationMenuItem>
                 <NavigationMenuTrigger 
@@ -68,46 +68,50 @@ const Navbar = () => {
                   )}
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Produits
+                  Applications
                 </NavigationMenuTrigger>
-                <NavigationMenuContent className="rounded-xl p-4 min-w-[400px]">
-                  <div className="grid gap-3 md:grid-cols-2">
+                <NavigationMenuContent className="rounded-xl p-4 min-w-[500px]">
+                  <div className="grid gap-3 md:grid-cols-3">
                     <Link to="/ai-studio" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                       <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-full">
                         <Bot className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">LuvviX AI</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Créez vos propres agents IA</p>
+                        <h3 className="font-medium">LuvviX AI Studio</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Créez vos agents IA</p>
                       </div>
                     </Link>
-                    <Link to="/medecine" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                      <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full">
-                        <HeartPulse className="w-5 h-5 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">LuvviX Medic</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Solutions pour la santé numérique</p>
-                      </div>
-                    </Link>
-                    <Link to="/streammix" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                      <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full">
-                        <Radio className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">LuvviX StreamMix</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Streaming audio et vidéo</p>
-                      </div>
-                    </Link>
-                    <Link to="/cloud" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    
+                    <Link to="/translate" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                       <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full">
-                        <Cloud className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <Languages className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">LuvviX Cloud</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Stockage sécurisé de fichiers</p>
+                        <h3 className="font-medium">LuvviX Translate</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Traduction IA instantanée</p>
                       </div>
                     </Link>
+                    
+                    <Link to="/mindmap" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-full">
+                        <Network className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">LuvviX MindMap</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Cartes mentales IA</p>
+                      </div>
+                    </Link>
+                    
+                    <Link to="/code-studio" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      <div className="bg-green-100 dark:bg-green-900/30 p-2 rounded-full">
+                        <Code className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">LuvviX Code Studio</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Génération de code IA</p>
+                      </div>
+                    </Link>
+                    
                     <Link to="/forms" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                       <div className="bg-pink-100 dark:bg-pink-900/30 p-2 rounded-full">
                         <FileText className="w-5 h-5 text-pink-600 dark:text-pink-400" />
@@ -117,6 +121,17 @@ const Navbar = () => {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Formulaires intelligents</p>
                       </div>
                     </Link>
+                    
+                    <Link to="/cloud" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      <div className="bg-sky-100 dark:bg-sky-900/30 p-2 rounded-full">
+                        <Cloud className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">LuvviX Cloud</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Stockage sécurisé</p>
+                      </div>
+                    </Link>
+                    
                     <Link to="/news" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                       <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-full">
                         <Newspaper className="w-5 h-5 text-amber-600 dark:text-amber-400" />
@@ -126,22 +141,24 @@ const Navbar = () => {
                         <p className="text-sm text-gray-500 dark:text-gray-400">Actualités personnalisées</p>
                       </div>
                     </Link>
-                    <Link to="/orchestrator" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                    
+                    <Link to="/weather" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                       <div className="bg-cyan-100 dark:bg-cyan-900/30 p-2 rounded-full">
-                        <Network className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                        <Cloud className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">Orchestrateur</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Gestion d'écosystème avancée</p>
+                        <h3 className="font-medium">LuvviX Weather</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Météo intelligente</p>
                       </div>
                     </Link>
-                    <Link to="/ecosystem" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                      <div className="bg-indigo-100 dark:bg-indigo-900/30 p-2 rounded-full">
-                        <AppWindow className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                    
+                    <Link to="/#" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors opacity-60">
+                      <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-full">
+                        <Radio className="w-5 h-5 text-red-600 dark:text-red-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">Écosystème complet</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Découvrez toutes nos applications</p>
+                        <h3 className="font-medium">LuvviX StreamMix</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Bientôt disponible</p>
                       </div>
                     </Link>
                   </div>
@@ -211,10 +228,6 @@ const Navbar = () => {
                     <Bot className="mr-2 h-4 w-4" />
                     AI Studio
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/orchestrator")}>
-                    <Network className="mr-2 h-4 w-4" />
-                    Orchestrateur
-                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()}>
                     Se déconnecter
@@ -232,20 +245,19 @@ const Navbar = () => {
                         Se connecter
                       </Button>
                     </Link>
-                    
                   </div>
                 )}
               </>
             )}
 
             <Sheet>
-              <SheetTrigger className="md:hidden">
+              <SheetTrigger className="lg:hidden">
                 <Menu className={cn(
                   "h-6 w-6",
                   isScrolled ? 'text-gray-700 dark:text-gray-200' : 'text-white dark:text-gray-200'
                 )} />
               </SheetTrigger>
-              <SheetContent side="right" className="w-full sm:w-80">
+              <SheetContent side="right" className="w-full sm:w-80 pt-16">
                 <div className="py-4">
                   {user && (
                     <div className="flex items-center gap-3 mb-6 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
@@ -265,22 +277,22 @@ const Navbar = () => {
                     
                     <Link to="/ai-studio" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Bot className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                      <span>LuvviX AI</span>
+                      <span>LuvviX AI Studio</span>
                     </Link>
                     
-                    <Link to="/medecine" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                      <HeartPulse className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      <span>LuvviX Medic</span>
+                    <Link to="/translate" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <Languages className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <span>LuvviX Translate</span>
                     </Link>
                     
-                    <Link to="/streammix" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                      <Radio className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                      <span>LuvviX StreamMix</span>
+                    <Link to="/mindmap" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <Network className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                      <span>LuvviX MindMap</span>
                     </Link>
                     
-                    <Link to="/cloud" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                      <Cloud className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      <span>LuvviX Cloud</span>
+                    <Link to="/code-studio" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <Code className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <span>LuvviX Code Studio</span>
                     </Link>
                     
                     <Link to="/forms" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
@@ -288,21 +300,26 @@ const Navbar = () => {
                       <span>LuvviX Forms</span>
                     </Link>
                     
+                    <Link to="/cloud" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <Cloud className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+                      <span>LuvviX Cloud</span>
+                    </Link>
+                    
                     <Link to="/news" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Newspaper className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                       <span>LuvviX News</span>
                     </Link>
                     
-                    <Link to="/orchestrator" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                      <Network className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                      <span>Orchestrateur</span>
+                    <Link to="/weather" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <Cloud className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
+                      <span>LuvviX Weather</span>
                     </Link>
                     
                     <div className="border-t my-4"></div>
                     
                     <Link to="/ecosystem" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <AppWindow className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                      <span>Écosystème</span>
+                      <span>Écosystème complet</span>
                     </Link>
                   </div>
                   

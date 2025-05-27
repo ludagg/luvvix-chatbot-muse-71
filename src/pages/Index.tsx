@@ -1,3 +1,4 @@
+
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Ecosystem from "@/components/Ecosystem";
@@ -14,7 +15,7 @@ import FormsPromo from "@/components/forms/FormsPromo";
 import CeoSection from "@/components/CeoSection";
 import AIStudioPromo from "@/components/ai-studio/AIStudioPromo";
 import LuvvixIdPromo from "@/components/LuvvixIdPromo";
-import { Bot, FileText, Newspaper, Cloud, Sparkles, AppWindow, ArrowRight, Languages, Network } from "lucide-react";
+import { Bot, FileText, Newspaper, Cloud, Sparkles, AppWindow, ArrowRight, Languages, Network, Code, CloudSun } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { HoverGlowCard } from "@/components/ui/hover-glow-card";
@@ -42,7 +43,7 @@ const Index = () => {
               </p>
             </motion.div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
                 <div className="flex flex-col items-center text-center">
                   <div className="w-16 h-16 flex items-center justify-center bg-violet-100 dark:bg-violet-900/30 rounded-full mb-4">
@@ -51,19 +52,6 @@ const Index = () => {
                   <h3 className="text-lg font-semibold mb-2">AI Studio</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Créez vos propres agents IA pour automatiser vos tâches.</p>
                   <Link to="/ai-studio">
-                    <Button variant="outline" size="sm">Découvrir</Button>
-                  </Link>
-                </div>
-              </HoverGlowCard>
-              
-              <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 flex items-center justify-center bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
-                    <FileText className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">Forms</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">Créez, partagez et analysez des formulaires intelligents.</p>
-                  <Link to="/forms">
                     <Button variant="outline" size="sm">Découvrir</Button>
                   </Link>
                 </div>
@@ -98,7 +86,33 @@ const Index = () => {
               <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
                 <div className="flex flex-col items-center text-center">
                   <div className="w-16 h-16 flex items-center justify-center bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
-                    <Cloud className="w-8 h-8 text-green-600 dark:text-green-400" />
+                    <Code className="w-8 h-8 text-green-600 dark:text-green-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Code Studio</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Génération et optimisation de code avec IA.</p>
+                  <Link to="/code-studio">
+                    <Button variant="outline" size="sm">Découvrir</Button>
+                  </Link>
+                </div>
+              </HoverGlowCard>
+              
+              <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 flex items-center justify-center bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
+                    <FileText className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Forms</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Créez, partagez et analysez des formulaires intelligents.</p>
+                  <Link to="/forms">
+                    <Button variant="outline" size="sm">Découvrir</Button>
+                  </Link>
+                </div>
+              </HoverGlowCard>
+              
+              <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 flex items-center justify-center bg-sky-100 dark:bg-sky-900/30 rounded-full mb-4">
+                    <Cloud className="w-8 h-8 text-sky-600 dark:text-sky-400" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">Cloud</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Stockez et partagez vos fichiers en toute sécurité.</p>
@@ -117,6 +131,19 @@ const Index = () => {
                   <h3 className="text-lg font-semibold mb-2">News</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Restez informé avec des actualités personnalisées.</p>
                   <Link to="/news">
+                    <Button variant="outline" size="sm">Découvrir</Button>
+                  </Link>
+                </div>
+              </HoverGlowCard>
+              
+              <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 flex items-center justify-center bg-cyan-100 dark:bg-cyan-900/30 rounded-full mb-4">
+                    <CloudSun className="w-8 h-8 text-cyan-600 dark:text-cyan-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">Weather</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Prévisions météo intelligentes et alertes.</p>
+                  <Link to="/weather">
                     <Button variant="outline" size="sm">Découvrir</Button>
                   </Link>
                 </div>

@@ -1,3 +1,4 @@
+
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { DecentralizedStorageProvider } from "@/hooks/use-ipfs";
@@ -38,7 +39,6 @@ import LuvvixAIIntegrationPage from "./pages/LuvvixAIIntegrationPage";
 import AccountSettings from "./pages/AccountSettings";
 import TranslatePage from "./pages/TranslatePage";
 import MindMapPage from "./pages/MindMapPage";
-import EcosystemOrchestratorPage from "./pages/EcosystemOrchestratorPage";
 import CodeStudioPage from "./pages/CodeStudioPage";
 
 function App() {
@@ -57,11 +57,6 @@ function App() {
               <Route path="/translate" element={<TranslatePage />} />
               <Route path="/mindmap" element={<MindMapPage />} />
               <Route path="/code-studio" element={<CodeStudioPage />} />
-              <Route path="/orchestrator" element={
-                <ProtectedRoute>
-                  <EcosystemOrchestratorPage />
-                </ProtectedRoute>
-              } />
               <Route path="/oauth/authorize" element={
                 <ProtectedRoute>
                   <OAuth />

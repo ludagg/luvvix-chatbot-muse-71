@@ -40,6 +40,7 @@ import AccountSettings from "./pages/AccountSettings";
 import TranslatePage from "./pages/TranslatePage";
 import MindMapPage from "./pages/MindMapPage";
 import CodeStudioPage from "./pages/CodeStudioPage";
+import LearnPage from "./pages/LearnPage";
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
               <Route path="/translate" element={<TranslatePage />} />
               <Route path="/mindmap" element={<MindMapPage />} />
               <Route path="/code-studio" element={<CodeStudioPage />} />
+              <Route path="/learn" element={<LearnPage />} />
               <Route path="/oauth/authorize" element={
                 <ProtectedRoute>
                   <OAuth />
@@ -80,13 +82,9 @@ function App() {
               } />
               <Route path="/admin" element={<AdminPanel />} />
               
-              {/* Ecosystem route */}
               <Route path="/ecosystem" element={<EcosystemPage />} />
-              
-              {/* LuvviX AI integration route */}
               <Route path="/ai-integration" element={<LuvvixAIIntegrationPage />} />
               
-              {/* Routes for LuvviX Forms */}
               <Route path="/forms" element={<FormsPage />} />
               <Route path="/forms/create" element={
                 <ProtectedRoute>
@@ -110,7 +108,6 @@ function App() {
                 </ProtectedRoute>
               } />
               
-              {/* Routes for LuvviX AI Studio */}
               <Route path="/ai-studio" element={<AIStudioPage />} />
               <Route path="/ai-studio/dashboard" element={
                 <ProtectedRoute>
@@ -132,18 +129,14 @@ function App() {
               <Route path="/ai-studio/chat/:agentId" element={<AIStudioChatPage />} />
               <Route path="/ai-studio/admin" element={<AIStudioAdminPage />} />
               
-              {/* AI Embed Routes */}
               <Route path="/ai-embed/:agentId" element={<AIEmbedPage />} />
               
-              {/* Legal Pages */}
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/cookies" element={<CookiesPage />} />
               
-              {/* Documentation */}
               <Route path="/docs/*" element={<DocsPage />} />
               
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </DecentralizedStorageProvider>

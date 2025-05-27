@@ -2,13 +2,13 @@
 import { useState, useMemo } from "react";
 import AppIcon from "./AppIcon";
 import SearchBar from "./SearchBar";
-import { Brain, FileText, Newspaper, CloudSun, Settings, User, ShieldCheck, Cloud, Bot, Sparkles } from "lucide-react";
+import { Brain, FileText, Newspaper, CloudSun, Settings, User, ShieldCheck, Cloud, Bot, Sparkles, GraduationCap, Code } from "lucide-react";
 
 interface AppDefinition {
   id: string;
   name: string;
   description: string;
-  icon: any;  // Using any here for the icon component
+  icon: any;
   to: string;
   color: string;
   keywords: string[];
@@ -25,13 +25,22 @@ const apps: AppDefinition[] = [
     keywords: ["ia", "intelligence", "artificielle", "ai", "assistant", "chatbot", "studio", "agent"]
   },
   {
-    id: "ai",
-    name: "LuvviX AI",
-    description: "Intelligence artificielle avancée",
-    icon: Brain,
-    to: "/ai",
+    id: "learn",
+    name: "LuvviX Learn",
+    description: "Plateforme d'apprentissage IA",
+    icon: GraduationCap,
+    to: "/learn",
     color: "bg-blue-500",
-    keywords: ["ia", "intelligence", "artificielle", "ai", "assistant", "chatbot"]
+    keywords: ["learn", "apprentissage", "formation", "cours", "certification", "éducation"]
+  },
+  {
+    id: "code-studio",
+    name: "LuvviX Code Studio",
+    description: "Studio de développement IA",
+    icon: Code,
+    to: "/code-studio",
+    color: "bg-indigo-500",
+    keywords: ["code", "développement", "programmation", "studio", "génération"]
   },
   {
     id: "forms",
@@ -59,24 +68,6 @@ const apps: AppDefinition[] = [
     to: "/weather",
     color: "bg-sky-500",
     keywords: ["meteo", "météo", "temps", "prévisions"]
-  },
-  {
-    id: "streammix",
-    name: "LuvviX StreamMix",
-    description: "Streaming multimédia",
-    icon: Cloud,
-    to: "/streammix",
-    color: "bg-red-500",
-    keywords: ["stream", "streaming", "vidéo", "media", "multimédia"]
-  },
-  {
-    id: "medic",
-    name: "LuvviX Medic",
-    description: "Solutions de santé",
-    icon: ShieldCheck,
-    to: "/medecine",
-    color: "bg-emerald-500",
-    keywords: ["santé", "médecine", "health", "medic", "medical"]
   },
   {
     id: "cloud",

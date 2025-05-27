@@ -123,7 +123,7 @@ const CodeStudio: React.FC = () => {
 
     setIsGenerating(true);
     try {
-      const response = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/gemini-generate-code', {
+      const response = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/groq-generate-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,7 +144,7 @@ const CodeStudio: React.FC = () => {
       
       toast({
         title: "Code généré",
-        description: "Le code a été généré avec succès"
+        description: "Le code a été généré avec succès par Groq AI"
       });
     } catch (error) {
       console.error('Erreur de génération:', error);
@@ -170,7 +170,7 @@ const CodeStudio: React.FC = () => {
 
     setIsGenerating(true);
     try {
-      const response = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/gemini-optimize-code', {
+      const response = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/groq-optimize-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -190,7 +190,7 @@ const CodeStudio: React.FC = () => {
       
       toast({
         title: "Code optimisé",
-        description: "Le code a été optimisé avec succès"
+        description: "Le code a été optimisé avec succès par Groq AI"
       });
     } catch (error) {
       console.error('Erreur d\'optimisation:', error);
@@ -294,7 +294,7 @@ const CodeStudio: React.FC = () => {
             </h1>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Studio de développement IA révolutionnaire avec génération intelligente, analyse avancée et optimisation de code
+            Studio de développement IA révolutionnaire avec génération intelligente, analyse avancée et optimisation de code alimenté par Groq AI
           </p>
         </div>
 
@@ -335,7 +335,7 @@ const CodeStudio: React.FC = () => {
               </Select>
               
               <Badge variant="outline" className="bg-purple-100 text-purple-700">
-                12+ Langages supportés
+                Alimenté par Groq AI
               </Badge>
             </div>
             
@@ -367,7 +367,7 @@ const CodeStudio: React.FC = () => {
                     Génération de Code IA
                   </CardTitle>
                   <CardDescription>
-                    Décrivez ce que vous voulez créer et laissez Gemini AI générer du code production-ready
+                    Décrivez ce que vous voulez créer et laissez Groq AI générer du code production-ready ultra-rapidement
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -575,7 +575,7 @@ const CodeStudio: React.FC = () => {
                     Optimisation de Code
                   </CardTitle>
                   <CardDescription>
-                    Améliorez les performances, la lisibilité et l'efficacité de votre code
+                    Améliorez les performances, la lisibilité et l'efficacité de votre code avec Groq AI
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">

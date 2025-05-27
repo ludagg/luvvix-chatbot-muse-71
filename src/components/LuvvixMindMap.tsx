@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ReactFlow,
@@ -14,6 +13,7 @@ import {
   Panel,
   Position,
   MarkerType,
+  BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,11 +38,6 @@ import {
   Settings,
   RefreshCw
 } from 'lucide-react';
-
-const iconMap = {
-  Brain, Smartphone, Cloud, Shield, Zap, Users, Code, Database,
-  Cpu, Globe, Lock, FileText, Bot, Sparkles, BarChart3, Settings
-};
 
 // Enhanced node styles with better visibility
 const nodeStyles = {
@@ -526,18 +521,11 @@ const LuvvixMindMap: React.FC = () => {
               color="#ffffff" 
               gap={20} 
               size={1}
-              variant="dots" 
+              variant={BackgroundVariant.Dots}
               style={{ opacity: 0.1 }}
             />
             <Controls 
-              className="bg-white/10 backdrop-blur-lg border-white/20"
-              style={{ 
-                button: { 
-                  backgroundColor: 'rgba(255,255,255,0.1)', 
-                  color: 'white',
-                  border: '1px solid rgba(255,255,255,0.2)'
-                }
-              }}
+              className="bg-white/10 backdrop-blur-lg border-white/20 [&>button]:bg-white/10 [&>button]:text-white [&>button]:border-white/20"
             />
             <MiniMap 
               nodeColor={(node) => {

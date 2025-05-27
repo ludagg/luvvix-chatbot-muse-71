@@ -39,6 +39,27 @@ import {
   RefreshCw
 } from 'lucide-react';
 
+// Icon mapping for dynamic icon rendering
+const iconMap = {
+  Brain,
+  Smartphone,
+  Cloud,
+  Shield,
+  Zap,
+  Users,
+  Code,
+  Database,
+  Cpu,
+  Globe,
+  Lock,
+  FileText,
+  Bot,
+  Sparkles,
+  BarChart3,
+  Settings,
+  RefreshCw
+} as const;
+
 // Enhanced node styles with better visibility
 const nodeStyles = {
   core: {

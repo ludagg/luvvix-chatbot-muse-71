@@ -15,9 +15,7 @@ import {
   ChevronRight,
   ExternalLink,
   Languages,
-  Network,
-  Code,
-  Cpu
+  Network
 } from "lucide-react";
 
 interface EcosystemCardProps {
@@ -58,22 +56,14 @@ const Ecosystem = () => {
             },
             {
               id: 2,
-              title: "LuvviX Neural Nexus",
-              description: "Assistant IA quantique révolutionnaire pour l'optimisation des flux de travail et prédiction comportementale.",
-              icon: <Cpu size={48} />,
-              link: "/neural-nexus",
-              color: "bg-gradient-to-br from-indigo-500 to-purple-500",
+              title: "LuvviX AI External",
+              description: "Notre application LuvviX AI externe - connectez-vous avec votre compte LuvviX ID.",
+              icon: <Brain size={48} />,
+              link: "/ai-integration",
+              color: "bg-gradient-to-br from-violet-500 to-indigo-500",
             },
             {
               id: 3,
-              title: "LuvviX Code Studio",
-              description: "Studio de développement IA avec génération intelligente, analyse avancée et optimisation de code.",
-              icon: <Code size={48} />,
-              link: "/code-studio",
-              color: "bg-gradient-to-br from-green-500 to-blue-500",
-            },
-            {
-              id: 4,
               title: "LuvviX Translate",
               description: "Traduction instantanée alimentée par Gemini AI avec reconnaissance vocale et traduction en temps réel.",
               icon: <Languages size={48} />,
@@ -81,7 +71,7 @@ const Ecosystem = () => {
               color: "bg-gradient-to-br from-blue-500 to-purple-500",
             },
             {
-              id: 5,
+              id: 4,
               title: "LuvviX MindMap",
               description: "Créez des cartes mentales intelligentes avec l'IA pour organiser vos idées et stimuler votre créativité.",
               icon: <Network size={48} />,
@@ -89,7 +79,7 @@ const Ecosystem = () => {
               color: "bg-gradient-to-br from-indigo-500 to-purple-500",
             },
             {
-              id: 6,
+              id: 5,
               title: "LuvviX Medic",
               description: "Solutions de santé innovantes pour une meilleure gestion de votre bien-être.",
               icon: <HeartPulse size={48} />,
@@ -97,7 +87,7 @@ const Ecosystem = () => {
               color: "bg-gradient-to-br from-green-500 to-teal-500",
             },
             {
-              id: 7,
+              id: 6,
               title: "LuvviX StreamMix",
               description: "Plateforme de streaming audio et vidéo pour une expérience multimédia immersive.",
               icon: <Radio size={48} />,
@@ -105,7 +95,7 @@ const Ecosystem = () => {
               color: "bg-gradient-to-br from-orange-500 to-red-500",
             },
             {
-              id: 8,
+              id: 7,
               title: "LuvviX Cloud",
               description: "Stockage en nuage sécurisé et accessible pour tous vos fichiers importants.",
               icon: <Cloud size={48} />,
@@ -113,7 +103,7 @@ const Ecosystem = () => {
               color: "bg-gradient-to-br from-yellow-500 to-amber-500",
             },
             {
-              id: 9,
+              id: 8,
               title: "LuvviX Forms",
               description: "Créez des formulaires personnalisés et collectez des données en toute simplicité.",
               icon: <FileText size={48} />,
@@ -121,7 +111,7 @@ const Ecosystem = () => {
               color: "bg-gradient-to-br from-pink-500 to-rose-500",
             },
             {
-              id: 10,
+              id: 9,
               title: "LuvviX Analytics",
               description: "Outils d'analyse de données pour prendre des décisions éclairées et optimiser vos performances.",
               icon: <BarChart size={48} />,

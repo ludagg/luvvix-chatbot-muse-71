@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ReactFlow,
@@ -12,6 +11,7 @@ import {
   Background,
   MiniMap,
   Panel,
+  Position,
   MarkerType,
   BackgroundVariant,
 } from '@xyflow/react';
@@ -36,8 +36,7 @@ import {
   Sparkles,
   BarChart3,
   Settings,
-  RefreshCw,
-  Network
+  RefreshCw
 } from 'lucide-react';
 
 // Icon mapping for dynamic icon rendering
@@ -58,8 +57,7 @@ const iconMap = {
   Sparkles,
   BarChart3,
   Settings,
-  RefreshCw,
-  Network
+  RefreshCw
 } as const;
 
 // Enhanced node styles with better visibility
@@ -214,7 +212,7 @@ const initialNodes: Node[] = [
   {
     id: '6',
     type: 'custom',
-    position: { x: 250, y: 500 },
+    position: { x: 350, y: 500 },
     data: { 
       label: 'LuvviX Code Studio', 
       type: 'service',
@@ -227,31 +225,18 @@ const initialNodes: Node[] = [
   {
     id: '7',
     type: 'custom',
-    position: { x: 500, y: 500 },
+    position: { x: 650, y: 500 },
     data: { 
-      label: 'LuvviX Neural Nexus', 
+      label: 'Orchestrateur', 
       type: 'service',
-      icon: 'Cpu',
-      description: 'Assistant IA quantique',
+      icon: 'Settings',
+      description: 'Gestion des interactions',
       status: 'active'
     },
     style: nodeStyles.service
   },
   {
     id: '8',
-    type: 'custom',
-    position: { x: 750, y: 500 },
-    data: { 
-      label: 'LuvviX MindMap', 
-      type: 'service',
-      icon: 'Network',
-      description: 'Cartes mentales IA',
-      status: 'active'
-    },
-    style: nodeStyles.service
-  },
-  {
-    id: '9',
     type: 'custom',
     position: { x: 100, y: 50 },
     data: { 
@@ -263,7 +248,7 @@ const initialNodes: Node[] = [
     style: nodeStyles.feature
   },
   {
-    id: '10',
+    id: '9',
     type: 'custom',
     position: { x: 300, y: 50 },
     data: { 
@@ -275,7 +260,7 @@ const initialNodes: Node[] = [
     style: nodeStyles.feature
   },
   {
-    id: '11',
+    id: '10',
     type: 'custom',
     position: { x: 700, y: 50 },
     data: { 
@@ -287,7 +272,7 @@ const initialNodes: Node[] = [
     style: nodeStyles.feature
   },
   {
-    id: '12',
+    id: '11',
     type: 'custom',
     position: { x: 900, y: 50 },
     data: { 
@@ -299,9 +284,9 @@ const initialNodes: Node[] = [
     style: nodeStyles.feature
   },
   {
-    id: '13',
+    id: '12',
     type: 'custom',
-    position: { x: 150, y: 650 },
+    position: { x: 250, y: 600 },
     data: { 
       label: 'Gemini AI', 
       type: 'integration',
@@ -311,9 +296,9 @@ const initialNodes: Node[] = [
     style: nodeStyles.integration
   },
   {
-    id: '14',
+    id: '13',
     type: 'custom',
-    position: { x: 350, y: 650 },
+    position: { x: 400, y: 650 },
     data: { 
       label: 'Supabase', 
       type: 'integration',
@@ -323,9 +308,9 @@ const initialNodes: Node[] = [
     style: nodeStyles.integration
   },
   {
-    id: '15',
+    id: '14',
     type: 'custom',
-    position: { x: 550, y: 650 },
+    position: { x: 550, y: 600 },
     data: { 
       label: 'WebAuthn', 
       type: 'integration',
@@ -335,7 +320,7 @@ const initialNodes: Node[] = [
     style: nodeStyles.integration
   },
   {
-    id: '16',
+    id: '15',
     type: 'custom',
     position: { x: 750, y: 650 },
     data: { 
@@ -398,16 +383,15 @@ const initialEdges: Edge[] = [
     style: { stroke: '#667eea', strokeWidth: 3 },
     markerEnd: { type: MarkerType.ArrowClosed, color: '#667eea' }
   },
-  { 
-    id: 'e1-8', 
-    source: '1', 
-    target: '8', 
-    animated: true,
-    style: { stroke: '#667eea', strokeWidth: 3 },
-    markerEnd: { type: MarkerType.ArrowClosed, color: '#667eea' }
-  },
   
   // Feature connections
+  { 
+    id: 'e2-8', 
+    source: '2', 
+    target: '8',
+    style: { stroke: '#f093fb', strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: '#f093fb' }
+  },
   { 
     id: 'e2-9', 
     source: '2', 
@@ -416,8 +400,8 @@ const initialEdges: Edge[] = [
     markerEnd: { type: MarkerType.ArrowClosed, color: '#f093fb' }
   },
   { 
-    id: 'e2-10', 
-    source: '2', 
+    id: 'e3-10', 
+    source: '3', 
     target: '10',
     style: { stroke: '#f093fb', strokeWidth: 2 },
     markerEnd: { type: MarkerType.ArrowClosed, color: '#f093fb' }
@@ -429,47 +413,33 @@ const initialEdges: Edge[] = [
     style: { stroke: '#f093fb', strokeWidth: 2 },
     markerEnd: { type: MarkerType.ArrowClosed, color: '#f093fb' }
   },
-  { 
-    id: 'e3-12', 
-    source: '3', 
-    target: '12',
-    style: { stroke: '#f093fb', strokeWidth: 2 },
-    markerEnd: { type: MarkerType.ArrowClosed, color: '#f093fb' }
-  },
   
   // Integration connections
   { 
-    id: 'e6-13', 
+    id: 'e6-12', 
     source: '6', 
-    target: '13',
+    target: '12',
     style: { stroke: '#4facfe', strokeWidth: 2 },
     markerEnd: { type: MarkerType.ArrowClosed, color: '#4facfe' }
   },
   { 
-    id: 'e7-13', 
-    source: '7', 
-    target: '13',
-    style: { stroke: '#4facfe', strokeWidth: 2 },
-    markerEnd: { type: MarkerType.ArrowClosed, color: '#4facfe' }
-  },
-  { 
-    id: 'e1-14', 
+    id: 'e1-13', 
     source: '1', 
-    target: '14',
+    target: '13',
     style: { stroke: '#43e97b', strokeWidth: 2 },
     markerEnd: { type: MarkerType.ArrowClosed, color: '#43e97b' }
   },
   { 
-    id: 'e9-15', 
-    source: '9', 
-    target: '15',
+    id: 'e8-14', 
+    source: '8', 
+    target: '14',
     style: { stroke: '#fa709a', strokeWidth: 2 },
     markerEnd: { type: MarkerType.ArrowClosed, color: '#fa709a' }
   },
   { 
-    id: 'e8-16', 
-    source: '8', 
-    target: '16',
+    id: 'e7-15', 
+    source: '7', 
+    target: '15',
     style: { stroke: '#4facfe', strokeWidth: 2 },
     markerEnd: { type: MarkerType.ArrowClosed, color: '#4facfe' }
   }
@@ -575,7 +545,9 @@ const LuvvixMindMap: React.FC = () => {
               variant={BackgroundVariant.Dots}
               style={{ opacity: 0.1 }}
             />
-            <Controls className="bg-white/10 backdrop-blur-lg border-white/20 [&>button]:bg-white/10 [&>button]:text-white [&>button]:border-white/20 [&>button]:hover:bg-white/20" />
+            <Controls 
+              className="bg-white/10 backdrop-blur-lg border-white/20 [&>button]:bg-white/10 [&>button]:text-white [&>button]:border-white/20"
+            />
             <MiniMap 
               nodeColor={(node) => {
                 switch (node.data.type) {

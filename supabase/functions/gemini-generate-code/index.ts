@@ -66,7 +66,7 @@ Only return the JSON, no additional text.
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
+      throw new Error(`LuvviX API error: ${response.status}`);
     }
 
     const data = await response.json();

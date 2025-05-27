@@ -1,6 +1,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
-import ReactFlow, {
+import {
+  ReactFlow,
   Node,
   Edge,
   addEdge,
@@ -13,8 +14,8 @@ import ReactFlow, {
   Panel,
   Position,
   MarkerType,
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

@@ -1,7 +1,7 @@
 
 /**
  * Authentivix - Biometric authentication system for LuvviX ID
- * Version 3.1.0 - Enhanced WebAuthn implementation with better error handling
+ * Version 3.2.0 - Enhanced error handling and improved 401 management
  */
 
 import {
@@ -64,7 +64,10 @@ export class Authentivix {
     try {
       if (!authToken) {
         const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return false;
+        if (!session) {
+          console.log('No active session found');
+          return false;
+        }
         authToken = session.access_token;
       }
 
@@ -76,8 +79,13 @@ export class Authentivix {
         },
       });
 
+      if (response.status === 401) {
+        console.log('Authentication token expired or invalid');
+        return false;
+      }
+
       if (!response.ok) {
-        console.error('Failed to check enrollment:', response.status);
+        console.error('Failed to check enrollment:', response.status, await response.text());
         return false;
       }
       
@@ -104,6 +112,12 @@ export class Authentivix {
         throw new Error("L'authentification biométrique n'est pas disponible sur cet appareil");
       }
 
+      // Verify token validity first
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || session.access_token !== authToken) {
+        throw new Error("Token d'authentification invalide ou expiré");
+      }
+
       // Start registration process
       const startResponse = await fetch(`${this.options.apiUrl}/webauthn/register/start`, {
         method: 'POST',
@@ -115,6 +129,10 @@ export class Authentivix {
           user_id: userId
         }),
       });
+
+      if (startResponse.status === 401) {
+        throw new Error("Token d'authentification invalide. Veuillez vous reconnecter.");
+      }
 
       if (!startResponse.ok) {
         const errorText = await startResponse.text();
@@ -143,6 +161,10 @@ export class Authentivix {
         },
         body: JSON.stringify(registrationResponse),
       });
+
+      if (finishResponse.status === 401) {
+        throw new Error("Token d'authentification invalide. Veuillez vous reconnecter.");
+      }
 
       if (!finishResponse.ok) {
         const errorText = await finishResponse.text();
@@ -199,6 +221,14 @@ export class Authentivix {
         body: JSON.stringify({ email }),
       });
 
+      if (startResponse.status === 401) {
+        throw new Error("Utilisateur non autorisé ou non trouvé");
+      }
+
+      if (startResponse.status === 404) {
+        throw new Error("Aucun authenticateur trouvé pour cet utilisateur. Veuillez d'abord configurer l'authentification biométrique.");
+      }
+
       if (!startResponse.ok) {
         const errorText = await startResponse.text();
         console.error('Authentication start failed:', errorText);
@@ -225,6 +255,10 @@ export class Authentivix {
         },
         body: JSON.stringify(authenticationResponse),
       });
+
+      if (finishResponse.status === 401) {
+        throw new Error("Authentification biométrique échouée. Veuillez réessayer.");
+      }
 
       if (!finishResponse.ok) {
         const errorText = await finishResponse.text();
@@ -276,6 +310,10 @@ export class Authentivix {
         body: JSON.stringify({ credential_db_id: credentialId }),
       });
 
+      if (response.status === 401) {
+        throw new Error("Token d'authentification invalide");
+      }
+
       if (!response.ok) {
         throw new Error('Failed to delete credential');
       }
@@ -297,6 +335,11 @@ export class Authentivix {
           'Content-Type': 'application/json',
         },
       });
+
+      if (response.status === 401) {
+        console.log('Authentication token expired or invalid');
+        return [];
+      }
 
       if (!response.ok) {
         throw new Error('Failed to list credentials');

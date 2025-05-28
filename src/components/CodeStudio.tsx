@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,7 +50,7 @@ const CodeStudio: React.FC = () => {
 
     setIsGenerating(true);
     try {
-      const response = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/groq-generate-code', {
+      const response = await fetch('/functions/v1/groq-generate-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,7 +100,7 @@ const CodeStudio: React.FC = () => {
 
     setIsGenerating(true);
     try {
-      const response = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/groq-optimize-code', {
+      const response = await fetch('/functions/v1/groq-optimize-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

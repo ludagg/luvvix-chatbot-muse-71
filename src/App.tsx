@@ -1,4 +1,3 @@
-
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { DecentralizedStorageProvider } from "@/hooks/use-ipfs";
@@ -41,6 +40,7 @@ import TranslatePage from "./pages/TranslatePage";
 import MindMapPage from "./pages/MindMapPage";
 import CodeStudioPage from "./pages/CodeStudioPage";
 import LearnPage from "./pages/LearnPage";
+import DocsGeneratorPage from "./pages/DocsGeneratorPage";
 
 function App() {
   return (
@@ -136,6 +136,7 @@ function App() {
               <Route path="/cookies" element={<CookiesPage />} />
               
               <Route path="/docs/*" element={<DocsPage />} />
+              <Route path="/docs-generator" element={<DocsGeneratorPage />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -1,8 +1,8 @@
 
-import LuvviXLearn from "@/components/LuvviXLearn";
+import LuvviXLearnNew from "@/components/LuvviXLearnNew";
 
 const LearnPage = () => {
-  return <LuvviXLearn />;
+  return <LuvviXLearnNew />;
 };
 
 export default LearnPage;

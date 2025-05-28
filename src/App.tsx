@@ -1,3 +1,4 @@
+
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { DecentralizedStorageProvider } from "@/hooks/use-ipfs";
@@ -41,6 +42,7 @@ import MindMapPage from "./pages/MindMapPage";
 import CodeStudioPage from "./pages/CodeStudioPage";
 import LearnPage from "./pages/LearnPage";
 import DocsGeneratorPage from "./pages/DocsGeneratorPage";
+import CrawlerPage from "./pages/CrawlerPage";
 
 function App() {
   return (
@@ -59,6 +61,7 @@ function App() {
               <Route path="/mindmap" element={<MindMapPage />} />
               <Route path="/code-studio" element={<CodeStudioPage />} />
               <Route path="/learn" element={<LearnPage />} />
+              <Route path="/crawler" element={<CrawlerPage />} />
               <Route path="/oauth/authorize" element={
                 <ProtectedRoute>
                   <OAuth />

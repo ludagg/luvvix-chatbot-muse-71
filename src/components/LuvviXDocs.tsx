@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,7 @@ import {
   Settings
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Documentation {
   id: string;
@@ -81,32 +81,27 @@ const LuvviXDocs: React.FC = () => {
 
     setIsGenerating(true);
     try {
-      const response = await fetch('/functions/v1/ai-docs-generator', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('ai-docs-generator', {
+        body: {
           projectName,
           projectDescription,
           codeBase: codeBase || undefined,
           documentationType: selectedType,
           format: selectedFormat
-        })
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de la génération de la documentation');
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const result = await response.json();
-      if (result.success && result.documentation) {
+      if (data.success && data.documentation) {
         const newDoc: Documentation = {
           id: crypto.randomUUID(),
-          title: result.documentation.title,
-          content: result.documentation.content,
+          title: data.documentation.title,
+          content: data.documentation.content,
           format: selectedFormat,
-          sections: result.documentation.sections || [],
+          sections: data.documentation.sections || [],
           createdAt: new Date().toISOString(),
           projectName
         };
@@ -118,7 +113,7 @@ const LuvviXDocs: React.FC = () => {
           description: "La documentation a été créée avec succès par l'IA"
         });
       } else {
-        throw new Error(result.error || 'Erreur inconnue');
+        throw new Error(data.error || 'Erreur inconnue');
       }
     } catch (error) {
       console.error('Erreur de génération:', error);

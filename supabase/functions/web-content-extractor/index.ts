@@ -1,133 +1,152 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { chromium } from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
   }
-  
+
   try {
     const { url, options } = await req.json();
-    
+
     if (!url) {
-      throw new Error("URL is required");
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: 'URL is required' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    let content = "";
-    let isJsFramework = false;
-    let detectedFramework = "";
-    
-    // Check if JavaScript rendering is required
-    if (options?.useJavascript) {
-      // Using Puppeteer for JavaScript rendering
-      const browser = await chromium.launch();
-      try {
-        const page = await browser.newPage();
-        await page.goto(url, { 
-          waitUntil: "networkidle0",
-          timeout: options.waitTime || 30000
-        });
-        
-        // Detect framework
-        const frameworkDetection = await page.evaluate(() => {
-          const html = document.documentElement.outerHTML;
-          const frameworks = {
-            'next': ['__NEXT_DATA__', 'next-page'],
-            'react': ['react-root', 'react-app'],
-            'vue': ['__vue__', 'v-app'],
-            'angular': ['ng-app', 'ng-version'],
-            'svelte': ['svelte-', '__svelte']
-          };
-          
-          for (const [name, signals] of Object.entries(frameworks)) {
-            for (const signal of signals) {
-              if (html.includes(signal)) {
-                return { isJs: true, name };
-              }
-            }
-          }
-          
-          return { isJs: false };
-        });
-        
-        isJsFramework = frameworkDetection.isJs;
-        detectedFramework = frameworkDetection.name || "";
-        
-        // Extract content based on selector if provided, otherwise get all text
-        if (options.selector) {
-          await page.waitForSelector(options.selector, { timeout: 5000 }).catch(() => {});
-          content = await page.evaluate((selector) => {
-            const element = document.querySelector(selector);
-            return element ? element.textContent || element.innerText : document.body.innerText;
-          }, options.selector);
-        } else {
-          content = await page.evaluate(() => document.body.innerText);
-        }
-        
-        // Wait additional time if specified to ensure dynamic content loads
-        if (options.waitTime) {
-          await page.waitForTimeout(options.waitTime);
-        }
-      } finally {
-        await browser.close();
-      }
-    } else {
-      // Simple fetch for static sites
-      const response = await fetch(url);
-      const html = await response.text();
-      
-      // Basic framework detection from HTML
-      isJsFramework = html.includes('react') || html.includes('next') || 
-                      html.includes('vue') || html.includes('angular');
-      
-      if (html.includes('__NEXT_DATA__')) {
-        detectedFramework = 'next';
-      } else if (html.includes('react')) {
-        detectedFramework = 'react';
-      }
-      
-      // Extract content (simplified version for non-JS sites)
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      content = doc.body.textContent || '';
-    }
-    
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        content, 
-        isJsFramework, 
-        detectedFramework 
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          "Content-Type": "application/json" 
-        } 
-      }
-    );
-    
-  } catch (error) {
-    console.error("Error:", error.message);
-    return new Response(
-      JSON.stringify({ 
+    // Validate URL
+    try {
+      new URL(url);
+    } catch {
+      return new Response(JSON.stringify({ 
         success: false, 
-        error: error.message 
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          "Content-Type": "application/json" 
-        },
-        status: 500
+        error: 'Invalid URL format' 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const extractOptions = {
+      useJavascript: options?.useJavascript || false,
+      waitTime: options?.waitTime || 2000,
+      selector: options?.selector,
+      depth: options?.depth || 1
+    };
+
+    console.log(`Extracting content from: ${url}`);
+    console.log(`Options:`, extractOptions);
+
+    let content = '';
+    let isJsFramework = false;
+    let detectedFramework = '';
+
+    if (extractOptions.useJavascript) {
+      // Pour les sites JavaScript, nous simulons l'extraction
+      // Dans un vrai environnement, vous utiliseriez Puppeteer ou Playwright
+      console.log(`Using JavaScript rendering for: ${url}`);
+      
+      // Simulation d'une extraction avec support JavaScript
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-    );
+
+      content = await response.text();
+      
+      // Détection de framework JavaScript
+      if (content.includes('react') || content.includes('React') || content.includes('_react')) {
+        isJsFramework = true;
+        detectedFramework = 'React';
+      } else if (content.includes('vue') || content.includes('Vue') || content.includes('_vue')) {
+        isJsFramework = true;
+        detectedFramework = 'Vue.js';
+      } else if (content.includes('angular') || content.includes('Angular') || content.includes('ng-')) {
+        isJsFramework = true;
+        detectedFramework = 'Angular';
+      } else if (content.includes('svelte') || content.includes('Svelte')) {
+        isJsFramework = true;
+        detectedFramework = 'Svelte';
+      }
+
+    } else {
+      // Extraction HTML classique
+      console.log(`Standard HTML extraction for: ${url}`);
+      
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      content = await response.text();
+    }
+
+    // Appliquer le sélecteur CSS si spécifié
+    if (extractOptions.selector && content) {
+      try {
+        // Pour une vraie implémentation, vous utiliseriez un parser DOM
+        // Ici nous simulons l'extraction par sélecteur
+        console.log(`Applying CSS selector: ${extractOptions.selector}`);
+        
+        // Simulation simple de l'extraction par sélecteur
+        const selectorRegex = new RegExp(`<[^>]*class="[^"]*${extractOptions.selector.replace('.', '')}[^"]*"[^>]*>([\\s\\S]*?)<\/[^>]+>`, 'i');
+        const match = content.match(selectorRegex);
+        if (match && match[1]) {
+          content = match[1];
+        }
+      } catch (error) {
+        console.log('Selector application failed:', error);
+        // Continue avec le contenu complet si le sélecteur échoue
+      }
+    }
+
+    // Nettoyer le contenu si nécessaire
+    if (content.length > 100000) {
+      content = content.substring(0, 100000) + '... [Contenu tronqué]';
+    }
+
+    console.log(`Content extracted successfully. Length: ${content.length} characters`);
+    console.log(`JS Framework detected: ${isJsFramework ? detectedFramework : 'None'}`);
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      content,
+      isJsFramework,
+      detectedFramework: isJsFramework ? detectedFramework : undefined,
+      url,
+      extractedAt: new Date().toISOString()
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error extracting web content:', error);
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: error.message 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });

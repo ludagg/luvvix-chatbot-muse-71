@@ -16,6 +16,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface GeneratedCode {
   code: string;
@@ -50,31 +51,26 @@ const CodeStudio: React.FC = () => {
 
     setIsGenerating(true);
     try {
-      const response = await fetch('/functions/v1/groq-generate-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('groq-generate-code', {
+        body: {
           prompt,
           language: selectedLanguage,
           context: code || undefined
-        })
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de la génération du code');
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const result = await response.json();
-      if (result.success && result.generated) {
-        setGeneratedCode(result.generated);
+      if (data.success && data.generated) {
+        setGeneratedCode(data.generated);
         toast({
           title: "Code généré",
           description: "Le code a été généré avec succès par Groq AI"
         });
       } else {
-        throw new Error(result.error || 'Erreur inconnue');
+        throw new Error(data.error || 'Erreur inconnue');
       }
     } catch (error) {
       console.error('Erreur de génération:', error);
@@ -100,30 +96,25 @@ const CodeStudio: React.FC = () => {
 
     setIsGenerating(true);
     try {
-      const response = await fetch('/functions/v1/groq-optimize-code', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('groq-optimize-code', {
+        body: {
           code,
           language: selectedLanguage
-        })
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de l\'optimisation du code');
+      if (error) {
+        throw new Error(error.message);
       }
 
-      const result = await response.json();
-      if (result.success && result.optimized) {
-        setGeneratedCode(result.optimized);
+      if (data.success && data.optimized) {
+        setGeneratedCode(data.optimized);
         toast({
           title: "Code optimisé",
           description: "Le code a été optimisé avec succès par Groq AI"
         });
       } else {
-        throw new Error(result.error || 'Erreur inconnue');
+        throw new Error(data.error || 'Erreur inconnue');
       }
     } catch (error) {
       console.error('Erreur d\'optimisation:', error);

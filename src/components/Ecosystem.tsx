@@ -1,214 +1,219 @@
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { 
-  Brain, 
-  HeartPulse, 
-  Radio, 
-  Cloud, 
-  FileText, 
-  BarChart, 
-  Shield, 
-  Zap,
-  ChevronRight,
-  ExternalLink,
-  Languages,
-  Network,
-  Code,
-  CloudSun
-} from "lucide-react";
-
-interface EcosystemCardProps {
-  id: number;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  link: string;
-  external?: boolean;
-  color: string;
-  available?: boolean;
-}
+import { ExternalLink, Play } from "lucide-react";
+import { HoverGlowCard } from "@/components/ui/hover-glow-card";
 
 const Ecosystem = () => {
-  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const applications = [
+    {
+      name: "Center",
+      description: "Réseau social central de l'écosystème LuvviX avec messagerie, groupes et mini-jeux",
+      status: "Actif",
+      category: "Social",
+      features: ["Timeline IA", "Messagerie temps réel", "Groupes", "Mini-jeux", "Profils vérifiés"],
+      color: "from-purple-500 to-pink-500",
+      link: "/center",
+      icon: "🌐"
+    },
+    {
+      name: "LuvviX Learn", 
+      description: "Plateforme d'apprentissage IA avec cours personnalisés et certifications",
+      status: "Actif",
+      category: "Éducation", 
+      features: ["Cours IA personnalisés", "Certifications", "Suivi de progression", "Communauté d'apprenants"],
+      color: "from-blue-500 to-cyan-500",
+      link: "/learn",
+      icon: "🎓"
+    },
+    {
+      name: "AI Studio",
+      description: "Créateur d'agents IA personnalisés pour automatiser vos tâches",
+      status: "Actif",
+      category: "IA",
+      features: ["Création d'agents", "Marketplace", "Chat intégré", "Personnalisation avancée"],
+      color: "from-green-500 to-emerald-500",
+      link: "/ai-studio",
+      icon: "🤖"
+    },
+    {
+      name: "LuvviX Analytics",
+      description: "Tableau de bord d'analyse de données avec insights IA et rapports automatisés",
+      status: "Actif", 
+      category: "Business",
+      features: ["Dashboards temps réel", "Insights IA", "Rapports automatisés", "Analyse prédictive"],
+      color: "from-orange-500 to-red-500",
+      link: "/analytics",
+      icon: "📊"
+    },
+    {
+      name: "LuvviX Crawler",
+      description: "Extracteur de contenu web avec analyse IA et détection de frameworks",
+      status: "Actif",
+      category: "Outils",
+      features: ["Extraction de contenu", "Analyse IA", "Support JavaScript", "Détection frameworks"],
+      color: "from-indigo-500 to-purple-500",
+      link: "/crawler",
+      icon: "🕷️"
+    },
+    {
+      name: "LuvviX Docs",
+      description: "Générateur de documentation intelligent avec IA pour vos projets",
+      status: "Actif",
+      category: "Outils",
+      features: ["Génération IA", "Templates", "Export multi-format", "Collaboration"],
+      color: "from-teal-500 to-blue-500",
+      link: "/docs-generator",
+      icon: "📚"
+    },
+    {
+      name: "Code Studio",
+      description: "IDE web collaboratif avec assistance IA pour développement",
+      status: "Actif",
+      category: "Développement",
+      features: ["IDE collaboratif", "Assistance IA", "Support multi-langages", "Débogage intelligent"],
+      color: "from-gray-600 to-gray-800",
+      link: "/code-studio",
+      icon: "💻"
+    },
+    {
+      name: "LuvviX Cloud",
+      description: "Stockage cloud sécurisé avec chiffrement et synchronisation multi-appareils",
+      status: "Actif",
+      category: "Stockage",
+      features: ["Stockage sécurisé", "Synchronisation", "Partage", "Chiffrement"],
+      color: "from-sky-500 to-blue-600",
+      link: "/cloud",
+      icon: "☁️"
+    },
+    {
+      name: "LuvviX Forms",
+      description: "Créateur de formulaires intelligents avec analyse automatique des réponses",
+      status: "Actif",
+      category: "Productivité",
+      features: ["Création de formulaires", "Analyse IA", "Réponses temps réel", "Intégrations"],
+      color: "from-violet-500 to-purple-600",
+      link: "/forms",
+      icon: "📝"
+    },
+    {
+      name: "LuvviX News",
+      description: "Agrégateur d'actualités personnalisé avec résumés IA",
+      status: "Actif",
+      category: "Information",
+      features: ["Actualités personnalisées", "Résumés IA", "Sources multiples", "Notifications"],
+      color: "from-red-500 to-pink-500",
+      link: "/news",
+      icon: "📰"
+    },
+    {
+      name: "MindMap",
+      description: "Créateur de cartes mentales collaboratives avec suggestions IA",
+      status: "Actif",
+      category: "Productivité",
+      features: ["Cartes mentales", "Collaboration", "Suggestions IA", "Export multiple"],
+      color: "from-yellow-500 to-orange-500",
+      link: "/mindmap",
+      icon: "🧠"
+    },
+    {
+      name: "LuvviX Translate",
+      description: "Service de traduction avancé avec IA conversationnelle",
+      status: "Actif",
+      category: "Outils",
+      features: ["Traduction IA", "Multi-langues", "Contexte intelligent", "API"],
+      color: "from-green-400 to-blue-500",
+      link: "/translate",
+      icon: "🌍"
+    }
+  ];
 
   return (
-    <section id="ecosystem" className="py-16 pt-24 bg-white dark:bg-gray-900">
+    <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900/20">
       <div className="container mx-auto px-4">
-        <h2 className="section-heading">Notre Écosystème</h2>
-        <p className="section-subheading">
-          Explorez notre suite d'outils et de services conçus pour répondre à tous vos besoins numériques
-        </p>
-
-        <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delayChildren: 0.2, staggerChildren: 0.1 }}
-        >
-          {[
-            {
-              id: 1,
-              title: "LuvviX AI Studio",
-              description: "Créez et déployez vos propres agents IA intelligents sans code.",
-              icon: <Brain size={48} />,
-              link: "/ai-studio",
-              color: "bg-gradient-to-br from-purple-500 to-blue-500",
-              available: true,
-            },
-            {
-              id: 2,
-              title: "LuvviX Translate",
-              description: "Traduction instantanée alimentée par Gemini AI avec reconnaissance vocale.",
-              icon: <Languages size={48} />,
-              link: "/translate",
-              color: "bg-gradient-to-br from-blue-500 to-purple-500",
-              available: true,
-            },
-            {
-              id: 3,
-              title: "LuvviX MindMap",
-              description: "Créez des cartes mentales intelligentes avec l'IA pour organiser vos idées.",
-              icon: <Network size={48} />,
-              link: "/mindmap",
-              color: "bg-gradient-to-br from-indigo-500 to-purple-500",
-              available: true,
-            },
-            {
-              id: 4,
-              title: "LuvviX Code Studio",
-              description: "Génération et optimisation de code intelligente avec Gemini AI.",
-              icon: <Code size={48} />,
-              link: "/code-studio",
-              color: "bg-gradient-to-br from-green-500 to-emerald-500",
-              available: true,
-            },
-            {
-              id: 5,
-              title: "LuvviX Forms",
-              description: "Créez des formulaires personnalisés et collectez des données facilement.",
-              icon: <FileText size={48} />,
-              link: "/forms",
-              color: "bg-gradient-to-br from-pink-500 to-rose-500",
-              available: true,
-            },
-            {
-              id: 6,
-              title: "LuvviX Cloud",
-              description: "Stockage en nuage sécurisé et accessible pour tous vos fichiers.",
-              icon: <Cloud size={48} />,
-              link: "/cloud",
-              color: "bg-gradient-to-br from-sky-500 to-blue-500",
-              available: true,
-            },
-            {
-              id: 7,
-              title: "LuvviX News",
-              description: "Actualités personnalisées et alertes en temps réel.",
-              icon: <BarChart size={48} />,
-              link: "/news",
-              color: "bg-gradient-to-br from-amber-500 to-yellow-500",
-              available: true,
-            },
-            {
-              id: 8,
-              title: "LuvviX Weather",
-              description: "Prévisions météorologiques intelligentes et alertes personnalisées.",
-              icon: <CloudSun size={48} />,
-              link: "/weather",
-              color: "bg-gradient-to-br from-cyan-500 to-blue-500",
-              available: true,
-            },
-            {
-              id: 9,
-              title: "LuvviX StreamMix",
-              description: "Plateforme de streaming audio et vidéo pour une expérience immersive.",
-              icon: <Radio size={48} />,
-              link: "/#",
-              color: "bg-gradient-to-br from-orange-500 to-red-500",
-              available: false,
-            },
-            {
-              id: 10,
-              title: "LuvviX Medic",
-              description: "Solutions de santé innovantes pour une meilleure gestion de votre bien-être.",
-              icon: <HeartPulse size={48} />,
-              link: "/#",
-              color: "bg-gradient-to-br from-green-500 to-teal-500",
-              available: false,
-            },
-            {
-              id: 11,
-              title: "LuvviX Analytics",
-              description: "Outils d'analyse de données pour prendre des décisions éclairées.",
-              icon: <BarChart size={48} />,
-              link: "/#",
-              color: "bg-gradient-to-br from-violet-500 to-purple-500",
-              available: false,
-            },
-            {
-              id: 12,
-              title: "LuvviX Security",
-              description: "Protection avancée et sécurisation de vos données personnelles.",
-              icon: <Shield size={48} />,
-              link: "/#",
-              color: "bg-gradient-to-br from-red-500 to-pink-500",
-              available: false,
-            },
-          ].map((card: EcosystemCardProps) => (
-            <motion.div
-              key={card.id}
-              className={cn(
-                "bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-transform duration-300 hover:scale-105",
-                !card.available && "opacity-60"
-              )}
-              onMouseEnter={() => setHoveredCard(card.id)}
-              onMouseLeave={() => setHoveredCard(null)}
-              style={{ backgroundColor: hoveredCard === card.id ? '#f9f9f9' : 'inherit' }}
-              variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0 },
-              }}
-            >
-              <div className={`p-6 ${card.color} text-white flex items-center justify-center h-32 relative`}>
-                {card.icon}
-                {!card.available && (
-                  <div className="absolute top-2 right-2 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
-                    <span className="text-xs font-medium">Bientôt</span>
-                  </div>
-                )}
-              </div>
-              <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">{card.title}</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">{card.description}</p>
-                {card.available ? (
-                  <Link to={card.link} className="text-blue-600 dark:text-blue-400 hover:underline flex items-center">
-                    Découvrir
-                    <ChevronRight className="ml-1 w-4 h-4" />
-                  </Link>
-                ) : (
-                  <span className="text-gray-400 dark:text-gray-500 flex items-center">
-                    Bientôt disponible
-                    <Zap className="ml-1 w-4 h-4" />
-                  </span>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-        
-        <div className="mt-12 text-center">
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
-            Rejoignez notre écosystème et découvrez comment LuvviX peut transformer votre vie numérique.
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Écosystème LuvviX
+          </h2>
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+            Une suite complète d'applications interconnectées pour révolutionner votre expérience numérique
           </p>
-          <Link to="/auth?signup=true">
-            <Button className="bg-luvvix-purple hover:bg-luvvix-darkpurple text-white">
-              Créer un compte et commencer
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {applications.map((app, index) => (
+            <HoverGlowCard key={index} className="group cursor-pointer" glowColor="rgba(59, 130, 246, 0.3)">
+              <Card className="h-full border-none shadow-lg hover:shadow-2xl transition-all duration-300 group-hover:scale-105">
+                <CardHeader className="pb-4">
+                  <div className={`w-16 h-16 rounded-xl bg-gradient-to-r ${app.color} flex items-center justify-center text-2xl mb-4 mx-auto group-hover:scale-110 transition-transform`}>
+                    {app.icon}
+                  </div>
+                  <CardTitle className="text-xl font-bold text-center mb-2">
+                    {app.name}
+                  </CardTitle>
+                  <div className="flex justify-center gap-2 mb-3">
+                    <Badge variant="outline" className="text-xs">
+                      {app.category}
+                    </Badge>
+                    <Badge 
+                      variant={app.status === "Actif" ? "default" : "secondary"}
+                      className="text-xs"
+                    >
+                      {app.status}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 text-center">
+                    {app.description}
+                  </p>
+                  
+                  <div className="space-y-2 mb-6">
+                    {app.features.map((feature, idx) => (
+                      <div key={idx} className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2"></div>
+                        {feature}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button 
+                      asChild 
+                      className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                    >
+                      <a href={app.link}>
+                        <Play className="w-4 h-4 mr-2" />
+                        Utiliser
+                      </a>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </HoverGlowCard>
+          ))}
+        </div>
+
+        <div className="text-center mt-16">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl max-w-4xl mx-auto">
+            <h3 className="text-2xl font-bold mb-4">Connecté par LuvviX ID</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Toutes ces applications sont interconnectées grâce à votre identité LuvviX ID unique. 
+              Une seule connexion pour accéder à tout l'écosystème.
+            </p>
+            <Button 
+              asChild 
+              size="lg" 
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+            >
+              <a href="/auth">
+                Créer mon compte LuvviX ID
+                <ExternalLink className="w-4 h-4 ml-2" />
+              </a>
             </Button>
-          </Link>
+          </div>
         </div>
       </div>
     </section>

@@ -44,6 +44,7 @@ import LearnPage from "./pages/LearnPage";
 import DocsGeneratorPage from "./pages/DocsGeneratorPage";
 import CrawlerPage from "./pages/CrawlerPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import CenterPage from "./pages/CenterPage";
 
 function App() {
   return (
@@ -64,6 +65,7 @@ function App() {
               <Route path="/learn" element={<LearnPage />} />
               <Route path="/crawler" element={<CrawlerPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/center" element={<CenterPage />} />
               <Route path="/oauth/authorize" element={
                 <ProtectedRoute>
                   <OAuth />

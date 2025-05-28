@@ -13,7 +13,9 @@ import {
   Zap, 
   Sparkles,
   Copy,
-  Loader2
+  Loader2,
+  Bug,
+  BarChart
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +25,24 @@ interface GeneratedCode {
   explanation: string;
   language: string;
   complexity: number;
+}
+
+interface CodeAnalysis {
+  complexity: number;
+  performance: number;
+  security: number;
+  maintainability: number;
+  bugs: Array<{
+    line: number;
+    severity: string;
+    message: string;
+    suggestion: string;
+  }>;
+  optimizations: Array<{
+    type: string;
+    description: string;
+    impact: string;
+  }>;
 }
 
 const SUPPORTED_LANGUAGES = [
@@ -35,6 +55,7 @@ const CodeStudio: React.FC = () => {
   const [code, setCode] = useState('');
   const [prompt, setPrompt] = useState('');
   const [generatedCode, setGeneratedCode] = useState<GeneratedCode | null>(null);
+  const [codeAnalysis, setCodeAnalysis] = useState<CodeAnalysis | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState('generator');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,7 +72,7 @@ const CodeStudio: React.FC = () => {
 
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('groq-generate-code', {
+      const { data, error } = await supabase.functions.invoke('gemini-generate-code', {
         body: {
           prompt,
           language: selectedLanguage,
@@ -67,7 +88,7 @@ const CodeStudio: React.FC = () => {
         setGeneratedCode(data.generated);
         toast({
           title: "Code généré",
-          description: "Le code a été généré avec succès par Groq AI"
+          description: "Le code a été généré avec succès par Gemini AI"
         });
       } else {
         throw new Error(data.error || 'Erreur inconnue');
@@ -96,7 +117,7 @@ const CodeStudio: React.FC = () => {
 
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('groq-optimize-code', {
+      const { data, error } = await supabase.functions.invoke('gemini-optimize-code', {
         body: {
           code,
           language: selectedLanguage
@@ -111,7 +132,7 @@ const CodeStudio: React.FC = () => {
         setGeneratedCode(data.optimized);
         toast({
           title: "Code optimisé",
-          description: "Le code a été optimisé avec succès par Groq AI"
+          description: "Le code a été optimisé avec succès par Gemini AI"
         });
       } else {
         throw new Error(data.error || 'Erreur inconnue');
@@ -122,6 +143,50 @@ const CodeStudio: React.FC = () => {
         variant: "destructive",
         title: "Erreur d'optimisation",
         description: "Impossible d'optimiser le code. Vérifiez votre connexion."
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const analyzeCode = async () => {
+    if (!code.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Code requis",
+        description: "Veuillez entrer du code à analyser"
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('gemini-analyze-code', {
+        body: {
+          code,
+          language: selectedLanguage
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data.success && data.analysis) {
+        setCodeAnalysis(data.analysis);
+        toast({
+          title: "Code analysé",
+          description: "L'analyse du code a été effectuée avec succès"
+        });
+      } else {
+        throw new Error(data.error || 'Erreur inconnue');
+      }
+    } catch (error) {
+      console.error('Erreur d\'analyse:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur d'analyse",
+        description: "Impossible d'analyser le code. Vérifiez votre connexion."
       });
     } finally {
       setIsGenerating(false);
@@ -205,12 +270,12 @@ const CodeStudio: React.FC = () => {
             </h1>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Studio de développement IA révolutionnaire avec génération intelligente et optimisation de code alimenté par Groq AI
+            Studio de développement IA révolutionnaire avec génération intelligente et optimisation de code alimenté par Gemini AI
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 h-12">
+          <TabsList className="grid w-full grid-cols-3 h-12">
             <TabsTrigger value="generator" className="flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
               Générateur
@@ -218,6 +283,10 @@ const CodeStudio: React.FC = () => {
             <TabsTrigger value="optimizer" className="flex items-center gap-2">
               <Zap className="h-4 w-4" />
               Optimiseur
+            </TabsTrigger>
+            <TabsTrigger value="analyzer" className="flex items-center gap-2">
+              <Bug className="h-4 w-4" />
+              Analyseur
             </TabsTrigger>
           </TabsList>
 
@@ -236,8 +305,8 @@ const CodeStudio: React.FC = () => {
                 </SelectContent>
               </Select>
               
-              <Badge variant="outline" className="bg-purple-100 text-purple-700">
-                Alimenté par Groq AI
+              <Badge variant="outline" className="bg-blue-100 text-blue-700">
+                Alimenté par Gemini AI
               </Badge>
             </div>
             
@@ -269,7 +338,7 @@ const CodeStudio: React.FC = () => {
                     Génération de Code IA
                   </CardTitle>
                   <CardDescription>
-                    Décrivez ce que vous voulez créer et laissez Groq AI générer du code production-ready ultra-rapidement
+                    Décrivez ce que vous voulez créer et laissez Gemini AI générer du code production-ready
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -352,7 +421,7 @@ const CodeStudio: React.FC = () => {
                     Optimisation de Code
                   </CardTitle>
                   <CardDescription>
-                    Améliorez les performances, la lisibilité et l'efficacité de votre code avec Groq AI
+                    Améliorez les performances, la lisibilité et l'efficacité de votre code avec Gemini AI
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -416,6 +485,110 @@ const CodeStudio: React.FC = () => {
                       <h4 className="font-medium text-green-900 mb-2">Optimisations:</h4>
                       <p className="text-green-800 text-sm">{generatedCode.explanation}</p>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="analyzer" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bug className="h-5 w-5 text-red-600" />
+                    Analyse de Code
+                  </CardTitle>
+                  <CardDescription>
+                    Analysez votre code pour détecter les bugs, problèmes de sécurité et optimisations
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Textarea
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder={`Code ${selectedLanguage} à analyser...`}
+                    className="min-h-48 font-mono"
+                  />
+                  <Button 
+                    onClick={analyzeCode}
+                    disabled={isGenerating}
+                    className="w-full bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Analyse en cours...
+                      </>
+                    ) : (
+                      <>
+                        <Bug className="h-4 w-4 mr-2" />
+                        Analyser le Code
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {codeAnalysis && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart className="h-5 w-5" />
+                      Résultats d'Analyse
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-blue-50 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-blue-600">{codeAnalysis.complexity}/10</div>
+                        <div className="text-sm text-blue-800">Complexité</div>
+                      </div>
+                      <div className="bg-green-50 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-green-600">{codeAnalysis.performance}%</div>
+                        <div className="text-sm text-green-800">Performance</div>
+                      </div>
+                      <div className="bg-yellow-50 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-yellow-600">{codeAnalysis.security}%</div>
+                        <div className="text-sm text-yellow-800">Sécurité</div>
+                      </div>
+                      <div className="bg-purple-50 rounded-lg p-3 text-center">
+                        <div className="text-2xl font-bold text-purple-600">{codeAnalysis.maintainability}%</div>
+                        <div className="text-sm text-purple-800">Maintenabilité</div>
+                      </div>
+                    </div>
+
+                    {codeAnalysis.bugs && codeAnalysis.bugs.length > 0 && (
+                      <div className="bg-red-50 rounded-lg p-4">
+                        <h4 className="font-medium text-red-900 mb-2">Bugs détectés:</h4>
+                        <div className="space-y-2">
+                          {codeAnalysis.bugs.map((bug, index) => (
+                            <div key={index} className="text-sm">
+                              <span className="font-medium text-red-700">Ligne {bug.line}:</span>
+                              <span className="ml-2 text-red-600">{bug.message}</span>
+                              <div className="text-red-500 text-xs mt-1">💡 {bug.suggestion}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {codeAnalysis.optimizations && codeAnalysis.optimizations.length > 0 && (
+                      <div className="bg-orange-50 rounded-lg p-4">
+                        <h4 className="font-medium text-orange-900 mb-2">Optimisations suggérées:</h4>
+                        <div className="space-y-2">
+                          {codeAnalysis.optimizations.map((opt, index) => (
+                            <div key={index} className="text-sm">
+                              <Badge variant="outline" className="mr-2 text-xs">
+                                {opt.type}
+                              </Badge>
+                              <span className="text-orange-700">{opt.description}</span>
+                              <div className="text-orange-600 text-xs">Impact: {opt.impact}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}

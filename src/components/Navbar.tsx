@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import AccountSelector from './AccountSelector';
+import { supabase } from '@/integrations/supabase/client';
 
 const Navbar = () => {
   const { user } = useAuth();
@@ -23,6 +25,14 @@ const Navbar = () => {
   }, []);
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Error during logout:', error);
+    }
+  };
 
   const ProductsMenu = () => (
     <DropdownMenu>
@@ -150,7 +160,15 @@ const Navbar = () => {
                     Dashboard
                   </Button>
                 </Link>
-                <AccountSelector />
+                <AccountSelector 
+                  currentUser={{
+                    id: user.id,
+                    email: user.email || '',
+                    avatarUrl: user.user_metadata?.avatar_url,
+                    fullName: user.user_metadata?.full_name || user.user_metadata?.name
+                  }}
+                  onLogout={handleLogout}
+                />
               </div>
             ) : (
               <Link to="/auth">
@@ -231,7 +249,15 @@ const Navbar = () => {
                     <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start">Dashboard</Button>
                     </Link>
-                    <AccountSelector />
+                    <AccountSelector 
+                      currentUser={{
+                        id: user.id,
+                        email: user.email || '',
+                        avatarUrl: user.user_metadata?.avatar_url,
+                        fullName: user.user_metadata?.full_name || user.user_metadata?.name
+                      }}
+                      onLogout={handleLogout}
+                    />
                   </div>
                 ) : (
                   <div className="pt-4 border-t">

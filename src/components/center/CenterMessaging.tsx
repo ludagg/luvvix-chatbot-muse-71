@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -88,14 +87,21 @@ const CenterMessaging = () => {
         id: item.id,
         created_at: item.created_at,
         updated_at: item.updated_at,
-        center_chat_participants: item.center_chat_participants.map(participant => ({
-          user_id: participant.user_id,
-          user_profiles: {
-            full_name: participant.user_profiles.full_name,
-            username: participant.user_profiles.username,
-            avatar_url: participant.user_profiles.avatar_url
-          }
-        })),
+        center_chat_participants: item.center_chat_participants.map(participant => {
+          // Handle case where user_profiles might be an array
+          const userProfile = Array.isArray(participant.user_profiles) 
+            ? participant.user_profiles[0] 
+            : participant.user_profiles;
+          
+          return {
+            user_id: participant.user_id,
+            user_profiles: {
+              full_name: userProfile.full_name,
+              username: userProfile.username,
+              avatar_url: userProfile.avatar_url
+            }
+          };
+        }),
         center_chat_messages: item.center_chat_messages || []
       }));
 

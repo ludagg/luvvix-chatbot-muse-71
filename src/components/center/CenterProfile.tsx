@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,8 +85,8 @@ const CenterProfile = () => {
         });
       }
 
-      // Fetch stats
-      const [postsResult, followersResult, followingResult, likesResult] = await Promise.all([
+      // Fetch stats using Promise.allSettled to handle errors better
+      const [postsResult, followersResult, followingResult, likesResult] = await Promise.allSettled([
         supabase
           .from('center_posts')
           .select('id', { count: 'exact' })
@@ -100,21 +99,30 @@ const CenterProfile = () => {
           .from('center_follows')
           .select('id', { count: 'exact' })
           .eq('follower_id', user.id),
-        supabase
-          .from('center_likes')
-          .select('id', { count: 'exact' })
-          .in('post_id', supabase
+        // Fix the likes query - get posts first, then count likes
+        (async () => {
+          const { data: userPosts } = await supabase
             .from('center_posts')
             .select('id')
-            .eq('user_id', user.id)
-          )
+            .eq('user_id', user.id);
+          
+          if (!userPosts || userPosts.length === 0) {
+            return { count: 0 };
+          }
+          
+          const postIds = userPosts.map(post => post.id);
+          return supabase
+            .from('center_likes')
+            .select('id', { count: 'exact' })
+            .in('post_id', postIds);
+        })()
       ]);
 
       setStats({
-        posts_count: postsResult.count || 0,
-        followers_count: followersResult.count || 0,
-        following_count: followingResult.count || 0,
-        likes_received: likesResult.count || 0
+        posts_count: postsResult.status === 'fulfilled' ? (postsResult.value.count || 0) : 0,
+        followers_count: followersResult.status === 'fulfilled' ? (followersResult.value.count || 0) : 0,
+        following_count: followingResult.status === 'fulfilled' ? (followingResult.value.count || 0) : 0,
+        likes_received: likesResult.status === 'fulfilled' ? (likesResult.value.count || 0) : 0
       });
 
     } catch (error) {

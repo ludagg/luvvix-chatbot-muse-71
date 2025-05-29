@@ -191,13 +191,26 @@ const CenterGames = () => {
 
       if (error) throw error;
 
-      // Update room player count
+      // Update room player count using RPC function
       const { error: updateError } = await supabase
-        .from('center_game_rooms')
-        .update({ current_players: supabase.sql`current_players + 1` })
-        .eq('id', roomId);
+        .rpc('increment_room_players', { room_id: roomId });
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Error updating room count:', updateError);
+        // Fallback: manually update
+        const { data: roomData } = await supabase
+          .from('center_game_rooms')
+          .select('current_players')
+          .eq('id', roomId)
+          .single();
+
+        if (roomData) {
+          await supabase
+            .from('center_game_rooms')
+            .update({ current_players: roomData.current_players + 1 })
+            .eq('id', roomId);
+        }
+      }
 
       toast({
         title: "Salon rejoint",

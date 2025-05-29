@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Plus, Phone, Video, Send, Smile, Paperclip } from 'lucide-react';
+import { Search, Plus, Phone, Video, Send, Smile, Paperclip, MessageCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
@@ -82,7 +82,24 @@ const CenterMessaging = () => {
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      setConversations(data || []);
+      
+      // Transform the data to match our interface
+      const transformedData: Conversation[] = (data || []).map(item => ({
+        id: item.id,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        center_chat_participants: item.center_chat_participants.map(participant => ({
+          user_id: participant.user_id,
+          user_profiles: {
+            full_name: participant.user_profiles.full_name,
+            username: participant.user_profiles.username,
+            avatar_url: participant.user_profiles.avatar_url
+          }
+        })),
+        center_chat_messages: item.center_chat_messages || []
+      }));
+
+      setConversations(transformedData);
     } catch (error) {
       console.error('Error fetching conversations:', error);
       toast({

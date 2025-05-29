@@ -24,7 +24,9 @@ const AuthPage = () => {
       setTimeout(() => {
         if (returnTo) {
           console.log(`Redirecting to: ${returnTo}`);
-          navigate(returnTo);
+          // Decode the return URL in case it's encoded
+          const decodedReturnTo = decodeURIComponent(returnTo);
+          navigate(decodedReturnTo);
         } else {
           navigate('/dashboard');
         }

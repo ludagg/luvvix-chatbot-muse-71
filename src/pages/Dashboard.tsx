@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { LogOut, Key, History, AppWindow, Loader2, Shield, User, Settings, Bell, Globe, Palette, Lock } from "lucide-react";
+import { LogOut, Key, AppWindow, Loader2, Shield, User, Settings, Bell, Globe, Palette, Lock } from "lucide-react";
 import AccountSelector from "@/components/AccountSelector";
 import AppGrid from "@/components/dashboard/AppGrid";
 import RecentActivities from "@/components/dashboard/RecentActivities";
@@ -80,7 +79,7 @@ const Dashboard = () => {
       console.error("Erreur lors de la récupération des applications:", error);
       toast({
         variant: "destructive",
-        title: "Erreur",
+        title: t('general.error'),
         description: "Impossible de récupérer vos applications connectées."
       });
     } finally {
@@ -110,8 +109,8 @@ const Dashboard = () => {
       const result = await response.json();
       if (result.success) {
         toast({
-          title: "Accès révoqué",
-          description: `L'accès à ${appName} a été révoqué avec succès.`
+          title: t('message.accessRevoked'),
+          description: `${t('general.lastAccess')} ${appName} ${t('message.accessRevokedDesc')}`
         });
         setConnectedApps(prevApps => prevApps.filter(app => app.id !== appId));
       } else {
@@ -121,7 +120,7 @@ const Dashboard = () => {
       console.error("Erreur lors de la révocation de l'accès:", error);
       toast({
         variant: "destructive",
-        title: "Erreur",
+        title: t('general.error'),
         description: "Impossible de révoquer l'accès à cette application."
       });
     } finally {
@@ -180,7 +179,7 @@ const Dashboard = () => {
                     </p>
                     <div className="flex items-center gap-2 text-sm text-blue-200">
                       <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                      Connecté à l'écosystème LuvviX
+                      {t('dashboard.connectedTo')}
                     </div>
                   </div>
                   <div className="mt-6 md:mt-0 flex items-center gap-4">
@@ -221,10 +220,10 @@ const Dashboard = () => {
                           <div className="w-10 h-10 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl flex items-center justify-center">
                             <AppWindow className="h-5 w-5 text-white" />
                           </div>
-                          Écosystème LuvviX
+                          {t('nav.ecosystem')} LuvviX
                         </CardTitle>
                         <CardDescription className="text-lg">
-                          Accédez à toutes vos applications et services LuvviX
+                          {t('dashboard.ecosystemDescription')}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -259,12 +258,12 @@ const Dashboard = () => {
                         {t('dashboard.connectedApps')}
                       </CardTitle>
                       <CardDescription className="text-lg">
-                        Voici les applications auxquelles vous avez accordé l'accès via LuvviX ID
+                        {t('dashboard.connectedAppsDescription')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       {loading ? (
-                        <div className="text-center p-6">Chargement des applications...</div>
+                        <div className="text-center p-6">{t('message.loadingApps')}</div>
                       ) : connectedApps.length > 0 ? (
                         <div className="space-y-4">
                           {connectedApps.map((app) => (
@@ -275,10 +274,10 @@ const Dashboard = () => {
                                   <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">{app.app_name}</Badge>
                                 </div>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  Accordé le {formatDate(app.granted_at)}
+                                  {t('general.grantedOn')} {formatDate(app.granted_at)}
                                 </p>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  Dernier accès: {formatDate(app.last_access)}
+                                  {t('general.lastAccess')}: {formatDate(app.last_access)}
                                 </p>
                               </div>
                               <Button 
@@ -291,10 +290,10 @@ const Dashboard = () => {
                                 {revokeLoading === app.id ? (
                                   <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Révocation...
+                                    {t('action.revoking')}
                                   </>
                                 ) : (
-                                  "Révoquer l'accès"
+                                  t('action.revokeAccess')
                                 )}
                               </Button>
                             </div>
@@ -303,9 +302,9 @@ const Dashboard = () => {
                       ) : (
                         <div className="text-center p-12 border border-dashed border-gray-300 dark:border-gray-600 rounded-2xl bg-white/30 dark:bg-gray-800/30">
                           <AppWindow className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-                          <p className="text-gray-500 text-lg font-medium">Aucune application connectée</p>
+                          <p className="text-gray-500 text-lg font-medium">{t('message.noAppsConnected')}</p>
                           <p className="text-sm text-gray-400 mt-2">
-                            Les applications que vous autoriserez apparaîtront ici
+                            {t('message.noAppsConnected.desc')}
                           </p>
                         </div>
                       )}
@@ -315,7 +314,6 @@ const Dashboard = () => {
                 
                 <TabsContent value="security">
                   <div className="space-y-6">
-                    {/* Paramètres de sécurité */}
                     <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md border-white/20 shadow-xl rounded-2xl">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-3 text-2xl">
@@ -325,7 +323,7 @@ const Dashboard = () => {
                           {t('dashboard.security')}
                         </CardTitle>
                         <CardDescription className="text-lg">
-                          Gérez les paramètres de sécurité et les connexions récentes
+                          {t('dashboard.securityDescription')}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-8">
@@ -333,11 +331,11 @@ const Dashboard = () => {
                         <div className="space-y-4">
                           <div className="flex items-center gap-3">
                             <Bell className="h-5 w-5 text-violet-600" />
-                            <h3 className="text-lg font-semibold">Notifications</h3>
+                            <h3 className="text-lg font-semibold">{t('settings.notifications')}</h3>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
-                              <Label htmlFor="notifications" className="font-medium">Notifications push</Label>
+                              <Label htmlFor="notifications" className="font-medium">{t('settings.notifications.push')}</Label>
                               <Switch
                                 id="notifications"
                                 checked={settings.notifications}
@@ -345,7 +343,7 @@ const Dashboard = () => {
                               />
                             </div>
                             <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
-                              <Label htmlFor="email-notifications" className="font-medium">Notifications email</Label>
+                              <Label htmlFor="email-notifications" className="font-medium">{t('settings.notifications.email')}</Label>
                               <Switch
                                 id="email-notifications"
                                 checked={settings.emailNotifications}
@@ -359,11 +357,11 @@ const Dashboard = () => {
                         <div className="space-y-4">
                           <div className="flex items-center gap-3">
                             <Palette className="h-5 w-5 text-violet-600" />
-                            <h3 className="text-lg font-semibold">Préférences</h3>
+                            <h3 className="text-lg font-semibold">{t('settings.preferences')}</h3>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
-                              <Label htmlFor="dark-mode" className="font-medium">Mode sombre</Label>
+                              <Label htmlFor="dark-mode" className="font-medium">{t('settings.darkMode')}</Label>
                               <Switch
                                 id="dark-mode"
                                 checked={settings.darkMode}
@@ -371,7 +369,7 @@ const Dashboard = () => {
                               />
                             </div>
                             <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
-                              <Label htmlFor="auto-save" className="font-medium">Sauvegarde automatique</Label>
+                              <Label htmlFor="auto-save" className="font-medium">{t('settings.autoSave')}</Label>
                               <Switch
                                 id="auto-save"
                                 checked={settings.autoSave}
@@ -396,13 +394,13 @@ const Dashboard = () => {
                         <div className="space-y-4">
                           <div className="flex items-center gap-3">
                             <Lock className="h-5 w-5 text-violet-600" />
-                            <h3 className="text-lg font-semibold">Sécurité avancée</h3>
+                            <h3 className="text-lg font-semibold">{t('settings.security.advanced')}</h3>
                           </div>
                           <div className="space-y-4">
                             <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                               <div>
-                                <Label htmlFor="two-factor" className="font-medium">Authentification à deux facteurs</Label>
-                                <p className="text-sm text-gray-500">Ajoutez une couche de sécurité supplémentaire</p>
+                                <Label htmlFor="two-factor" className="font-medium">{t('settings.twoFactor')}</Label>
+                                <p className="text-sm text-gray-500">{t('settings.twoFactor.desc')}</p>
                               </div>
                               <Switch
                                 id="two-factor"
@@ -412,8 +410,8 @@ const Dashboard = () => {
                             </div>
                             <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                               <div>
-                                <Label htmlFor="public-profile" className="font-medium">Profil public</Label>
-                                <p className="text-sm text-gray-500">Permettre aux autres de voir votre profil</p>
+                                <Label htmlFor="public-profile" className="font-medium">{t('settings.publicProfile')}</Label>
+                                <p className="text-sm text-gray-500">{t('settings.publicProfile.desc')}</p>
                               </div>
                               <Switch
                                 id="public-profile"
@@ -426,12 +424,12 @@ const Dashboard = () => {
 
                         {/* Actions de sécurité */}
                         <div className="space-y-4">
-                          <h3 className="text-lg font-semibold">Actions</h3>
+                          <h3 className="text-lg font-semibold">{t('action.actions')}</h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Button variant="outline" className="h-auto p-4 flex flex-col items-start gap-2 rounded-xl">
                               <Key className="h-5 w-5" />
-                              <span className="font-medium">Changer le mot de passe</span>
-                              <span className="text-sm text-gray-500">Mettre à jour vos identifiants</span>
+                              <span className="font-medium">{t('action.changePassword')}</span>
+                              <span className="text-sm text-gray-500">{t('action.changePassword.desc')}</span>
                             </Button>
                             <Button 
                               variant="destructive" 
@@ -442,8 +440,8 @@ const Dashboard = () => {
                               }}
                             >
                               <LogOut className="h-5 w-5" />
-                              <span className="font-medium">Déconnexion globale</span>
-                              <span className="text-sm text-red-100">Déconnecter tous les appareils</span>
+                              <span className="font-medium">{t('action.globalSignOut')}</span>
+                              <span className="text-sm text-red-100">{t('action.globalSignOut.desc')}</span>
                             </Button>
                           </div>
                         </div>
@@ -462,14 +460,14 @@ const Dashboard = () => {
                         {t('dashboard.profile')}
                       </CardTitle>
                       <CardDescription className="text-lg">
-                        Gérez vos informations personnelles
+                        {t('dashboard.profileDescription')}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Email</Label>
+                            <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('general.email')}</Label>
                             <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                               {user.email}
                             </div>
@@ -477,7 +475,7 @@ const Dashboard = () => {
                           
                           {profile?.full_name && (
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Nom complet</Label>
+                              <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('general.fullName')}</Label>
                               <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                                 {profile.full_name}
                               </div>
@@ -486,7 +484,7 @@ const Dashboard = () => {
                           
                           {profile?.username && (
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Nom d'utilisateur</Label>
+                              <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('general.username')}</Label>
                               <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                                 {profile.username}
                               </div>
@@ -494,7 +492,7 @@ const Dashboard = () => {
                           )}
                           
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Membre depuis</Label>
+                            <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('general.memberSince')}</Label>
                             <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                               {formatDate(user.created_at || new Date().toISOString())}
                             </div>
@@ -505,7 +503,7 @@ const Dashboard = () => {
                     <CardFooter>
                       <Button className="bg-gradient-to-r from-violet-600 to-purple-600 text-white border-0 hover:shadow-lg transition-all">
                         <Settings className="mr-2 h-4 w-4" />
-                        Mettre à jour le profil
+                        {t('action.updateProfile')}
                       </Button>
                     </CardFooter>
                   </Card>

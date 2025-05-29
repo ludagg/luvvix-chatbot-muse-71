@@ -20,7 +20,7 @@ const Footer = () => {
               </span>
             </div>
             <p className="text-gray-600 dark:text-gray-400 text-sm">
-              L'écosystème complet pour vos besoins numériques. IA, stockage cloud, traduction et bien plus.
+              {t('footer.description')}
             </p>
             <div className="pt-4">
               <LanguageSelector />
@@ -29,31 +29,31 @@ const Footer = () => {
           
           {/* Produits */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Produits</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('footer.products')}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link to="/ai-studio" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">
-                  LuvviX AI Studio
+                  {t('app.aiStudio')}
                 </Link>
               </li>
               <li>
                 <Link to="/cloud" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">
-                  LuvviX Cloud
+                  {t('app.cloud')}
                 </Link>
               </li>
               <li>
                 <Link to="/translate" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">
-                  LuvviX Translate
+                  {t('app.translate')}
                 </Link>
               </li>
               <li>
                 <Link to="/forms" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">
-                  LuvviX Forms
+                  {t('app.forms')}
                 </Link>
               </li>
               <li>
                 <Link to="/mindmap" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">
-                  LuvviX MindMap
+                  {t('app.mindmap')}
                 </Link>
               </li>
             </ul>
@@ -61,26 +61,26 @@ const Footer = () => {
           
           {/* Ressources */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Ressources</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('footer.resources')}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link to="/docs" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">
-                  Documentation
+                  {t('footer.documentation')}
                 </Link>
               </li>
               <li>
                 <Link to="/ecosystem/api" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">
-                  API
+                  {t('footer.api')}
                 </Link>
               </li>
               <li>
                 <Link to="/news" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">
-                  Actualités
+                  {t('nav.news')}
                 </Link>
               </li>
               <li>
                 <Link to="/ecosystem" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">
-                  Écosystème
+                  {t('nav.ecosystem')}
                 </Link>
               </li>
             </ul>
@@ -88,21 +88,21 @@ const Footer = () => {
           
           {/* Légal */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">Légal</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t('footer.legal')}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link to="/privacy" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">
-                  Confidentialité
+                  {t('footer.privacy')}
                 </Link>
               </li>
               <li>
                 <Link to="/terms" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">
-                  Conditions d'utilisation
+                  {t('footer.terms')}
                 </Link>
               </li>
               <li>
                 <Link to="/cookies" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">
-                  Cookies
+                  {t('footer.cookies')}
                 </Link>
               </li>
             </ul>
@@ -113,10 +113,10 @@ const Footer = () => {
         
         <div className="flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            © 2024 LuvviX. Tous droits réservés.
+            {t('footer.copyright')}
           </p>
           <div className="flex items-center space-x-4 mt-4 md:mt-0">
-            <span className="text-sm text-gray-500">🌐 Disponible en 9 langues</span>
+            <span className="text-sm text-gray-500">{t('footer.availableLanguages')}</span>
           </div>
         </div>
       </div>

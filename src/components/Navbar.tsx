@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useLanguage } from "@/hooks/useLanguage";
-import LanguageSelector from "@/components/LanguageSelector";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -13,7 +13,7 @@ import {
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Sparkles, Bot, Cloud, FileText, User, ChevronDown, AppWindow, Newspaper, Radio, HeartPulse, Network, Languages, Code } from "lucide-react";
+import { Menu, Sparkles, Bot, Cloud, FileText, User, AppWindow, Newspaper, Radio, Network, Languages, Code } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -79,8 +79,8 @@ const Navbar = () => {
                         <Bot className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">LuvviX AI Studio</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Créez vos agents IA</p>
+                        <h3 className="font-medium">{t('app.aiStudio')}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.aiStudio.desc')}</p>
                       </div>
                     </Link>
                     
@@ -89,8 +89,8 @@ const Navbar = () => {
                         <Languages className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">LuvviX Translate</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Traduction IA instantanée</p>
+                        <h3 className="font-medium">{t('app.translate')}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.translate.desc')}</p>
                       </div>
                     </Link>
                     
@@ -99,8 +99,8 @@ const Navbar = () => {
                         <Network className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">LuvviX MindMap</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Cartes mentales IA</p>
+                        <h3 className="font-medium">{t('app.mindmap')}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.mindmap.desc')}</p>
                       </div>
                     </Link>
                     
@@ -109,8 +109,8 @@ const Navbar = () => {
                         <Code className="w-5 h-5 text-green-600 dark:text-green-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">LuvviX Code Studio</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Génération de code IA</p>
+                        <h3 className="font-medium">{t('app.codeStudio')}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.codeStudio.desc')}</p>
                       </div>
                     </Link>
                     
@@ -119,8 +119,8 @@ const Navbar = () => {
                         <FileText className="w-5 h-5 text-pink-600 dark:text-pink-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">LuvviX Forms</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Formulaires intelligents</p>
+                        <h3 className="font-medium">{t('app.forms')}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.forms.desc')}</p>
                       </div>
                     </Link>
                     
@@ -129,8 +129,8 @@ const Navbar = () => {
                         <Cloud className="w-5 h-5 text-sky-600 dark:text-sky-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">LuvviX Cloud</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Stockage sécurisé</p>
+                        <h3 className="font-medium">{t('app.cloud')}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.cloud.desc')}</p>
                       </div>
                     </Link>
                     
@@ -139,8 +139,8 @@ const Navbar = () => {
                         <Newspaper className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">LuvviX News</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Actualités personnalisées</p>
+                        <h3 className="font-medium">{t('app.news')}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.news.desc')}</p>
                       </div>
                     </Link>
                     
@@ -149,8 +149,8 @@ const Navbar = () => {
                         <Cloud className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">LuvviX Weather</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Météo intelligente</p>
+                        <h3 className="font-medium">{t('app.weather')}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.weather.desc')}</p>
                       </div>
                     </Link>
                     
@@ -159,8 +159,8 @@ const Navbar = () => {
                         <Radio className="w-5 h-5 text-red-600 dark:text-red-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">LuvviX StreamMix</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Bientôt disponible</p>
+                        <h3 className="font-medium">{t('app.streamMix')}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.streamMix.desc')}</p>
                       </div>
                     </Link>
                   </div>
@@ -199,7 +199,6 @@ const Navbar = () => {
 
           <div className="flex items-center gap-3">
             <WeatherWidget />
-            <LanguageSelector />
                         
             {user ? (
               <DropdownMenu>
@@ -225,15 +224,15 @@ const Navbar = () => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate("/dashboard")}>
                     <AppWindow className="mr-2 h-4 w-4" />
-                    Tableau de bord
+                    {t('dashboard.title')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/ai-studio/dashboard")}>
                     <Bot className="mr-2 h-4 w-4" />
-                    AI Studio
+                    {t('app.aiStudio')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()}>
-                    Se déconnecter
+                    {t('nav.signout')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -276,53 +275,53 @@ const Navbar = () => {
                   )}
                   
                   <div className="space-y-2">
-                    <p className="px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Applications</p>
+                    <p className="px-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('nav.applications')}</p>
                     
                     <Link to="/ai-studio" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Bot className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                      <span>LuvviX AI Studio</span>
+                      <span>{t('app.aiStudio')}</span>
                     </Link>
                     
                     <Link to="/translate" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Languages className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      <span>LuvviX Translate</span>
+                      <span>{t('app.translate')}</span>
                     </Link>
                     
                     <Link to="/mindmap" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Network className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                      <span>LuvviX MindMap</span>
+                      <span>{t('app.mindmap')}</span>
                     </Link>
                     
                     <Link to="/code-studio" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Code className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      <span>LuvviX Code Studio</span>
+                      <span>{t('app.codeStudio')}</span>
                     </Link>
                     
                     <Link to="/forms" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <FileText className="h-5 w-5 text-pink-600 dark:text-pink-400" />
-                      <span>LuvviX Forms</span>
+                      <span>{t('app.forms')}</span>
                     </Link>
                     
                     <Link to="/cloud" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Cloud className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-                      <span>LuvviX Cloud</span>
+                      <span>{t('app.cloud')}</span>
                     </Link>
                     
                     <Link to="/news" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Newspaper className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                      <span>LuvviX News</span>
+                      <span>{t('app.news')}</span>
                     </Link>
                     
                     <Link to="/weather" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Cloud className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                      <span>LuvviX Weather</span>
+                      <span>{t('app.weather')}</span>
                     </Link>
                     
                     <div className="border-t my-4"></div>
                     
                     <Link to="/ecosystem" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <AppWindow className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                      <span>Écosystème complet</span>
+                      <span>{t('app.complete')}</span>
                     </Link>
                   </div>
                   
@@ -332,12 +331,12 @@ const Navbar = () => {
                         <Link to="/auth">
                           <Button variant="outline" className="w-full justify-start">
                             <User className="mr-2 h-4 w-4" />
-                            Se connecter
+                            {t('nav.signin')}
                           </Button>
                         </Link>
                         <Link to="/auth?signup=true">
                           <Button className="w-full justify-start">
-                            S'inscrire
+                            {t('nav.signup')}
                           </Button>
                         </Link>
                       </div>

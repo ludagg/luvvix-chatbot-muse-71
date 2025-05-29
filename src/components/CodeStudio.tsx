@@ -46,26 +46,8 @@ interface CodeAnalysis {
 }
 
 const SUPPORTED_LANGUAGES = [
-  { value: 'javascript', label: 'JavaScript', extensions: ['.js'] },
-  { value: 'typescript', label: 'TypeScript', extensions: ['.ts'] },
-  { value: 'python', label: 'Python', extensions: ['.py'] },
-  { value: 'java', label: 'Java', extensions: ['.java'] },
-  { value: 'cpp', label: 'C++', extensions: ['.cpp', '.cc', '.cxx'] },
-  { value: 'csharp', label: 'C#', extensions: ['.cs'] },
-  { value: 'go', label: 'Go', extensions: ['.go'] },
-  { value: 'rust', label: 'Rust', extensions: ['.rs'] },
-  { value: 'php', label: 'PHP', extensions: ['.php'] },
-  { value: 'ruby', label: 'Ruby', extensions: ['.rb'] },
-  { value: 'swift', label: 'Swift', extensions: ['.swift'] },
-  { value: 'kotlin', label: 'Kotlin', extensions: ['.kt'] },
-  { value: 'dart', label: 'Dart', extensions: ['.dart'] },
-  { value: 'scala', label: 'Scala', extensions: ['.scala'] },
-  { value: 'r', label: 'R', extensions: ['.r', '.R'] },
-  { value: 'julia', label: 'Julia', extensions: ['.jl'] },
-  { value: 'perl', label: 'Perl', extensions: ['.pl'] },
-  { value: 'lua', label: 'Lua', extensions: ['.lua'] },
-  { value: 'haskell', label: 'Haskell', extensions: ['.hs'] },
-  { value: 'sql', label: 'SQL', extensions: ['.sql'] }
+  'javascript', 'typescript', 'python', 'java', 'cpp', 'csharp',
+  'go', 'rust', 'php', 'ruby', 'swift', 'kotlin', 'dart', 'scala'
 ];
 
 const CodeStudio: React.FC = () => {
@@ -106,7 +88,7 @@ const CodeStudio: React.FC = () => {
         setGeneratedCode(data.generated);
         toast({
           title: "Code généré",
-          description: `Code ${SUPPORTED_LANGUAGES.find(l => l.value === selectedLanguage)?.label} généré avec succès`
+          description: "Le code a été généré avec succès par Gemini AI"
         });
       } else {
         throw new Error(data.error || 'Erreur inconnue');
@@ -150,7 +132,7 @@ const CodeStudio: React.FC = () => {
         setGeneratedCode(data.optimized);
         toast({
           title: "Code optimisé",
-          description: `Code ${SUPPORTED_LANGUAGES.find(l => l.value === selectedLanguage)?.label} optimisé avec succès`
+          description: "Le code a été optimisé avec succès par Gemini AI"
         });
       } else {
         throw new Error(data.error || 'Erreur inconnue');
@@ -194,7 +176,7 @@ const CodeStudio: React.FC = () => {
         setCodeAnalysis(data.analysis);
         toast({
           title: "Code analysé",
-          description: `Analyse du code ${SUPPORTED_LANGUAGES.find(l => l.value === selectedLanguage)?.label} effectuée avec succès`
+          description: "L'analyse du code a été effectuée avec succès"
         });
       } else {
         throw new Error(data.error || 'Erreur inconnue');
@@ -219,18 +201,31 @@ const CodeStudio: React.FC = () => {
         const content = e.target?.result as string;
         setCode(content);
         
-        const extension = '.' + file.name.split('.').pop()?.toLowerCase();
-        const detectedLanguage = SUPPORTED_LANGUAGES.find(lang => 
-          lang.extensions.includes(extension)
-        );
+        const extension = file.name.split('.').pop()?.toLowerCase();
+        const languageMap: { [key: string]: string } = {
+          'js': 'javascript',
+          'ts': 'typescript',
+          'py': 'python',
+          'java': 'java',
+          'cpp': 'cpp',
+          'cs': 'csharp',
+          'go': 'go',
+          'rs': 'rust',
+          'php': 'php',
+          'rb': 'ruby',
+          'swift': 'swift',
+          'kt': 'kotlin',
+          'dart': 'dart',
+          'scala': 'scala'
+        };
         
-        if (detectedLanguage) {
-          setSelectedLanguage(detectedLanguage.value);
+        if (extension && languageMap[extension]) {
+          setSelectedLanguage(languageMap[extension]);
         }
         
         toast({
           title: "Fichier chargé",
-          description: `${file.name} a été chargé avec succès${detectedLanguage ? ` (${detectedLanguage.label} détecté)` : ''}`
+          description: `${file.name} a été chargé avec succès`
         });
       };
       reader.readAsText(file);
@@ -262,11 +257,6 @@ const CodeStudio: React.FC = () => {
     });
   };
 
-  const getFileExtension = (language: string) => {
-    const lang = SUPPORTED_LANGUAGES.find(l => l.value === language);
-    return lang?.extensions[0] || '.txt';
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -280,7 +270,7 @@ const CodeStudio: React.FC = () => {
             </h1>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Studio de développement IA révolutionnaire avec génération intelligente et optimisation de code multi-langages alimenté par Gemini AI
+            Studio de développement IA révolutionnaire avec génération intelligente et optimisation de code alimenté par Gemini AI
           </p>
         </div>
 
@@ -308,8 +298,8 @@ const CodeStudio: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {SUPPORTED_LANGUAGES.map((lang) => (
-                    <SelectItem key={lang.value} value={lang.value}>
-                      {lang.label}
+                    <SelectItem key={lang} value={lang}>
+                      {lang.charAt(0).toUpperCase() + lang.slice(1)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -325,7 +315,7 @@ const CodeStudio: React.FC = () => {
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileUpload}
-                accept={SUPPORTED_LANGUAGES.flatMap(lang => lang.extensions).join(',')}
+                accept=".js,.ts,.py,.java,.cpp,.cs,.go,.rs,.php,.rb,.swift,.kt,.dart,.scala"
                 className="hidden"
               />
               <Button
@@ -348,14 +338,14 @@ const CodeStudio: React.FC = () => {
                     Génération de Code IA
                   </CardTitle>
                   <CardDescription>
-                    Décrivez ce que vous voulez créer et laissez Gemini AI générer du code dans le langage de votre choix
+                    Décrivez ce que vous voulez créer et laissez Gemini AI générer du code production-ready
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
-                    placeholder={`Ex: Créez une fonction pour trier un tableau d'objets par date en ${SUPPORTED_LANGUAGES.find(l => l.value === selectedLanguage)?.label}...`}
+                    placeholder="Ex: Créez une fonction pour trier un tableau d'objets par date en JavaScript..."
                     className="min-h-32"
                   />
                   <Button 
@@ -382,7 +372,7 @@ const CodeStudio: React.FC = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      <span>Code Généré ({SUPPORTED_LANGUAGES.find(l => l.value === selectedLanguage)?.label})</span>
+                      <span>Code Généré</span>
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -394,7 +384,7 @@ const CodeStudio: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => downloadCode(generatedCode.code, `generated${getFileExtension(selectedLanguage)}`)}
+                          onClick={() => downloadCode(generatedCode.code, `generated.${selectedLanguage}`)}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -431,14 +421,14 @@ const CodeStudio: React.FC = () => {
                     Optimisation de Code
                   </CardTitle>
                   <CardDescription>
-                    Améliorez les performances, la lisibilité et l'efficacité de votre code {SUPPORTED_LANGUAGES.find(l => l.value === selectedLanguage)?.label} avec Gemini AI
+                    Améliorez les performances, la lisibilité et l'efficacité de votre code avec Gemini AI
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Textarea
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    placeholder={`Code ${SUPPORTED_LANGUAGES.find(l => l.value === selectedLanguage)?.label} à optimiser...`}
+                    placeholder={`Code ${selectedLanguage} à optimiser...`}
                     className="min-h-48 font-mono"
                   />
                   <Button 
@@ -465,7 +455,7 @@ const CodeStudio: React.FC = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                      <span>Code Optimisé ({SUPPORTED_LANGUAGES.find(l => l.value === selectedLanguage)?.label})</span>
+                      <span>Code Optimisé</span>
                       <div className="flex gap-2">
                         <Button
                           size="sm"
@@ -477,7 +467,7 @@ const CodeStudio: React.FC = () => {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => downloadCode(generatedCode.code, `optimized${getFileExtension(selectedLanguage)}`)}
+                          onClick={() => downloadCode(generatedCode.code, `optimized.${selectedLanguage}`)}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
@@ -510,14 +500,14 @@ const CodeStudio: React.FC = () => {
                     Analyse de Code
                   </CardTitle>
                   <CardDescription>
-                    Analysez votre code {SUPPORTED_LANGUAGES.find(l => l.value === selectedLanguage)?.label} pour détecter les bugs, problèmes de sécurité et optimisations
+                    Analysez votre code pour détecter les bugs, problèmes de sécurité et optimisations
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <Textarea
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    placeholder={`Code ${SUPPORTED_LANGUAGES.find(l => l.value === selectedLanguage)?.label} à analyser...`}
+                    placeholder={`Code ${selectedLanguage} à analyser...`}
                     className="min-h-48 font-mono"
                   />
                   <Button 
@@ -545,7 +535,7 @@ const CodeStudio: React.FC = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <BarChart className="h-5 w-5" />
-                      Résultats d'Analyse ({SUPPORTED_LANGUAGES.find(l => l.value === selectedLanguage)?.label})
+                      Résultats d'Analyse
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">

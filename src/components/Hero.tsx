@@ -79,7 +79,7 @@ const Hero = () => {
               className="text-xl text-white/70 mb-8 max-w-lg"
               variants={fadeIn}
             >
-              Un système d'authentification unique et sécurisé pour accéder à l'ensemble de notre écosystème technologique. Made in Cameroun avec amour.
+              Un système d'authentification unique et sécurisé pour accéder à l'ensemble de notre écosystème technologique made in Cameroun avec amour
             </motion.p>
             
             <motion.div 
@@ -107,7 +107,7 @@ const Hero = () => {
                     const section = document.getElementById('ecosystem');
                     section?.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="border-white/30 text-white hover:bg-white/10 font-medium px-8 h-12"
+                  className="border-white/30 text-black hover:bg-white/10 font-medium px-8 h-12"
                 >
                   Découvrir l'écosystème
                 </Button>

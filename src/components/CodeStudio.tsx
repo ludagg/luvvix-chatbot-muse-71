@@ -132,7 +132,7 @@ const CodeStudio: React.FC = () => {
         setGeneratedCode(data.optimized);
         toast({
           title: "Code optimisé",
-          description: "Le code a été optimisé avec succès par Gemini AI"
+          description: "Le code a été optimisé avec succès"
         });
       } else {
         throw new Error(data.error || 'Erreur inconnue');
@@ -270,7 +270,7 @@ const CodeStudio: React.FC = () => {
             </h1>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Studio de développement IA révolutionnaire avec génération intelligente et optimisation de code alimenté par Gemini AI
+            Studio de développement IA révolutionnaire avec génération intelligente et optimisation de code alimenté par LuvviX AI
           </p>
         </div>
 

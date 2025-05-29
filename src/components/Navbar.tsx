@@ -1,8 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useLanguage } from "@/hooks/useLanguage";
+import LanguageSelector from "@/components/LanguageSelector";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -24,6 +25,7 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -68,7 +70,7 @@ const Navbar = () => {
                   )}
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
-                  Applications
+                  {t('nav.applications')}
                 </NavigationMenuTrigger>
                 <NavigationMenuContent className="rounded-xl p-4 min-w-[500px]">
                   <div className="grid gap-3 md:grid-cols-3">
@@ -174,7 +176,7 @@ const Navbar = () => {
                     isActive("/ecosystem") && "bg-primary/10 text-primary"
                   )}>
                     <AppWindow className="w-4 h-4 mr-2" />
-                    Écosystème
+                    {t('nav.ecosystem')}
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
@@ -188,7 +190,7 @@ const Navbar = () => {
                     isActive("/news") && "bg-primary/10 text-primary"
                   )}>
                     <Newspaper className="w-4 h-4 mr-2" />
-                    Actualités
+                    {t('nav.news')}
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
@@ -197,6 +199,7 @@ const Navbar = () => {
 
           <div className="flex items-center gap-3">
             <WeatherWidget />
+            <LanguageSelector />
                         
             {user ? (
               <DropdownMenu>
@@ -242,7 +245,7 @@ const Navbar = () => {
                       <Button variant="ghost" size="sm" className={cn(
                         isScrolled ? 'text-gray-700 dark:text-gray-200 hover:text-gray-900' : 'text-white dark:text-gray-200 hover:text-gray-100'
                       )}>
-                        Se connecter
+                        {t('nav.signin')}
                       </Button>
                     </Link>
                   </div>

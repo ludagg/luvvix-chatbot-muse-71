@@ -1,6 +1,8 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -9,13 +11,17 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { LogOut, Key, History, AppWindow, Loader2, Shield, User } from "lucide-react";
+import { LogOut, Key, History, AppWindow, Loader2, Shield, User, Settings, Bell, Globe, Palette, Lock } from "lucide-react";
 import AccountSelector from "@/components/AccountSelector";
 import AppGrid from "@/components/dashboard/AppGrid";
 import RecentActivities from "@/components/dashboard/RecentActivities";
 import StatCards from "@/components/dashboard/StatCards";
 import Clock from "@/components/dashboard/Clock";
 import UsageStats from "@/components/dashboard/UsageStats";
+import LanguageSelector from "@/components/LanguageSelector";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AppAccess {
   id: string;
@@ -26,12 +32,23 @@ interface AppAccess {
 
 const Dashboard = () => {
   const { user, profile, signOut, globalSignOut } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'ecosystem';
   const [connectedApps, setConnectedApps] = useState<AppAccess[]>([]);
   const [loading, setLoading] = useState(true);
   const [revokeLoading, setRevokeLoading] = useState<string | null>(null);
+  
+  // Settings state
+  const [settings, setSettings] = useState({
+    notifications: true,
+    emailNotifications: false,
+    darkMode: false,
+    autoSave: true,
+    twoFactor: false,
+    publicProfile: true
+  });
   
   useEffect(() => {
     if (!user) {
@@ -138,58 +155,75 @@ const Dashboard = () => {
     return appNames[appName] || appName;
   };
 
+  const updateSetting = (key: string, value: boolean) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
       <Navbar />
       
-      {/* Ajout d'un espace en haut pour éviter que le contenu soit caché par la barre de navigation */}
       <main className="flex-grow container mx-auto px-4 py-8 pt-24">
         <div className="max-w-7xl mx-auto">
           {user && (
             <>
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Tableau de bord</h1>
-                  <p className="text-gray-600 dark:text-gray-400 mt-1">
-                    Bienvenue, {profile?.full_name || user.email}
-                  </p>
-                </div>
-                <div className="mt-4 md:mt-0 flex items-center gap-4">
-                  <div className="hidden md:block">
-                    <Clock />
+              {/* Header avec design amélioré */}
+              <div className="relative mb-12 overflow-hidden rounded-3xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 p-8 text-white shadow-2xl">
+                <div className="absolute inset-0 bg-black/10 backdrop-blur-sm"></div>
+                <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center">
+                  <div className="space-y-2">
+                    <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
+                      {t('dashboard.title')}
+                    </h1>
+                    <p className="text-xl text-blue-100">
+                      {t('dashboard.welcome')}, {profile?.full_name || user.email}
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-blue-200">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      Connecté à l'écosystème LuvviX
+                    </div>
                   </div>
-                  <AccountSelector 
-                    currentUser={{
-                      id: user.id,
-                      email: user.email || '',
-                      avatarUrl: profile?.avatar_url || undefined,
-                      fullName: profile?.full_name || undefined,
-                    }}
-                    onLogout={async () => {
-                      await signOut();
-                      return Promise.resolve();
-                    }}
-                  />
+                  <div className="mt-6 md:mt-0 flex items-center gap-4">
+                    <div className="hidden lg:block bg-white/10 backdrop-blur-md rounded-2xl p-4">
+                      <Clock />
+                    </div>
+                    <AccountSelector 
+                      currentUser={{
+                        id: user.id,
+                        email: user.email || '',
+                        avatarUrl: profile?.avatar_url || undefined,
+                        fullName: profile?.full_name || undefined,
+                      }}
+                      onLogout={async () => {
+                        await signOut();
+                        return Promise.resolve();
+                      }}
+                    />
+                  </div>
                 </div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-white/10 to-transparent rounded-full -translate-y-32 translate-x-32"></div>
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-400/20 to-transparent rounded-full translate-y-24 -translate-x-24"></div>
               </div>
               
               <Tabs defaultValue={defaultTab} className="w-full">
-                <TabsList className="grid grid-cols-4 mb-6">
-                  <TabsTrigger value="ecosystem">LuvviX</TabsTrigger>
-                  <TabsTrigger value="connected-apps">SSO</TabsTrigger>
-                  <TabsTrigger value="security">Sécurité</TabsTrigger>
-                  <TabsTrigger value="profile">Profil</TabsTrigger>
+                <TabsList className="grid grid-cols-4 mb-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl p-1 shadow-lg border border-white/20">
+                  <TabsTrigger value="ecosystem" className="rounded-xl font-medium data-[state=active]:bg-violet-600 data-[state=active]:text-white">{t('dashboard.ecosystem')}</TabsTrigger>
+                  <TabsTrigger value="connected-apps" className="rounded-xl font-medium data-[state=active]:bg-violet-600 data-[state=active]:text-white">SSO</TabsTrigger>
+                  <TabsTrigger value="security" className="rounded-xl font-medium data-[state=active]:bg-violet-600 data-[state=active]:text-white">{t('dashboard.security')}</TabsTrigger>
+                  <TabsTrigger value="profile" className="rounded-xl font-medium data-[state=active]:bg-violet-600 data-[state=active]:text-white">{t('dashboard.profile')}</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="ecosystem">
                   <div className="space-y-8">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <AppWindow className="h-5 w-5 text-purple-600" />
+                    <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md border-white/20 shadow-xl rounded-2xl">
+                      <CardHeader className="pb-4">
+                        <CardTitle className="flex items-center gap-3 text-2xl">
+                          <div className="w-10 h-10 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl flex items-center justify-center">
+                            <AppWindow className="h-5 w-5 text-white" />
+                          </div>
                           Écosystème LuvviX
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-lg">
                           Accédez à toutes vos applications et services LuvviX
                         </CardDescription>
                       </CardHeader>
@@ -198,13 +232,13 @@ const Dashboard = () => {
                       </CardContent>
                     </Card>
                     
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      <div className="lg:col-span-2">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      <div className="lg:col-span-2 space-y-6">
                         <RecentActivities userId={user.id} />
                       </div>
                       <div className="lg:col-span-1 space-y-6">
-                        <div className="md:hidden">
-                          <Card className="p-4">
+                        <div className="lg:hidden">
+                          <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md border-white/20 shadow-xl rounded-2xl p-6">
                             <Clock />
                           </Card>
                         </div>
@@ -216,13 +250,15 @@ const Dashboard = () => {
                 </TabsContent>
                 
                 <TabsContent value="connected-apps">
-                  <Card>
+                  <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md border-white/20 shadow-xl rounded-2xl">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <AppWindow className="h-5 w-5 text-purple-600" />
-                        Applications connectées
+                      <CardTitle className="flex items-center gap-3 text-2xl">
+                        <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center">
+                          <AppWindow className="h-5 w-5 text-white" />
+                        </div>
+                        {t('dashboard.connectedApps')}
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-lg">
                         Voici les applications auxquelles vous avez accordé l'accès via LuvviX ID
                       </CardDescription>
                     </CardHeader>
@@ -232,23 +268,23 @@ const Dashboard = () => {
                       ) : connectedApps.length > 0 ? (
                         <div className="space-y-4">
                           {connectedApps.map((app) => (
-                            <div key={app.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg">
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <h3 className="font-medium">{getAppDisplayName(app.app_name)}</h3>
-                                  <Badge className="bg-green-500">{app.app_name}</Badge>
+                            <div key={app.id} className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 border border-white/20 rounded-2xl bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-3">
+                                  <h3 className="font-semibold text-lg">{getAppDisplayName(app.app_name)}</h3>
+                                  <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">{app.app_name}</Badge>
                                 </div>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
                                   Accordé le {formatDate(app.granted_at)}
                                 </p>
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
                                   Dernier accès: {formatDate(app.last_access)}
                                 </p>
                               </div>
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                className="mt-3 md:mt-0"
+                                className="mt-4 md:mt-0 border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950"
                                 onClick={() => handleRevokeAccess(app.id, getAppDisplayName(app.app_name))}
                                 disabled={revokeLoading === app.id}
                               >
@@ -265,132 +301,212 @@ const Dashboard = () => {
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center p-6 border rounded-lg bg-gray-50">
-                          <p className="text-gray-500">Aucune application connectée</p>
+                        <div className="text-center p-12 border border-dashed border-gray-300 dark:border-gray-600 rounded-2xl bg-white/30 dark:bg-gray-800/30">
+                          <AppWindow className="mx-auto h-16 w-16 text-gray-400 mb-4" />
+                          <p className="text-gray-500 text-lg font-medium">Aucune application connectée</p>
                           <p className="text-sm text-gray-400 mt-2">
                             Les applications que vous autoriserez apparaîtront ici
                           </p>
                         </div>
                       )}
                     </CardContent>
-                    <CardContent>
-                      <div className="text-sm text-gray-500">
-                        Pour connecter une nouvelle application, accédez à l'application et connectez-vous avec LuvviX ID.
-                      </div>
-                    </CardContent>
                   </Card>
                 </TabsContent>
                 
                 <TabsContent value="security">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-purple-600" />
-                        Sécurité du compte
-                      </CardTitle>
-                      <CardDescription>
-                        Gérez les paramètres de sécurité et les connexions récentes
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="text-lg font-medium mb-3">Mot de passe</h3>
-                          <Button variant="outline">Changer le mot de passe</Button>
+                  <div className="space-y-6">
+                    {/* Paramètres de sécurité */}
+                    <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md border-white/20 shadow-xl rounded-2xl">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-3 text-2xl">
+                          <div className="w-10 h-10 bg-gradient-to-r from-red-600 to-pink-600 rounded-xl flex items-center justify-center">
+                            <Shield className="h-5 w-5 text-white" />
+                          </div>
+                          {t('dashboard.security')}
+                        </CardTitle>
+                        <CardDescription className="text-lg">
+                          Gérez les paramètres de sécurité et les connexions récentes
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-8">
+                        {/* Notifications */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                            <Bell className="h-5 w-5 text-violet-600" />
+                            <h3 className="text-lg font-semibold">Notifications</h3>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                              <Label htmlFor="notifications" className="font-medium">Notifications push</Label>
+                              <Switch
+                                id="notifications"
+                                checked={settings.notifications}
+                                onCheckedChange={(checked) => updateSetting('notifications', checked)}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                              <Label htmlFor="email-notifications" className="font-medium">Notifications email</Label>
+                              <Switch
+                                id="email-notifications"
+                                checked={settings.emailNotifications}
+                                onCheckedChange={(checked) => updateSetting('emailNotifications', checked)}
+                              />
+                            </div>
+                          </div>
                         </div>
-                        
-                        <div>
-                          <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
-                            <Key className="h-4 w-4" />
-                            Connexions actives
-                          </h3>
+
+                        {/* Préférences */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                            <Palette className="h-5 w-5 text-violet-600" />
+                            <h3 className="text-lg font-semibold">Préférences</h3>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                              <Label htmlFor="dark-mode" className="font-medium">Mode sombre</Label>
+                              <Switch
+                                id="dark-mode"
+                                checked={settings.darkMode}
+                                onCheckedChange={(checked) => updateSetting('darkMode', checked)}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                              <Label htmlFor="auto-save" className="font-medium">Sauvegarde automatique</Label>
+                              <Switch
+                                id="auto-save"
+                                checked={settings.autoSave}
+                                onCheckedChange={(checked) => updateSetting('autoSave', checked)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Langue */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                            <Globe className="h-5 w-5 text-violet-600" />
+                            <h3 className="text-lg font-semibold">{t('settings.language')}</h3>
+                          </div>
+                          <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                            <LanguageSelector />
+                          </div>
+                        </div>
+
+                        {/* Sécurité avancée */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                            <Lock className="h-5 w-5 text-violet-600" />
+                            <h3 className="text-lg font-semibold">Sécurité avancée</h3>
+                          </div>
                           <div className="space-y-4">
-                            <div className="border p-4 rounded-lg">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <p className="font-medium">Session actuelle</p>
-                                  <p className="text-sm text-gray-500">Connecté depuis {formatDate(new Date().toISOString())}</p>
-                                </div>
-                                <Badge>Active</Badge>
+                            <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                              <div>
+                                <Label htmlFor="two-factor" className="font-medium">Authentification à deux facteurs</Label>
+                                <p className="text-sm text-gray-500">Ajoutez une couche de sécurité supplémentaire</p>
                               </div>
+                              <Switch
+                                id="two-factor"
+                                checked={settings.twoFactor}
+                                onCheckedChange={(checked) => updateSetting('twoFactor', checked)}
+                              />
+                            </div>
+                            <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                              <div>
+                                <Label htmlFor="public-profile" className="font-medium">Profil public</Label>
+                                <p className="text-sm text-gray-500">Permettre aux autres de voir votre profil</p>
+                              </div>
+                              <Switch
+                                id="public-profile"
+                                checked={settings.publicProfile}
+                                onCheckedChange={(checked) => updateSetting('publicProfile', checked)}
+                              />
                             </div>
                           </div>
                         </div>
-                        
-                        <div>
-                          <h3 className="text-lg font-medium mb-3 flex items-center gap-2">
-                            <History className="h-4 w-4" />
-                            Connexions récentes
-                          </h3>
-                          <div className="border rounded-lg overflow-hidden">
-                            <div className="p-4 border-b bg-gray-50">
-                              <div className="flex justify-between">
-                                <div>
-                                  <p className="font-medium">Aujourd'hui, {new Date().getHours()}:{String(new Date().getMinutes()).padStart(2, '0')}</p>
-                                  <p className="text-sm text-gray-500">Navigateur web</p>
-                                </div>
-                                <Badge>Vous</Badge>
-                              </div>
-                            </div>
+
+                        {/* Actions de sécurité */}
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold">Actions</h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Button variant="outline" className="h-auto p-4 flex flex-col items-start gap-2 rounded-xl">
+                              <Key className="h-5 w-5" />
+                              <span className="font-medium">Changer le mot de passe</span>
+                              <span className="text-sm text-gray-500">Mettre à jour vos identifiants</span>
+                            </Button>
+                            <Button 
+                              variant="destructive" 
+                              className="h-auto p-4 flex flex-col items-start gap-2 rounded-xl"
+                              onClick={async () => {
+                                await globalSignOut();
+                                navigate('/');
+                              }}
+                            >
+                              <LogOut className="h-5 w-5" />
+                              <span className="font-medium">Déconnexion globale</span>
+                              <span className="text-sm text-red-100">Déconnecter tous les appareils</span>
+                            </Button>
                           </div>
                         </div>
-                        
-                        <div>
-                          <h3 className="text-lg font-medium mb-3">Déconnexion globale</h3>
-                          <p className="text-sm text-gray-500 mb-3">
-                            Déconnectez-vous de toutes les applications LuvviX en une seule fois
-                          </p>
-                          <Button 
-                            variant="destructive" 
-                            onClick={async () => {
-                              await globalSignOut();
-                              navigate('/');
-                            }}
-                          >
-                            <LogOut className="mr-2 h-4 w-4" />
-                            Déconnexion globale
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </TabsContent>
                 
                 <TabsContent value="profile">
-                  <Card>
+                  <Card className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-md border-white/20 shadow-xl rounded-2xl">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <User className="h-5 w-5 text-purple-600" />
-                        Profil utilisateur
+                      <CardTitle className="flex items-center gap-3 text-2xl">
+                        <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-teal-600 rounded-xl flex items-center justify-center">
+                          <User className="h-5 w-5 text-white" />
+                        </div>
+                        {t('dashboard.profile')}
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-lg">
                         Gérez vos informations personnelles
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm font-medium mb-1">Email</p>
-                          <p className="text-gray-700 bg-gray-100 p-2 rounded">{user.email}</p>
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Email</Label>
+                            <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                              {user.email}
+                            </div>
+                          </div>
+                          
+                          {profile?.full_name && (
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Nom complet</Label>
+                              <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                                {profile.full_name}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {profile?.username && (
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Nom d'utilisateur</Label>
+                              <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                                {profile.username}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Membre depuis</Label>
+                            <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
+                              {formatDate(user.created_at || new Date().toISOString())}
+                            </div>
+                          </div>
                         </div>
-                        
-                        {profile?.full_name && (
-                          <div>
-                            <p className="text-sm font-medium mb-1">Nom complet</p>
-                            <p className="text-gray-700 bg-gray-100 p-2 rounded">{profile.full_name}</p>
-                          </div>
-                        )}
-                        
-                        {profile?.username && (
-                          <div>
-                            <p className="text-sm font-medium mb-1">Nom d'utilisateur</p>
-                            <p className="text-gray-700 bg-gray-100 p-2 rounded">{profile.username}</p>
-                          </div>
-                        )}
                       </div>
                     </CardContent>
                     <CardFooter>
-                      <Button>Mettre à jour le profil</Button>
+                      <Button className="bg-gradient-to-r from-violet-600 to-purple-600 text-white border-0 hover:shadow-lg transition-all">
+                        <Settings className="mr-2 h-4 w-4" />
+                        Mettre à jour le profil
+                      </Button>
                     </CardFooter>
                   </Card>
                 </TabsContent>

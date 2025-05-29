@@ -513,6 +513,530 @@ export type Database = {
         }
         Relationships: []
       }
+      center_chat_messages: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          is_deleted: boolean | null
+          media_url: string | null
+          metadata: Json | null
+          room_id: string
+          sender_id: string
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          media_url?: string | null
+          metadata?: Json | null
+          room_id: string
+          sender_id: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          media_url?: string | null
+          metadata?: Json | null
+          room_id?: string
+          sender_id?: string
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_chat_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "center_chat_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      center_chat_participants: {
+        Row: {
+          joined_at: string | null
+          last_read_at: string | null
+          role: string | null
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string | null
+          last_read_at?: string | null
+          role?: string | null
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          joined_at?: string | null
+          last_read_at?: string | null
+          role?: string | null
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_chat_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "center_chat_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      center_chat_rooms: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_group: boolean | null
+          metadata: Json | null
+          name: string | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_group?: boolean | null
+          metadata?: Json | null
+          name?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_group?: boolean | null
+          metadata?: Json | null
+          name?: string | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      center_comments: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          post_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          post_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "center_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      center_conversation_participants: {
+        Row: {
+          conversation_id: string
+          created_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_conversation_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "center_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      center_conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      center_follows: {
+        Row: {
+          created_at: string | null
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      center_game_participants: {
+        Row: {
+          joined_at: string | null
+          room_id: string
+          score: number | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string | null
+          room_id: string
+          score?: number | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          joined_at?: string | null
+          room_id?: string
+          score?: number | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_game_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "center_game_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      center_game_rooms: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          current_players: number
+          ended_at: string | null
+          game_id: string
+          id: string
+          max_players: number
+          settings: Json | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          current_players?: number
+          ended_at?: string | null
+          game_id: string
+          id?: string
+          max_players?: number
+          settings?: Json | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          current_players?: number
+          ended_at?: string | null
+          game_id?: string
+          id?: string
+          max_players?: number
+          settings?: Json | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_game_rooms_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "center_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      center_game_scores: {
+        Row: {
+          created_at: string | null
+          game_id: string
+          id: string
+          metadata: Json | null
+          score: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          game_id: string
+          id?: string
+          metadata?: Json | null
+          score: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          game_id?: string
+          id?: string
+          metadata?: Json | null
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_game_scores_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "center_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      center_game_states: {
+        Row: {
+          current_state: Json
+          last_action: Json | null
+          last_updated: string | null
+          room_id: string
+        }
+        Insert: {
+          current_state?: Json
+          last_action?: Json | null
+          last_updated?: string | null
+          room_id: string
+        }
+        Update: {
+          current_state?: Json
+          last_action?: Json | null
+          last_updated?: string | null
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_game_states_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: true
+            referencedRelation: "center_game_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      center_games: {
+        Row: {
+          config: Json | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      center_likes: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "center_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      center_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          media_url: string | null
+          read_at: string | null
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          media_url?: string | null
+          read_at?: string | null
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          media_url?: string | null
+          read_at?: string | null
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "center_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      center_posts: {
+        Row: {
+          comments_count: number | null
+          content: string
+          created_at: string | null
+          id: string
+          likes_count: number | null
+          media_urls: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          comments_count?: number | null
+          content: string
+          created_at?: string | null
+          id?: string
+          likes_count?: number | null
+          media_urls?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          comments_count?: number | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          likes_count?: number | null
+          media_urls?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      center_profiles: {
+        Row: {
+          avatar_url: string | null
+          banner_url: string | null
+          bio: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          preferences: Json | null
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          banner_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          preferences?: Json | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          banner_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          preferences?: Json | null
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
       chapters: {
         Row: {
           book_id: string
@@ -1358,7 +1882,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_complete_schema: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

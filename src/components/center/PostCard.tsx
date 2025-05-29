@@ -1,56 +1,102 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Heart, 
-  MessageCircle, 
-  Share2, 
-  MoreHorizontal,
-  Bookmark
-} from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { toast } from '@/hooks/use-toast';
 
-interface PostCardProps {
-  post: {
-    id: string;
-    content: string;
-    media_url?: string;
-    media_type?: string;
-    likes_count: number;
-    comments_count: number;
-    shares_count: number;
-    created_at: string;
-    user_profiles?: {
-      full_name: string;
-      username: string;
-      avatar_url?: string;
-    };
+interface Post {
+  id: string;
+  user_id: string;
+  content: string;
+  media_urls?: string[];
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+  updated_at: string;
+  user_profiles?: {
+    full_name: string;
+    username: string;
+    avatar_url: string;
   };
-  onLike: () => void;
 }
 
-const PostCard = ({ post, onLike }: PostCardProps) => {
-  const [isLiked, setIsLiked] = useState(false);
+interface PostCardProps {
+  post: Post;
+  onUpdate: () => void;
+}
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    onLike();
+const PostCard = ({ post, onUpdate }: PostCardProps) => {
+  const { user } = useAuth();
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(post.likes_count);
+  const [loading, setLoading] = useState(false);
+
+  const handleLike = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      if (isLiked) {
+        // Unlike
+        const { error } = await supabase
+          .from('center_likes')
+          .delete()
+          .match({ post_id: post.id, user_id: user.id });
+
+        if (error) throw error;
+        
+        setIsLiked(false);
+        setLikesCount(prev => Math.max(0, prev - 1));
+      } else {
+        // Like
+        const { error } = await supabase
+          .from('center_likes')
+          .insert({ post_id: post.id, user_id: user.id });
+
+        if (error) throw error;
+        
+        setIsLiked(true);
+        setLikesCount(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de liker le post"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const timeAgo = formatDistanceToNow(new Date(post.created_at), {
-    addSuffix: true,
-    locale: fr
-  });
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: `Post de ${post.user_profiles?.full_name}`,
+        text: post.content,
+        url: window.location.href
+      });
+    } catch (error) {
+      // Fallback to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Lien copié",
+        description: "Le lien du post a été copié"
+      });
+    }
+  };
 
   return (
-    <Card className="border border-gray-200 dark:border-gray-700">
-      <CardContent className="p-4">
-        {/* Post Header */}
-        <div className="flex items-center justify-between mb-3">
+    <Card className="w-full">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Avatar className="h-10 w-10">
               <AvatarImage src={post.user_profiles?.avatar_url || ''} />
@@ -59,81 +105,74 @@ const PostCard = ({ post, onLike }: PostCardProps) => {
               </AvatarFallback>
             </Avatar>
             <div>
-              <div className="flex items-center space-x-2">
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {post.user_profiles?.full_name || 'Utilisateur'}
-                </p>
-                <Badge variant="luvvix" className="text-xs">
-                  Vérifié
-                </Badge>
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                @{post.user_profiles?.username} • {timeAgo}
+              <p className="font-semibold text-sm">
+                {post.user_profiles?.full_name || 'Utilisateur'}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                @{post.user_profiles?.username || 'user'} • {' '}
+                {formatDistanceToNow(new Date(post.created_at), { 
+                  addSuffix: true, 
+                  locale: fr 
+                })}
               </p>
             </div>
           </div>
-          
           <Button variant="ghost" size="sm">
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </div>
+      </CardHeader>
 
+      <CardContent className="pt-0">
         {/* Post Content */}
         <div className="mb-4">
-          <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
             {post.content}
           </p>
-          
-          {post.media_url && (
-            <div className="mt-3 rounded-lg overflow-hidden">
-              {post.media_type === 'image' ? (
-                <img
-                  src={post.media_url}
-                  alt="Post media"
-                  className="w-full h-auto"
-                />
-              ) : post.media_type === 'video' ? (
-                <video
-                  src={post.media_url}
-                  controls
-                  className="w-full h-auto"
-                />
-              ) : null}
-            </div>
-          )}
         </div>
 
-        {/* Post Actions */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
-          <div className="flex items-center space-x-6">
+        {/* Media */}
+        {post.media_urls && post.media_urls.length > 0 && (
+          <div className="mb-4 grid gap-2">
+            {post.media_urls.map((url, index) => (
+              <img
+                key={index}
+                src={url}
+                alt="Post media"
+                className="rounded-lg w-full max-h-96 object-cover"
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleLike}
-              className={`space-x-2 ${
-                isLiked 
-                  ? 'text-red-500 hover:text-red-600' 
-                  : 'text-gray-500 hover:text-red-500'
-              }`}
+              disabled={loading}
+              className={`gap-2 ${isLiked ? 'text-red-500' : 'text-gray-500'}`}
             >
-              <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
-              <span>{post.likes_count}</span>
+              <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+              <span className="text-xs">{likesCount}</span>
             </Button>
-            
-            <Button variant="ghost" size="sm" className="space-x-2 text-gray-500 hover:text-blue-500">
-              <MessageCircle className="h-5 w-5" />
-              <span>{post.comments_count}</span>
+
+            <Button variant="ghost" size="sm" className="gap-2 text-gray-500">
+              <MessageCircle className="h-4 w-4" />
+              <span className="text-xs">{post.comments_count}</span>
             </Button>
-            
-            <Button variant="ghost" size="sm" className="space-x-2 text-gray-500 hover:text-green-500">
-              <Share2 className="h-5 w-5" />
-              <span>{post.shares_count}</span>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleShare}
+              className="gap-2 text-gray-500"
+            >
+              <Share2 className="h-4 w-4" />
             </Button>
           </div>
-          
-          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-yellow-500">
-            <Bookmark className="h-5 w-5" />
-          </Button>
         </div>
       </CardContent>
     </Card>

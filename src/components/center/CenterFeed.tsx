@@ -1,25 +1,27 @@
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import PostCreator from './PostCreator';
 import PostCard from './PostCard';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface Post {
   id: string;
   user_id: string;
   content: string;
-  media_url?: string;
-  media_type?: string;
+  media_urls?: string[];
   likes_count: number;
   comments_count: number;
-  shares_count: number;
   created_at: string;
+  updated_at: string;
   user_profiles?: {
     full_name: string;
     username: string;
-    avatar_url?: string;
+    avatar_url: string;
   };
 }
 
@@ -27,18 +29,15 @@ const CenterFeed = () => {
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: postsData, error } = await supabase
         .from('center_posts')
         .select(`
           *,
-          user_profiles (
+          user_profiles!inner(
             full_name,
             username,
             avatar_url
@@ -47,49 +46,68 @@ const CenterFeed = () => {
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (error) throw error;
-      
-      setPosts(data || []);
-    } catch (error: any) {
-      console.error('Error fetching posts:', error);
+      if (error) {
+        console.error('Error fetching posts:', error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger les posts"
+        });
+        return;
+      }
+
+      setPosts(postsData || []);
+    } catch (error) {
+      console.error('Error in fetchPosts:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Impossible de charger les posts"
+        description: "Une erreur est survenue lors du chargement"
       });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const handleNewPost = async (postData: any) => {
+  useEffect(() => {
+    fetchPosts();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('posts')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'center_posts' },
+        () => {
+          fetchPosts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handlePostCreated = async (postData: any) => {
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('center_posts')
-        .insert([{
+        .insert({
           user_id: user?.id,
           content: postData.content,
-          media_url: postData.media_url,
-          media_type: postData.media_type
-        }])
-        .select(`
-          *,
-          user_profiles (
-            full_name,
-            username,
-            avatar_url
-          )
-        `)
-        .single();
+          media_urls: postData.media_urls || null
+        });
 
       if (error) throw error;
 
-      setPosts([data, ...posts]);
       toast({
         title: "Post publié",
         description: "Votre post a été publié avec succès"
       });
-    } catch (error: any) {
+
+      fetchPosts();
+    } catch (error) {
       console.error('Error creating post:', error);
       toast({
         variant: "destructive",
@@ -99,68 +117,53 @@ const CenterFeed = () => {
     }
   };
 
-  const handleLike = async (postId: string) => {
-    try {
-      // Check if user already liked this post
-      const { data: existingLike } = await supabase
-        .from('center_post_likes')
-        .select('id')
-        .eq('post_id', postId)
-        .eq('user_id', user?.id)
-        .single();
-
-      if (existingLike) {
-        // Remove like
-        await supabase
-          .from('center_post_likes')
-          .delete()
-          .eq('post_id', postId)
-          .eq('user_id', user?.id);
-
-        // Update post likes count
-        await supabase.rpc('decrement_post_likes', { post_id: postId });
-      } else {
-        // Add like
-        await supabase
-          .from('center_post_likes')
-          .insert([{ post_id: postId, user_id: user?.id }]);
-
-        // Update post likes count
-        await supabase.rpc('increment_post_likes', { post_id: postId });
-      }
-
-      // Refresh posts
-      fetchPosts();
-    } catch (error: any) {
-      console.error('Error handling like:', error);
-    }
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchPosts();
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
-      <PostCreator onPostCreated={handleNewPost} />
-      
-      <div className="space-y-6">
+      {/* Post Creator */}
+      <PostCreator onPostCreated={handlePostCreated} />
+
+      {/* Refresh Button */}
+      <div className="flex justify-center">
+        <Button
+          variant="outline"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          Actualiser
+        </Button>
+      </div>
+
+      {/* Posts Feed */}
+      <div className="space-y-4">
         {posts.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 dark:text-gray-400">
-              Aucun post à afficher. Soyez le premier à partager quelque chose !
-            </p>
-          </div>
+          <Card>
+            <CardContent className="text-center py-12">
+              <p className="text-gray-500 dark:text-gray-400">
+                Aucun post à afficher. Soyez le premier à publier !
+              </p>
+            </CardContent>
+          </Card>
         ) : (
           posts.map((post) => (
             <PostCard
               key={post.id}
               post={post}
-              onLike={() => handleLike(post.id)}
+              onUpdate={fetchPosts}
             />
           ))
         )}

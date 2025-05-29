@@ -1,229 +1,369 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Search, 
-  Phone, 
-  Video, 
-  MoreHorizontal,
-  Send,
-  Smile,
-  Paperclip
-} from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Search, Plus, Phone, Video, Send, Smile, Paperclip } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { toast } from '@/hooks/use-toast';
+
+interface Conversation {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  center_chat_participants: {
+    user_id: string;
+    user_profiles: {
+      full_name: string;
+      username: string;
+      avatar_url: string;
+    };
+  }[];
+  center_chat_messages: {
+    id: string;
+    content: string;
+    created_at: string;
+    sender_id: string;
+  }[];
+}
+
+interface Message {
+  id: string;
+  content: string;
+  sender_id: string;
+  created_at: string;
+  user_profiles?: {
+    full_name: string;
+    avatar_url: string;
+  };
+}
 
 const CenterMessaging = () => {
-  const [selectedChat, setSelectedChat] = useState(0);
-  const [messageText, setMessageText] = useState('');
+  const { user, profile } = useAuth();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const conversations = [
-    {
-      id: 1,
-      name: 'Alice Martin',
-      username: 'alice_m',
-      avatar: null,
-      lastMessage: 'Salut ! Comment ça va ?',
-      time: '14:30',
-      unread: 2,
-      online: true
-    },
-    {
-      id: 2,
-      name: 'Groupe Dev LuvviX',
-      username: 'dev-team',
-      avatar: null,
-      lastMessage: 'La nouvelle version est prête',
-      time: '13:45',
-      unread: 0,
-      online: false,
-      isGroup: true
-    },
-    {
-      id: 3,
-      name: 'Thomas Durand',
-      username: 'tdurand',
-      avatar: null,
-      lastMessage: 'Parfait, on se voit demain',
-      time: '12:20',
-      unread: 0,
-      online: false
-    }
-  ];
+  const fetchConversations = async () => {
+    if (!user) return;
 
-  const messages = [
-    {
-      id: 1,
-      sender: 'Alice Martin',
-      content: 'Salut ! Comment ça va ?',
-      time: '14:30',
-      isMe: false
-    },
-    {
-      id: 2,
-      sender: 'Moi',
-      content: 'Très bien ! Et toi ? Comment se passe ton projet ?',
-      time: '14:32',
-      isMe: true
-    },
-    {
-      id: 3,
-      sender: 'Alice Martin',
-      content: 'Ça avance bien ! J\'aimerais te montrer ce que j\'ai fait avec LuvviX Center',
-      time: '14:35',
-      isMe: false
-    }
-  ];
+    try {
+      const { data, error } = await supabase
+        .from('center_chat_rooms')
+        .select(`
+          id,
+          created_at,
+          updated_at,
+          center_chat_participants!inner(
+            user_id,
+            user_profiles!inner(
+              full_name,
+              username,
+              avatar_url
+            )
+          ),
+          center_chat_messages(
+            id,
+            content,
+            created_at,
+            sender_id
+          )
+        `)
+        .eq('center_chat_participants.user_id', user.id)
+        .order('updated_at', { ascending: false });
 
-  const handleSendMessage = () => {
-    if (messageText.trim()) {
-      // Logic to send message would go here
-      setMessageText('');
+      if (error) throw error;
+      setConversations(data || []);
+    } catch (error) {
+      console.error('Error fetching conversations:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de charger les conversations"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
+  const fetchMessages = async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('center_chat_messages')
+        .select(`
+          *,
+          user_profiles!inner(
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('room_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+      setMessages(data || []);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de charger les messages"
+      });
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!newMessage.trim() || !selectedConversation || !user) return;
+
+    try {
+      const { error } = await supabase
+        .from('center_chat_messages')
+        .insert({
+          room_id: selectedConversation,
+          sender_id: user.id,
+          content: newMessage.trim(),
+          type: 'text'
+        });
+
+      if (error) throw error;
+
+      setNewMessage('');
+      fetchMessages(selectedConversation);
+      fetchConversations();
+
+      toast({
+        title: "Message envoyé",
+        description: "Votre message a été envoyé"
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible d'envoyer le message"
+      });
+    }
+  };
+
+  useEffect(() => {
+    fetchConversations();
+  }, [user]);
+
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchMessages(selectedConversation);
+    }
+  }, [selectedConversation]);
+
+  // Real-time subscription for messages
+  useEffect(() => {
+    if (!selectedConversation) return;
+
+    const channel = supabase
+      .channel(`messages:${selectedConversation}`)
+      .on('postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'center_chat_messages',
+          filter: `room_id=eq.${selectedConversation}`
+        },
+        () => {
+          fetchMessages(selectedConversation);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedConversation]);
+
+  const filteredConversations = conversations.filter(conv =>
+    conv.center_chat_participants.some(p =>
+      p.user_profiles.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.user_profiles.username.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+
   return (
-    <div className="h-full flex">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       {/* Conversations List */}
       <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold mb-4">Messages</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Messages</h2>
+            <Button size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Nouveau
+            </Button>
+          </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Rechercher une conversation..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
         </div>
 
-        <div className="overflow-y-auto">
-          {conversations.map((conv, index) => (
-            <div
-              key={conv.id}
-              className={`p-4 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                selectedChat === index ? 'bg-purple-50 dark:bg-purple-900/20' : ''
-              }`}
-              onClick={() => setSelectedChat(index)}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={conv.avatar || ''} />
-                    <AvatarFallback>{conv.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  {conv.online && (
-                    <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white"></div>
-                  )}
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium truncate">{conv.name}</p>
-                    <span className="text-xs text-gray-500">{conv.time}</span>
+        <ScrollArea className="h-[calc(100vh-140px)]">
+          <div className="space-y-1 p-2">
+            {filteredConversations.map((conversation) => {
+              const otherParticipant = conversation.center_chat_participants.find(
+                p => p.user_id !== user?.id
+              );
+              const lastMessage = conversation.center_chat_messages[conversation.center_chat_messages.length - 1];
+
+              return (
+                <Button
+                  key={conversation.id}
+                  variant={selectedConversation === conversation.id ? "secondary" : "ghost"}
+                  className="w-full justify-start p-3 h-auto"
+                  onClick={() => setSelectedConversation(conversation.id)}
+                >
+                  <div className="flex items-center space-x-3 w-full">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={otherParticipant?.user_profiles.avatar_url || ''} />
+                      <AvatarFallback>
+                        {otherParticipant?.user_profiles.full_name.charAt(0) || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0 text-left">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-sm truncate">
+                          {otherParticipant?.user_profiles.full_name || 'Utilisateur'}
+                        </p>
+                        <Badge variant="outline" className="text-xs">
+                          En ligne
+                        </Badge>
+                      </div>
+                      {lastMessage && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          {lastMessage.content}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-400">
+                        {formatDistanceToNow(new Date(conversation.updated_at), {
+                          addSuffix: true,
+                          locale: fr
+                        })}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-500 truncate">{conv.lastMessage}</p>
-                </div>
-                
-                {conv.unread > 0 && (
-                  <Badge variant="destructive" className="ml-2">
-                    {conv.unread}
-                  </Badge>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+                </Button>
+              );
+            })}
+          </div>
+        </ScrollArea>
       </div>
 
       {/* Chat Area */}
       <div className="flex-1 flex flex-col">
-        {/* Chat Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={conversations[selectedChat]?.avatar || ''} />
-                <AvatarFallback>
-                  {conversations[selectedChat]?.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium">{conversations[selectedChat]?.name}</p>
-                <p className="text-sm text-gray-500">
-                  {conversations[selectedChat]?.online ? 'En ligne' : 'Hors ligne'}
-                </p>
+        {selectedConversation ? (
+          <>
+            {/* Chat Header */}
+            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={profile?.avatar_url || ''} />
+                    <AvatarFallback>
+                      {profile?.full_name?.charAt(0) || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-semibold">Nom d'utilisateur</p>
+                    <p className="text-sm text-green-500">En ligne</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button variant="ghost" size="sm">
+                    <Phone className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <Video className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
-            
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="sm">
-                <Phone className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Video className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <MoreHorizontal className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.isMe ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.isMe
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
-                }`}
-              >
-                <p className="text-sm">{message.content}</p>
-                <p className={`text-xs mt-1 ${
-                  message.isMe ? 'text-purple-200' : 'text-gray-500'
-                }`}>
-                  {message.time}
-                </p>
+            {/* Messages */}
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${
+                      message.sender_id === user?.id ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    <div
+                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                        message.sender_id === user?.id
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      <p className="text-sm">{message.content}</p>
+                      <p className="text-xs opacity-70 mt-1">
+                        {formatDistanceToNow(new Date(message.created_at), {
+                          addSuffix: true,
+                          locale: fr
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+
+            {/* Message Input */}
+            <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" size="sm">
+                  <Paperclip className="h-4 w-4" />
+                </Button>
+                <Input
+                  placeholder="Tapez votre message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  className="flex-1"
+                />
+                <Button variant="ghost" size="sm">
+                  <Smile className="h-4 w-4" />
+                </Button>
+                <Button onClick={sendMessage} size="sm">
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-          ))}
-        </div>
-
-        {/* Message Input */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-          <div className="flex items-center space-x-2">
-            <Button variant="ghost" size="sm">
-              <Paperclip className="h-5 w-5" />
-            </Button>
-            <div className="flex-1 relative">
-              <Input
-                placeholder="Tapez votre message..."
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                className="pr-10"
-              />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-1 top-1/2 transform -translate-y-1/2"
-              >
-                <Smile className="h-4 w-4" />
-              </Button>
+          </>
+        ) : (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <MessageCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Sélectionnez une conversation
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400">
+                Choisissez une conversation pour commencer à discuter
+              </p>
             </div>
-            <Button onClick={handleSendMessage} className="bg-purple-600 hover:bg-purple-700">
-              <Send className="h-4 w-4" />
-            </Button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -41,6 +41,7 @@ const translations = {
     'nav.logout': 'Déconnexion',
     'nav.profile': 'Profil',
     'nav.settings': 'Paramètres',
+    'nav.signIn': 'Connexion',
 
     // Apps
     'app.aiStudio': 'AI Studio',
@@ -232,7 +233,7 @@ const translations = {
     'nav.docs': 'Documentation',
     'nav.news': 'News',
     'nav.support': 'Support',
-    'nav.login': 'Login',
+    'nav.signIn': 'Login',
     'nav.signup': 'Sign up',
     'nav.dashboard': 'Dashboard',
     'nav.logout': 'Logout',

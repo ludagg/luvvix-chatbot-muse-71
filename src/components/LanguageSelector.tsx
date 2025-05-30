@@ -15,15 +15,15 @@ const LanguageSelector = () => {
   
   // Define languages locally since they're not in the context
   const languages = [
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'es', name: 'Español', flag: '🇪🇸' },
-    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-    { code: 'it', name: 'Italiano', flag: '🇮🇹' },
-    { code: 'pt', name: 'Português', flag: '🇵🇹' },
-    { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-    { code: 'zh', name: '中文', flag: '🇨🇳' },
-    { code: 'ja', name: '日本語', flag: '🇯🇵' }
+    { code: 'fr' as const, name: 'Français', flag: '🇫🇷' },
+    { code: 'en' as const, name: 'English', flag: '🇺🇸' },
+    { code: 'es' as const, name: 'Español', flag: '🇪🇸' },
+    { code: 'de' as const, name: 'Deutsch', flag: '🇩🇪' },
+    { code: 'it' as const, name: 'Italiano', flag: '🇮🇹' },
+    { code: 'pt' as const, name: 'Português', flag: '🇵🇹' },
+    { code: 'ru' as const, name: 'Русский', flag: '🇷🇺' },
+    { code: 'zh' as const, name: '中文', flag: '🇨🇳' },
+    { code: 'ja' as const, name: '日本語', flag: '🇯🇵' }
   ];
   
   const currentLanguage = languages.find(lang => lang.code === language);

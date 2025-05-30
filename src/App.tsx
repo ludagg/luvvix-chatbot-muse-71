@@ -1,3 +1,4 @@
+
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { LanguageProvider } from "@/hooks/useLanguage";
@@ -6,6 +7,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
+import ExplorePage from "./pages/ExplorePage";
 import NotFound from "./pages/NotFound";
 import ApiDocs from "./pages/ApiDocs";
 import AuthPage from "./pages/AuthPage";
@@ -56,6 +58,7 @@ function App() {
               <Sonner />
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/explore" element={<ExplorePage />} />
                 <Route path="/api-docs" element={<ApiDocs />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/news" element={<NewsPage />} />

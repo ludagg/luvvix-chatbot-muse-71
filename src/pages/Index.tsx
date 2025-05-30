@@ -15,7 +15,7 @@ import FormsPromo from "@/components/forms/FormsPromo";
 import CeoSection from "@/components/CeoSection";
 import AIStudioPromo from "@/components/ai-studio/AIStudioPromo";
 import LuvvixIdPromo from "@/components/LuvvixIdPromo";
-import { Bot, FileText, Newspaper, Cloud, Sparkles, AppWindow, ArrowRight, Languages, Network, Code, CloudSun } from "lucide-react";
+import { Bot, FileText, Newspaper, Cloud, Sparkles, AppWindow, ArrowRight, Languages, Network, Code, CloudSun, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { HoverGlowCard } from "@/components/ui/hover-glow-card";
@@ -55,6 +55,19 @@ const Index = () => {
                   <h3 className="text-lg font-semibold mb-2">{t('app.aiStudio')}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Créez vos propres agents IA pour automatiser vos tâches.</p>
                   <Link to="/ai-studio">
+                    <Button variant="outline" size="sm">{t('common.view')}</Button>
+                  </Link>
+                </div>
+              </HoverGlowCard>
+              
+              <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 flex items-center justify-center bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
+                    <Search className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">LuvviX Explore</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Recherche IA multimodale avec assistant intelligent.</p>
+                  <Link to="/explore">
                     <Button variant="outline" size="sm">{t('common.view')}</Button>
                   </Link>
                 </div>

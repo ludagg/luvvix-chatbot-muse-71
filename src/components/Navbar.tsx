@@ -13,7 +13,7 @@ import {
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Sparkles, Bot, Cloud, FileText, User, AppWindow, Newspaper, Radio, Network, Languages, Code } from "lucide-react";
+import { Menu, Sparkles, Bot, Cloud, FileText, User, AppWindow, Newspaper, Radio, Network, Languages, Code, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -74,6 +74,16 @@ const Navbar = () => {
                 </NavigationMenuTrigger>
                 <NavigationMenuContent className="rounded-xl p-4 min-w-[500px]">
                   <div className="grid gap-3 md:grid-cols-3">
+                    <Link to="/explore" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full">
+                        <Search className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">LuvviX Explore</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Recherche IA multimodale</p>
+                      </div>
+                    </Link>
+                    
                     <Link to="/ai-studio" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                       <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-full">
                         <Bot className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -276,6 +286,11 @@ const Navbar = () => {
                   
                   <div className="space-y-2">
                     <p className="px-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('nav.applications')}</p>
+                    
+                    <Link to="/explore" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <Search className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                      <span>LuvviX Explore</span>
+                    </Link>
                     
                     <Link to="/ai-studio" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Bot className="h-5 w-5 text-purple-600 dark:text-purple-400" />

@@ -20,7 +20,7 @@ import {
   MessageCircle,
   Brain,
   Share2,
-  Translate,
+  Languages,
   FileSignature,
   Bot,
   Users,
@@ -34,6 +34,14 @@ import {
   Heart
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// TypeScript declarations for Speech Recognition
+declare global {
+  interface Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+  }
+}
 
 interface SearchResult {
   id: string;
@@ -253,13 +261,13 @@ const ExplorePage = () => {
       toast.info('Parlez maintenant...');
     };
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
       setSearchQuery(transcript);
       toast.success('Recherche vocale terminée');
     };
 
-    recognition.onerror = (event) => {
+    recognition.onerror = (event: any) => {
       toast.error('Erreur de reconnaissance vocale: ' + event.error);
     };
 
@@ -648,7 +656,7 @@ const ExplorePage = () => {
                                     size="sm"
                                     onClick={() => translateResult(result)}
                                   >
-                                    <Translate className="h-3 w-3 mr-1" />
+                                    <Languages className="h-3 w-3 mr-1" />
                                     {t('explore.translate_result')}
                                   </Button>
                                   {user && (

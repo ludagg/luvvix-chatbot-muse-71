@@ -11,7 +11,20 @@ import { Languages } from 'lucide-react';
 import { useLanguage } from '@/hooks/useLanguage';
 
 const LanguageSelector = () => {
-  const { language, setLanguage, languages } = useLanguage();
+  const { language, setLanguage } = useLanguage();
+  
+  // Define languages locally since they're not in the context
+  const languages = [
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'en', name: 'English', flag: '🇺🇸' },
+    { code: 'es', name: 'Español', flag: '🇪🇸' },
+    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
+    { code: 'it', name: 'Italiano', flag: '🇮🇹' },
+    { code: 'pt', name: 'Português', flag: '🇵🇹' },
+    { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+    { code: 'zh', name: '中文', flag: '🇨🇳' },
+    { code: 'ja', name: '日本語', flag: '🇯🇵' }
+  ];
   
   const currentLanguage = languages.find(lang => lang.code === language);
 

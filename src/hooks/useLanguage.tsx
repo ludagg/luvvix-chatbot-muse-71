@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export type Language = 'fr' | 'en' | 'es' | 'de' | 'it' | 'pt' | 'ru' | 'zh' | 'ja';
@@ -114,216 +115,18 @@ const translations: Translations = {
     zh: '登出',
     ja: 'ログアウト'
   },
-  'explore.title': {
-    fr: 'Explorer',
-    en: 'Explore',
-    es: 'Explorar',
-    de: 'Erkunden',
-    it: 'Esplora',
-    pt: 'Explorar',
-    ru: 'Исследовать',
-    zh: '探索',
-    ja: '探索'
+  'nav.ecosystem': {
+    fr: 'Écosystème',
+    en: 'Ecosystem',
+    es: 'Ecosistema',
+    de: 'Ökosystem',
+    it: 'Ecosistema',
+    pt: 'Ecossistema',
+    ru: 'Экосистема',
+    zh: '生态系统',
+    ja: 'エコシステム'
   },
-  'explore.subtitle': {
-    fr: 'Recherche IA multimodale avancée',
-    en: 'Advanced multimodal AI search',
-    es: 'Búsqueda IA multimodal avanzada',
-    de: 'Erweiterte multimodale KI-Suche',
-    it: 'Ricerca IA multimodale avanzata',
-    pt: 'Pesquisa IA multimodal avançada',
-    ru: 'Расширенный мультимодальный поиск ИИ',
-    zh: '高级多模态AI搜索',
-    ja: '高度なマルチモーダルAI検索'
-  },
-  'explore.description': {
-    fr: 'Recherchez sur le web, dans vos fichiers, et plus encore avec l\'intelligence artificielle. Obtenez des résumés instantanés et des insights intelligents.',
-    en: 'Search the web, your files, and more with artificial intelligence. Get instant summaries and smart insights.',
-    es: 'Busca en la web, tus archivos y más con inteligencia artificial. Obtén resúmenes instantáneos e insights inteligentes.',
-    de: 'Durchsuchen Sie das Web, Ihre Dateien und mehr mit künstlicher Intelligenz. Erhalten Sie sofortige Zusammenfassungen und intelligente Erkenntnisse.',
-    it: 'Cerca nel web, nei tuoi file e altro con intelligenza artificiale. Ottieni riassunti istantanei e insights intelligenti.',
-    pt: 'Pesquise na web, seus arquivos e mais com inteligência artificial. Obtenha resumos instantâneos e insights inteligentes.',
-    ru: 'Ищите в интернете, ваших файлах и многом другом с помощью искусственного интеллекта. Получайте мгновенные резюме и умные выводы.',
-    zh: '使用人工智能搜索网络、您的文件等。获得即时摘要和智能见解。',
-    ja: '人工知能でウェブ、ファイルなどを検索。瞬時の要約とスマートな洞察を取得。'
-  },
-  'explore.search_placeholder': {
-    fr: 'Recherchez n\'importe quoi...',
-    en: 'Search anything...',
-    es: 'Buscar cualquier cosa...',
-    de: 'Alles suchen...',
-    it: 'Cerca qualsiasi cosa...',
-    pt: 'Pesquisar qualquer coisa...',
-    ru: 'Найти что угодно...',
-    zh: '搜索任何内容...',
-    ja: '何でも検索...'
-  },
-  'explore.search_btn': {
-    fr: 'Rechercher',
-    en: 'Search',
-    es: 'Buscar',
-    de: 'Suchen',
-    it: 'Cerca',
-    pt: 'Pesquisar',
-    ru: 'Поиск',
-    zh: '搜索',
-    ja: '検索'
-  },
-  'explore.upload_file': {
-    fr: 'Télécharger un fichier',
-    en: 'Upload file',
-    es: 'Subir archivo',
-    de: 'Datei hochladen',
-    it: 'Carica file',
-    pt: 'Enviar arquivo',
-    ru: 'Загрузить файл',
-    zh: '上传文件',
-    ja: 'ファイルをアップロード'
-  },
-  'explore.categories.web': {
-    fr: 'Web',
-    en: 'Web',
-    es: 'Web',
-    de: 'Web',
-    it: 'Web',
-    pt: 'Web',
-    ru: 'Веб',
-    zh: '网络',
-    ja: 'ウェブ'
-  },
-  'explore.categories.videos': {
-    fr: 'Vidéos',
-    en: 'Videos',
-    es: 'Videos',
-    de: 'Videos',
-    it: 'Video',
-    pt: 'Vídeos',
-    ru: 'Видео',
-    zh: '视频',
-    ja: '動画'
-  },
-  'explore.categories.images': {
-    fr: 'Images',
-    en: 'Images',
-    es: 'Imágenes',
-    de: 'Bilder',
-    it: 'Immagini',
-    pt: 'Imagens',
-    ru: 'Изображения',
-    zh: '图片',
-    ja: '画像'
-  },
-  'explore.categories.files': {
-    fr: 'Fichiers',
-    en: 'Files',
-    es: 'Archivos',
-    de: 'Dateien',
-    it: 'File',
-    pt: 'Arquivos',
-    ru: 'Файлы',
-    zh: '文件',
-    ja: 'ファイル'
-  },
-  'explore.categories.discussions': {
-    fr: 'Discussions',
-    en: 'Discussions',
-    es: 'Discusiones',
-    de: 'Diskussionen',
-    it: 'Discussioni',
-    pt: 'Discussões',
-    ru: 'Обсуждения',
-    zh: '讨论',
-    ja: 'ディスカッション'
-  },
-  'explore.results_found': {
-    fr: 'résultats trouvés',
-    en: 'results found',
-    es: 'resultados encontrados',
-    de: 'Ergebnisse gefunden',
-    it: 'risultati trovati',
-    pt: 'resultados encontrados',
-    ru: 'результатов найдено',
-    zh: '找到结果',
-    ja: '件の結果が見つかりました'
-  },
-  'explore.no_results': {
-    fr: 'Aucun résultat trouvé',
-    en: 'No results found',
-    es: 'No se encontraron resultados',
-    de: 'Keine Ergebnisse gefunden',
-    it: 'Nessun risultato trovato',
-    pt: 'Nenhum resultado encontrado',
-    ru: 'Результатов не найдено',
-    zh: '未找到结果',
-    ja: '結果が見つかりませんでした'
-  },
-  'explore.loading': {
-    fr: 'Recherche en cours...',
-    en: 'Searching...',
-    es: 'Buscando...',
-    de: 'Suche läuft...',
-    it: 'Ricerca in corso...',
-    pt: 'Pesquisando...',
-    ru: 'Поиск...',
-    zh: '搜索中...',
-    ja: '検索中...'
-  },
-  'explore.recent_searches': {
-    fr: 'Recherches récentes',
-    en: 'Recent searches',
-    es: 'Búsquedas recientes',
-    de: 'Letzte Suchen',
-    it: 'Ricerche recenti',
-    pt: 'Pesquisas recentes',
-    ru: 'Недавние поиски',
-    zh: '最近搜索',
-    ja: '最近の検索'
-  },
-  'explore.suggested_searches': {
-    fr: 'Recherches suggérées',
-    en: 'Suggested searches',
-    es: 'Búsquedas sugeridas',
-    de: 'Vorgeschlagene Suchen',
-    it: 'Ricerche suggerite',
-    pt: 'Pesquisas sugeridas',
-    ru: 'Предложенные поиски',
-    zh: '建议搜索',
-    ja: '検索候補'
-  },
-  'explore.ai_summary': {
-    fr: 'Résumé IA',
-    en: 'AI Summary',
-    es: 'Resumen IA',
-    de: 'KI-Zusammenfassung',
-    it: 'Riassunto IA',
-    pt: 'Resumo IA',
-    ru: 'ИИ Резюме',
-    zh: 'AI摘要',
-    ja: 'AI要約'
-  },
-  'explore.share_result': {
-    fr: 'Partager',
-    en: 'Share',
-    es: 'Compartir',
-    de: 'Teilen',
-    it: 'Condividi',
-    pt: 'Compartilhar',
-    ru: 'Поделиться',
-    zh: '分享',
-    ja: '共有'
-  },
-  'explore.create_mindmap': {
-    fr: 'Carte mentale',
-    en: 'Mind Map',
-    es: 'Mapa mental',
-    de: 'Mindmap',
-    it: 'Mappa mentale',
-    pt: 'Mapa mental',
-    ru: 'Ментальная карта',
-    zh: '思维导图',
-    ja: 'マインドマップ'
-  },
-  'explore.translate_result': {
+  'app.translate': {
     fr: 'Traduire',
     en: 'Translate',
     es: 'Traducir',
@@ -334,93 +137,192 @@ const translations: Translations = {
     zh: '翻译',
     ja: '翻訳'
   },
-  'explore.create_form': {
-    fr: 'Créer formulaire',
-    en: 'Create Form',
-    es: 'Crear formulario',
-    de: 'Formular erstellen',
-    it: 'Crea modulo',
-    pt: 'Criar formulário',
-    ru: 'Создать форму',
-    zh: '创建表单',
-    ja: 'フォーム作成'
+  'app.mindmap': {
+    fr: 'Carte mentale',
+    en: 'Mind Map',
+    es: 'Mapa mental',
+    de: 'Mindmap',
+    it: 'Mappa mentale',
+    pt: 'Mapa mental',
+    ru: 'Ментальная карта',
+    zh: '思维导图',
+    ja: 'マインドマップ'
   },
-  'explore.create_agent': {
-    fr: 'Créer agent',
-    en: 'Create Agent',
-    es: 'Crear agente',
-    de: 'Agent erstellen',
-    it: 'Crea agente',
-    pt: 'Criar agente',
-    ru: 'Создать агента',
-    zh: '创建代理',
-    ja: 'エージェント作成'
+  'app.weather': {
+    fr: 'Météo',
+    en: 'Weather',
+    es: 'Clima',
+    de: 'Wetter',
+    it: 'Meteo',
+    pt: 'Clima',
+    ru: 'Погода',
+    zh: '天气',
+    ja: '天気'
   },
-  'explore.publish_center': {
-    fr: 'Publier au Centre',
-    en: 'Publish to Center',
-    es: 'Publicar en Centro',
-    de: 'Im Center veröffentlichen',
-    it: 'Pubblica nel Centro',
-    pt: 'Publicar no Centro',
-    ru: 'Опубликовать в Центре',
-    zh: '发布到中心',
-    ja: 'センターに公開'
+  'app.news': {
+    fr: 'Actualités',
+    en: 'News',
+    es: 'Noticias',
+    de: 'Nachrichten',
+    it: 'Notizie',
+    pt: 'Notícias',
+    ru: 'Новости',
+    zh: '新闻',
+    ja: 'ニュース'
   },
-  'news.categories.all': {
-    fr: 'Toutes',
-    en: 'All',
-    es: 'Todas',
-    de: 'Alle',
-    it: 'Tutte',
-    pt: 'Todas',
-    ru: 'Все',
-    zh: '全部',
-    ja: 'すべて'
+  'app.aiStudio': {
+    fr: 'AI Studio',
+    en: 'AI Studio',
+    es: 'AI Studio',
+    de: 'AI Studio',
+    it: 'AI Studio',
+    pt: 'AI Studio',
+    ru: 'AI Studio',
+    zh: 'AI Studio',
+    ja: 'AI Studio'
   },
-  'common.error': {
-    fr: 'Une erreur est survenue',
-    en: 'An error occurred',
-    es: 'Ocurrió un error',
-    de: 'Ein Fehler ist aufgetreten',
-    it: 'Si è verificato un errore',
-    pt: 'Ocorreu um erro',
-    ru: 'Произошла ошибка',
-    zh: '发生错误',
-    ja: 'エラーが発生しました'
+  'app.cloud': {
+    fr: 'Cloud',
+    en: 'Cloud',
+    es: 'Cloud',
+    de: 'Cloud',
+    it: 'Cloud',
+    pt: 'Cloud',
+    ru: 'Cloud',
+    zh: 'Cloud',
+    ja: 'Cloud'
   },
-  'common.upload': {
-    fr: 'Fichier téléchargé',
-    en: 'File uploaded',
-    es: 'Archivo subido',
-    de: 'Datei hochgeladen',
-    it: 'File caricato',
-    pt: 'Arquivo enviado',
-    ru: 'Файл загружен',
-    zh: '文件已上传',
-    ja: 'ファイルがアップロードされました'
+  'app.forms': {
+    fr: 'Formulaires',
+    en: 'Forms',
+    es: 'Formularios',
+    de: 'Formulare',
+    it: 'Moduli',
+    pt: 'Formulários',
+    ru: 'Формы',
+    zh: '表单',
+    ja: 'フォーム'
   },
-  'common.copy': {
-    fr: 'Copié dans le presse-papiers',
-    en: 'Copied to clipboard',
-    es: 'Copiado al portapapeles',
-    de: 'In Zwischenablage kopiert',
-    it: 'Copiato negli appunti',
-    pt: 'Copiado para área de transferência',
-    ru: 'Скопировано в буфер обмена',
-    zh: '已复制到剪贴板',
-    ja: 'クリップボードにコピーされました'
+  'footer.description': {
+    fr: 'La plateforme technologique qui révolutionne votre façon de travailler.',
+    en: 'The technology platform that revolutionizes the way you work.',
+    es: 'La plataforma tecnológica que revoluciona tu forma de trabajar.',
+    de: 'Die Technologieplattform, die Ihre Arbeitsweise revolutioniert.',
+    it: 'La piattaforma tecnologica che rivoluziona il tuo modo di lavorare.',
+    pt: 'A plataforma tecnológica que revoluciona sua forma de trabalhar.',
+    ru: 'Технологическая платформа, которая революционизирует ваш способ работы.',
+    zh: '革命性改变您工作方式的技术平台。',
+    ja: 'あなたの働き方を革命的に変える技術プラットフォーム。'
   },
-  'common.filter': {
-    fr: 'Filtrer',
-    en: 'Filter',
-    es: 'Filtrar',
-    de: 'Filtern',
-    it: 'Filtra',
-    pt: 'Filtrar',
-    ru: 'Фильтр',
-    zh: '过滤',
-    ja: 'フィルター'
+  'footer.products': {
+    fr: 'Produits',
+    en: 'Products',
+    es: 'Productos',
+    de: 'Produkte',
+    it: 'Prodotti',
+    pt: 'Produtos',
+    ru: 'Продукты',
+    zh: '产品',
+    ja: '製品'
+  },
+  'footer.resources': {
+    fr: 'Ressources',
+    en: 'Resources',
+    es: 'Recursos',
+    de: 'Ressourcen',
+    it: 'Risorse',
+    pt: 'Recursos',
+    ru: 'Ресурсы',
+    zh: '资源',
+    ja: 'リソース'
+  },
+  'footer.legal': {
+    fr: 'Légal',
+    en: 'Legal',
+    es: 'Legal',
+    de: 'Rechtliches',
+    it: 'Legale',
+    pt: 'Legal',
+    ru: 'Правовая информация',
+    zh: '法律',
+    ja: '法的事項'
+  },
+  'footer.documentation': {
+    fr: 'Documentation',
+    en: 'Documentation',
+    es: 'Documentación',
+    de: 'Dokumentation',
+    it: 'Documentazione',
+    pt: 'Documentação',
+    ru: 'Документация',
+    zh: '文档',
+    ja: 'ドキュメント'
+  },
+  'footer.api': {
+    fr: 'API',
+    en: 'API',
+    es: 'API',
+    de: 'API',
+    it: 'API',
+    pt: 'API',
+    ru: 'API',
+    zh: 'API',
+    ja: 'API'
+  },
+  'footer.privacy': {
+    fr: 'Confidentialité',
+    en: 'Privacy',
+    es: 'Privacidad',
+    de: 'Datenschutz',
+    it: 'Privacy',
+    pt: 'Privacidade',
+    ru: 'Конфиденциальность',
+    zh: '隐私',
+    ja: 'プライバシー'
+  },
+  'footer.terms': {
+    fr: 'Conditions',
+    en: 'Terms',
+    es: 'Términos',
+    de: 'Bedingungen',
+    it: 'Termini',
+    pt: 'Termos',
+    ru: 'Условия',
+    zh: '条款',
+    ja: '利用規約'
+  },
+  'footer.cookies': {
+    fr: 'Cookies',
+    en: 'Cookies',
+    es: 'Cookies',
+    de: 'Cookies',
+    it: 'Cookies',
+    pt: 'Cookies',
+    ru: 'Cookies',
+    zh: 'Cookies',
+    ja: 'Cookies'
+  },
+  'footer.copyright': {
+    fr: '© 2024 LuvviX Technologies. Tous droits réservés.',
+    en: '© 2024 LuvviX Technologies. All rights reserved.',
+    es: '© 2024 LuvviX Technologies. Todos los derechos reservados.',
+    de: '© 2024 LuvviX Technologies. Alle Rechte vorbehalten.',
+    it: '© 2024 LuvviX Technologies. Tutti i diritti riservati.',
+    pt: '© 2024 LuvviX Technologies. Todos os direitos reservados.',
+    ru: '© 2024 LuvviX Technologies. Все права защищены.',
+    zh: '© 2024 LuvviX Technologies. 版权所有。',
+    ja: '© 2024 LuvviX Technologies. 全著作権所有。'
+  },
+  'footer.availableLanguages': {
+    fr: 'Langues disponibles',
+    en: 'Available languages',
+    es: 'Idiomas disponibles',
+    de: 'Verfügbare Sprachen',
+    it: 'Lingue disponibili',
+    pt: 'Idiomas disponíveis',
+    ru: 'Доступные языки',
+    zh: '可用语言',
+    ja: '利用可能な言語'
   }
 };
 

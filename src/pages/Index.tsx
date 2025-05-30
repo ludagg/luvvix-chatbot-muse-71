@@ -22,7 +22,10 @@ import { motion } from "framer-motion";
 import { useLanguage } from "@/hooks/useLanguage";
 
 const Index = () => {
+  console.log('Index component is rendering');
+  
   const { t } = useLanguage();
+  console.log('Language hook loaded successfully');
   
   return (
     <div className="min-h-screen">

@@ -1,5 +1,4 @@
 
-import { Toaster } from "@/components/ui/sonner";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import Index from "./pages/Index";
@@ -16,7 +15,6 @@ import { HelmetProvider } from 'react-helmet-async';
 const App = () => (
   <HelmetProvider>
     <LanguageProvider>
-      <Toaster />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />

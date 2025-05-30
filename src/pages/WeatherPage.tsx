@@ -4,8 +4,11 @@ import Footer from "@/components/Footer";
 import WeatherWidget from "@/components/weather/WeatherWidget";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CloudSun } from "lucide-react";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const WeatherPage = () => {
+  const { t } = useLanguage();
+  
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       <Navbar />
@@ -13,16 +16,16 @@ const WeatherPage = () => {
       {/* Ajout d'un espace en haut pour éviter que le contenu soit caché par la barre de navigation */}
       <main className="flex-grow container mx-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-6 text-center">LuvviX Météo</h1>
+          <h1 className="text-3xl font-bold mb-6 text-center">{t('weather.title')}</h1>
           
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CloudSun className="h-5 w-5 text-blue-500" />
-                Météo actuelle
+                {t('weather.current')}
               </CardTitle>
               <CardDescription>
-                Consultez la météo en temps réel pour votre emplacement actuel
+                {t('weather.description')}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex justify-center py-6">

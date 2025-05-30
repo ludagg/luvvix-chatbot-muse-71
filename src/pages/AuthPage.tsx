@@ -5,11 +5,15 @@ import Authentication from "@/components/Authentication";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/hooks/useLanguage";
 
 const AuthPage = () => {
-    useEffect(() => {
-    document.title = "Compte LuvviX ID ";
-  }, []);
+  const { t } = useLanguage();
+  
+  useEffect(() => {
+    document.title = `${t('nav.login')} | LuvviX ID`;
+  }, [t]);
+  
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

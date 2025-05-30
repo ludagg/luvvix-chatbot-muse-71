@@ -1,16 +1,20 @@
+
 import { Helmet } from 'react-helmet-async';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LuvvixTranslate from '@/components/LuvvixTranslate';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const TranslatePage = () => {
+  const { t } = useLanguage();
+  
   return (
     <>
       <Helmet>
-        <title>LuvviX Translate - Traduction IA en Temps Réel</title>
+        <title>{t('translate.title')} - {t('translate.subtitle')}</title>
         <meta
           name="description"
-          content="Traduisez instantanément dans plus de 50 langues avec l'intelligence artificielle avancée, la reconnaissance vocale et la traduction en temps réel."
+          content={t('translate.description')}
         />
         <meta
           name="keywords"

@@ -13,11 +13,15 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchLatestNews, getUserLocation } from '@/services/news-service';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/hooks/useLanguage';
 
 const NewsPage = () => {
+  const { t } = useLanguage();
+  
   useEffect(() => {
-    document.title = "LuvviX News - Restez informés - LuvviX IT";
-  }, []);
+    document.title = `${t('news.title')} - ${t('news.subtitle')} - LuvviX IT`;
+  }, [t]);
+  
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [userCountry, setUserCountry] = useState<string>('');
@@ -67,10 +71,10 @@ const NewsPage = () => {
             <div className="flex flex-col md:flex-row items-center justify-between">
               <div className="max-w-2xl mb-8 md:mb-0">
                 <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
-                  LuvviX News
+                  {t('news.title')}
                 </h1>
                 <p className="text-xl text-white/90 mb-8">
-                  Restez informé avec des actualités personnalisées provenant de sources diverses à travers le web.
+                  {t('news.description')}
                   {userCountry && (
                     <span className="flex items-center mt-2 text-base">
                       <MapPin className="h-5 w-5 mr-1" />
@@ -126,7 +130,7 @@ const NewsPage = () => {
               <form onSubmit={handleSearch} className="w-full md:w-auto flex gap-2">
                 <Input
                   type="text"
-                  placeholder="Rechercher des actualités..."
+                  placeholder={t('news.search')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="max-w-xs"
@@ -143,7 +147,7 @@ const NewsPage = () => {
         <section className="py-16 container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              <h2 className="text-3xl font-bold mb-8">Dernières actualités</h2>
+              <h2 className="text-3xl font-bold mb-8">{t('news.latest')}</h2>
               <NewsHeadlines 
                 isLoading={isLoading} 
                 error={error} 

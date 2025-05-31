@@ -11,167 +11,125 @@ interface SearchResult {
   author?: string;
   views?: number;
   duration?: string;
+  position?: number;
 }
+
+const SERPAPI_KEY = '00cdc35836508e3559df7a87a14bd3401fd26e0dd6a4afc6b1fabf054d026db6';
 
 export const searchService = {
   async multiSearch(query: string): Promise<SearchResult[]> {
     const results: SearchResult[] = [];
     
-    // Recherche web via une API gratuite (simulation avec données réelles)
     try {
+      // Recherche web via SerpAPI
       const webResults = await this.searchWeb(query);
       results.push(...webResults);
-    } catch (error) {
-      console.error('Erreur recherche web:', error);
-    }
-    
-    // Recherche YouTube
-    try {
+      
+      // Recherche vidéos YouTube via SerpAPI
       const videoResults = await this.searchYouTube(query);
       results.push(...videoResults);
-    } catch (error) {
-      console.error('Erreur recherche YouTube:', error);
-    }
-    
-    // Recherche d'images
-    try {
+      
+      // Recherche d'images via SerpAPI
       const imageResults = await this.searchImages(query);
       results.push(...imageResults);
+      
     } catch (error) {
-      console.error('Erreur recherche images:', error);
+      console.error('Erreur recherche multimodale:', error);
     }
     
-    return results.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    return results.sort((a, b) => (a.position || 0) - (b.position || 0));
   },
 
   async searchWeb(query: string): Promise<SearchResult[]> {
-    // Utilisation de l'API DuckDuckGo (gratuite)
     try {
-      const response = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=1&skip_disambig=1`);
+      const response = await fetch(`https://serpapi.com/search.json?engine=google&q=${encodeURIComponent(query)}&api_key=${SERPAPI_KEY}&num=10`);
       const data = await response.json();
       
       const results: SearchResult[] = [];
       
-      // Traiter les résultats abstraits
-      if (data.Abstract) {
-        results.push({
-          id: `web-${Date.now()}-abstract`,
-          type: 'web',
-          title: data.Heading || query,
-          snippet: data.Abstract,
-          url: data.AbstractURL || '#',
-          source: data.AbstractSource || 'DuckDuckGo',
-          timestamp: new Date(),
-          thumbnail: data.Image
+      if (data.organic_results) {
+        data.organic_results.forEach((result: any, index: number) => {
+          results.push({
+            id: `web-${Date.now()}-${index}`,
+            type: 'web',
+            title: result.title || 'Résultat',
+            snippet: result.snippet || 'Aucune description disponible',
+            url: result.link,
+            source: result.displayed_link || 'Web',
+            timestamp: new Date(),
+            position: result.position || index + 1,
+            thumbnail: result.thumbnail
+          });
         });
       }
       
-      // Traiter les résultats connexes
-      if (data.RelatedTopics) {
-        data.RelatedTopics.forEach((topic: any, index: number) => {
-          if (topic.Text && topic.FirstURL) {
-            results.push({
-              id: `web-${Date.now()}-${index}`,
-              type: 'web',
-              title: topic.Text.split(' - ')[0] || 'Résultat',
-              snippet: topic.Text,
-              url: topic.FirstURL,
-              source: 'DuckDuckGo',
-              timestamp: new Date(),
-              thumbnail: topic.Icon?.URL
-            });
-          }
-        });
-      }
-      
-      return results.slice(0, 5);
+      return results;
     } catch (error) {
-      console.error('Erreur API DuckDuckGo:', error);
-      // Fallback avec résultats simulés mais réalistes
-      return this.getFallbackWebResults(query);
+      console.error('Erreur recherche web SerpAPI:', error);
+      return [];
     }
   },
 
   async searchYouTube(query: string): Promise<SearchResult[]> {
-    // Simulation de résultats YouTube réalistes
-    const videoResults: SearchResult[] = [
-      {
-        id: `video-${Date.now()}-1`,
-        type: 'video',
-        title: `${query} - Tutoriel complet 2024`,
-        snippet: `Découvrez tout ce qu'il faut savoir sur ${query} dans cette vidéo complète et détaillée.`,
-        url: `https://youtube.com/watch?v=${Math.random().toString(36).substr(2, 11)}`,
-        thumbnail: `https://i.ytimg.com/vi/${Math.random().toString(36).substr(2, 11)}/mqdefault.jpg`,
-        source: 'YouTube',
-        timestamp: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
-        author: 'Expert Tech',
-        views: Math.floor(Math.random() * 100000),
-        duration: '15:42'
-      },
-      {
-        id: `video-${Date.now()}-2`,
-        type: 'video',
-        title: `Les bases de ${query} expliquées simplement`,
-        snippet: `Une introduction claire et accessible pour comprendre ${query} étape par étape.`,
-        url: `https://youtube.com/watch?v=${Math.random().toString(36).substr(2, 11)}`,
-        thumbnail: `https://i.ytimg.com/vi/${Math.random().toString(36).substr(2, 11)}/mqdefault.jpg`,
-        source: 'YouTube',
-        timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
-        author: 'Apprendre Facilement',
-        views: Math.floor(Math.random() * 50000),
-        duration: '8:23'
+    try {
+      const response = await fetch(`https://serpapi.com/search.json?engine=youtube&search_query=${encodeURIComponent(query)}&api_key=${SERPAPI_KEY}`);
+      const data = await response.json();
+      
+      const results: SearchResult[] = [];
+      
+      if (data.video_results) {
+        data.video_results.slice(0, 5).forEach((video: any, index: number) => {
+          results.push({
+            id: `video-${Date.now()}-${index}`,
+            type: 'video',
+            title: video.title || 'Vidéo',
+            snippet: video.description || 'Aucune description',
+            url: video.link,
+            thumbnail: video.thumbnail?.static,
+            source: 'YouTube',
+            timestamp: new Date(video.published_date || Date.now()),
+            author: video.channel?.name,
+            views: video.views,
+            duration: video.length,
+            position: index + 1
+          });
+        });
       }
-    ];
-    
-    return videoResults;
+      
+      return results;
+    } catch (error) {
+      console.error('Erreur recherche YouTube SerpAPI:', error);
+      return [];
+    }
   },
 
   async searchImages(query: string): Promise<SearchResult[]> {
-    // Utilisation d'Unsplash API (gratuite avec limitation)
-    const unsplashResults: SearchResult[] = [];
-    
     try {
-      // Simulation de résultats d'images
-      for (let i = 0; i < 3; i++) {
-        unsplashResults.push({
-          id: `image-${Date.now()}-${i}`,
-          type: 'image',
-          title: `Image: ${query} ${i + 1}`,
-          snippet: `Image haute qualité liée à ${query}`,
-          url: `https://unsplash.com/photos/${Math.random().toString(36).substr(2, 11)}`,
-          thumbnail: `https://source.unsplash.com/400x300/?${encodeURIComponent(query)}&sig=${i}`,
-          source: 'Unsplash',
-          timestamp: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000),
-          author: `Photographe ${i + 1}`
+      const response = await fetch(`https://serpapi.com/search.json?engine=google&tbm=isch&q=${encodeURIComponent(query)}&api_key=${SERPAPI_KEY}&num=6`);
+      const data = await response.json();
+      
+      const results: SearchResult[] = [];
+      
+      if (data.images_results) {
+        data.images_results.slice(0, 6).forEach((image: any, index: number) => {
+          results.push({
+            id: `image-${Date.now()}-${index}`,
+            type: 'image',
+            title: image.title || `Image ${index + 1}`,
+            snippet: image.snippet || 'Image liée à votre recherche',
+            url: image.original,
+            thumbnail: image.thumbnail,
+            source: image.source || 'Google Images',
+            timestamp: new Date(),
+            position: index + 1
+          });
         });
       }
+      
+      return results;
     } catch (error) {
-      console.error('Erreur recherche images:', error);
+      console.error('Erreur recherche images SerpAPI:', error);
+      return [];
     }
-    
-    return unsplashResults;
-  },
-
-  getFallbackWebResults(query: string): SearchResult[] {
-    return [
-      {
-        id: `fallback-${Date.now()}-1`,
-        type: 'web',
-        title: `${query} - Guide complet et actualités`,
-        snippet: `Découvrez les dernières informations, guides et actualités concernant ${query}. Des ressources complètes pour tout comprendre.`,
-        url: `https://example.com/search?q=${encodeURIComponent(query)}`,
-        source: 'Web',
-        timestamp: new Date(),
-      },
-      {
-        id: `fallback-${Date.now()}-2`,
-        type: 'web',
-        title: `Tout savoir sur ${query} en 2024`,
-        snippet: `Les tendances, innovations et développements récents autour de ${query}. Analyse approfondie et perspectives d'avenir.`,
-        url: `https://example.com/article/${query.replace(/\s+/g, '-')}`,
-        source: 'Tech News',
-        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      }
-    ];
   }
 };

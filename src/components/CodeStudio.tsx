@@ -88,7 +88,7 @@ const CodeStudio: React.FC = () => {
         setGeneratedCode(data.generated);
         toast({
           title: "Code généré",
-          description: "Le code a été généré avec succès par Gemini AI"
+          description: "Le code a été généré avec succès !"
         });
       } else {
         throw new Error(data.error || 'Erreur inconnue');
@@ -266,7 +266,7 @@ const CodeStudio: React.FC = () => {
               <Code className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              LuvviX Code Studio
+              Code Studio
             </h1>
           </div>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -306,7 +306,7 @@ const CodeStudio: React.FC = () => {
               </Select>
               
               <Badge variant="outline" className="bg-blue-100 text-blue-700">
-                Alimenté par Gemini AI
+                Alimenté par IA
               </Badge>
             </div>
             

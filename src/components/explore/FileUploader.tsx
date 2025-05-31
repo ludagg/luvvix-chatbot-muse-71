@@ -1,8 +1,8 @@
-
 import React, { useRef, useState } from 'react';
 import { Upload, File, Image, FileText, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface FileUploaderProps {
   onFileAnalyzed: (content: string) => void;
@@ -11,6 +11,7 @@ interface FileUploaderProps {
 const FileUploader: React.FC<FileUploaderProps> = ({ onFileAnalyzed }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const { t, language } = useLanguage();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -21,10 +22,10 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileAnalyzed }) => {
     try {
       const content = await analyzeFile(file);
       onFileAnalyzed(content);
-      toast.success(`Fichier ${file.name} analysé avec succès`);
+      toast.success(`${t.explore.fileUploader.success}: ${file.name}`);
     } catch (error) {
       console.error('Erreur analyse fichier:', error);
-      toast.error('Erreur lors de l\'analyse du fichier');
+      toast.error(t.explore.fileUploader.error);
     } finally {
       setIsAnalyzing(false);
       if (fileInputRef.current) {
@@ -41,21 +42,26 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileAnalyzed }) => {
     }
     
     if (fileType === 'application/pdf') {
-      // Simulation d'extraction PDF (en réalité, vous utiliseriez une bibliothèque comme pdf-parse)
-      return `Contenu extrait du PDF: ${file.name}\n\nCe fichier PDF contient des informations importantes qui ont été analysées par LuvviX AI.`;
+      return language === 'fr' 
+        ? `${t.explore.fileUploader.types.pdf} ${file.name}\n\nCe fichier PDF contient des informations importantes qui ont été analysées par LuvviX AI.`
+        : `${t.explore.fileUploader.types.pdf} ${file.name}\n\nThis PDF file contains important information that has been analyzed by LuvviX AI.`;
     }
     
     if (fileType.startsWith('image/')) {
-      // OCR simulation
-      return `Image analysée: ${file.name}\n\nCette image contient du texte et des éléments visuels qui ont été traités par notre IA de reconnaissance optique.`;
+      return language === 'fr'
+        ? `${t.explore.fileUploader.types.image} ${file.name}\n\nCette image contient du texte et des éléments visuels qui ont été traités par notre IA de reconnaissance optique.`
+        : `${t.explore.fileUploader.types.image} ${file.name}\n\nThis image contains text and visual elements that have been processed by our optical recognition AI.`;
     }
     
     if (fileType.startsWith('audio/') || fileType.startsWith('video/')) {
-      // Transcription simulation
-      return `Média transcrit: ${file.name}\n\nCe fichier audio/vidéo a été transcrit automatiquement par notre système de reconnaissance vocale.`;
+      return language === 'fr'
+        ? `${t.explore.fileUploader.types.audio} ${file.name}\n\nCe fichier audio/vidéo a été transcrit automatiquement par notre système de reconnaissance vocale.`
+        : `${t.explore.fileUploader.types.audio} ${file.name}\n\nThis audio/video file has been automatically transcribed by our speech recognition system.`;
     }
     
-    return `Fichier analysé: ${file.name}\n\nType: ${fileType}\nTaille: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+    return language === 'fr'
+      ? `${t.explore.fileUploader.types.general} ${file.name}\n\nType: ${fileType}\nTaille: ${(file.size / 1024 / 1024).toFixed(2)} MB`
+      : `${t.explore.fileUploader.types.general} ${file.name}\n\nType: ${fileType}\nSize: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
   };
 
   const getFileIcon = () => {
@@ -77,7 +83,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({ onFileAnalyzed }) => {
         onClick={() => fileInputRef.current?.click()}
         disabled={isAnalyzing}
         className="text-gray-400 hover:text-gray-600"
-        title="Analyser un fichier"
+        title={t.explore.fileUploader.analyze}
       >
         {getFileIcon()}
       </Button>

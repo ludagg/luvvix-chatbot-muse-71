@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Bot, History, Filter, Share2, Plus, FileText, Video, Image, Globe, Brain, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -8,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
+import { useLanguage } from '@/hooks/useLanguage';
 import SearchResults from '@/components/explore/SearchResults';
 import AIAssistant from '@/components/explore/AIAssistant';
 import SearchHistory from '@/components/explore/SearchHistory';
@@ -37,6 +37,8 @@ interface AIMessage {
 
 const ExplorePage = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
+  
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -70,7 +72,7 @@ const ExplorePage = () => {
       setSearchHistory(newHistory);
       localStorage.setItem('luvvix-search-history', JSON.stringify(newHistory));
 
-      // Recherche multimodale
+      // Recherche multimodale via SerpAPI
       const searchResults = await searchService.multiSearch(searchQuery);
       setResults(searchResults);
 
@@ -89,10 +91,10 @@ const ExplorePage = () => {
         }
       ]);
       
-      toast.success('Recherche terminée et analysée par l\'IA');
+      toast.success(t.common.success);
     } catch (error) {
       console.error('Erreur de recherche:', error);
-      toast.error('Erreur lors de la recherche');
+      toast.error(t.common.error);
     } finally {
       setIsSearching(false);
       setIsAiThinking(false);
@@ -156,16 +158,16 @@ const ExplorePage = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  LuvviX Explore
+                  {t.explore.title}
                 </h1>
-                <p className="text-sm text-gray-500">Recherche IA Multimodale</p>
+                <p className="text-sm text-gray-500">{t.explore.subtitle}</p>
               </div>
             </div>
             
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-blue-100 text-blue-700">
                 <Brain className="w-3 h-3 mr-1" />
-                IA Connectée
+                {t.explore.aiConnected}
               </Badge>
               {user && (
                 <Badge variant="outline">
@@ -184,13 +186,13 @@ const ExplorePage = () => {
                 value={query}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="Rechercher des sites, vidéos, fichiers, ou poser une question..."
+                placeholder={t.explore.searchPlaceholder}
                 className="pl-12 pr-24 py-4 text-lg rounded-2xl border-2 border-gray-200 focus:border-blue-500 shadow-lg"
                 disabled={isSearching}
               />
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
                 <FileUploader onFileAnalyzed={(content) => {
-                  setQuery(`Analyser ce fichier: ${content.substring(0, 100)}...`);
+                  setQuery(`${t.explore.fileUploader.analyze}: ${content.substring(0, 100)}...`);
                 }} />
                 <Button 
                   onClick={() => handleSearch()}
@@ -221,7 +223,7 @@ const ExplorePage = () => {
                   className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-200 z-50"
                 >
                   <div className="p-2">
-                    <p className="text-xs text-gray-500 px-3 py-2">Suggestions IA</p>
+                    <p className="text-xs text-gray-500 px-3 py-2">{t.explore.suggestions}</p>
                     {suggestions.map((suggestion, index) => (
                       <button
                         key={index}
@@ -244,7 +246,7 @@ const ExplorePage = () => {
                   className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-200 z-50"
                 >
                   <div className="p-2">
-                    <p className="text-xs text-gray-500 px-3 py-2">Recherches récentes</p>
+                    <p className="text-xs text-gray-500 px-3 py-2">{t.explore.recentSearches}</p>
                     {searchHistory.slice(0, 5).map((historyItem, index) => (
                       <button
                         key={index}
@@ -273,23 +275,23 @@ const ExplorePage = () => {
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   <TabsList className="grid w-full grid-cols-5 bg-white rounded-xl border">
                     <TabsTrigger value="all" className="data-[state=active]:bg-blue-100">
-                      Tout ({resultCounts.all})
+                      {t.explore.tabs.all} ({resultCounts.all})
                     </TabsTrigger>
                     <TabsTrigger value="web" className="data-[state=active]:bg-blue-100">
                       <Globe className="w-4 h-4 mr-1" />
-                      Web ({resultCounts.web})
+                      {t.explore.tabs.web} ({resultCounts.web})
                     </TabsTrigger>
                     <TabsTrigger value="video" className="data-[state=active]:bg-blue-100">
                       <Video className="w-4 h-4 mr-1" />
-                      Vidéos ({resultCounts.video})
+                      {t.explore.tabs.videos} ({resultCounts.video})
                     </TabsTrigger>
                     <TabsTrigger value="image" className="data-[state=active]:bg-blue-100">
                       <Image className="w-4 h-4 mr-1" />
-                      Images ({resultCounts.image})
+                      {t.explore.tabs.images} ({resultCounts.image})
                     </TabsTrigger>
                     <TabsTrigger value="file" className="data-[state=active]:bg-blue-100">
                       <FileText className="w-4 h-4 mr-1" />
-                      Fichiers ({resultCounts.file})
+                      {t.explore.tabs.files} ({resultCounts.file})
                     </TabsTrigger>
                   </TabsList>
                   
@@ -310,17 +312,17 @@ const ExplorePage = () => {
                   <Search className="w-16 h-16 text-blue-600" />
                 </motion.div>
                 <h2 className="text-2xl font-bold text-gray-700 mb-2">
-                  Commencez votre exploration
+                  {t.explore.startExploring}
                 </h2>
                 <p className="text-gray-500 mb-6">
-                  Recherchez du contenu web, des vidéos, des images ou posez n'importe quelle question
+                  {t.explore.searchContent}
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {[
-                    "Intelligence artificielle",
-                    "Actualités technologie",
-                    "Recettes cuisine",
-                    "Tutoriels programmation"
+                    t.explore.examples.ai,
+                    t.explore.examples.tech,
+                    t.explore.examples.recipes,
+                    t.explore.examples.tutorials
                   ].map((example) => (
                     <button
                       key={example}

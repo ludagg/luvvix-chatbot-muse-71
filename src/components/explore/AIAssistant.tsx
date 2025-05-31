@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Send, Sparkles, Brain, Lightbulb, Share2, Plus } from 'lucide-react';
@@ -8,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS } from 'date-fns/locale';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface AIMessage {
   id: string;
@@ -27,6 +27,8 @@ interface AIAssistantProps {
 const AIAssistant: React.FC<AIAssistantProps> = ({ messages, isThinking, onMessage }) => {
   const [inputMessage, setInputMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { t, language } = useLanguage();
+  const locale = language === 'fr' ? fr : enUS;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -41,10 +43,34 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ messages, isThinking, onMessa
   };
 
   const quickActions = [
-    { icon: Lightbulb, text: "Résumer les résultats", action: "Peux-tu résumer les principaux résultats de recherche ?" },
-    { icon: Brain, text: "Approfondir", action: "Quelles sont les informations complémentaires importantes ?" },
-    { icon: Plus, text: "Suggestions", action: "Quelles recherches complémentaires recommandes-tu ?" },
-    { icon: Share2, text: "Créer contenu", action: "Comment puis-je utiliser ces informations pour créer du contenu ?" }
+    { 
+      icon: Lightbulb, 
+      text: t.explore.assistant.actions.summarize, 
+      action: language === 'fr' 
+        ? "Peux-tu résumer les principaux résultats de recherche ?" 
+        : "Can you summarize the main search results?"
+    },
+    { 
+      icon: Brain, 
+      text: t.explore.assistant.actions.deepen, 
+      action: language === 'fr'
+        ? "Quelles sont les informations complémentaires importantes ?"
+        : "What additional important information should I know?"
+    },
+    { 
+      icon: Plus, 
+      text: t.explore.assistant.actions.suggestions, 
+      action: language === 'fr'
+        ? "Quelles recherches complémentaires recommandes-tu ?"
+        : "What additional searches do you recommend?"
+    },
+    { 
+      icon: Share2, 
+      text: t.explore.assistant.actions.createContent, 
+      action: language === 'fr'
+        ? "Comment puis-je utiliser ces informations pour créer du contenu ?"
+        : "How can I use this information to create content?"
+    }
   ];
 
   return (
@@ -55,10 +81,10 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ messages, isThinking, onMessa
             <Bot className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">Assistant LuvviX AI</h3>
+            <h3 className="font-semibold text-gray-900">{t.explore.assistant.title}</h3>
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-xs text-gray-500">En ligne</span>
+              <span className="text-xs text-gray-500">{t.explore.assistant.online}</span>
             </div>
           </div>
         </div>
@@ -76,10 +102,10 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ messages, isThinking, onMessa
                 <Sparkles className="w-8 h-8 text-purple-600" />
               </motion.div>
               <h4 className="font-medium text-gray-900 mb-2">
-                Votre copilote IA
+                {t.explore.assistant.copilot}
               </h4>
               <p className="text-sm text-gray-500 mb-4">
-                Je vous aide à analyser, résumer et approfondir vos recherches
+                {t.explore.assistant.helpText}
               </p>
               
               <div className="grid grid-cols-2 gap-2">
@@ -120,11 +146,11 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ messages, isThinking, onMessa
                     <span className={`text-xs ${
                       message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
                     }`}>
-                      {formatDistanceToNow(message.timestamp, { addSuffix: true, locale: fr })}
+                      {formatDistanceToNow(message.timestamp, { addSuffix: true, locale })}
                     </span>
                     {message.relatedResults && (
                       <Badge variant="secondary" className="text-xs">
-                        {message.relatedResults.length} résultats liés
+                        {message.relatedResults.length} {language === 'fr' ? 'résultats liés' : 'related results'}
                       </Badge>
                     )}
                   </div>
@@ -148,7 +174,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ messages, isThinking, onMessa
                     <Sparkles className="w-4 h-4 text-purple-600" />
                   </motion.div>
                   <span className="text-sm text-gray-600">
-                    L'IA analyse les résultats...
+                    {t.explore.assistant.thinking}
                   </span>
                 </div>
               </div>
@@ -163,7 +189,7 @@ const AIAssistant: React.FC<AIAssistantProps> = ({ messages, isThinking, onMessa
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Posez une question à l'IA..."
+            placeholder={t.explore.assistant.askQuestion}
             className="flex-1 text-sm"
           />
           <Button

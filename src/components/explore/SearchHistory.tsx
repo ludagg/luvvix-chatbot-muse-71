@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import { History, Trash2, Clock, TrendingUp } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface SearchHistoryProps {
   history: string[];
@@ -17,11 +17,19 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({
   onSelectSearch, 
   onClearHistory 
 }) => {
-  const trendingSearches = [
+  const { t, language } = useLanguage();
+  
+  const trendingSearches = language === 'fr' ? [
     "Intelligence artificielle 2024",
-    "Développement web moderne",
+    "Développement web moderne", 
     "Économie circulaire",
     "Métavers actualités",
+    "Blockchain applications"
+  ] : [
+    "Artificial Intelligence 2024",
+    "Modern web development",
+    "Circular economy", 
+    "Metaverse news",
     "Blockchain applications"
   ];
 
@@ -31,7 +39,7 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <History className="w-5 h-5 text-gray-600" />
-            <h3 className="font-semibold text-gray-900">Historique</h3>
+            <h3 className="font-semibold text-gray-900">{t.explore.history.title}</h3>
           </div>
           {history.length > 0 && (
             <Button
@@ -39,6 +47,7 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({
               size="sm"
               onClick={onClearHistory}
               className="text-gray-500 hover:text-red-600"
+              title={t.explore.history.clear}
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -53,7 +62,7 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({
               <div className="space-y-2">
                 <h4 className="text-sm font-medium text-gray-700 flex items-center gap-1">
                   <Clock className="w-4 h-4" />
-                  Recherches récentes
+                  {t.explore.history.recent}
                 </h4>
                 {history.map((search, index) => (
                   <motion.button
@@ -72,7 +81,7 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({
               <div className="border-t border-gray-100 pt-3">
                 <h4 className="text-sm font-medium text-gray-700 flex items-center gap-1 mb-2">
                   <TrendingUp className="w-4 h-4" />
-                  Tendances
+                  {t.explore.history.trends}
                 </h4>
                 <div className="space-y-2">
                   {trendingSearches.map((search, index) => (
@@ -93,11 +102,11 @@ const SearchHistory: React.FC<SearchHistoryProps> = ({
                 <History className="w-6 h-6 text-gray-400" />
               </div>
               <p className="text-sm text-gray-500 mb-4">
-                Aucune recherche récente
+                {t.explore.noSearchHistory}
               </p>
               
               <div className="space-y-2">
-                <h4 className="text-sm font-medium text-gray-700">Suggestions populaires</h4>
+                <h4 className="text-sm font-medium text-gray-700">{t.explore.popularSuggestions}</h4>
                 {trendingSearches.slice(0, 3).map((search, index) => (
                   <button
                     key={index}

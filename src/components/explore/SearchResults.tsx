@@ -1,12 +1,12 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ExternalLink, Share2, BookOpen, Download, Eye, Calendar, User } from 'lucide-react';
+import { ExternalLink, Share2, BookOpen, Download, Eye, Calendar, User, Search } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { fr, enUS } from 'date-fns/locale';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface SearchResult {
   id: string;
@@ -28,6 +28,9 @@ interface SearchResultsProps {
 }
 
 const SearchResults: React.FC<SearchResultsProps> = ({ results, query }) => {
+  const { t, language } = useLanguage();
+  const locale = language === 'fr' ? fr : enUS;
+
   const handleShare = (result: SearchResult) => {
     if (navigator.share) {
       navigator.share({
@@ -65,6 +68,25 @@ const SearchResults: React.FC<SearchResultsProps> = ({ results, query }) => {
         return 'bg-blue-100 text-blue-700';
     }
   };
+
+  if (results.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+          <Search className="w-12 h-12 text-gray-400" />
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          {t.common.loading}
+        </h3>
+        <p className="text-gray-500">
+          {language === 'fr' 
+            ? `Recherche en cours pour "${query}"...`
+            : `Searching for "${query}"...`
+          }
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -105,6 +127,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ results, query }) => {
                       size="sm"
                       onClick={() => handleShare(result)}
                       className="text-gray-400 hover:text-gray-600"
+                      title={t.explore.results.share}
                     >
                       <Share2 className="w-4 h-4" />
                     </Button>
@@ -113,6 +136,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ results, query }) => {
                       size="sm"
                       onClick={() => window.open(result.url, '_blank')}
                       className="text-gray-400 hover:text-gray-600"
+                      title={t.explore.results.open}
                     >
                       <ExternalLink className="w-4 h-4" />
                     </Button>
@@ -134,7 +158,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ results, query }) => {
                     <Calendar className="w-3 h-3" />
                     {formatDistanceToNow(result.timestamp, { 
                       addSuffix: true, 
-                      locale: fr 
+                      locale 
                     })}
                   </div>
                   
@@ -148,7 +172,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ results, query }) => {
                   {result.views && (
                     <div className="flex items-center gap-1">
                       <Eye className="w-3 h-3" />
-                      {result.views.toLocaleString()} vues
+                      {result.views.toLocaleString()} {t.explore.results.views}
                     </div>
                   )}
                   
@@ -169,7 +193,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ results, query }) => {
                       className="text-blue-600 border-blue-200 hover:bg-blue-50"
                     >
                       <Download className="w-4 h-4 mr-2" />
-                      Télécharger
+                      {t.explore.results.download}
                     </Button>
                   </div>
                 )}

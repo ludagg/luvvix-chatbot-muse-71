@@ -1,6 +1,7 @@
 
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import FeaturedAppsCarousel from "@/components/FeaturedAppsCarousel";
 import Ecosystem from "@/components/Ecosystem";
 import Authentication from "@/components/Authentication";
 import ProductDemos from "@/components/ProductDemos";
@@ -31,7 +32,10 @@ const Index = () => {
 
         <Hero />
         
-        {/* Section pour diriger vers l'écosystème */}
+        {/* Remplacer l'ancienne section par le nouveau carousel */}
+        <FeaturedAppsCarousel />
+        
+        {/* Section pour diriger vers l'écosystème complet */}
         <section className="py-16 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
           <div className="container mx-auto px-4">
             <motion.div
@@ -40,43 +44,17 @@ const Index = () => {
               transition={{ duration: 0.5 }}
               className="text-center mb-10"
             >
-              <h2 className="text-3xl font-bold mb-4">Découvrez l'Écosystème LuvviX</h2>
+              <h2 className="text-3xl font-bold mb-4">Plus d'Applications LuvviX</h2>
               <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Une suite complète d'applications innovantes pour améliorer votre expérience numérique
+                Explorez toute notre suite d'applications innovantes
               </p>
             </motion.div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
                 <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 flex items-center justify-center bg-violet-100 dark:bg-violet-900/30 rounded-full mb-4">
-                    <Bot className="w-8 h-8 text-violet-600 dark:text-violet-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">{t.app.aiStudio}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">Créez vos propres agents IA pour automatiser vos tâches.</p>
-                  <Link to="/ai-studio">
-                    <Button variant="outline" size="sm">{t.common.view}</Button>
-                  </Link>
-                </div>
-              </HoverGlowCard>
-              
-              <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                <div className="flex flex-col items-center text-center">
                   <div className="w-16 h-16 flex items-center justify-center bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
-                    <Search className="w-8 h-8 text-orange-600 dark:text-orange-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">LuvviX Explore</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">Recherche IA multimodale avec assistant intelligent.</p>
-                  <Link to="/explore">
-                    <Button variant="outline" size="sm">{t.common.view}</Button>
-                  </Link>
-                </div>
-              </HoverGlowCard>
-              
-              <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 flex items-center justify-center bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
-                    <Languages className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                    <Languages className="w-8 h-8 text-orange-600 dark:text-orange-400" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">{t.app.translate}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Traduction IA instantanée avec reconnaissance vocale.</p>
@@ -107,19 +85,6 @@ const Index = () => {
                   <h3 className="text-lg font-semibold mb-2">{t.app.codeStudio}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Génération et optimisation de code avec IA.</p>
                   <Link to="/code-studio">
-                    <Button variant="outline" size="sm">{t.common.view}</Button>
-                  </Link>
-                </div>
-              </HoverGlowCard>
-              
-              <HoverGlowCard className="p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-16 h-16 flex items-center justify-center bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
-                    <FileText className="w-8 h-8 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">{t.app.forms}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">Créez, partagez et analysez des formulaires intelligents.</p>
-                  <Link to="/forms">
                     <Button variant="outline" size="sm">{t.common.view}</Button>
                   </Link>
                 </div>

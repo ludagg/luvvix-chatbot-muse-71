@@ -52,10 +52,10 @@ const Index = () => {
                   <div className="w-16 h-16 flex items-center justify-center bg-violet-100 dark:bg-violet-900/30 rounded-full mb-4">
                     <Bot className="w-8 h-8 text-violet-600 dark:text-violet-400" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{t('app.aiStudio')}</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t.app.aiStudio}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Créez vos propres agents IA pour automatiser vos tâches.</p>
                   <Link to="/ai-studio">
-                    <Button variant="outline" size="sm">{t('common.view')}</Button>
+                    <Button variant="outline" size="sm">{t.common.view}</Button>
                   </Link>
                 </div>
               </HoverGlowCard>
@@ -68,7 +68,7 @@ const Index = () => {
                   <h3 className="text-lg font-semibold mb-2">LuvviX Explore</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Recherche IA multimodale avec assistant intelligent.</p>
                   <Link to="/explore">
-                    <Button variant="outline" size="sm">{t('common.view')}</Button>
+                    <Button variant="outline" size="sm">{t.common.view}</Button>
                   </Link>
                 </div>
               </HoverGlowCard>
@@ -78,10 +78,10 @@ const Index = () => {
                   <div className="w-16 h-16 flex items-center justify-center bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
                     <Languages className="w-8 h-8 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{t('app.translate')}</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t.app.translate}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Traduction IA instantanée avec reconnaissance vocale.</p>
                   <Link to="/translate">
-                    <Button variant="outline" size="sm">{t('common.view')}</Button>
+                    <Button variant="outline" size="sm">{t.common.view}</Button>
                   </Link>
                 </div>
               </HoverGlowCard>
@@ -91,10 +91,10 @@ const Index = () => {
                   <div className="w-16 h-16 flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/30 rounded-full mb-4">
                     <Network className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{t('app.mindmap')}</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t.app.mindmap}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Cartes mentales intelligentes pour organiser vos idées.</p>
                   <Link to="/mindmap">
-                    <Button variant="outline" size="sm">{t('common.view')}</Button>
+                    <Button variant="outline" size="sm">{t.common.view}</Button>
                   </Link>
                 </div>
               </HoverGlowCard>
@@ -104,10 +104,10 @@ const Index = () => {
                   <div className="w-16 h-16 flex items-center justify-center bg-green-100 dark:bg-green-900/30 rounded-full mb-4">
                     <Code className="w-8 h-8 text-green-600 dark:text-green-400" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{t('app.codeStudio')}</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t.app.codeStudio}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Génération et optimisation de code avec IA.</p>
                   <Link to="/code-studio">
-                    <Button variant="outline" size="sm">{t('common.view')}</Button>
+                    <Button variant="outline" size="sm">{t.common.view}</Button>
                   </Link>
                 </div>
               </HoverGlowCard>
@@ -117,10 +117,10 @@ const Index = () => {
                   <div className="w-16 h-16 flex items-center justify-center bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
                     <FileText className="w-8 h-8 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{t('app.forms')}</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t.app.forms}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Créez, partagez et analysez des formulaires intelligents.</p>
                   <Link to="/forms">
-                    <Button variant="outline" size="sm">{t('common.view')}</Button>
+                    <Button variant="outline" size="sm">{t.common.view}</Button>
                   </Link>
                 </div>
               </HoverGlowCard>
@@ -130,10 +130,10 @@ const Index = () => {
                   <div className="w-16 h-16 flex items-center justify-center bg-sky-100 dark:bg-sky-900/30 rounded-full mb-4">
                     <Cloud className="w-8 h-8 text-sky-600 dark:text-sky-400" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{t('app.cloud')}</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t.app.cloud}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Stockez et partagez vos fichiers en toute sécurité.</p>
                   <Link to="/cloud">
-                    <Button variant="outline" size="sm">{t('common.view')}</Button>
+                    <Button variant="outline" size="sm">{t.common.view}</Button>
                   </Link>
                 </div>
               </HoverGlowCard>
@@ -144,10 +144,10 @@ const Index = () => {
                     <Newspaper className="w-8 h-8 text-amber-600 dark:text-amber-400" />
                     <Sparkles className="w-4 h-4 absolute top-3 right-3 text-amber-500" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{t('app.news')}</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t.app.news}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Restez informé avec des actualités personnalisées.</p>
                   <Link to="/news">
-                    <Button variant="outline" size="sm">{t('common.view')}</Button>
+                    <Button variant="outline" size="sm">{t.common.view}</Button>
                   </Link>
                 </div>
               </HoverGlowCard>
@@ -157,10 +157,10 @@ const Index = () => {
                   <div className="w-16 h-16 flex items-center justify-center bg-cyan-100 dark:bg-cyan-900/30 rounded-full mb-4">
                     <CloudSun className="w-8 h-8 text-cyan-600 dark:text-cyan-400" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{t('app.weather')}</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t.app.weather}</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">Prévisions météo intelligentes et alertes.</p>
                   <Link to="/weather">
-                    <Button variant="outline" size="sm">{t('common.view')}</Button>
+                    <Button variant="outline" size="sm">{t.common.view}</Button>
                   </Link>
                 </div>
               </HoverGlowCard>

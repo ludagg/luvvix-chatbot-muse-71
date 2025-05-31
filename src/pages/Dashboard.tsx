@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -79,7 +80,7 @@ const Dashboard = () => {
       console.error("Erreur lors de la récupération des applications:", error);
       toast({
         variant: "destructive",
-        title: t('general.error'),
+        title: t.general.error,
         description: "Impossible de récupérer vos applications connectées."
       });
     } finally {
@@ -109,8 +110,8 @@ const Dashboard = () => {
       const result = await response.json();
       if (result.success) {
         toast({
-          title: t('message.accessRevoked'),
-          description: `${t('general.lastAccess')} ${appName} ${t('message.accessRevokedDesc')}`
+          title: t.message.accessRevoked,
+          description: `${t.general.lastAccess} ${appName} ${t.message.accessRevokedDesc}`
         });
         setConnectedApps(prevApps => prevApps.filter(app => app.id !== appId));
       } else {
@@ -120,7 +121,7 @@ const Dashboard = () => {
       console.error("Erreur lors de la révocation de l'accès:", error);
       toast({
         variant: "destructive",
-        title: t('general.error'),
+        title: t.general.error,
         description: "Impossible de révoquer l'accès à cette application."
       });
     } finally {
@@ -172,14 +173,14 @@ const Dashboard = () => {
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center">
                   <div className="space-y-2">
                     <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">
-                      {t('dashboard.title')}
+                      {t.dashboard.title}
                     </h1>
                     <p className="text-xl text-blue-100">
-                      {t('dashboard.welcome')}, {profile?.full_name || user.email}
+                      {t.dashboard.welcome}, {profile?.full_name || user.email}
                     </p>
                     <div className="flex items-center gap-2 text-sm text-blue-200">
                       <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                      {t('dashboard.connectedTo')}
+                      {t.dashboard.connectedTo}
                     </div>
                   </div>
                   <div className="mt-6 md:mt-0 flex items-center gap-4">
@@ -206,10 +207,10 @@ const Dashboard = () => {
               
               <Tabs defaultValue={defaultTab} className="w-full">
                 <TabsList className="grid grid-cols-4 mb-8 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-2xl p-1 shadow-lg border border-white/20">
-                  <TabsTrigger value="ecosystem" className="rounded-xl font-medium data-[state=active]:bg-violet-600 data-[state=active]:text-white">{t('dashboard.ecosystem')}</TabsTrigger>
+                  <TabsTrigger value="ecosystem" className="rounded-xl font-medium data-[state=active]:bg-violet-600 data-[state=active]:text-white">{t.dashboard.ecosystem}</TabsTrigger>
                   <TabsTrigger value="connected-apps" className="rounded-xl font-medium data-[state=active]:bg-violet-600 data-[state=active]:text-white">SSO</TabsTrigger>
-                  <TabsTrigger value="security" className="rounded-xl font-medium data-[state=active]:bg-violet-600 data-[state=active]:text-white">{t('dashboard.security')}</TabsTrigger>
-                  <TabsTrigger value="profile" className="rounded-xl font-medium data-[state=active]:bg-violet-600 data-[state=active]:text-white">{t('dashboard.profile')}</TabsTrigger>
+                  <TabsTrigger value="security" className="rounded-xl font-medium data-[state=active]:bg-violet-600 data-[state=active]:text-white">{t.dashboard.security}</TabsTrigger>
+                  <TabsTrigger value="profile" className="rounded-xl font-medium data-[state=active]:bg-violet-600 data-[state=active]:text-white">{t.dashboard.profile}</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="ecosystem">
@@ -220,10 +221,10 @@ const Dashboard = () => {
                           <div className="w-10 h-10 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl flex items-center justify-center">
                             <AppWindow className="h-5 w-5 text-white" />
                           </div>
-                          {t('nav.ecosystem')} LuvviX
+                          Écosystème LuvviX
                         </CardTitle>
                         <CardDescription className="text-lg">
-                          {t('dashboard.ecosystemDescription')}
+                          {t.dashboard.ecosystemDescription}
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -255,15 +256,15 @@ const Dashboard = () => {
                         <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-xl flex items-center justify-center">
                           <AppWindow className="h-5 w-5 text-white" />
                         </div>
-                        {t('dashboard.connectedApps')}
+                        {t.dashboard.connectedApps}
                       </CardTitle>
                       <CardDescription className="text-lg">
-                        {t('dashboard.connectedAppsDescription')}
+                        {t.dashboard.connectedAppsDescription}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       {loading ? (
-                        <div className="text-center p-6">{t('message.loadingApps')}</div>
+                        <div className="text-center p-6">{t.message.loadingApps}</div>
                       ) : connectedApps.length > 0 ? (
                         <div className="space-y-4">
                           {connectedApps.map((app) => (
@@ -274,10 +275,10 @@ const Dashboard = () => {
                                   <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0">{app.app_name}</Badge>
                                 </div>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {t('general.grantedOn')} {formatDate(app.granted_at)}
+                                  {t.general.grantedOn} {formatDate(app.granted_at)}
                                 </p>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {t('general.lastAccess')}: {formatDate(app.last_access)}
+                                  {t.general.lastAccess}: {formatDate(app.last_access)}
                                 </p>
                               </div>
                               <Button 
@@ -290,10 +291,10 @@ const Dashboard = () => {
                                 {revokeLoading === app.id ? (
                                   <>
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    {t('action.revoking')}
+                                    {t.action.revoking}
                                   </>
                                 ) : (
-                                  t('action.revokeAccess')
+                                  t.action.revokeAccess
                                 )}
                               </Button>
                             </div>
@@ -302,9 +303,9 @@ const Dashboard = () => {
                       ) : (
                         <div className="text-center p-12 border border-dashed border-gray-300 dark:border-gray-600 rounded-2xl bg-white/30 dark:bg-gray-800/30">
                           <AppWindow className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-                          <p className="text-gray-500 text-lg font-medium">{t('message.noAppsConnected')}</p>
+                          <p className="text-gray-500 text-lg font-medium">{t.message.noAppsConnected}</p>
                           <p className="text-sm text-gray-400 mt-2">
-                            {t('message.noAppsConnected.desc')}
+                            Les applications que vous connectez apparaîtront ici
                           </p>
                         </div>
                       )}
@@ -320,10 +321,10 @@ const Dashboard = () => {
                           <div className="w-10 h-10 bg-gradient-to-r from-red-600 to-pink-600 rounded-xl flex items-center justify-center">
                             <Shield className="h-5 w-5 text-white" />
                           </div>
-                          {t('dashboard.security')}
+                          {t.dashboard.security}
                         </CardTitle>
                         <CardDescription className="text-lg">
-                          {t('dashboard.securityDescription')}
+                          {t.dashboard.securityDescription}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-8">
@@ -331,11 +332,11 @@ const Dashboard = () => {
                         <div className="space-y-4">
                           <div className="flex items-center gap-3">
                             <Bell className="h-5 w-5 text-violet-600" />
-                            <h3 className="text-lg font-semibold">{t('settings.notifications')}</h3>
+                            <h3 className="text-lg font-semibold">{t.settings.notifications}</h3>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
-                              <Label htmlFor="notifications" className="font-medium">{t('settings.notifications.push')}</Label>
+                              <Label htmlFor="notifications" className="font-medium">Notifications push</Label>
                               <Switch
                                 id="notifications"
                                 checked={settings.notifications}
@@ -343,7 +344,7 @@ const Dashboard = () => {
                               />
                             </div>
                             <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
-                              <Label htmlFor="email-notifications" className="font-medium">{t('settings.notifications.email')}</Label>
+                              <Label htmlFor="email-notifications" className="font-medium">Notifications email</Label>
                               <Switch
                                 id="email-notifications"
                                 checked={settings.emailNotifications}
@@ -357,11 +358,11 @@ const Dashboard = () => {
                         <div className="space-y-4">
                           <div className="flex items-center gap-3">
                             <Palette className="h-5 w-5 text-violet-600" />
-                            <h3 className="text-lg font-semibold">{t('settings.preferences')}</h3>
+                            <h3 className="text-lg font-semibold">{t.settings.preferences}</h3>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
-                              <Label htmlFor="dark-mode" className="font-medium">{t('settings.darkMode')}</Label>
+                              <Label htmlFor="dark-mode" className="font-medium">{t.settings.darkMode}</Label>
                               <Switch
                                 id="dark-mode"
                                 checked={settings.darkMode}
@@ -369,7 +370,7 @@ const Dashboard = () => {
                               />
                             </div>
                             <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
-                              <Label htmlFor="auto-save" className="font-medium">{t('settings.autoSave')}</Label>
+                              <Label htmlFor="auto-save" className="font-medium">{t.settings.autoSave}</Label>
                               <Switch
                                 id="auto-save"
                                 checked={settings.autoSave}
@@ -383,7 +384,7 @@ const Dashboard = () => {
                         <div className="space-y-4">
                           <div className="flex items-center gap-3">
                             <Globe className="h-5 w-5 text-violet-600" />
-                            <h3 className="text-lg font-semibold">{t('settings.language')}</h3>
+                            <h3 className="text-lg font-semibold">{t.settings.language}</h3>
                           </div>
                           <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                             <LanguageSelector />
@@ -394,13 +395,13 @@ const Dashboard = () => {
                         <div className="space-y-4">
                           <div className="flex items-center gap-3">
                             <Lock className="h-5 w-5 text-violet-600" />
-                            <h3 className="text-lg font-semibold">{t('settings.security.advanced')}</h3>
+                            <h3 className="text-lg font-semibold">{t.settings.security.advanced}</h3>
                           </div>
                           <div className="space-y-4">
                             <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                               <div>
-                                <Label htmlFor="two-factor" className="font-medium">{t('settings.twoFactor')}</Label>
-                                <p className="text-sm text-gray-500">{t('settings.twoFactor.desc')}</p>
+                                <Label htmlFor="two-factor" className="font-medium">{t.settings.twoFactor}</Label>
+                                <p className="text-sm text-gray-500">Ajouter une couche de sécurité supplémentaire</p>
                               </div>
                               <Switch
                                 id="two-factor"
@@ -410,8 +411,8 @@ const Dashboard = () => {
                             </div>
                             <div className="flex items-center justify-between p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                               <div>
-                                <Label htmlFor="public-profile" className="font-medium">{t('settings.publicProfile')}</Label>
-                                <p className="text-sm text-gray-500">{t('settings.publicProfile.desc')}</p>
+                                <Label htmlFor="public-profile" className="font-medium">{t.settings.publicProfile}</Label>
+                                <p className="text-sm text-gray-500">Rendre votre profil visible publiquement</p>
                               </div>
                               <Switch
                                 id="public-profile"
@@ -424,12 +425,12 @@ const Dashboard = () => {
 
                         {/* Actions de sécurité */}
                         <div className="space-y-4">
-                          <h3 className="text-lg font-semibold">{t('action.actions')}</h3>
+                          <h3 className="text-lg font-semibold">{t.action.actions}</h3>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <Button variant="outline" className="h-auto p-4 flex flex-col items-start gap-2 rounded-xl">
                               <Key className="h-5 w-5" />
-                              <span className="font-medium">{t('action.changePassword')}</span>
-                              <span className="text-sm text-gray-500">{t('action.changePassword.desc')}</span>
+                              <span className="font-medium">{t.action.changePassword}</span>
+                              <span className="text-sm text-gray-500">Modifier votre mot de passe</span>
                             </Button>
                             <Button 
                               variant="destructive" 
@@ -440,8 +441,8 @@ const Dashboard = () => {
                               }}
                             >
                               <LogOut className="h-5 w-5" />
-                              <span className="font-medium">{t('action.globalSignOut')}</span>
-                              <span className="text-sm text-red-100">{t('action.globalSignOut.desc')}</span>
+                              <span className="font-medium">{t.action.globalSignOut}</span>
+                              <span className="text-sm text-red-100">Déconnecter tous les appareils</span>
                             </Button>
                           </div>
                         </div>
@@ -457,17 +458,17 @@ const Dashboard = () => {
                         <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-teal-600 rounded-xl flex items-center justify-center">
                           <User className="h-5 w-5 text-white" />
                         </div>
-                        {t('dashboard.profile')}
+                        {t.dashboard.profile}
                       </CardTitle>
                       <CardDescription className="text-lg">
-                        {t('dashboard.profileDescription')}
+                        {t.dashboard.profileDescription}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('general.email')}</Label>
+                            <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t.general.email}</Label>
                             <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                               {user.email}
                             </div>
@@ -475,7 +476,7 @@ const Dashboard = () => {
                           
                           {profile?.full_name && (
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('general.fullName')}</Label>
+                              <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t.general.fullName}</Label>
                               <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                                 {profile.full_name}
                               </div>
@@ -484,7 +485,7 @@ const Dashboard = () => {
                           
                           {profile?.username && (
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('general.username')}</Label>
+                              <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t.general.username}</Label>
                               <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                                 {profile.username}
                               </div>
@@ -492,7 +493,7 @@ const Dashboard = () => {
                           )}
                           
                           <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('general.memberSince')}</Label>
+                            <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">{t.general.memberSince}</Label>
                             <div className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl">
                               {formatDate(user.created_at || new Date().toISOString())}
                             </div>
@@ -503,7 +504,7 @@ const Dashboard = () => {
                     <CardFooter>
                       <Button className="bg-gradient-to-r from-violet-600 to-purple-600 text-white border-0 hover:shadow-lg transition-all">
                         <Settings className="mr-2 h-4 w-4" />
-                        {t('action.updateProfile')}
+                        {t.action.updateProfile}
                       </Button>
                     </CardFooter>
                   </Card>

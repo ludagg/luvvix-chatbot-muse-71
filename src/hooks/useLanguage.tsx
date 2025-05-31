@@ -22,6 +22,7 @@ interface Translations {
     login: string;
     logout: string;
     dashboard: string;
+    applications: string;
   };
   
   // Home page
@@ -184,6 +185,76 @@ interface Translations {
     trending: string;
     newsletter: string;
   };
+
+  // Dashboard
+  dashboard: {
+    title: string;
+    welcome: string;
+    connectedTo: string;
+    ecosystem: string;
+    ecosystemDescription: string;
+    connectedApps: string;
+    connectedAppsDescription: string;
+    security: string;
+    securityDescription: string;
+    profile: string;
+    profileDescription: string;
+  };
+
+  // App translations
+  app: {
+    aiStudio: string;
+    translate: string;
+    mindmap: string;
+    codeStudio: string;
+    forms: string;
+    cloud: string;
+    news: string;
+    weather: string;
+  };
+
+  // Settings
+  settings: {
+    notifications: string;
+    darkMode: string;
+    autoSave: string;
+    twoFactor: string;
+    publicProfile: string;
+    language: string;
+    preferences: string;
+    security: {
+      advanced: string;
+    };
+  };
+
+  // Actions
+  action: {
+    revoking: string;
+    revokeAccess: string;
+    changePassword: string;
+    globalSignOut: string;
+    updateProfile: string;
+    actions: string;
+  };
+
+  // Messages
+  message: {
+    loadingApps: string;
+    noAppsConnected: string;
+    accessRevoked: string;
+    accessRevokedDesc: string;
+  };
+
+  // General
+  general: {
+    error: string;
+    grantedOn: string;
+    lastAccess: string;
+    email: string;
+    fullName: string;
+    username: string;
+    memberSince: string;
+  };
   
   // Common
   common: {
@@ -260,6 +331,7 @@ interface Translations {
     light: string;
     dark: string;
     auto: string;
+    view: string;
   };
 }
 
@@ -277,7 +349,8 @@ const translations: Record<string, Translations> = {
       account: "Account",
       login: "Login",
       logout: "Logout",
-      dashboard: "Dashboard"
+      dashboard: "Dashboard",
+      applications: "Applications"
     },
     home: {
       hero: {
@@ -426,6 +499,64 @@ const translations: Record<string, Translations> = {
       trending: "Trending",
       newsletter: "Newsletter"
     },
+    dashboard: {
+      title: "Dashboard",
+      welcome: "Welcome",
+      connectedTo: "Connected to LuvviX ID",
+      ecosystem: "Ecosystem",
+      ecosystemDescription: "Access all LuvviX applications from here",
+      connectedApps: "Connected Apps",
+      connectedAppsDescription: "Manage applications connected to your account",
+      security: "Security",
+      securityDescription: "Manage your security settings",
+      profile: "Profile",
+      profileDescription: "Manage your profile information"
+    },
+    app: {
+      aiStudio: "AI Studio",
+      translate: "LuvviX Translate",
+      mindmap: "LuvviX MindMap",
+      codeStudio: "Code Studio",
+      forms: "LuvviX Forms",
+      cloud: "LuvviX Cloud",
+      news: "LuvviX News",
+      weather: "LuvviX Weather"
+    },
+    settings: {
+      notifications: "Notifications",
+      darkMode: "Dark Mode",
+      autoSave: "Auto Save",
+      twoFactor: "Two-Factor Authentication",
+      publicProfile: "Public Profile",
+      language: "Language",
+      preferences: "Preferences",
+      security: {
+        advanced: "Advanced Security"
+      }
+    },
+    action: {
+      revoking: "Revoking...",
+      revokeAccess: "Revoke Access",
+      changePassword: "Change Password",
+      globalSignOut: "Sign Out All Devices",
+      updateProfile: "Update Profile",
+      actions: "Actions"
+    },
+    message: {
+      loadingApps: "Loading applications...",
+      noAppsConnected: "No applications connected",
+      accessRevoked: "Access revoked",
+      accessRevokedDesc: "access has been revoked"
+    },
+    general: {
+      error: "Error",
+      grantedOn: "Granted on",
+      lastAccess: "Last access",
+      email: "Email",
+      fullName: "Full Name",
+      username: "Username",
+      memberSince: "Member since"
+    },
     common: {
       loading: "Loading...",
       error: "Error",
@@ -499,7 +630,8 @@ const translations: Record<string, Translations> = {
       danger: "Danger",
       light: "Light",
       dark: "Dark",
-      auto: "Auto"
+      auto: "Auto",
+      view: "View"
     }
   },
   fr: {
@@ -515,7 +647,8 @@ const translations: Record<string, Translations> = {
       account: "Compte",
       login: "Connexion",
       logout: "Déconnexion",
-      dashboard: "Tableau de bord"
+      dashboard: "Tableau de bord",
+      applications: "Applications"
     },
     home: {
       hero: {
@@ -664,6 +797,64 @@ const translations: Record<string, Translations> = {
       trending: "Tendances",
       newsletter: "Newsletter"
     },
+    dashboard: {
+      title: "Tableau de bord",
+      welcome: "Bienvenue",
+      connectedTo: "Connecté à LuvviX ID",
+      ecosystem: "Écosystème",
+      ecosystemDescription: "Accédez à toutes les applications LuvviX depuis ici",
+      connectedApps: "Applications connectées",
+      connectedAppsDescription: "Gérez les applications connectées à votre compte",
+      security: "Sécurité",
+      securityDescription: "Gérez vos paramètres de sécurité",
+      profile: "Profil",
+      profileDescription: "Gérez vos informations de profil"
+    },
+    app: {
+      aiStudio: "Studio IA",
+      translate: "LuvviX Translate",
+      mindmap: "LuvviX MindMap",
+      codeStudio: "Code Studio",
+      forms: "LuvviX Forms",
+      cloud: "LuvviX Cloud",
+      news: "LuvviX Actualités",
+      weather: "LuvviX Météo"
+    },
+    settings: {
+      notifications: "Notifications",
+      darkMode: "Mode sombre",
+      autoSave: "Sauvegarde automatique",
+      twoFactor: "Authentification à deux facteurs",
+      publicProfile: "Profil public",
+      language: "Langue",
+      preferences: "Préférences",
+      security: {
+        advanced: "Sécurité avancée"
+      }
+    },
+    action: {
+      revoking: "Révocation...",
+      revokeAccess: "Révoquer l'accès",
+      changePassword: "Changer le mot de passe",
+      globalSignOut: "Déconnecter tous les appareils",
+      updateProfile: "Mettre à jour le profil",
+      actions: "Actions"
+    },
+    message: {
+      loadingApps: "Chargement des applications...",
+      noAppsConnected: "Aucune application connectée",
+      accessRevoked: "Accès révoqué",
+      accessRevokedDesc: "l'accès a été révoqué"
+    },
+    general: {
+      error: "Erreur",
+      grantedOn: "Accordé le",
+      lastAccess: "Dernier accès",
+      email: "E-mail",
+      fullName: "Nom complet",
+      username: "Nom d'utilisateur",
+      memberSince: "Membre depuis"
+    },
     common: {
       loading: "Chargement...",
       error: "Erreur",
@@ -737,7 +928,8 @@ const translations: Record<string, Translations> = {
       danger: "Danger",
       light: "Clair",
       dark: "Sombre",
-      auto: "Auto"
+      auto: "Auto",
+      view: "Voir"
     }
   }
 };

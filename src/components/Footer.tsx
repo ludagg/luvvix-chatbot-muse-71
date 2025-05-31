@@ -29,7 +29,7 @@ const Footer = () => {
           
           {/* Produits */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t.nav.applications || 'Applications'}</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{t.nav.applications}</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link to="/ai-studio" className="text-gray-600 dark:text-gray-400 hover:text-luvvix-purple transition-colors">

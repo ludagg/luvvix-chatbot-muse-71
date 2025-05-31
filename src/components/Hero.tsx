@@ -72,7 +72,7 @@ const Hero = () => {
               variants={fadeIn}
             >
               <span className="block">{t.home.hero.title}</span> 
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9f75ff] to-[#7debff]">ID</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9f75ff] to-[#7debff]">LuvviX</span>
               <span className="block text-3xl md:text-4xl lg:text-5xl mt-2 text-white/90 font-normal">{t.home.hero.subtitle}</span>
             </motion.h1>
             

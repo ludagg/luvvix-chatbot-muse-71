@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { wand-sparkles, Loader2 } from "lucide-react";
+import { Wand2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -62,14 +62,14 @@ const AIFormCreator = () => {
           className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 z-50"
           size="icon"
         >
-          <wand-sparkles className="h-6 w-6" />
+          <Wand2 className="h-6 w-6" />
         </Button>
       </DialogTrigger>
       
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <wand-sparkles className="h-5 w-5 text-purple-600" />
+            <Wand2 className="h-5 w-5 text-purple-600" />
             Créer avec l'IA LuvviX
           </DialogTitle>
         </DialogHeader>
@@ -116,7 +116,7 @@ const AIFormCreator = () => {
                 </>
               ) : (
                 <>
-                  <wand-sparkles className="h-4 w-4 mr-2" />
+                  <Wand2 className="h-4 w-4 mr-2" />
                   Générer le formulaire
                 </>
               )}

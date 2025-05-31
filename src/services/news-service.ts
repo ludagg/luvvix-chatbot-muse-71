@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { NewsApiResponse, NewsItem, NewsSubscription } from '@/types/news';
 import { getCurrentUser } from '@/services/auth-utils';
@@ -13,6 +14,9 @@ export const getUserLocation = async () => {
     return null;
   }
 };
+
+// Add getNews as an alias for fetchLatestNews for backward compatibility
+export const getNews = fetchLatestNews;
 
 // Fonction pour récupérer les dernières actualités
 export const fetchLatestNews = async (

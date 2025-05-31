@@ -16,6 +16,9 @@ export interface NewsItem {
   };
 }
 
+// Add NewsArticle as an alias for NewsItem for backward compatibility
+export type NewsArticle = NewsItem;
+
 export interface NewsSubscription {
   id: string;
   user_id: string;

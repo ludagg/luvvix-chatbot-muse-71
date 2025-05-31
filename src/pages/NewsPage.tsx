@@ -13,16 +13,17 @@ import NewsHeadlines from "@/components/news/NewsHeadlines";
 import TrendingTopics from "@/components/news/TrendingTopics";
 import NewsletterSignup from "@/components/news/NewsletterSignup";
 import NewsNotification from "@/components/news/NewsNotification";
-import { getNews } from "@/services/news-service";
-import { NewsArticle } from "@/types/news";
+import { fetchLatestNews } from "@/services/news-service";
+import { NewsItem } from "@/types/news";
 import { useLanguage } from "@/hooks/useLanguage";
 
 const NewsPage = () => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("headlines");
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [articles, setArticles] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("general");
 
   useEffect(() => {
     fetchNews();
@@ -31,7 +32,7 @@ const NewsPage = () => {
   const fetchNews = async () => {
     try {
       setLoading(true);
-      const newsData = await getNews("general");
+      const newsData = await fetchLatestNews("general");
       setArticles(newsData);
     } catch (error) {
       console.error("Erreur lors du chargement des actualités:", error);
@@ -47,12 +48,18 @@ const NewsPage = () => {
       const filteredArticles = articles.filter(
         article =>
           article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          article.description?.toLowerCase().includes(searchQuery.toLowerCase())
+          article.summary?.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setArticles(filteredArticles);
     } else {
       fetchNews();
     }
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    // Here you could fetch news for the specific category
+    // fetchLatestNews(category);
   };
 
   return (
@@ -102,11 +109,14 @@ const NewsPage = () => {
             </TabsList>
 
             <TabsContent value="headlines">
-              <NewsHeadlines articles={articles} loading={loading} />
+              <NewsHeadlines newsItems={articles} isLoading={loading} error={null} />
             </TabsContent>
 
             <TabsContent value="categories">
-              <NewsCategories />
+              <NewsCategories 
+                selectedCategory={selectedCategory} 
+                onCategoryChange={handleCategoryChange} 
+              />
             </TabsContent>
 
             <TabsContent value="trending">

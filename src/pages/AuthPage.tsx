@@ -43,7 +43,7 @@ const AuthPage = () => {
         await signIn(email, password);
         navigate("/dashboard");
       } else {
-        await signUp(email, password);
+        await signUp(email, password, {});
         navigate("/dashboard");
       }
     } catch (e: any) {

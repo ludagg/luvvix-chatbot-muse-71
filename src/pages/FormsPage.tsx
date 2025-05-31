@@ -1,27 +1,32 @@
 
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import FormsList from "@/components/forms/FormsList";
 import FormsHeader from "@/components/forms/FormsHeader";
+import FormsList from "@/components/forms/FormsList";
+import AIFormCreator from "@/components/forms/AIFormCreator";
 
 const FormsPage = () => {
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    document.title = "LuvviX Forms - Créez et partagez facilement des formulaires";
-  }, []);
-  
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+      <Helmet>
+        <title>LuvviX Forms | Créateur de formulaires intelligent</title>
+        <meta name="description" content="Créez des formulaires intelligents avec LuvviX Forms. Interface intuitive, analyse automatique et intégration IA." />
+      </Helmet>
+      
       <Navbar />
-      {/* Ajout d'un div spacer pour compenser la hauteur de la navbar fixed */}
-      <div className="pt-20"></div> 
-      <FormsHeader />
-      <main className="flex-grow container mx-auto px-4 py-8">
-        <FormsList />
+      
+      {/* Adding more padding to account for the fixed navbar */}
+      <div className="pt-24"></div>
+      
+      <main className="flex-grow">
+        <FormsHeader />
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <FormsList />
+        </div>
       </main>
+      
+      <AIFormCreator />
       <Footer />
     </div>
   );

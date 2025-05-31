@@ -1,5 +1,5 @@
 
-import { Helmet } from 'react-helmet-async';
+import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LuvvixTranslate from '@/components/LuvvixTranslate';
@@ -9,29 +9,21 @@ const TranslatePage = () => {
   const { t } = useLanguage();
   
   return (
-    <>
-      <Helmet>
-        <title>{t('translate.title')} - {t('translate.subtitle')}</title>
-        <meta
-          name="description"
-          content={t('translate.description')}
-        />
-        <meta
-          name="keywords"
-          content="traduction, IA, intelligence artificielle, reconnaissance vocale, temps réel, langues"
-        />
-      </Helmet>
-
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="pt-55 flex-1">
-          <main className="flex-1">
-            <LuvvixTranslate />
-          </main>
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <main className="flex-1 pt-16">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold mb-4">{t.app.translate}</h1>
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              {t.app.translate} - Traduction IA instantanée avec reconnaissance vocale et support multilingue.
+            </p>
+          </div>
+          <LuvvixTranslate />
         </div>
-        <Footer />
-      </div>
-    </>
+      </main>
+      <Footer />
+    </div>
   );
 };
 

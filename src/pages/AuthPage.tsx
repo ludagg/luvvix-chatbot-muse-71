@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,7 +24,7 @@ const AuthPage = () => {
   const signupParam = searchParams.get("signup");
   const isSignupFromParams = signupParam === "true";
 
-  useState(() => {
+  useEffect(() => {
     setIsLogin(!isSignupFromParams);
   }, [isSignupFromParams]);
 
@@ -39,10 +40,10 @@ const AuthPage = () => {
 
     try {
       if (type === "login") {
-        await signIn({ email, password });
+        await signIn(email, password);
         navigate("/dashboard");
       } else {
-        await signUp({ email, password });
+        await signUp(email, password);
         navigate("/dashboard");
       }
     } catch (e: any) {

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ExternalLink, Share2, BookOpen, Download, Eye, Calendar, User, Globe, Play, Image as ImageIcon, FileText } from 'lucide-react';
+import { ExternalLink, Share2, BookOpen, Download, Eye, Calendar, User, Globe, Play, Image as ImageIcon, FileText, Search } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

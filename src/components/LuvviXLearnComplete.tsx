@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,7 +47,7 @@ interface LearningPath {
   courses: number;
   duration: string;
   level: string;
-  icon: React.ComponentType;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
 }
 

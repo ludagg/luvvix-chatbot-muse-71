@@ -71,16 +71,16 @@ const Hero = () => {
               className="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 text-white leading-tight"
               variants={fadeIn}
             >
-              <span className="block">{t('hero.title')}</span> 
+              <span className="block">{t.home.hero.title}</span> 
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9f75ff] to-[#7debff]">ID</span>
-              <span className="block text-3xl md:text-4xl lg:text-5xl mt-2 text-white/90 font-normal">{t('hero.subtitle')}</span>
+              <span className="block text-3xl md:text-4xl lg:text-5xl mt-2 text-white/90 font-normal">{t.home.hero.subtitle}</span>
             </motion.h1>
             
             <motion.p 
               className="text-xl text-white/70 mb-8 max-w-lg"
               variants={fadeIn}
             >
-              {t('hero.description')}
+              {t.home.hero.description}
             </motion.p>
             
             <motion.div 
@@ -95,7 +95,7 @@ const Hero = () => {
                   onClick={() => navigate("/auth")}
                   className="bg-gradient-to-r from-[#9f75ff] to-[#7debff] text-white hover:opacity-90 font-medium px-8 h-12 shadow-lg shadow-purple-500/20"
                 >
-                  {t('hero.createAccount')}
+                  {t.home.hero.getStarted}
                   <ArrowRight size={16} className="ml-2" />
                 </Button>
               </motion.div>
@@ -110,7 +110,7 @@ const Hero = () => {
                   }}
                   className="border-white/30 text-black hover:bg-white/10 font-medium px-8 h-12"
                 >
-                  {t('hero.discoverEcosystem')}
+                  {t.home.hero.learnMore}
                 </Button>
               </motion.div>
             </motion.div>
@@ -129,7 +129,7 @@ const Hero = () => {
                 <div className="rounded-full bg-purple-500/20 p-2">
                   <Shield size={20} className="text-purple-300" />
                 </div>
-                <span className="text-white/90">{t('hero.secureAuth')}</span>
+                <span className="text-white/90">Authentification sécurisée</span>
               </motion.div>
               
               <motion.div 
@@ -139,7 +139,7 @@ const Hero = () => {
                 <div className="rounded-full bg-blue-500/20 p-2">
                   <Zap size={20} className="text-blue-300" />
                 </div>
-                <span className="text-white/90">{t('hero.instantConnection')}</span>
+                <span className="text-white/90">Connexion instantanée</span>
               </motion.div>
               
               <motion.div 
@@ -149,7 +149,7 @@ const Hero = () => {
                 <div className="rounded-full bg-green-500/20 p-2">
                   <Globe size={20} className="text-green-300" />
                 </div>
-                <span className="text-white/90">{t('hero.multiplatform')}</span>
+                <span className="text-white/90">Multi-plateforme</span>
               </motion.div>
               
               <motion.div 
@@ -159,7 +159,7 @@ const Hero = () => {
                 <div className="rounded-full bg-yellow-500/20 p-2">
                   <Check size={20} className="text-yellow-300" />
                 </div>
-                <span className="text-white/90">{t('hero.devApi')}</span>
+                <span className="text-white/90">API développeur</span>
               </motion.div>
             </motion.div>
 
@@ -172,26 +172,26 @@ const Hero = () => {
             >
               <div className="flex items-center space-x-3 mb-3">
                 <Bot size={24} className="text-indigo-300" />
-                <h3 className="text-xl font-semibold text-white">{t('hero.aiStudioNew')}</h3>
-                <span className="px-2 py-1 bg-indigo-700/50 rounded-full text-xs text-indigo-200 font-medium">{t('common.new')}</span>
+                <h3 className="text-xl font-semibold text-white">LuvviX AI Studio</h3>
+                <span className="px-2 py-1 bg-indigo-700/50 rounded-full text-xs text-indigo-200 font-medium">Nouveau</span>
               </div>
               
               <p className="text-white/80 mb-4">
-                {t('hero.aiStudioDesc')}
+                Créez et gérez vos agents IA personnalisés avec notre studio avancé
               </p>
               
               <div className="flex flex-wrap gap-3">
                 <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full">
                   <Sparkles size={14} className="text-amber-300" />
-                  <span className="text-white/90 text-sm">{t('hero.aiAdvanced')}</span>
+                  <span className="text-white/90 text-sm">IA avancée</span>
                 </div>
                 <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full">
                   <Zap size={14} className="text-cyan-300" />
-                  <span className="text-white/90 text-sm">{t('hero.fast')}</span>
+                  <span className="text-white/90 text-sm">Rapide</span>
                 </div>
                 <div className="flex items-center space-x-2 bg-white/10 px-3 py-1.5 rounded-full">
                   <Shield size={14} className="text-green-300" />
-                  <span className="text-white/90 text-sm">{t('hero.secure')}</span>
+                  <span className="text-white/90 text-sm">Sécurisé</span>
                 </div>
               </div>
               
@@ -199,7 +199,7 @@ const Hero = () => {
                 onClick={() => navigate("/ai-studio")}
                 className="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white w-full"
               >
-                {t('hero.createAI')}
+                Créer mon IA
                 <ArrowRight size={16} className="ml-2" />
               </Button>
             </motion.div>

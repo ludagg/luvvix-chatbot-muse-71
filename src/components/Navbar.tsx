@@ -70,7 +70,7 @@ const Navbar = () => {
                   )}
                 >
                   <Sparkles className="w-4 h-4 mr-2" />
-                  {t('nav.applications')}
+                  Applications
                 </NavigationMenuTrigger>
                 <NavigationMenuContent className="rounded-xl p-4 min-w-[500px]">
                   <div className="grid gap-3 md:grid-cols-3">
@@ -89,8 +89,8 @@ const Navbar = () => {
                         <Bot className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">{t('app.aiStudio')}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.aiStudio.desc')}</p>
+                        <h3 className="font-medium">{t.aiStudio.title}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t.aiStudio.subtitle}</p>
                       </div>
                     </Link>
                     
@@ -99,8 +99,8 @@ const Navbar = () => {
                         <Languages className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">{t('app.translate')}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.translate.desc')}</p>
+                        <h3 className="font-medium">LuvviX Translate</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Traduction intelligente</p>
                       </div>
                     </Link>
                     
@@ -109,8 +109,8 @@ const Navbar = () => {
                         <Network className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">{t('app.mindmap')}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.mindmap.desc')}</p>
+                        <h3 className="font-medium">LuvviX MindMap</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Cartes mentales</p>
                       </div>
                     </Link>
                     
@@ -119,8 +119,8 @@ const Navbar = () => {
                         <Code className="w-5 h-5 text-green-600 dark:text-green-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">{t('app.codeStudio')}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.codeStudio.desc')}</p>
+                        <h3 className="font-medium">Code Studio</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Développement assisté</p>
                       </div>
                     </Link>
                     
@@ -129,8 +129,8 @@ const Navbar = () => {
                         <FileText className="w-5 h-5 text-pink-600 dark:text-pink-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">{t('app.forms')}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.forms.desc')}</p>
+                        <h3 className="font-medium">{t.forms.title}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t.forms.subtitle}</p>
                       </div>
                     </Link>
                     
@@ -139,8 +139,8 @@ const Navbar = () => {
                         <Cloud className="w-5 h-5 text-sky-600 dark:text-sky-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">{t('app.cloud')}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.cloud.desc')}</p>
+                        <h3 className="font-medium">{t.cloud.title}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t.cloud.subtitle}</p>
                       </div>
                     </Link>
                     
@@ -149,8 +149,8 @@ const Navbar = () => {
                         <Newspaper className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">{t('app.news')}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.news.desc')}</p>
+                        <h3 className="font-medium">{t.news.title}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{t.news.subtitle}</p>
                       </div>
                     </Link>
                     
@@ -159,8 +159,8 @@ const Navbar = () => {
                         <Cloud className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">{t('app.weather')}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.weather.desc')}</p>
+                        <h3 className="font-medium">LuvviX Weather</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Météo intelligente</p>
                       </div>
                     </Link>
                     
@@ -169,8 +169,8 @@ const Navbar = () => {
                         <Radio className="w-5 h-5 text-red-600 dark:text-red-400" />
                       </div>
                       <div>
-                        <h3 className="font-medium">{t('app.streamMix')}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('app.streamMix.desc')}</p>
+                        <h3 className="font-medium">StreamMix</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Streaming intelligent</p>
                       </div>
                     </Link>
                   </div>
@@ -186,7 +186,7 @@ const Navbar = () => {
                     isActive("/ecosystem") && "bg-primary/10 text-primary"
                   )}>
                     <AppWindow className="w-4 h-4 mr-2" />
-                    {t('nav.ecosystem')}
+                    Écosystème
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
@@ -200,7 +200,7 @@ const Navbar = () => {
                     isActive("/news") && "bg-primary/10 text-primary"
                   )}>
                     <Newspaper className="w-4 h-4 mr-2" />
-                    {t('nav.news')}
+                    {t.news.title}
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
@@ -234,15 +234,15 @@ const Navbar = () => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate("/dashboard")}>
                     <AppWindow className="mr-2 h-4 w-4" />
-                    {t('dashboard.title')}
+                    Tableau de bord
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/ai-studio/dashboard")}>
                     <Bot className="mr-2 h-4 w-4" />
-                    {t('app.aiStudio')}
+                    {t.aiStudio.title}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()}>
-                    {t('nav.signout')}
+                    Déconnexion
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -254,7 +254,7 @@ const Navbar = () => {
                       <Button variant="ghost" size="sm" className={cn(
                         isScrolled ? 'text-gray-700 dark:text-gray-200 hover:text-gray-900' : 'text-white dark:text-gray-200 hover:text-gray-100'
                       )}>
-                        {t('nav.login')}
+                        {t.nav.login}
                       </Button>
                     </Link>
                   </div>
@@ -285,7 +285,7 @@ const Navbar = () => {
                   )}
                   
                   <div className="space-y-2">
-                    <p className="px-4 text-sm font-medium text-gray-500 dark:text-gray-400">{t('nav.applications')}</p>
+                    <p className="px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Applications</p>
                     
                     <Link to="/explore" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Search className="h-5 w-5 text-orange-600 dark:text-orange-400" />
@@ -294,49 +294,49 @@ const Navbar = () => {
                     
                     <Link to="/ai-studio" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Bot className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                      <span>{t('app.aiStudio')}</span>
+                      <span>{t.aiStudio.title}</span>
                     </Link>
                     
                     <Link to="/translate" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Languages className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                      <span>{t('app.translate')}</span>
+                      <span>LuvviX Translate</span>
                     </Link>
                     
                     <Link to="/mindmap" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Network className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                      <span>{t('app.mindmap')}</span>
+                      <span>LuvviX MindMap</span>
                     </Link>
                     
                     <Link to="/code-studio" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Code className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      <span>{t('app.codeStudio')}</span>
+                      <span>Code Studio</span>
                     </Link>
                     
                     <Link to="/forms" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <FileText className="h-5 w-5 text-pink-600 dark:text-pink-400" />
-                      <span>{t('app.forms')}</span>
+                      <span>{t.forms.title}</span>
                     </Link>
                     
                     <Link to="/cloud" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Cloud className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-                      <span>{t('app.cloud')}</span>
+                      <span>{t.cloud.title}</span>
                     </Link>
                     
                     <Link to="/news" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Newspaper className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                      <span>{t('app.news')}</span>
+                      <span>{t.news.title}</span>
                     </Link>
                     
                     <Link to="/weather" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Cloud className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                      <span>{t('app.weather')}</span>
+                      <span>LuvviX Weather</span>
                     </Link>
                     
                     <div className="border-t my-4"></div>
                     
                     <Link to="/ecosystem" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <AppWindow className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                      <span>{t('app.complete')}</span>
+                      <span>Écosystème complet</span>
                     </Link>
                   </div>
                   
@@ -346,12 +346,12 @@ const Navbar = () => {
                         <Link to="/auth">
                           <Button variant="outline" className="w-full justify-start">
                             <User className="mr-2 h-4 w-4" />
-                            {t('nav.signin')}
+                            {t.nav.login}
                           </Button>
                         </Link>
                         <Link to="/auth?signup=true">
                           <Button className="w-full justify-start">
-                            {t('nav.signup')}
+                            Créer un compte
                           </Button>
                         </Link>
                       </div>

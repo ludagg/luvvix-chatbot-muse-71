@@ -355,7 +355,7 @@ const translations: Record<string, Translations> = {
     home: {
       hero: {
         title: "The Future of AI Starts Here",
-        subtitle: "LuvviX Ecosystem",
+        subtitle: "Ecosystem",
         description: "Discover a complete ecosystem of AI-powered tools to transform your work and creativity.",
         getStarted: "Get Started",
         learnMore: "Learn More"
@@ -653,7 +653,7 @@ const translations: Record<string, Translations> = {
     home: {
       hero: {
         title: "L'avenir de l'IA commence ici",
-        subtitle: "Écosystème LuvviX",
+        subtitle: "Écosystème",
         description: "Découvrez un écosystème complet d'outils alimentés par l'IA pour transformer votre travail et votre créativité.",
         getStarted: "Commencer",
         learnMore: "En savoir plus"
@@ -686,7 +686,7 @@ const translations: Record<string, Translations> = {
         privacy: "Confidentialité",
         terms: "Conditions",
         contact: "Contact",
-        copyright: "© 2024 LuvviX. Tous droits réservés."
+        copyright: "© 2025 LuvviX. Tous droits réservés."
       }
     },
     explore: {

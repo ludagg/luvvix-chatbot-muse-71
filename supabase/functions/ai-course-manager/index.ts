@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -12,6 +11,33 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
+// Fonction pour extraire le JSON de la réponse Gemini
+function extractJSON(text: string): any {
+  console.log('🔍 Texte brut reçu:', text.substring(0, 200) + '...');
+  
+  // Nettoyer le texte
+  const cleanText = text.trim();
+  
+  // Chercher les accolades ouvrantes et fermantes
+  const firstBrace = cleanText.indexOf('{');
+  const lastBrace = cleanText.lastIndexOf('}');
+  
+  if (firstBrace === -1 || lastBrace === -1 || firstBrace >= lastBrace) {
+    throw new Error('Aucun JSON valide trouvé dans la réponse');
+  }
+  
+  const jsonString = cleanText.substring(firstBrace, lastBrace + 1);
+  console.log('📋 JSON extrait:', jsonString.substring(0, 200) + '...');
+  
+  try {
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error('❌ Erreur parsing JSON:', error);
+    console.error('📄 Contenu problématique:', jsonString.substring(0, 500));
+    throw new Error('Format JSON invalide: ' + error.message);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -24,10 +50,12 @@ serve(async (req) => {
     if (action === 'generate_course') {
       console.log('🎯 Génération d\'un nouveau cours:', courseData.topic);
       
-      // Étape 1: Générer le plan du cours
+      // Étape 1: Générer le plan du cours avec un prompt plus strict
       const planPrompt = `Tu es LuvviX AI, expert pédagogique. Crée un PLAN DÉTAILLÉ pour un cours sur "${courseData.topic}" (${category}, niveau ${difficulty}).
 
-Réponds UNIQUEMENT avec un JSON valide dans ce format exact:
+IMPORTANT: Réponds UNIQUEMENT avec un JSON valide, rien d'autre. Pas de texte avant ou après le JSON.
+
+Format JSON requis:
 {
   "title": "Titre du cours",
   "description": "Description en 2-3 phrases",
@@ -53,7 +81,7 @@ Réponds UNIQUEMENT avec un JSON valide dans ce format exact:
   ]
 }
 
-IMPORTANT: Assure-toi que le JSON est parfaitement valide. Minimum 6 leçons alternant théorie/quiz.`;
+Minimum 6 leçons alternant théorie/quiz. JSON uniquement !`;
 
       const planResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
@@ -77,14 +105,17 @@ IMPORTANT: Assure-toi que le JSON est parfaitement valide. Minimum 6 leçons alt
       let coursePlan;
       try {
         const rawText = planData.candidates[0].content.parts[0].text;
-        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          throw new Error('Aucun JSON trouvé dans la réponse');
+        coursePlan = extractJSON(rawText);
+        
+        // Validation de la structure
+        if (!coursePlan.title || !coursePlan.lessons_plan || !Array.isArray(coursePlan.lessons_plan)) {
+          throw new Error('Structure du plan invalide');
         }
-        coursePlan = JSON.parse(jsonMatch[0]);
+        
+        console.log('✅ Plan validé:', coursePlan.title);
       } catch (parseError) {
-        console.error('Erreur parsing plan:', parseError);
-        throw new Error('Format de réponse invalide de Gemini');
+        console.error('❌ Erreur parsing plan:', parseError);
+        throw new Error('Format de réponse invalide de Gemini: ' + parseError.message);
       }
 
       // Insérer le cours d'abord
@@ -97,9 +128,9 @@ IMPORTANT: Assure-toi que le JSON est parfaitement valide. Minimum 6 leçons alt
           category: category,
           difficulty_level: difficulty,
           duration_minutes: coursePlan.duration_minutes,
-          learning_objectives: coursePlan.learning_objectives,
-          prerequisites: coursePlan.prerequisites,
-          tags: coursePlan.tags,
+          learning_objectives: coursePlan.learning_objectives || [],
+          prerequisites: coursePlan.prerequisites || [],
+          tags: coursePlan.tags || [],
           ai_generated: true,
           status: 'active'
         })
@@ -107,7 +138,7 @@ IMPORTANT: Assure-toi que le JSON est parfaitement valide. Minimum 6 leçons alt
         .single();
 
       if (courseError) {
-        console.error('Erreur insertion cours:', courseError);
+        console.error('❌ Erreur insertion cours:', courseError);
         throw courseError;
       }
 
@@ -121,7 +152,7 @@ IMPORTANT: Assure-toi que le JSON est parfaitement valide. Minimum 6 leçons alt
           // Générer le contenu théorique détaillé
           const contentPrompt = `Tu es LuvviX AI. Génère le CONTENU COMPLET pour la leçon "${lessonPlan.title}" du cours "${coursePlan.title}".
 
-Points clés à couvrir: ${lessonPlan.key_points.join(', ')}
+Points clés à couvrir: ${lessonPlan.key_points?.join(', ') || 'Contenu général'}
 
 Crée un contenu de 1000+ mots en Markdown avec:
 - Introduction engageante
@@ -130,122 +161,151 @@ Crée un contenu de 1000+ mots en Markdown avec:
 - Mise en forme markdown (titres, listes, code si pertinent)
 - Résumé des points clés
 
-Niveau: ${difficulty}. Sois pédagogique et précis.`;
+Niveau: ${difficulty}. Sois pédagogique et précis. Réponds directement avec le contenu Markdown, sans introduction.`;
 
-          const contentResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: contentPrompt }] }],
-              generationConfig: { 
-                temperature: 0.8,
-                maxOutputTokens: 4000
-              }
-            }),
-          });
+          try {
+            const contentResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: contentPrompt }] }],
+                generationConfig: { 
+                  temperature: 0.8,
+                  maxOutputTokens: 4000
+                }
+              }),
+            });
 
-          const contentData = await contentResponse.json();
-          const lessonContent = contentData.candidates[0].content.parts[0].text;
+            if (!contentResponse.ok) {
+              console.error(`❌ Erreur génération contenu leçon ${lessonPlan.title}`);
+              continue;
+            }
 
-          // Insérer la leçon
-          const { data: lesson, error: lessonError } = await supabase
-            .from('lessons')
-            .insert({
-              course_id: course.id,
-              title: lessonPlan.title,
-              content: lessonContent,
-              lesson_order: lessonPlan.lesson_order,
-              duration_minutes: lessonPlan.duration_minutes,
-              lesson_type: lessonPlan.lesson_type
-            })
-            .select()
-            .single();
+            const contentData = await contentResponse.json();
+            const lessonContent = contentData.candidates[0].content.parts[0].text;
 
-          if (lessonError) {
-            console.error('Erreur insertion leçon:', lessonError);
+            // Insérer la leçon
+            const { data: lesson, error: lessonError } = await supabase
+              .from('lessons')
+              .insert({
+                course_id: course.id,
+                title: lessonPlan.title,
+                content: lessonContent,
+                lesson_order: lessonPlan.lesson_order,
+                duration_minutes: lessonPlan.duration_minutes || 30,
+                lesson_type: lessonPlan.lesson_type
+              })
+              .select()
+              .single();
+
+            if (lessonError) {
+              console.error('❌ Erreur insertion leçon:', lessonError);
+              continue;
+            }
+
+            console.log(`✅ Leçon créée: ${lesson.title}`);
+
+          } catch (error) {
+            console.error(`❌ Erreur génération leçon ${lessonPlan.title}:`, error);
             continue;
           }
 
         } else if (lessonPlan.lesson_type === 'quiz') {
-          // Générer le quiz
-          const quizPrompt = `Génère un quiz pour valider "${lessonPlan.title}" sur les sujets: ${lessonPlan.quiz_topics?.join(', ')}.
+          // Générer le quiz avec un prompt plus strict
+          const quizPrompt = `Génère un quiz pour "${lessonPlan.title}" sur les sujets: ${lessonPlan.quiz_topics?.join(', ') || 'Validation des connaissances'}.
 
-Réponds UNIQUEMENT avec un JSON valide:
+IMPORTANT: Réponds UNIQUEMENT avec un JSON valide, rien d'autre.
+
+Format JSON requis:
 {
   "questions": [
     {
-      "question": "Question claire?",
+      "question": "Question claire et précise?",
       "type": "multiple_choice",
-      "options": ["A", "B", "C", "D"],
+      "options": ["Option A", "Option B", "Option C", "Option D"],
       "correct_answer": 0,
-      "explanation": "Pourquoi cette réponse"
+      "explanation": "Explication pourquoi cette réponse est correcte"
     }
   ]
 }
 
-Génère 5 questions de difficulté ${difficulty}.`;
+Génère exactement 5 questions de difficulté ${difficulty}. JSON uniquement !`;
 
-          const quizResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: quizPrompt }] }],
-              generationConfig: { 
-                temperature: 0.6,
-                maxOutputTokens: 2000
-              }
-            }),
-          });
-
-          const quizData = await quizResponse.json();
-          
-          let quizContent;
           try {
-            const rawQuizText = quizData.candidates[0].content.parts[0].text;
-            const quizJsonMatch = rawQuizText.match(/\{[\s\S]*\}/);
-            if (quizJsonMatch) {
-              quizContent = JSON.parse(quizJsonMatch[0]);
-            } else {
-              console.log('⚠️ Quiz non généré pour:', lessonPlan.title);
-              continue;
-            }
-          } catch (quizParseError) {
-            console.log('⚠️ Erreur parsing quiz:', quizParseError);
-            continue;
-          }
-
-          // Insérer la leçon quiz
-          const { data: lesson, error: lessonError } = await supabase
-            .from('lessons')
-            .insert({
-              course_id: course.id,
-              title: lessonPlan.title,
-              content: 'Quiz de validation des connaissances',
-              lesson_order: lessonPlan.lesson_order,
-              duration_minutes: lessonPlan.duration_minutes,
-              lesson_type: lessonPlan.lesson_type
-            })
-            .select()
-            .single();
-
-          if (lessonError) {
-            console.error('Erreur insertion leçon quiz:', lessonError);
-            continue;
-          }
-
-          // Insérer le quiz
-          const { error: quizError } = await supabase
-            .from('quizzes')
-            .insert({
-              lesson_id: lesson.id,
-              title: lessonPlan.title,
-              questions: quizContent.questions,
-              passing_score: 70,
-              max_attempts: 3
+            const quizResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: quizPrompt }] }],
+                generationConfig: { 
+                  temperature: 0.6,
+                  maxOutputTokens: 2000
+                }
+              }),
             });
 
-          if (quizError) {
-            console.error('Erreur insertion quiz:', quizError);
+            if (!quizResponse.ok) {
+              console.error(`❌ Erreur génération quiz ${lessonPlan.title}`);
+              continue;
+            }
+
+            const quizData = await quizResponse.json();
+            
+            let quizContent;
+            try {
+              const rawQuizText = quizData.candidates[0].content.parts[0].text;
+              quizContent = extractJSON(rawQuizText);
+              
+              // Validation
+              if (!quizContent.questions || !Array.isArray(quizContent.questions) || quizContent.questions.length === 0) {
+                throw new Error('Structure de quiz invalide');
+              }
+              
+              console.log(`✅ Quiz validé: ${quizContent.questions.length} questions`);
+            } catch (quizParseError) {
+              console.error(`❌ Erreur parsing quiz ${lessonPlan.title}:`, quizParseError);
+              continue;
+            }
+
+            // Insérer la leçon quiz
+            const { data: lesson, error: lessonError } = await supabase
+              .from('lessons')
+              .insert({
+                course_id: course.id,
+                title: lessonPlan.title,
+                content: 'Quiz de validation des connaissances',
+                lesson_order: lessonPlan.lesson_order,
+                duration_minutes: lessonPlan.duration_minutes || 15,
+                lesson_type: lessonPlan.lesson_type
+              })
+              .select()
+              .single();
+
+            if (lessonError) {
+              console.error('❌ Erreur insertion leçon quiz:', lessonError);
+              continue;
+            }
+
+            // Insérer le quiz
+            const { error: quizError } = await supabase
+              .from('quizzes')
+              .insert({
+                lesson_id: lesson.id,
+                title: lessonPlan.title,
+                questions: quizContent.questions,
+                passing_score: 70,
+                max_attempts: 3
+              });
+
+            if (quizError) {
+              console.error('❌ Erreur insertion quiz:', quizError);
+            } else {
+              console.log(`✅ Quiz créé: ${lesson.title}`);
+            }
+
+          } catch (error) {
+            console.error(`❌ Erreur génération quiz ${lessonPlan.title}:`, error);
+            continue;
           }
         }
       }
@@ -330,7 +390,9 @@ Génère 5 questions de difficulté ${difficulty}.`;
 Cours terminés: ${JSON.stringify(enrollments?.filter(e => e.completed_at))}
 Activité récente: ${JSON.stringify(analytics?.slice(0, 10))}
 
-Recommande 3-5 cours dans l'ordre optimal pour progresser. Retourne un JSON:
+IMPORTANT: Réponds UNIQUEMENT avec un JSON valide.
+
+Format JSON requis:
 {
   "name": "Nom du parcours",
   "description": "Description personnalisée",
@@ -351,10 +413,9 @@ Recommande 3-5 cours dans l'ordre optimal pour progresser. Retourne un JSON:
       let pathContent;
       try {
         const rawPathText = pathData.candidates[0].content.parts[0].text;
-        const pathJsonMatch = rawPathText.match(/\{[\s\S]*\}/);
-        pathContent = JSON.parse(pathJsonMatch[0]);
+        pathContent = extractJSON(rawPathText);
       } catch (error) {
-        throw new Error('Erreur génération parcours adaptatif');
+        throw new Error('Erreur génération parcours adaptatif: ' + error.message);
       }
 
       const { data: learningPath } = await supabase

@@ -43,6 +43,7 @@ import TranslatePage from "./pages/TranslatePage";
 import MindMapPage from "./pages/MindMapPage";
 import CodeStudioPage from "./pages/CodeStudioPage";
 import LearnPage from "./pages/LearnPage";
+import LuvviXLearnPage from "./pages/LuvviXLearnPage";
 import DocsGeneratorPage from "./pages/DocsGeneratorPage";
 import CrawlerPage from "./pages/CrawlerPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
@@ -67,6 +68,7 @@ function App() {
                 <Route path="/mindmap" element={<MindMapPage />} />
                 <Route path="/code-studio" element={<CodeStudioPage />} />
                 <Route path="/learn" element={<LearnPage />} />
+                <Route path="/luvvix-learn" element={<LuvviXLearnPage />} />
                 <Route path="/crawler" element={<CrawlerPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/center" element={<CenterPage />} />

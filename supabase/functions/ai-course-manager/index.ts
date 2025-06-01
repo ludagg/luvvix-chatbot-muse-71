@@ -19,40 +19,43 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { action, courseData, userId, category, difficulty } = await req.json();
-
-    console.log('Action demandée:', action);
+    const { action, courseData, category, difficulty } = await req.json();
 
     if (action === 'generate_course') {
-      // Générer un cours complet avec Gemini
-      const prompt = `Tu es LuvviX AI, un expert pédagogique autonome. Génère un cours complet sur le sujet "${courseData.topic}" pour le niveau "${difficulty}" dans la catégorie "${category}".
+      // Générer un cours complet avec l'IA
+      const prompt = `Tu es LuvviX AI, une IA pédagogique experte. Génère un cours complet sur "${courseData.topic}" dans la catégorie "${category}" niveau "${difficulty}".
 
-Structure JSON requise:
+Retourne un JSON structuré avec :
 {
   "title": "Titre du cours",
-  "description": "Description complète et engageante",
-  "category": "${category}",
-  "difficulty_level": "${difficulty}",
-  "duration_minutes": 120,
-  "learning_objectives": ["Objectif 1", "Objectif 2", "Objectif 3"],
-  "prerequisites": ["Prérequis 1", "Prérequis 2"],
+  "description": "Description engageante",
+  "duration_minutes": nombre_minutes,
+  "learning_objectives": ["objectif1", "objectif2", "objectif3"],
+  "prerequisites": ["prérequis1", "prérequis2"],
   "tags": ["tag1", "tag2", "tag3"],
   "lessons": [
     {
-      "title": "Leçon 1: Introduction",
-      "content": "Contenu détaillé de la leçon avec explications, exemples, et exercices pratiques",
+      "title": "Titre leçon 1",
+      "content": "Contenu détaillé en markdown avec exemples",
       "lesson_order": 1,
-      "duration_minutes": 30,
-      "lesson_type": "theory",
+      "duration_minutes": 15,
+      "lesson_type": "theory"
+    },
+    {
+      "title": "Quiz - Leçon 1",
+      "content": "Questions de validation",
+      "lesson_order": 2,
+      "duration_minutes": 10,
+      "lesson_type": "quiz",
       "quiz": {
-        "title": "Quiz Leçon 1",
+        "title": "Quiz validation",
         "questions": [
           {
             "question": "Question 1?",
             "type": "multiple_choice",
             "options": ["A", "B", "C", "D"],
-            "correct_answer": "A",
-            "explanation": "Explication de la réponse"
+            "correct_answer": 0,
+            "explanation": "Explication"
           }
         ]
       }
@@ -60,53 +63,43 @@ Structure JSON requise:
   ]
 }
 
-Assure-toi que le contenu soit:
-- Pédagogique et progressif
-- Adapté au niveau spécifié
-- Riche en exemples pratiques
-- Incluant 4-6 leçons minimum
-- Avec quiz après chaque leçon`;
+Crée un cours de qualité avec au moins 5 leçons + quiz alternés. Niveau ${difficulty}.`;
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 4000 }
+          generationConfig: { 
+            temperature: 0.7,
+            maxOutputTokens: 8000
+          }
         }),
       });
 
       const geminiData = await response.json();
-      const generatedText = geminiData.candidates[0].content.parts[0].text;
-      
-      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('Format JSON invalide');
-      
-      const courseContent = JSON.parse(jsonMatch[0]);
+      const courseContent = JSON.parse(geminiData.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
 
-      // Créer le cours dans la base de données
-      const { data: course, error: courseError } = await supabase
+      // Insérer le cours dans la base de données
+      const { data: course } = await supabase
         .from('courses')
         .insert({
           title: courseContent.title,
           description: courseContent.description,
-          category: courseContent.category,
-          difficulty_level: courseContent.difficulty_level,
+          category: category,
+          difficulty_level: difficulty,
           duration_minutes: courseContent.duration_minutes,
           learning_objectives: courseContent.learning_objectives,
           prerequisites: courseContent.prerequisites,
           tags: courseContent.tags,
-          ai_generated: true,
-          status: 'active'
+          ai_generated: true
         })
         .select()
         .single();
 
-      if (courseError) throw courseError;
-
-      // Créer les leçons et quiz
+      // Insérer les leçons
       for (const lesson of courseContent.lessons) {
-        const { data: lessonData, error: lessonError } = await supabase
+        const { data: lessonData } = await supabase
           .from('lessons')
           .insert({
             course_id: course.id,
@@ -119,10 +112,8 @@ Assure-toi que le contenu soit:
           .select()
           .single();
 
-        if (lessonError) throw lessonError;
-
-        // Créer le quiz associé
-        if (lesson.quiz) {
+        // Si c'est un quiz, créer le quiz
+        if (lesson.lesson_type === 'quiz' && lesson.quiz) {
           await supabase
             .from('quizzes')
             .insert({
@@ -141,132 +132,117 @@ Assure-toi que le contenu soit:
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    }
 
-    if (action === 'auto_update_courses') {
-      // Analyser et mettre à jour automatiquement les cours
+    } else if (action === 'auto_update_courses') {
+      // Auto-amélioration des cours existants
       const { data: courses } = await supabase
         .from('courses')
         .select('*')
         .eq('ai_generated', true)
-        .eq('status', 'active');
+        .order('ai_last_update', { ascending: true })
+        .limit(5);
 
       for (const course of courses || []) {
-        // Analyser les performances du cours
+        // Analyser les données d'engagement
         const { data: analytics } = await supabase
           .from('learning_analytics')
           .select('*')
-          .eq('course_id', course.id);
+          .eq('course_id', course.id)
+          .gte('timestamp', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
-        if (analytics && analytics.length > 50) {
-          // Si le cours a assez de données, l'analyser
-          const prompt = `Analyse ce cours "${course.title}" basé sur les données d'usage. 
+        if (analytics && analytics.length > 10) {
+          const analysisPrompt = `Analyse ces données d'apprentissage pour le cours "${course.title}":
+          ${JSON.stringify(analytics.slice(0, 20))}
           
-Données analytics: ${JSON.stringify(analytics.slice(0, 20))}
-
-Détermine si le cours nécessite:
-- Mise à jour du contenu
-- Ajustement de difficulté
-- Nouvelles leçons
-- Restructuration
-
-Réponds en JSON:
-{
-  "needs_update": true/false,
-  "reasoning": "Explication détaillée",
-  "modifications": ["type1", "type2"],
-  "confidence_score": 0.8
-}`;
+          Suggère des améliorations pour optimiser l'engagement et la réussite.`;
 
           const analysisResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
+              contents: [{ parts: [{ text: analysisPrompt }] }],
               generationConfig: { temperature: 0.3 }
             }),
           });
 
           const analysisData = await analysisResponse.json();
-          const analysisText = analysisData.candidates[0].content.parts[0].text;
-          
-          try {
-            const analysisResult = JSON.parse(analysisText.match(/\{[\s\S]*\}/)[0]);
-            
-            if (analysisResult.needs_update) {
-              // Enregistrer la suggestion de modification
-              await supabase
-                .from('ai_course_modifications')
-                .insert({
-                  course_id: course.id,
-                  modification_type: 'content_update',
-                  new_data: analysisResult,
-                  reasoning: analysisResult.reasoning,
-                  ai_confidence_score: analysisResult.confidence_score
-                });
-            }
-          } catch (e) {
-            console.error('Erreur analyse cours:', e);
-          }
+          const suggestions = analysisData.candidates[0].content.parts[0].text;
+
+          // Enregistrer les suggestions
+          await supabase
+            .from('ai_course_modifications')
+            .insert({
+              course_id: course.id,
+              modification_type: 'content_update',
+              new_data: { suggestions },
+              reasoning: 'Analyse automatique des données d\'engagement'
+            });
+
+          // Marquer le cours comme analysé
+          await supabase
+            .from('courses')
+            .update({ ai_last_update: new Date().toISOString() })
+            .eq('id', course.id);
         }
       }
 
       return new Response(JSON.stringify({ 
         success: true,
-        message: 'Analyse automatique des cours terminée'
+        analyzed_courses: courses?.length || 0
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    }
 
-    if (action === 'generate_adaptive_path') {
-      // Générer un parcours adaptatif pour l'utilisateur
-      const { data: userEnrollments } = await supabase
+    } else if (action === 'generate_adaptive_path') {
+      const { userId } = await req.json();
+
+      // Analyser le profil de l'utilisateur
+      const { data: enrollments } = await supabase
         .from('enrollments')
         .select('*, courses(*)')
         .eq('user_id', userId);
 
-      const { data: quizResults } = await supabase
-        .from('quiz_results')
+      const { data: analytics } = await supabase
+        .from('learning_analytics')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .order('timestamp', { ascending: false })
+        .limit(50);
 
-      const prompt = `Tu es LuvviX AI. Crée un parcours d'apprentissage personnalisé pour cet utilisateur.
+      const pathPrompt = `Crée un parcours d'apprentissage personnalisé pour cet utilisateur:
 
-Inscriptions actuelles: ${JSON.stringify(userEnrollments)}
-Résultats quiz: ${JSON.stringify(quizResults)}
+Cours terminés: ${JSON.stringify(enrollments?.filter(e => e.completed_at))}
+Activité récente: ${JSON.stringify(analytics?.slice(0, 10))}
 
-Génère un parcours adaptatif en JSON:
+Recommande 3-5 cours dans l'ordre optimal pour progresser. Retourne un JSON:
 {
-  "name": "Nom du parcours personnalisé",
-  "description": "Description du parcours",
-  "recommended_courses": ["course_id1", "course_id2"],
-  "difficulty_progression": "beginner -> intermediate -> advanced",
-  "estimated_duration_weeks": 12,
-  "personalization_reasons": ["raison1", "raison2"]
+  "name": "Nom du parcours",
+  "description": "Description personnalisée",
+  "course_sequence": ["course_id1", "course_id2"],
+  "reasoning": "Pourquoi ce parcours"
 }`;
 
       const pathResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [{ parts: [{ text: pathPrompt }] }],
+          generationConfig: { temperature: 0.6 }
         }),
       });
 
       const pathData = await pathResponse.json();
-      const pathText = pathData.candidates[0].content.parts[0].text;
-      const pathResult = JSON.parse(pathText.match(/\{[\s\S]*\}/)[0]);
+      const pathContent = JSON.parse(pathData.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
 
       // Sauvegarder le parcours
       const { data: learningPath } = await supabase
         .from('learning_paths')
         .insert({
           user_id: userId,
-          name: pathResult.name,
-          description: pathResult.description,
-          course_sequence: pathResult.recommended_courses,
-          ai_personalization: pathResult
+          name: pathContent.name,
+          description: pathContent.description,
+          course_sequence: pathContent.course_sequence,
+          ai_personalization: { reasoning: pathContent.reasoning }
         })
         .select()
         .single();
@@ -279,10 +255,13 @@ Génère un parcours adaptatif en JSON:
       });
     }
 
-    throw new Error('Action non reconnue');
+    return new Response(JSON.stringify({ error: 'Action non reconnue' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
   } catch (error) {
-    console.error('Erreur:', error);
+    console.error('Erreur gestionnaire de cours IA:', error);
     return new Response(JSON.stringify({ 
       error: error.message 
     }), {

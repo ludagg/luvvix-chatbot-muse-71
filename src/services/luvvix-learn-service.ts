@@ -64,7 +64,10 @@ export const luvvixLearnService = {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur récupération cours:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -75,7 +78,10 @@ export const luvvixLearnService = {
       .eq('id', courseId)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur récupération cours:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -86,7 +92,10 @@ export const luvvixLearnService = {
       .eq('course_id', courseId)
       .order('lesson_order');
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur récupération leçons:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -97,23 +106,48 @@ export const luvvixLearnService = {
       .eq('lesson_id', lessonId)
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur récupération quiz:', error);
+      throw error;
+    }
     return data;
   },
 
-  // Gestion des inscriptions
+  // Gestion des inscriptions améliorée
   async enrollInCourse(courseId: string, userId: string) {
+    console.log('Tentative d\'inscription:', { courseId, userId });
+    
+    // Vérifier si l'utilisateur est déjà inscrit
+    const { data: existingEnrollment } = await supabase
+      .from('enrollments')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('course_id', courseId)
+      .maybeSingle();
+
+    if (existingEnrollment) {
+      console.log('Utilisateur déjà inscrit');
+      throw new Error('Vous êtes déjà inscrit à ce cours');
+    }
+
+    // Créer la nouvelle inscription
     const { data, error } = await supabase
       .from('enrollments')
       .insert({
         user_id: userId,
         course_id: courseId,
-        progress_percentage: 0
+        progress_percentage: 0,
+        enrolled_at: new Date().toISOString()
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur inscription:', error);
+      throw error;
+    }
+
+    console.log('Inscription réussie:', data);
 
     // Enregistrer l'activité
     await this.trackActivity(userId, courseId, 'course_enrollment');
@@ -131,15 +165,23 @@ export const luvvixLearnService = {
       .eq('user_id', userId)
       .order('enrolled_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur récupération inscriptions:', error);
+      throw error;
+    }
     return data;
   },
 
   async updateProgress(enrollmentId: string, progressPercentage: number, currentLessonId?: string) {
-    const updateData: any = { progress_percentage: progressPercentage };
+    const updateData: any = { 
+      progress_percentage: progressPercentage,
+      updated_at: new Date().toISOString()
+    };
+    
     if (currentLessonId) {
       updateData.current_lesson_id = currentLessonId;
     }
+    
     if (progressPercentage >= 100) {
       updateData.completed_at = new Date().toISOString();
     }
@@ -151,7 +193,10 @@ export const luvvixLearnService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur mise à jour progression:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -164,12 +209,16 @@ export const luvvixLearnService = {
         quiz_id: quizId,
         score: score,
         answers: answers,
-        attempt_number: attemptNumber
+        attempt_number: attemptNumber,
+        completed_at: new Date().toISOString()
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur soumission quiz:', error);
+      throw error;
+    }
 
     // Enregistrer l'activité
     await this.trackActivity(userId, null, 'quiz_completion', { quiz_id: quizId, score });
@@ -188,7 +237,10 @@ export const luvvixLearnService = {
     }
 
     const { data, error } = await query.order('completed_at', { ascending: false });
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur récupération résultats quiz:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -203,7 +255,10 @@ export const luvvixLearnService = {
       .eq('user_id', userId)
       .order('issued_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur récupération certificats:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -212,7 +267,10 @@ export const luvvixLearnService = {
       body: { userId, courseId }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur génération certificat:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -224,7 +282,10 @@ export const luvvixLearnService = {
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur récupération parcours:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -236,7 +297,10 @@ export const luvvixLearnService = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur génération parcours adaptatif:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -248,10 +312,13 @@ export const luvvixLearnService = {
         user_id: userId,
         course_id: courseId,
         action_type: actionType,
-        session_data: sessionData
+        session_data: sessionData,
+        timestamp: new Date().toISOString()
       });
 
-    if (error) console.error('Erreur tracking:', error);
+    if (error) {
+      console.error('Erreur tracking:', error);
+    }
   },
 
   async getUserAnalytics(userId: string) {
@@ -262,7 +329,10 @@ export const luvvixLearnService = {
       .order('timestamp', { ascending: false })
       .limit(50);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur récupération analytics:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -276,12 +346,17 @@ export const luvvixLearnService = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur chat IA:', error);
+      throw error;
+    }
     return data;
   },
 
   // Génération de cours
   async generateCourse(topic: string, category: string, difficulty: string) {
+    console.log('Génération de cours:', { topic, category, difficulty });
+    
     const { data, error } = await supabase.functions.invoke('ai-course-manager', {
       body: { 
         action: 'generate_course',
@@ -291,7 +366,10 @@ export const luvvixLearnService = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur génération cours:', error);
+      throw error;
+    }
     return data;
   },
 
@@ -301,7 +379,23 @@ export const luvvixLearnService = {
       body: { action: 'auto_update_courses' }
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erreur analyse automatique:', error);
+      throw error;
+    }
+    return data;
+  },
+
+  // Génération automatique horaire
+  async triggerHourlyGeneration() {
+    const { data, error } = await supabase.functions.invoke('ai-course-manager', {
+      body: { action: 'auto_generate_hourly' }
+    });
+
+    if (error) {
+      console.error('Erreur génération horaire:', error);
+      throw error;
+    }
     return data;
   }
 };

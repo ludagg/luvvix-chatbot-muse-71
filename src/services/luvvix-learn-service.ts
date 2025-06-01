@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Course {
@@ -49,26 +48,31 @@ export interface Enrollment {
 export const luvvixLearnService = {
   // Gestion des cours
   async getCourses(category?: string, difficulty?: string) {
-    let query = supabase
-      .from('courses')
-      .select('*')
-      .eq('status', 'active')
-      .order('created_at', { ascending: false });
+    try {
+      let query = supabase
+        .from('courses')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
 
-    if (category && category !== 'Tous') {
-      query = query.eq('category', category);
-    }
+      if (category && category !== 'Tous') {
+        query = query.eq('category', category);
+      }
 
-    if (difficulty && difficulty !== 'Tous') {
-      query = query.eq('difficulty_level', difficulty);
-    }
+      if (difficulty && difficulty !== 'Tous') {
+        query = query.eq('difficulty_level', difficulty);
+      }
 
-    const { data, error } = await query;
-    if (error) {
-      console.error('Erreur récupération cours:', error);
-      throw error;
+      const { data, error } = await query;
+      if (error) {
+        console.error('Erreur récupération cours:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Erreur getCourses:', error);
+      return [];
     }
-    return data;
   },
 
   async getCourse(courseId: string) {
@@ -96,7 +100,7 @@ export const luvvixLearnService = {
       console.error('Erreur récupération leçons:', error);
       throw error;
     }
-    return data;
+    return data || [];
   },
 
   async getLessonQuiz(lessonId: string) {
@@ -113,63 +117,79 @@ export const luvvixLearnService = {
     return data;
   },
 
-  // Gestion des inscriptions améliorée
+  // Gestion des inscriptions corrigée
   async enrollInCourse(courseId: string, userId: string) {
-    console.log('Tentative d\'inscription:', { courseId, userId });
-    
-    // Vérifier si l'utilisateur est déjà inscrit
-    const { data: existingEnrollment } = await supabase
-      .from('enrollments')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('course_id', courseId)
-      .maybeSingle();
+    try {
+      console.log('🎯 Tentative d\'inscription:', { courseId, userId });
+      
+      // Vérifier si l'utilisateur est déjà inscrit
+      const { data: existingEnrollment, error: checkError } = await supabase
+        .from('enrollments')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .maybeSingle();
 
-    if (existingEnrollment) {
-      console.log('Utilisateur déjà inscrit');
-      throw new Error('Vous êtes déjà inscrit à ce cours');
-    }
+      if (checkError) {
+        console.error('Erreur vérification inscription:', checkError);
+        throw checkError;
+      }
 
-    // Créer la nouvelle inscription
-    const { data, error } = await supabase
-      .from('enrollments')
-      .insert({
-        user_id: userId,
-        course_id: courseId,
-        progress_percentage: 0,
-        enrolled_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+      if (existingEnrollment) {
+        console.log('✅ Utilisateur déjà inscrit');
+        throw new Error('Vous êtes déjà inscrit à ce cours');
+      }
 
-    if (error) {
-      console.error('Erreur inscription:', error);
+      // Créer la nouvelle inscription
+      const { data, error } = await supabase
+        .from('enrollments')
+        .insert({
+          user_id: userId,
+          course_id: courseId,
+          progress_percentage: 0,
+          enrolled_at: new Date().toISOString(),
+          ai_recommendations: {}
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Erreur inscription:', error);
+        throw error;
+      }
+
+      console.log('✅ Inscription réussie:', data);
+
+      // Enregistrer l'activité
+      await this.trackActivity(userId, courseId, 'course_enrollment');
+      
+      return data;
+    } catch (error) {
+      console.error('❌ Erreur dans enrollInCourse:', error);
       throw error;
     }
-
-    console.log('Inscription réussie:', data);
-
-    // Enregistrer l'activité
-    await this.trackActivity(userId, courseId, 'course_enrollment');
-    
-    return data;
   },
 
   async getUserEnrollments(userId: string) {
-    const { data, error } = await supabase
-      .from('enrollments')
-      .select(`
-        *,
-        courses (*)
-      `)
-      .eq('user_id', userId)
-      .order('enrolled_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('enrollments')
+        .select(`
+          *,
+          courses (*)
+        `)
+        .eq('user_id', userId)
+        .order('enrolled_at', { ascending: false });
 
-    if (error) {
-      console.error('Erreur récupération inscriptions:', error);
-      throw error;
+      if (error) {
+        console.error('Erreur récupération inscriptions:', error);
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.error('Erreur getUserEnrollments:', error);
+      return [];
     }
-    return data;
   },
 
   async updateProgress(enrollmentId: string, progressPercentage: number, currentLessonId?: string) {
@@ -220,9 +240,7 @@ export const luvvixLearnService = {
       throw error;
     }
 
-    // Enregistrer l'activité
     await this.trackActivity(userId, null, 'quiz_completion', { quiz_id: quizId, score });
-
     return data;
   },
 
@@ -241,7 +259,7 @@ export const luvvixLearnService = {
       console.error('Erreur récupération résultats quiz:', error);
       throw error;
     }
-    return data;
+    return data || [];
   },
 
   // Certificats
@@ -259,7 +277,7 @@ export const luvvixLearnService = {
       console.error('Erreur récupération certificats:', error);
       throw error;
     }
-    return data;
+    return data || [];
   },
 
   async generateCertificate(userId: string, courseId: string) {
@@ -286,7 +304,7 @@ export const luvvixLearnService = {
       console.error('Erreur récupération parcours:', error);
       throw error;
     }
-    return data;
+    return data || [];
   },
 
   async generateAdaptivePath(userId: string) {
@@ -306,18 +324,22 @@ export const luvvixLearnService = {
 
   // Analytics et suivi
   async trackActivity(userId: string, courseId: string | null, actionType: string, sessionData: any = {}) {
-    const { error } = await supabase
-      .from('learning_analytics')
-      .insert({
-        user_id: userId,
-        course_id: courseId,
-        action_type: actionType,
-        session_data: sessionData,
-        timestamp: new Date().toISOString()
-      });
+    try {
+      const { error } = await supabase
+        .from('learning_analytics')
+        .insert({
+          user_id: userId,
+          course_id: courseId,
+          action_type: actionType,
+          session_data: sessionData,
+          timestamp: new Date().toISOString()
+        });
 
-    if (error) {
-      console.error('Erreur tracking:', error);
+      if (error) {
+        console.error('Erreur tracking:', error);
+      }
+    } catch (error) {
+      console.error('Erreur dans trackActivity:', error);
     }
   },
 
@@ -333,7 +355,7 @@ export const luvvixLearnService = {
       console.error('Erreur récupération analytics:', error);
       throw error;
     }
-    return data;
+    return data || [];
   },
 
   // IA Assistant
@@ -355,22 +377,29 @@ export const luvvixLearnService = {
 
   // Génération de cours
   async generateCourse(topic: string, category: string, difficulty: string) {
-    console.log('Génération de cours:', { topic, category, difficulty });
-    
-    const { data, error } = await supabase.functions.invoke('ai-course-manager', {
-      body: { 
-        action: 'generate_course',
-        courseData: { topic },
-        category,
-        difficulty
-      }
-    });
+    try {
+      console.log('🚀 Génération de cours:', { topic, category, difficulty });
+      
+      const { data, error } = await supabase.functions.invoke('ai-course-manager', {
+        body: { 
+          action: 'generate_course',
+          courseData: { topic },
+          category,
+          difficulty
+        }
+      });
 
-    if (error) {
-      console.error('Erreur génération cours:', error);
+      if (error) {
+        console.error('❌ Erreur génération cours:', error);
+        throw error;
+      }
+      
+      console.log('✅ Cours généré avec succès');
+      return data;
+    } catch (error) {
+      console.error('❌ Erreur dans generateCourse:', error);
       throw error;
     }
-    return data;
   },
 
   // Auto-amélioration des cours

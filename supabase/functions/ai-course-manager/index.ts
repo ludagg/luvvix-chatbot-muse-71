@@ -19,135 +19,238 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { action, courseData, category, difficulty } = await req.json();
+    const { action, courseData, category, difficulty, userId } = await req.json();
 
     if (action === 'generate_course') {
-      console.log('Génération d\'un nouveau cours:', courseData.topic);
+      console.log('🎯 Génération d\'un nouveau cours:', courseData.topic);
       
-      // Prompt amélioré pour des cours plus complets
-      const prompt = `Tu es LuvviX AI, une IA pédagogique experte. Génère un cours ULTRA-COMPLET sur "${courseData.topic}" dans la catégorie "${category}" niveau "${difficulty}".
+      // Étape 1: Générer le plan du cours
+      const planPrompt = `Tu es LuvviX AI, expert pédagogique. Crée un PLAN DÉTAILLÉ pour un cours sur "${courseData.topic}" (${category}, niveau ${difficulty}).
 
-Le cours doit être EXTRÊMEMENT DÉTAILLÉ avec:
-
-STRUCTURE OBLIGATOIRE:
+Réponds UNIQUEMENT avec un JSON valide dans ce format exact:
 {
-  "title": "Titre accrocheur du cours",
-  "description": "Description captivante de 2-3 phrases",
-  "duration_minutes": nombre_minutes_total,
-  "learning_objectives": ["objectif concret 1", "objectif concret 2", "objectif concret 3", "objectif concret 4"],
+  "title": "Titre du cours",
+  "description": "Description en 2-3 phrases",
+  "duration_minutes": 240,
+  "learning_objectives": ["objectif 1", "objectif 2", "objectif 3"],
   "prerequisites": ["prérequis 1", "prérequis 2"],
-  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
-  "lessons": [
+  "tags": ["tag1", "tag2", "tag3"],
+  "lessons_plan": [
     {
-      "title": "Introduction et concepts fondamentaux",
-      "content": "CONTENU TRÈS DÉTAILLÉ avec explications, exemples concrets, analogies. Minimum 800 mots avec mise en forme markdown.",
+      "title": "Introduction aux concepts",
       "lesson_order": 1,
-      "duration_minutes": 25,
-      "lesson_type": "theory"
+      "duration_minutes": 30,
+      "lesson_type": "theory",
+      "key_points": ["point 1", "point 2", "point 3"]
     },
     {
-      "title": "Quiz de validation - Introduction",
-      "content": "Questions pour valider la compréhension des concepts de base",
+      "title": "Quiz - Validation des concepts",
       "lesson_order": 2,
       "duration_minutes": 15,
       "lesson_type": "quiz",
-      "quiz": {
-        "title": "Validation des concepts fondamentaux",
-        "questions": [
-          {
-            "question": "Question claire et précise?",
-            "type": "multiple_choice",
-            "options": ["Réponse A détaillée", "Réponse B détaillée", "Réponse C détaillée", "Réponse D détaillée"],
-            "correct_answer": 0,
-            "explanation": "Explication détaillée de pourquoi cette réponse est correcte"
-          }
-        ]
-      }
+      "quiz_topics": ["sujet 1", "sujet 2"]
     }
   ]
 }
 
-RÈGLES STRICTES:
-- Minimum 8 leçons (4 théorie + 4 quiz alternés)
-- Chaque leçon théorique: 800+ mots minimum
-- Contenu en markdown avec titres, listes, exemples
-- Quiz avec 5 questions minimum chacun
-- Progression logique et pédagogique
-- Exemples pratiques et cas d'usage réels
-- Niveau ${difficulty} respecté scrupuleusement
+IMPORTANT: Assure-toi que le JSON est parfaitement valide. Minimum 6 leçons alternant théorie/quiz.`;
 
-CRÉÉ UN COURS COMPLET ET PROFESSIONNEL!`;
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+      const planResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [{ parts: [{ text: planPrompt }] }],
           generationConfig: { 
-            temperature: 0.8,
-            maxOutputTokens: 8000
+            temperature: 0.7,
+            maxOutputTokens: 2000
           }
         }),
       });
 
-      const geminiData = await response.json();
-      const courseContent = JSON.parse(geminiData.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
+      if (!planResponse.ok) {
+        throw new Error(`Erreur Gemini plan: ${planResponse.status}`);
+      }
 
-      console.log('Cours généré, insertion en base...');
+      const planData = await planResponse.json();
+      console.log('📋 Plan généré par Gemini');
+      
+      let coursePlan;
+      try {
+        const rawText = planData.candidates[0].content.parts[0].text;
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error('Aucun JSON trouvé dans la réponse');
+        }
+        coursePlan = JSON.parse(jsonMatch[0]);
+      } catch (parseError) {
+        console.error('Erreur parsing plan:', parseError);
+        throw new Error('Format de réponse invalide de Gemini');
+      }
 
-      // Insérer le cours dans la base de données
+      // Insérer le cours d'abord
+      console.log('💾 Insertion du cours en base...');
       const { data: course, error: courseError } = await supabase
         .from('courses')
         .insert({
-          title: courseContent.title,
-          description: courseContent.description,
+          title: coursePlan.title,
+          description: coursePlan.description,
           category: category,
           difficulty_level: difficulty,
-          duration_minutes: courseContent.duration_minutes,
-          learning_objectives: courseContent.learning_objectives,
-          prerequisites: courseContent.prerequisites,
-          tags: courseContent.tags,
+          duration_minutes: coursePlan.duration_minutes,
+          learning_objectives: coursePlan.learning_objectives,
+          prerequisites: coursePlan.prerequisites,
+          tags: coursePlan.tags,
           ai_generated: true,
           status: 'active'
         })
         .select()
         .single();
 
-      if (courseError) throw courseError;
+      if (courseError) {
+        console.error('Erreur insertion cours:', courseError);
+        throw courseError;
+      }
 
-      // Insérer les leçons
-      for (const lesson of courseContent.lessons) {
-        const { data: lessonData, error: lessonError } = await supabase
-          .from('lessons')
-          .insert({
-            course_id: course.id,
-            title: lesson.title,
-            content: lesson.content,
-            lesson_order: lesson.lesson_order,
-            duration_minutes: lesson.duration_minutes,
-            lesson_type: lesson.lesson_type
-          })
-          .select()
-          .single();
+      console.log('✅ Cours créé:', course.title);
 
-        if (lessonError) throw lessonError;
+      // Étape 2: Générer chaque leçon individuellement
+      for (const lessonPlan of coursePlan.lessons_plan) {
+        console.log(`📝 Génération leçon: ${lessonPlan.title}`);
+        
+        if (lessonPlan.lesson_type === 'theory') {
+          // Générer le contenu théorique détaillé
+          const contentPrompt = `Tu es LuvviX AI. Génère le CONTENU COMPLET pour la leçon "${lessonPlan.title}" du cours "${coursePlan.title}".
 
-        // Si c'est un quiz, créer le quiz
-        if (lesson.lesson_type === 'quiz' && lesson.quiz) {
+Points clés à couvrir: ${lessonPlan.key_points.join(', ')}
+
+Crée un contenu de 1000+ mots en Markdown avec:
+- Introduction engageante
+- Explications détaillées avec exemples
+- Analogies et cas pratiques
+- Mise en forme markdown (titres, listes, code si pertinent)
+- Résumé des points clés
+
+Niveau: ${difficulty}. Sois pédagogique et précis.`;
+
+          const contentResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: contentPrompt }] }],
+              generationConfig: { 
+                temperature: 0.8,
+                maxOutputTokens: 4000
+              }
+            }),
+          });
+
+          const contentData = await contentResponse.json();
+          const lessonContent = contentData.candidates[0].content.parts[0].text;
+
+          // Insérer la leçon
+          const { data: lesson, error: lessonError } = await supabase
+            .from('lessons')
+            .insert({
+              course_id: course.id,
+              title: lessonPlan.title,
+              content: lessonContent,
+              lesson_order: lessonPlan.lesson_order,
+              duration_minutes: lessonPlan.duration_minutes,
+              lesson_type: lessonPlan.lesson_type
+            })
+            .select()
+            .single();
+
+          if (lessonError) {
+            console.error('Erreur insertion leçon:', lessonError);
+            continue;
+          }
+
+        } else if (lessonPlan.lesson_type === 'quiz') {
+          // Générer le quiz
+          const quizPrompt = `Génère un quiz pour valider "${lessonPlan.title}" sur les sujets: ${lessonPlan.quiz_topics?.join(', ')}.
+
+Réponds UNIQUEMENT avec un JSON valide:
+{
+  "questions": [
+    {
+      "question": "Question claire?",
+      "type": "multiple_choice",
+      "options": ["A", "B", "C", "D"],
+      "correct_answer": 0,
+      "explanation": "Pourquoi cette réponse"
+    }
+  ]
+}
+
+Génère 5 questions de difficulté ${difficulty}.`;
+
+          const quizResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: quizPrompt }] }],
+              generationConfig: { 
+                temperature: 0.6,
+                maxOutputTokens: 2000
+              }
+            }),
+          });
+
+          const quizData = await quizResponse.json();
+          
+          let quizContent;
+          try {
+            const rawQuizText = quizData.candidates[0].content.parts[0].text;
+            const quizJsonMatch = rawQuizText.match(/\{[\s\S]*\}/);
+            if (quizJsonMatch) {
+              quizContent = JSON.parse(quizJsonMatch[0]);
+            } else {
+              console.log('⚠️ Quiz non généré pour:', lessonPlan.title);
+              continue;
+            }
+          } catch (quizParseError) {
+            console.log('⚠️ Erreur parsing quiz:', quizParseError);
+            continue;
+          }
+
+          // Insérer la leçon quiz
+          const { data: lesson, error: lessonError } = await supabase
+            .from('lessons')
+            .insert({
+              course_id: course.id,
+              title: lessonPlan.title,
+              content: 'Quiz de validation des connaissances',
+              lesson_order: lessonPlan.lesson_order,
+              duration_minutes: lessonPlan.duration_minutes,
+              lesson_type: lessonPlan.lesson_type
+            })
+            .select()
+            .single();
+
+          if (lessonError) {
+            console.error('Erreur insertion leçon quiz:', lessonError);
+            continue;
+          }
+
+          // Insérer le quiz
           const { error: quizError } = await supabase
             .from('quizzes')
             .insert({
-              lesson_id: lessonData.id,
-              title: lesson.quiz.title,
-              questions: lesson.quiz.questions,
-              passing_score: 70
+              lesson_id: lesson.id,
+              title: lessonPlan.title,
+              questions: quizContent.questions,
+              passing_score: 70,
+              max_attempts: 3
             });
 
-          if (quizError) throw quizError;
+          if (quizError) {
+            console.error('Erreur insertion quiz:', quizError);
+          }
         }
       }
 
-      console.log('Cours créé avec succès:', course.title);
+      console.log('🎉 Cours généré avec succès:', course.title);
 
       return new Response(JSON.stringify({ 
         success: true, 
@@ -169,7 +272,12 @@ CRÉÉ UN COURS COMPLET ET PROFESSIONNEL!`;
         'Programmation orientée objet',
         'Introduction au Cloud Computing',
         'Git et contrôle de version',
-        'Algorithmes et structures de données'
+        'Algorithmes et structures de données',
+        'JavaScript ES6+ et fonctionnalités modernes',
+        'Design UX/UI pour développeurs',
+        'Docker et conteneurisation',
+        'APIs REST et GraphQL',
+        'Testing et qualité logicielle'
       ];
 
       const categories = [
@@ -186,77 +294,21 @@ CRÉÉ UN COURS COMPLET ET PROFESSIONNEL!`;
       const randomCategory = categories[Math.floor(Math.random() * categories.length)];
       const randomDifficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
 
-      // Générer le cours automatiquement
-      const autoGenRequest = {
-        action: 'generate_course',
-        courseData: { topic: randomTopic },
-        category: randomCategory,
-        difficulty: randomDifficulty
-      };
+      console.log('🤖 Génération automatique:', randomTopic);
 
-      // Relancer la fonction récursivement
-      return await serve(new Request(req.url, {
+      // Appel récursif pour générer le cours
+      const autoGenRequest = new Request(req.url, {
         method: 'POST',
-        headers: req.headers,
-        body: JSON.stringify(autoGenRequest)
-      }));
-
-    } else if (action === 'auto_update_courses') {
-      // Auto-amélioration des cours existants
-      const { data: courses } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('ai_generated', true)
-        .order('ai_last_update', { ascending: true })
-        .limit(3);
-
-      for (const course of courses || []) {
-        const { data: analytics } = await supabase
-          .from('learning_analytics')
-          .select('*')
-          .eq('course_id', course.id)
-          .gte('timestamp', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
-
-        if (analytics && analytics.length > 5) {
-          const analysisPrompt = `Analyse ces données d'apprentissage pour le cours "${course.title}":
-          ${JSON.stringify(analytics.slice(0, 10))}
-          
-          Suggère des améliorations concrètes pour optimiser l'engagement et la réussite.`;
-
-          const analysisResponse = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: analysisPrompt }] }],
-              generationConfig: { temperature: 0.3 }
-            }),
-          });
-
-          const analysisData = await analysisResponse.json();
-          const suggestions = analysisData.candidates[0].content.parts[0].text;
-
-          await supabase
-            .from('ai_course_modifications')
-            .insert({
-              course_id: course.id,
-              modification_type: 'content_update',
-              new_data: { suggestions },
-              reasoning: 'Analyse automatique des données d\'engagement'
-            });
-
-          await supabase
-            .from('courses')
-            .update({ ai_last_update: new Date().toISOString() })
-            .eq('id', course.id);
-        }
-      }
-
-      return new Response(JSON.stringify({ 
-        success: true,
-        analyzed_courses: courses?.length || 0
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generate_course',
+          courseData: { topic: randomTopic },
+          category: randomCategory,
+          difficulty: randomDifficulty
+        })
       });
+
+      return await serve(autoGenRequest);
 
     } else if (action === 'generate_adaptive_path') {
       const { userId } = await req.json();
@@ -296,7 +348,14 @@ Recommande 3-5 cours dans l'ordre optimal pour progresser. Retourne un JSON:
       });
 
       const pathData = await pathResponse.json();
-      const pathContent = JSON.parse(pathData.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/)[0]);
+      let pathContent;
+      try {
+        const rawPathText = pathData.candidates[0].content.parts[0].text;
+        const pathJsonMatch = rawPathText.match(/\{[\s\S]*\}/);
+        pathContent = JSON.parse(pathJsonMatch[0]);
+      } catch (error) {
+        throw new Error('Erreur génération parcours adaptatif');
+      }
 
       const { data: learningPath } = await supabase
         .from('learning_paths')
@@ -324,9 +383,9 @@ Recommande 3-5 cours dans l'ordre optimal pour progresser. Retourne un JSON:
     });
 
   } catch (error) {
-    console.error('Erreur gestionnaire de cours IA:', error);
+    console.error('❌ Erreur gestionnaire de cours IA:', error);
     return new Response(JSON.stringify({ 
-      error: error.message 
+      error: error.message || 'Erreur interne du serveur'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

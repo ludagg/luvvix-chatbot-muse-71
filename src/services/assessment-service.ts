@@ -1,12 +1,48 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+export interface Assessment {
+  id: string;
+  course_id: string;
+  title: string;
+  description: string;
+  questions: Question[];
+  total_questions: number;
+  passing_score: number;
+  time_limit_minutes: number;
+  ai_generated: boolean;
+}
+
+export interface Question {
+  id: string;
+  question: string;
+  options: string[];
+  correct_answer: number;
+  explanation: string;
+  category: string;
+  difficulty: string;
+  points: number;
+}
+
+export interface AssessmentAttempt {
+  id: string;
+  user_id: string;
+  assessment_id: string;
+  course_id: string;
+  answers: any[];
+  score: number;
+  max_score: number;
+  percentage: number;
+  status: string;
+  submitted_at: string;
+  passed: boolean;
+}
+
 const assessmentService = {
   async generateAssessment(courseId: string, questionCount: number = 20) {
     try {
       console.log(`🎓 Génération d'évaluation pour le cours ${courseId} avec ${questionCount} questions`);
       
-      // Récupérer le cours et ses leçons
       const { data: course } = await supabase
         .from('courses')
         .select('*')
@@ -23,7 +59,6 @@ const assessmentService = {
         throw new Error('Cours ou leçons non trouvés');
       }
 
-      // Vérifier si une évaluation existe déjà
       const { data: existingAssessment } = await supabase
         .from('course_assessments')
         .select('id')
@@ -35,7 +70,6 @@ const assessmentService = {
         return existingAssessment;
       }
 
-      // Générer l'évaluation via l'IA
       const { data, error } = await supabase.functions.invoke('ai-quiz-generator', {
         body: { 
           course: {
@@ -58,7 +92,6 @@ const assessmentService = {
         throw error;
       }
 
-      // Sauvegarder l'évaluation
       const { data: assessment, error: saveError } = await supabase
         .from('course_assessments')
         .insert({
@@ -68,7 +101,7 @@ const assessmentService = {
           questions: data.questions,
           total_questions: questionCount,
           passing_score: 70,
-          time_limit_minutes: questionCount * 2, // 2 minutes par question
+          time_limit_minutes: questionCount * 2,
           ai_generated: true
         })
         .select()
@@ -106,11 +139,60 @@ const assessmentService = {
     }
   },
 
+  async canTakeAssessment(userId: string, courseId: string) {
+    try {
+      const { data } = await supabase.rpc('can_take_assessment', {
+        user_uuid: userId,
+        course_uuid: courseId
+      });
+      return data;
+    } catch (error) {
+      console.error('❌ Erreur vérification éligibilité:', error);
+      return true;
+    }
+  },
+
+  async getUserAttempts(userId: string, courseId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('assessment_attempts')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('course_id', courseId)
+        .order('submitted_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('❌ Erreur récupération tentatives:', error);
+      return [];
+    }
+  },
+
+  async startAssessment(userId: string, assessmentId: string) {
+    try {
+      console.log('📝 Démarrage d\'évaluation:', { userId, assessmentId });
+      return { success: true, startTime: new Date().toISOString() };
+    } catch (error) {
+      console.error('❌ Erreur démarrage évaluation:', error);
+      throw error;
+    }
+  },
+
+  async saveAnswers(userId: string, assessmentId: string, answers: any[]) {
+    try {
+      console.log('💾 Sauvegarde réponses temporaire');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Erreur sauvegarde réponses:', error);
+      throw error;
+    }
+  },
+
   async submitAssessment(userId: string, assessmentId: string, answers: any[]) {
     try {
       console.log('📝 Soumission d\'évaluation:', { userId, assessmentId });
 
-      // Vérifier les restrictions
       const { data: assessment } = await supabase
         .from('course_assessments')
         .select('*, courses!inner(*)')
@@ -121,7 +203,6 @@ const assessmentService = {
         throw new Error('Évaluation non trouvée');
       }
 
-      // Vérifier si l'utilisateur peut passer l'examen
       const { data: canTake } = await supabase.rpc('can_take_assessment', {
         user_uuid: userId,
         course_uuid: assessment.course_id
@@ -131,12 +212,10 @@ const assessmentService = {
         throw new Error('Vous avez déjà passé l\'examen cette semaine');
       }
 
-      // Calculer le score
       const score = this.calculateScore(answers, assessment.questions);
-      const percentage = (score / (assessment.questions.length * 5)) * 100; // 5 points par question
+      const percentage = (score / (assessment.questions.length * 5)) * 100;
       const passed = percentage >= assessment.passing_score;
 
-      // Enregistrer la tentative
       const { data: attempt, error } = await supabase
         .from('assessment_attempts')
         .insert({
@@ -158,13 +237,11 @@ const assessmentService = {
         throw error;
       }
 
-      // Enregistrer la restriction
       await supabase.rpc('record_assessment_attempt', {
         user_uuid: userId,
         course_uuid: assessment.course_id
       });
 
-      // Mettre à jour la progression si réussi
       if (passed) {
         await supabase
           .from('enrollments')

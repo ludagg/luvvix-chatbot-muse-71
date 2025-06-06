@@ -31,6 +31,10 @@ serve(async (req) => {
       return await generateHourlyCourse();
     }
 
+    if (action === 'cleanup_invalid_courses') {
+      return await cleanupInvalidCourses();
+    }
+
     return new Response(
       JSON.stringify({ error: 'Action non reconnue' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -44,18 +48,256 @@ serve(async (req) => {
   }
 });
 
+async function cleanupInvalidCourses() {
+  console.log('🧹 Nettoyage des cours invalides...');
+  
+  try {
+    // Supprimer les cours sans leçons valides
+    const { data: coursesWithoutLessons } = await supabase
+      .from('courses')
+      .select(`
+        id,
+        title,
+        lessons!inner(id)
+      `)
+      .having('count(lessons.id)', 'eq', 0);
+
+    if (coursesWithoutLessons && coursesWithoutLessons.length > 0) {
+      const courseIds = coursesWithoutLessons.map(c => c.id);
+      
+      await supabase
+        .from('courses')
+        .delete()
+        .in('id', courseIds);
+      
+      console.log(`🗑️ Supprimé ${courseIds.length} cours sans leçons`);
+    }
+
+    // Créer un cours d'exemple complet
+    const exampleCourse = await createExampleCourse();
+    
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: 'Nettoyage terminé et cours d\'exemple créé',
+        exampleCourse
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('❌ Erreur nettoyage:', error);
+    throw error;
+  }
+}
+
+async function createExampleCourse() {
+  console.log('📚 Création du cours d\'exemple...');
+  
+  const courseData = {
+    title: "JavaScript Moderne : ES6+ et Développement Web",
+    description: "Maîtrisez JavaScript moderne avec ES6+, les fonctions asynchrones, et les meilleures pratiques du développement web. Ce cours complet vous guidera des concepts de base aux techniques avancées.",
+    category: "Programmation Web",
+    difficulty_level: "intermediate",
+    duration_minutes: 600,
+    learning_objectives: [
+      "Maîtriser les nouvelles fonctionnalités ES6+",
+      "Comprendre la programmation asynchrone",
+      "Utiliser les modules JavaScript",
+      "Optimiser les performances web",
+      "Appliquer les meilleures pratiques"
+    ],
+    prerequisites: ["HTML", "CSS", "JavaScript de base"],
+    tags: ["javascript", "es6", "web", "frontend", "programmation"],
+    ai_generated: true,
+    status: 'active'
+  };
+
+  const { data: course, error: courseError } = await supabase
+    .from('courses')
+    .insert(courseData)
+    .select()
+    .single();
+
+  if (courseError) {
+    throw courseError;
+  }
+
+  // Créer les leçons
+  const lessons = [
+    {
+      course_id: course.id,
+      title: "Introduction à ES6+ et les nouvelles fonctionnalités",
+      content: `<h1>Introduction à ES6+ et les nouvelles fonctionnalités</h1>
+      
+<h2>Qu'est-ce qu'ES6+ ?</h2>
+<p>ECMAScript 6 (ES2015) et ses versions ultérieures ont révolutionné JavaScript. Ces nouvelles spécifications apportent une syntaxe moderne, plus claire et plus puissante.</p>
+
+<h3>Les principales nouveautés ES6+</h3>
+<ul>
+  <li><strong>Let et Const</strong> : Nouvelles déclarations de variables</li>
+  <li><strong>Arrow Functions</strong> : Syntaxe simplifiée des fonctions</li>
+  <li><strong>Template Literals</strong> : Chaînes de caractères avancées</li>
+  <li><strong>Destructuring</strong> : Extraction facilitée des données</li>
+</ul>
+
+<h3>Exemple pratique</h3>
+<pre><code>
+// ES5 (ancienne syntaxe)
+var name = 'John';
+var greeting = 'Hello ' + name + '!';
+
+// ES6+ (nouvelle syntaxe)
+const name = 'John';
+const greeting = \`Hello \${name}!\`;
+</code></pre>
+
+<h2>Pourquoi adopter ES6+ ?</h2>
+<p>Les avantages sont nombreux : code plus lisible, moins d'erreurs, meilleures performances, et compatibilité avec les frameworks modernes.</p>`,
+      lesson_order: 1,
+      duration_minutes: 60,
+      lesson_type: 'theory'
+    },
+    {
+      course_id: course.id,
+      title: "Variables et Portée : Let, Const, et Var",
+      content: `<h1>Variables et Portée : Let, Const, et Var</h1>
+
+<h2>Les trois types de déclarations</h2>
+
+<h3>Var - L'ancienne méthode</h3>
+<pre><code>
+var x = 1;
+if (true) {
+  var x = 2; // Même variable !
+  console.log(x); // 2
+}
+console.log(x); // 2 - La variable a été modifiée
+</code></pre>
+
+<h3>Let - Portée de bloc</h3>
+<pre><code>
+let y = 1;
+if (true) {
+  let y = 2; // Variable différente dans ce bloc
+  console.log(y); // 2
+}
+console.log(y); // 1 - Variable originale inchangée
+</code></pre>
+
+<h3>Const - Valeurs constantes</h3>
+<pre><code>
+const API_URL = 'https://api.example.com';
+// API_URL = 'autre-url'; // Erreur !
+
+const user = { name: 'John' };
+user.name = 'Jane'; // OK - on modifie le contenu, pas la référence
+</code></pre>
+
+<h2>Bonnes pratiques</h2>
+<ul>
+  <li>Utilisez <code>const</code> par défaut</li>
+  <li>Utilisez <code>let</code> quand vous devez réassigner</li>
+  <li>Évitez <code>var</code> en ES6+</li>
+</ul>`,
+      lesson_order: 2,
+      duration_minutes: 45,
+      lesson_type: 'theory'
+    },
+    {
+      course_id: course.id,
+      title: "Fonctions Fléchées et Méthodes Avancées",
+      content: `<h1>Fonctions Fléchées et Méthodes Avancées</h1>
+
+<h2>Syntaxe des Arrow Functions</h2>
+
+<h3>Transformation progressive</h3>
+<pre><code>
+// Fonction classique
+function add(a, b) {
+  return a + b;
+}
+
+// Arrow function longue
+const add = (a, b) => {
+  return a + b;
+};
+
+// Arrow function courte
+const add = (a, b) => a + b;
+
+// Un seul paramètre
+const square = x => x * x;
+
+// Aucun paramètre
+const random = () => Math.random();
+</code></pre>
+
+<h2>Contexte 'this'</h2>
+<p>Les arrow functions héritent du contexte 'this' de leur environnement :</p>
+
+<pre><code>
+class Timer {
+  constructor() {
+    this.seconds = 0;
+  }
+  
+  start() {
+    // Arrow function garde le 'this' de la classe
+    setInterval(() => {
+      this.seconds++;
+      console.log(\`Secondes: \${this.seconds}\`);
+    }, 1000);
+  }
+}
+</code></pre>
+
+<h2>Méthodes de tableau avancées</h2>
+<pre><code>
+const numbers = [1, 2, 3, 4, 5];
+
+// Map - transformation
+const doubled = numbers.map(n => n * 2);
+
+// Filter - filtrage
+const evens = numbers.filter(n => n % 2 === 0);
+
+// Reduce - réduction
+const sum = numbers.reduce((acc, n) => acc + n, 0);
+
+// Chaînage des méthodes
+const result = numbers
+  .filter(n => n > 2)
+  .map(n => n * 2)
+  .reduce((acc, n) => acc + n, 0);
+</code></pre>`,
+      lesson_order: 3,
+      duration_minutes: 75,
+      lesson_type: 'theory'
+    }
+  ];
+
+  const { data: insertedLessons, error: lessonsError } = await supabase
+    .from('lessons')
+    .insert(lessons)
+    .select();
+
+  if (lessonsError) {
+    throw lessonsError;
+  }
+
+  console.log('✅ Cours d\'exemple créé avec succès');
+  return { course, lessons: insertedLessons };
+}
+
 async function generateHourlyCourse() {
   console.log('🕐 Génération automatique de cours toutes les heures...');
   
   const topics = [
-    { topic: "Développement Web avec React", category: "Programmation Web", difficulty: "intermediate" },
-    { topic: "Intelligence Artificielle et Machine Learning", category: "Intelligence Artificielle", difficulty: "advanced" },
-    { topic: "Cybersécurité pour Entreprises", category: "Cybersécurité", difficulty: "intermediate" },
-    { topic: "Bases de Données NoSQL", category: "Base de données", difficulty: "beginner" },
-    { topic: "DevOps et CI/CD", category: "DevOps", difficulty: "advanced" },
-    { topic: "Développement Mobile Flutter", category: "Développement Mobile", difficulty: "intermediate" },
-    { topic: "Cloud Computing AWS", category: "Cloud Computing", difficulty: "advanced" },
-    { topic: "Data Science avec Python", category: "Data Science", difficulty: "intermediate" }
+    { topic: "Python pour Data Science", category: "Data Science", difficulty: "intermediate" },
+    { topic: "React.js Avancé", category: "Programmation Web", difficulty: "advanced" },
+    { topic: "Cybersécurité Éthique", category: "Cybersécurité", difficulty: "intermediate" },
+    { topic: "Intelligence Artificielle avec TensorFlow", category: "Intelligence Artificielle", difficulty: "advanced" },
+    { topic: "Développement Mobile React Native", category: "Développement Mobile", difficulty: "intermediate" }
   ];
 
   const randomTopic = topics[Math.floor(Math.random() * topics.length)];
@@ -87,11 +329,9 @@ async function generateCompleteCourse(courseData: any) {
       throw new Error('Clé API Gemini manquante');
     }
 
-    // Étape 1: Générer le plan détaillé du cours
     const coursePlan = await generateCoursePlan(courseData);
     console.log('📋 Plan de cours généré avec', coursePlan.lessons.length, 'leçons');
 
-    // Étape 2: Créer le cours dans la base de données
     const { data: course, error: courseError } = await supabase
       .from('courses')
       .insert({
@@ -116,14 +356,10 @@ async function generateCompleteCourse(courseData: any) {
 
     console.log('✅ Cours créé:', course.title);
 
-    // Étape 3: Générer chaque leçon individuellement avec Gemini
     const detailedLessons = await generateDetailedLessons(coursePlan.lessons, coursePlan, courseData);
-    
-    // Étape 4: Sauvegarder les leçons
     const lessons = await createDetailedLessons(course.id, detailedLessons);
     console.log('📖 Leçons créées:', lessons.length);
 
-    // Étape 5: Générer l'évaluation finale
     await generateFinalAssessment(course.id, coursePlan, courseData, detailedLessons);
 
     return new Response(
@@ -239,18 +475,15 @@ Réponds UNIQUEMENT en JSON valide :
       
       if (!detailedLesson.content || detailedLesson.content.length < 2000) {
         console.warn(`⚠️ Leçon ${i + 1} trop courte, regénération...`);
-        // Fallback avec contenu de base si la génération échoue
         detailedLesson.content = generateFallbackContent(lesson, coursePlan, courseData);
       }
       
       detailedLessons.push(detailedLesson);
       
-      // Pause pour éviter les limites de taux
       await new Promise(resolve => setTimeout(resolve, 1000));
       
     } catch (error) {
       console.error(`❌ Erreur génération leçon ${i + 1}:`, error);
-      // Fallback avec contenu de base
       detailedLessons.push({
         title: lesson.title,
         content: generateFallbackContent(lesson, coursePlan, courseData),
@@ -324,11 +557,17 @@ async function callGeminiAPI(prompt: string, temperature: number = 0.7) {
 
 function parseGeminiResponse(responseText: string) {
   try {
-    // Nettoyer la réponse et extraire le JSON
     let cleanedText = responseText.trim();
     
-    // Supprimer les balises markdown si présentes
+    // Supprimer les balises markdown
     cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    
+    // Supprimer les commentaires JavaScript
+    cleanedText = cleanedText.replace(/\/\/[^\n\r]*/g, '');
+    cleanedText = cleanedText.replace(/\/\*[\s\S]*?\*\//g, '');
+    
+    // Nettoyer les caractères de contrôle problématiques
+    cleanedText = cleanedText.replace(/[\x00-\x1F\x7F]/g, '');
     
     // Trouver le JSON valide
     const jsonStart = cleanedText.indexOf('{');
@@ -340,9 +579,15 @@ function parseGeminiResponse(responseText: string) {
     
     const jsonText = cleanedText.substring(jsonStart, jsonEnd);
     
-    // Parser le JSON
-    const parsed = JSON.parse(jsonText);
+    // Remplacer les échappements problématiques
+    const sanitizedJson = jsonText
+      .replace(/\\n/g, ' ')
+      .replace(/\\t/g, ' ')
+      .replace(/\\r/g, ' ')
+      .replace(/\\\\/g, '\\')
+      .replace(/\\"/g, '"');
     
+    const parsed = JSON.parse(sanitizedJson);
     return parsed;
   } catch (error) {
     console.error('❌ Erreur parsing JSON:', error);
@@ -430,7 +675,7 @@ async function createDetailedLessons(courseId: string, lessonsData: any[]) {
     content: lesson.content,
     lesson_order: index + 1,
     duration_minutes: lesson.duration || 75,
-    lesson_type: lesson.type || 'theory'
+    lesson_type: 'theory'
   }));
 
   const { data: insertedLessons, error } = await supabase

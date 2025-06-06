@@ -67,7 +67,6 @@ const enhancedAIService = {
         return null;
       }
 
-      // Calculer les métriques
       const totalSessions = analytics.filter(a => a.action_type === 'session_start').length;
       const completedCourses = analytics.filter(a => a.action_type === 'course_completion').length;
       const averageSessionTime = this.calculateAverageSessionTime(analytics);
@@ -87,9 +86,150 @@ const enhancedAIService = {
     }
   },
 
+  async getUserRecommendations(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('ai_recommendations')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_read', false)
+        .order('priority', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('❌ Erreur récupération recommandations:', error);
+      return [];
+    }
+  },
+
+  async generatePersonalizedRecommendations(userId: string) {
+    try {
+      const analytics = await this.getUserLearningAnalytics(userId);
+      if (!analytics) return [];
+
+      const recommendations = [];
+      
+      if (analytics.completionRate < 50) {
+        recommendations.push({
+          type: 'motivation',
+          title: 'Restez motivé !',
+          message: 'Continuez vos efforts, vous êtes sur la bonne voie !',
+          priority: 2
+        });
+      }
+
+      if (analytics.preferredCategories.length > 0) {
+        recommendations.push({
+          type: 'course_suggestion',
+          title: 'Nouveaux cours disponibles',
+          message: `Découvrez nos derniers cours en ${analytics.preferredCategories[0]}`,
+          priority: 1
+        });
+      }
+
+      for (const rec of recommendations) {
+        await supabase
+          .from('ai_recommendations')
+          .insert({
+            user_id: userId,
+            recommendation_type: rec.type,
+            recommendation_data: rec,
+            priority: rec.priority
+          });
+      }
+
+      return recommendations;
+    } catch (error) {
+      console.error('❌ Erreur génération recommandations:', error);
+      return [];
+    }
+  },
+
+  async getUserConversations(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('ai_assistant_conversations')
+        .select('*')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('❌ Erreur récupération conversations:', error);
+      return [];
+    }
+  },
+
+  async createAIConversation(userId: string, courseId?: string, lessonId?: string) {
+    try {
+      const { data, error } = await supabase
+        .from('ai_assistant_conversations')
+        .insert({
+          user_id: userId,
+          course_id: courseId,
+          lesson_id: lessonId,
+          conversation_data: [],
+          conversation_type: 'learning_assistance'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('❌ Erreur création conversation:', error);
+      throw error;
+    }
+  },
+
+  async addMessageToConversation(conversationId: string, message: any) {
+    try {
+      const { data: conversation } = await supabase
+        .from('ai_assistant_conversations')
+        .select('conversation_data')
+        .eq('id', conversationId)
+        .single();
+
+      if (!conversation) throw new Error('Conversation non trouvée');
+
+      const updatedData = [...(conversation.conversation_data || []), message];
+
+      const { error } = await supabase
+        .from('ai_assistant_conversations')
+        .update({
+          conversation_data: updatedData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', conversationId);
+
+      if (error) throw error;
+      return updatedData;
+    } catch (error) {
+      console.error('❌ Erreur ajout message:', error);
+      throw error;
+    }
+  },
+
+  async markRecommendationAsRead(recommendationId: string) {
+    try {
+      const { error } = await supabase
+        .from('ai_recommendations')
+        .update({ is_read: true })
+        .eq('id', recommendationId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('❌ Erreur marquage recommandation:', error);
+    }
+  },
+
   calculateAverageSessionTime(analytics: any[]) {
     const sessions = analytics.filter(a => a.session_data?.duration);
-    if (sessions.length === 0) return 45; // Valeur par défaut
+    if (sessions.length === 0) return 45;
     
     const totalTime = sessions.reduce((sum, session) => sum + (session.session_data.duration || 0), 0);
     return Math.round(totalTime / sessions.length);
@@ -122,7 +262,6 @@ const enhancedAIService = {
       };
     }
 
-    // Analyser les heures préférées
     const hours = sessions.map(s => new Date(s.timestamp).getHours());
     const averageHour = hours.reduce((sum, hour) => sum + hour, 0) / hours.length;
     
@@ -153,7 +292,6 @@ const enhancedAIService = {
       }
 
       if (!template) {
-        // Créer un template par défaut
         return {
           id: 'default',
           name: `Template ${difficulty} pour ${category}`,

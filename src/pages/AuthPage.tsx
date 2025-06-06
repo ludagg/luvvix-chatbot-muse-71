@@ -9,6 +9,7 @@ import { Icons } from "@/components/ui/icons";
 import { useLanguage } from "@/hooks/useLanguage";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { Fingerprint, Mail, Lock, UserPlus, LogIn } from "lucide-react";
 
 const AuthPage = () => {
   const { t } = useLanguage();
@@ -33,7 +34,7 @@ const AuthPage = () => {
     setError(null);
 
     if (type === "register" && password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError("Les mots de passe ne correspondent pas");
       setIsLoading(false);
       return;
     }
@@ -47,131 +48,212 @@ const AuthPage = () => {
         navigate("/dashboard");
       }
     } catch (e: any) {
-      setError(e.message || "Authentication failed");
+      setError(e.message || "Erreur d'authentification");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="container grid h-screen w-screen place-items-center">
-      <Card className="w-[350px] md:w-[500px] bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border border-gray-200 dark:border-gray-800 shadow-lg">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl text-center">
-            {isLogin ? "Connexion" : "Créer un compte"}
-          </CardTitle>
-          <CardDescription className="text-center">
-            {isLogin
-              ? "Connectez-vous à votre compte"
-              : "Rejoignez notre plateforme"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <Tabs defaultValue={isLogin ? "login" : "register"}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger
-                value="login"
-                onClick={() => setIsLogin(true)}
-                className={isLogin ? "bg-gray-100 dark:bg-gray-700" : ""}
-              >
-                {t.nav.login}
-              </TabsTrigger>
-              <TabsTrigger
-                value="register"
-                onClick={() => setIsLogin(false)}
-                className={!isLogin ? "bg-gray-100 dark:bg-gray-700" : ""}
-              >
-                {t.nav.account}
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="login" className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">{t.common.email}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="exemple@luvviX.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">{t.common.password}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <CardFooter className="flex justify-between">
-                <Button variant="link">Mot de passe oublié ?</Button>
-                <Button
-                  onClick={() => handleAuth("login")}
-                  disabled={isLoading}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="mx-auto mb-4 p-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full w-fit">
+            <span className="text-white font-bold text-2xl">L</span>
+          </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            LuvviX ID
+          </h1>
+          <p className="text-gray-600">
+            Un compte pour tout l'écosystème technologique
+          </p>
+        </div>
+
+        {/* Main Card */}
+        <Card className="bg-white/95 backdrop-blur-sm border border-white/20 shadow-xl">
+          <CardContent className="p-0">
+            <Tabs value={isLogin ? "login" : "register"} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 rounded-none rounded-t-lg bg-gray-50/80">
+                <TabsTrigger 
+                  value="login" 
+                  onClick={() => setIsLogin(true)}
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
                 >
-                  {isLoading ? (
-                    <>
-                      <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                      {t.common.loading}
-                    </>
-                  ) : (
-                    t.nav.login
-                  )}
-                </Button>
-              </CardFooter>
-            </TabsContent>
-            <TabsContent value="register" className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">{t.common.email}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="exemple@luvviX.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="password">{t.common.password}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="confirm-password">
-                  {t.common.confirmPassword}
-                </Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </div>
-              <CardFooter className="flex justify-end">
-                <Button
-                  onClick={() => handleAuth("register")}
-                  disabled={isLoading}
+                  Connexion
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="register" 
+                  onClick={() => setIsLogin(false)}
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm"
                 >
-                  {isLoading ? (
-                    <>
-                      <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
-                      {t.common.loading}
-                    </>
-                  ) : (
-                    t.nav.account
-                  )}
-                </Button>
-              </CardFooter>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-        {error && <p className="text-center text-red-500">{error}</p>}
-      </Card>
+                  Inscription
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="p-6">
+                <TabsContent value="login" className="space-y-4 mt-0">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="login-email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="login-email"
+                          type="email"
+                          placeholder="exemple@luvviX.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="login-password">Mot de passe</Label>
+                        <button className="text-sm text-blue-600 hover:text-blue-800">
+                          Oublié ?
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="login-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Biometric Login */}
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-200"></div>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-white text-gray-500">ou</span>
+                      </div>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full h-12 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
+                    >
+                      <Fingerprint className="mr-2 h-4 w-4 text-purple-600" />
+                      Authentivix
+                    </Button>
+
+                    <Button
+                      onClick={() => handleAuth("login")}
+                      disabled={isLoading}
+                      className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                          Connexion...
+                        </>
+                      ) : (
+                        <>
+                          <LogIn className="mr-2 h-4 w-4" />
+                          Se connecter
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="register" className="space-y-4 mt-0">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="register-email">Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="register-email"
+                          type="email"
+                          placeholder="exemple@luvviX.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="register-password">Mot de passe</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="register-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500">Minimum 8 caractères</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Confirmer le mot de passe</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="confirm-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="pl-10 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={() => handleAuth("register")}
+                      disabled={isLoading}
+                      className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                          Création...
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="mr-2 h-4 w-4" />
+                          Créer un compte
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </TabsContent>
+              </div>
+            </Tabs>
+          </CardContent>
+        </Card>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm text-center">{error}</p>
+          </div>
+        )}
+
+        {/* Footer */}
+        <p className="text-xs text-center text-gray-500 mt-6">
+          En vous connectant, vous acceptez nos{" "}
+          <a href="/legal/terms" className="text-blue-600 hover:underline">conditions d'utilisation</a> et notre{" "}
+          <a href="/legal/privacy" className="text-blue-600 hover:underline">politique de confidentialité</a>
+        </p>
+      </div>
     </div>
   );
 };

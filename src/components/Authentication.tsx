@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,7 +29,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
   const [isLoading, setIsLoading] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [step, setStep] = useState(1);
-  const [captchaVerified, setCaptchaVerified] = useState(false);
   
   const { 
     isAvailable: biometricsAvailable, 
@@ -59,33 +59,39 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     confirmPassword: '',
     fullName: '',
     username: '',
-    phoneNumber: '',
-    country: '',
-    birthdate: '',
+    age: '',
     gender: '',
+    nationality: '',
     acceptTerms: false,
     acceptMarketing: false
   });
   
-  // Simplified captcha logic for demo
+  // CAPTCHA simple
   const [captchaQuestion, setCaptchaQuestion] = useState('');
   const [captchaAnswer, setCaptchaAnswer] = useState('');
   const [userCaptchaAnswer, setUserCaptchaAnswer] = useState('');
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   
-  // Generate a simple math question for captcha
+  // Générer une question mathématique simple pour CAPTCHA
   const generateCaptcha = () => {
-    const num1 = Math.floor(Math.random() * 10);
-    const num2 = Math.floor(Math.random() * 10);
-    setCaptchaQuestion(`Combien font ${num1} + ${num2} ?`);
-    setCaptchaAnswer(String(num1 + num2));
+    const num1 = Math.floor(Math.random() * 10) + 1;
+    const num2 = Math.floor(Math.random() * 10) + 1;
+    const operation = Math.random() > 0.5 ? '+' : '-';
+    
+    if (operation === '+') {
+      setCaptchaQuestion(`Combien font ${num1} + ${num2} ?`);
+      setCaptchaAnswer(String(num1 + num2));
+    } else {
+      const larger = Math.max(num1, num2);
+      const smaller = Math.min(num1, num2);
+      setCaptchaQuestion(`Combien font ${larger} - ${smaller} ?`);
+      setCaptchaAnswer(String(larger - smaller));
+    }
   };
   
   useEffect(() => {
     generateCaptcha();
-    console.log("Authentication component loaded");
-    console.log("Biometrics available:", biometricsAvailable);
-    console.log("Biometrics loading:", biometricsLoading);
-  }, [biometricsAvailable, biometricsLoading]);
+  }, []);
   
   const verifyCaptcha = () => {
     if (userCaptchaAnswer === captchaAnswer) {
@@ -99,6 +105,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
       });
       generateCaptcha();
       setUserCaptchaAnswer('');
+      setCaptchaVerified(false);
       return false;
     }
   };
@@ -133,10 +140,9 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
     const userMetadata = {
       full_name: formData.fullName,
       username: formData.username,
-      phone_number: formData.phoneNumber,
-      country: formData.country,
-      birthdate: formData.birthdate,
+      age: formData.age,
       gender: formData.gender,
+      nationality: formData.nationality,
       use_biometrics: enableBiometrics,
       accept_marketing: formData.acceptMarketing
     };
@@ -201,7 +207,6 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
   };
 
   const handleBiometricAuth = async () => {
-    console.log("Attempting biometric authentication...");
     setBiometricLoading(true);
     try {
       const session = await authenticateWithBiometrics(formData.email || undefined);
@@ -259,7 +264,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email *</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input 
@@ -275,7 +280,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password">Mot de passe *</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input 
@@ -292,7 +297,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+              <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input 
@@ -309,7 +314,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
             
             <Button 
               type="button" 
-              className="w-full" 
+              className="w-full bg-purple-600 hover:bg-purple-700" 
               onClick={() => setStep(2)}
               disabled={!formData.email || !formData.password || !formData.confirmPassword}
             >
@@ -322,7 +327,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Nom complet</Label>
+              <Label htmlFor="fullName">Nom complet *</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input 
@@ -337,7 +342,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="username">Nom d'utilisateur</Label>
+              <Label htmlFor="username">Nom d'utilisateur *</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input 
@@ -345,7 +350,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                   value={formData.username}
                   onChange={handleInputChange}
                   className="pl-10"
-                  placeholder="Votre nom d'utilisateur" 
+                  placeholder="nom_utilisateur" 
                   required 
                 />
               </div>
@@ -353,57 +358,22 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Numéro de téléphone</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                  <Input 
-                    id="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={handleInputChange}
-                    className="pl-10"
-                    placeholder="+33600000000" 
-                  />
-                </div>
+                <Label htmlFor="age">Âge *</Label>
+                <Input 
+                  id="age"
+                  type="number"
+                  min="13"
+                  max="120"
+                  value={formData.age}
+                  onChange={handleInputChange}
+                  placeholder="25" 
+                  required
+                />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="birthdate">Date de naissance</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                  <Input 
-                    id="birthdate"
-                    type="date"
-                    value={formData.birthdate}
-                    onChange={handleInputChange}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="country">Pays</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                  <Select onValueChange={(value) => handleSelectChange('country', value)}>
-                    <SelectTrigger className="pl-10">
-                      <SelectValue placeholder="Sélectionner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="france">France</SelectItem>
-                      <SelectItem value="canada">Canada</SelectItem>
-                      <SelectItem value="belgique">Belgique</SelectItem>
-                      <SelectItem value="suisse">Suisse</SelectItem>
-                      <SelectItem value="autre">Autre</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="gender">Genre</Label>
-                <Select onValueChange={(value) => handleSelectChange('gender', value)}>
+                <Label htmlFor="gender">Sexe *</Label>
+                <Select onValueChange={(value) => handleSelectChange('gender', value)} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner" />
                   </SelectTrigger>
@@ -412,6 +382,31 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                     <SelectItem value="femme">Femme</SelectItem>
                     <SelectItem value="autre">Autre</SelectItem>
                     <SelectItem value="non_specifie">Préfère ne pas préciser</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="nationality">Nationalité *</Label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                <Select onValueChange={(value) => handleSelectChange('nationality', value)} required>
+                  <SelectTrigger className="pl-10">
+                    <SelectValue placeholder="Sélectionner votre nationalité" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="française">Française</SelectItem>
+                    <SelectItem value="canadienne">Canadienne</SelectItem>
+                    <SelectItem value="belge">Belge</SelectItem>
+                    <SelectItem value="suisse">Suisse</SelectItem>
+                    <SelectItem value="marocaine">Marocaine</SelectItem>
+                    <SelectItem value="tunisienne">Tunisienne</SelectItem>
+                    <SelectItem value="algérienne">Algérienne</SelectItem>
+                    <SelectItem value="sénégalaise">Sénégalaise</SelectItem>
+                    <SelectItem value="ivoirienne">Ivoirienne</SelectItem>
+                    <SelectItem value="camerounaise">Camerounaise</SelectItem>
+                    <SelectItem value="autre">Autre</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -428,8 +423,9 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
               
               <Button 
                 type="button" 
+                className="bg-purple-600 hover:bg-purple-700"
                 onClick={() => setStep(3)}
-                disabled={!formData.fullName || !formData.username}
+                disabled={!formData.fullName || !formData.username || !formData.age || !formData.gender || !formData.nationality}
               >
                 Continuer
               </Button>
@@ -465,16 +461,20 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
               </div>
             </div>
             
-            <div className="p-4 border rounded-md">
-              <h3 className="font-medium mb-2">Vérification - Je ne suis pas un robot</h3>
-              <p className="text-sm mb-2">{captchaQuestion}</p>
+            <div className="p-4 border rounded-md bg-yellow-50 border-yellow-200">
+              <h3 className="font-medium mb-3 text-yellow-800">🤖 Vérification anti-robot</h3>
+              <p className="text-sm mb-3 text-yellow-700">{captchaQuestion}</p>
               <Input 
-                type="text" 
+                type="number" 
                 value={userCaptchaAnswer}
                 onChange={(e) => setUserCaptchaAnswer(e.target.value)}
                 placeholder="Votre réponse" 
                 className="mb-2"
+                required
               />
+              {captchaVerified && (
+                <p className="text-xs text-green-600">✅ Vérification réussie</p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -490,7 +490,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
                     htmlFor="acceptTerms"
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
-                    J'accepte les conditions d'utilisation
+                    J'accepte les conditions d'utilisation *
                   </label>
                   <p className="text-xs text-gray-500">
                     En cochant cette case, vous acceptez nos{" "}
@@ -532,7 +532,7 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
               <Button 
                 type="submit" 
                 className="w-1/2 bg-purple-600 hover:bg-purple-700"
-                disabled={isLoading || !formData.acceptTerms}
+                disabled={isLoading || !formData.acceptTerms || !userCaptchaAnswer}
               >
                 {isLoading ? (
                   <>
@@ -556,121 +556,128 @@ const Authentication = ({ returnTo, addingAccount = false }: AuthenticationProps
   };
 
   return (
-    <section className="bg-white py-12 md:py-16 lg:py-20">
-      <div className="container mx-auto px-4">
-        <div className="max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">LuvviX ID</h2>
-            <p className="text-gray-600 mt-2">
-              Un compte pour tout l'écosystème technologique
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-800 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="mx-auto mb-4 p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full w-fit">
+            <div className="h-8 w-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-lg">L</span>
+            </div>
           </div>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">LuvviX ID</h2>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">
+            Un compte pour tout l'écosystème technologique
+          </p>
+        </div>
 
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-xl border border-white/20">
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid grid-cols-2 mb-6">
-              <TabsTrigger value="signup" className="text-gray-700">Créer un compte</TabsTrigger>
-              <TabsTrigger value="login" className="text-gray-700">Connexion</TabsTrigger>
+            <TabsList className="grid grid-cols-2 mb-6 bg-gray-100 dark:bg-gray-700">
+              <TabsTrigger value="signup" className="text-gray-700 dark:text-gray-300">Créer un compte</TabsTrigger>
+              <TabsTrigger value="login" className="text-gray-700 dark:text-gray-300">Connexion</TabsTrigger>
             </TabsList>
             
             <TabsContent value="signup">
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  {renderSignupStep()}
-                </form>
-              </div>
+              <form onSubmit={handleSignUp} className="space-y-4">
+                {renderSignupStep()}
+              </form>
             </TabsContent>
             
             <TabsContent value="login">
-              <div className="bg-white p-6 rounded-lg shadow-md">
-                {/* Bouton Authentivix toujours disponible */}
-                <div className="mb-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full flex items-center justify-center gap-2 border-purple-200 hover:bg-purple-50 hover:border-purple-300"
-                    onClick={handleBiometricAuth}
-                    disabled={biometricLoading}
-                  >
-                    {biometricLoading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Fingerprint className="mr-2 h-4 w-4 text-purple-600" />
-                    )}
-                    Se connecter avec Authentivix
-                  </Button>
-                  
-                  <div className="relative my-4">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-300"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-white text-gray-500">ou</span>
-                    </div>
+              {/* Bouton Authentivix toujours disponible */}
+              <div className="mb-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full flex items-center justify-center gap-2 border-purple-200 hover:bg-purple-50 hover:border-purple-300 dark:border-purple-700 dark:hover:bg-purple-900/20"
+                  onClick={handleBiometricAuth}
+                  disabled={biometricLoading}
+                >
+                  {biometricLoading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Fingerprint className="mr-2 h-4 w-4 text-purple-600" />
+                  )}
+                  Se connecter avec Authentivix
+                </Button>
+                
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">ou</span>
                   </div>
                 </div>
-
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                      <Input 
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="pl-10"
-                        placeholder="votre@email.com" 
-                        required 
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password">Mot de passe</Label>
-                      <a href="#" className="text-xs text-purple-600 hover:underline">
-                        Mot de passe oublié ?
-                      </a>
-                    </div>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                      <Input 
-                        id="password"
-                        type="password"
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        className="pl-10"
-                        placeholder="••••••••" 
-                        required 
-                      />
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-purple-600 hover:bg-purple-700"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Connexion en cours...
-                      </>
-                    ) : (
-                      <>
-                        <LogIn className="mr-2 h-4 w-4" />
-                        Se connecter
-                      </>
-                    )}
-                  </Button>
-                </form>
               </div>
+
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    <Input 
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className="pl-10"
+                      placeholder="votre@email.com" 
+                      required 
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Mot de passe</Label>
+                    <a href="#" className="text-xs text-purple-600 hover:underline">
+                      Mot de passe oublié ?
+                    </a>
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    <Input 
+                      id="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      className="pl-10"
+                      placeholder="••••••••" 
+                      required 
+                    />
+                  </div>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Connexion en cours...
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Se connecter
+                    </>
+                  )}
+                </Button>
+              </form>
             </TabsContent>
           </Tabs>
         </div>
+        
+        <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-6">
+          En vous connectant, vous acceptez nos{" "}
+          <a href="/terms" className="text-purple-600 hover:underline">conditions d'utilisation</a> et notre{" "}
+          <a href="/privacy" className="text-purple-600 hover:underline">politique de confidentialité</a>
+        </p>
       </div>
-    </section>
+    </div>
   );
 };
 

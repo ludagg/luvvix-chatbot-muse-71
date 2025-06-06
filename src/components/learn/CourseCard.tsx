@@ -1,116 +1,154 @@
 
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, BookOpen, Users, Star, Play } from "lucide-react";
-import { Course } from "@/services/luvvix-learn-service";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Clock, BookOpen, Brain, Trophy, Loader2 } from "lucide-react";
+
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+  duration_minutes: number;
+  learning_objectives: string[];
+  prerequisites: string[];
+  tags: string[];
+  status: 'active' | 'draft' | 'archived';
+  ai_generated: boolean;
+  created_at: string;
+}
 
 interface CourseCardProps {
   course: Course;
   onEnroll: (courseId: string) => void;
-  isEnrolled?: boolean;
-  progress?: number;
+  isEnrolled: boolean;
+  progress: number;
+  isEnrolling?: boolean;
 }
 
-const CourseCard = ({ course, onEnroll, isEnrolled, progress }: CourseCardProps) => {
-  const getDifficultyColor = (level: string) => {
-    switch (level) {
-      case 'beginner': return 'bg-green-100 text-green-800';
-      case 'intermediate': return 'bg-yellow-100 text-yellow-800';
-      case 'advanced': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+const CourseCard = ({ course, onEnroll, isEnrolled, progress, isEnrolling = false }: CourseCardProps) => {
+  const difficultyColors = {
+    beginner: "bg-green-100 text-green-800",
+    intermediate: "bg-yellow-100 text-yellow-800", 
+    advanced: "bg-red-100 text-red-800"
   };
 
-  const getDifficultyLabel = (level: string) => {
-    switch (level) {
-      case 'beginner': return 'Débutant';
-      case 'intermediate': return 'Intermédiaire';
-      case 'advanced': return 'Avancé';
-      default: return level;
-    }
+  const difficultyLabels = {
+    beginner: "Débutant",
+    intermediate: "Intermédiaire",
+    advanced: "Avancé"
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
-      <div className="p-6">
-        <div className="flex justify-between items-start mb-3">
-          <Badge className={getDifficultyColor(course.difficulty_level)}>
-            {getDifficultyLabel(course.difficulty_level)}
-          </Badge>
+    <Card className="h-full hover:shadow-lg transition-shadow">
+      <CardHeader>
+        <div className="flex items-start justify-between mb-2">
+          <CardTitle className="text-lg font-semibold line-clamp-2">
+            {course.title}
+          </CardTitle>
           {course.ai_generated && (
-            <Badge variant="outline" className="text-purple-600 border-purple-200">
-              🤖 LuvviX AI
+            <Badge className="bg-purple-100 text-purple-800 ml-2 flex-shrink-0">
+              <Brain className="h-3 w-3 mr-1" />
+              IA
             </Badge>
           )}
         </div>
         
-        <h3 className="text-xl font-semibold mb-2 group-hover:text-blue-600 transition-colors">
-          {course.title}
-        </h3>
-        
-        <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+        <p className="text-gray-600 text-sm line-clamp-3 mb-3">
           {course.description}
         </p>
         
-        <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span>{Math.floor(course.duration_minutes / 60)}h {course.duration_minutes % 60}min</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <BookOpen className="h-4 w-4" />
-              <span>{course.category}</span>
-            </div>
+        <div className="flex flex-wrap gap-2 mb-3">
+          <Badge variant="outline" className="text-xs">
+            {course.category}
+          </Badge>
+          <Badge className={`text-xs ${difficultyColors[course.difficulty_level]}`}>
+            {difficultyLabels[course.difficulty_level]}
+          </Badge>
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+          <div className="flex items-center gap-1">
+            <Clock className="h-4 w-4" />
+            {Math.floor(course.duration_minutes / 60)}h {course.duration_minutes % 60}min
+          </div>
+          <div className="flex items-center gap-1">
+            <BookOpen className="h-4 w-4" />
+            Multi-leçons
           </div>
         </div>
 
-        {course.learning_objectives.length > 0 && (
+        {course.learning_objectives && course.learning_objectives.length > 0 && (
           <div className="mb-4">
-            <p className="text-sm font-medium text-gray-700 mb-1">Objectifs:</p>
-            <ul className="text-xs text-gray-600">
+            <h4 className="text-sm font-medium mb-2">Objectifs :</h4>
+            <ul className="text-xs text-gray-600 space-y-1">
               {course.learning_objectives.slice(0, 2).map((objective, index) => (
-                <li key={index} className="mb-1">• {objective}</li>
+                <li key={index} className="flex items-start gap-1">
+                  <span className="text-blue-500 mt-1">•</span>
+                  <span className="line-clamp-1">{objective}</span>
+                </li>
               ))}
+              {course.learning_objectives.length > 2 && (
+                <li className="text-gray-400 text-xs">
+                  +{course.learning_objectives.length - 2} autres objectifs
+                </li>
+              )}
             </ul>
           </div>
         )}
 
-        <div className="flex flex-wrap gap-1 mb-4">
-          {course.tags.slice(0, 3).map((tag, index) => (
-            <Badge key={index} variant="outline" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div>
+        {course.tags && course.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-4">
+            {course.tags.slice(0, 3).map((tag, index) => (
+              <Badge key={index} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+            {course.tags.length > 3 && (
+              <Badge variant="secondary" className="text-xs">
+                +{course.tags.length - 3}
+              </Badge>
+            )}
+          </div>
+        )}
 
-        {isEnrolled && progress !== undefined ? (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Progression</span>
-              <span>{progress}%</span>
+        {isEnrolled ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Progression</span>
+              <span className="font-medium">{progress}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <Button className="w-full mt-3">
-              <Play className="h-4 w-4 mr-2" />
+            <Progress value={progress} className="h-2" />
+            <Button className="w-full" size="sm">
+              <Trophy className="h-4 w-4 mr-2" />
               Continuer le cours
             </Button>
           </div>
         ) : (
           <Button 
-            className="w-full group-hover:bg-blue-600 transition-colors"
-            onClick={() => onEnroll(course.id)}
+            className="w-full" 
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEnroll(course.id);
+            }}
+            disabled={isEnrolling}
           >
-            Commencer le cours
+            {isEnrolling ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Inscription...
+              </>
+            ) : (
+              "S'inscrire"
+            )}
           </Button>
         )}
-      </div>
+      </CardContent>
     </Card>
   );
 };

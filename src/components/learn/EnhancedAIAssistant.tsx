@@ -95,7 +95,7 @@ const EnhancedAIAssistant = () => {
         })));
       } else {
         // Créer une nouvelle conversation
-        const newConversation = await enhancedAIService.createAIConversation(user.id, undefined, undefined, 'learning_assistant');
+        const newConversation = await enhancedAIService.createAIConversation(user.id);
         setActiveConversationId(newConversation.id);
         
         // Message de bienvenue

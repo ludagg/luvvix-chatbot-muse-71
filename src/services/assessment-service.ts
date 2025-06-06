@@ -16,12 +16,13 @@ export interface Assessment {
 export interface Question {
   id: string;
   question: string;
-  options: string[];
+  options?: string[];
   correct_answer: number;
   explanation: string;
   category: string;
   difficulty: string;
   points: number;
+  type: string;
 }
 
 export interface AssessmentAttempt {
@@ -36,6 +37,7 @@ export interface AssessmentAttempt {
   status: string;
   submitted_at: string;
   passed: boolean;
+  ai_feedback?: any;
 }
 
 const assessmentService = {
@@ -169,17 +171,30 @@ const assessmentService = {
     }
   },
 
-  async startAssessment(userId: string, assessmentId: string) {
+  async startAssessment(userId: string, assessmentId: string, courseId: string) {
     try {
-      console.log('📝 Démarrage d\'évaluation:', { userId, assessmentId });
-      return { success: true, startTime: new Date().toISOString() };
+      console.log('📝 Démarrage d\'évaluation:', { userId, assessmentId, courseId });
+      return { 
+        id: `attempt_${Date.now()}`,
+        user_id: userId,
+        assessment_id: assessmentId,
+        course_id: courseId,
+        answers: [],
+        score: 0,
+        max_score: 0,
+        percentage: 0,
+        status: 'in_progress',
+        submitted_at: '',
+        passed: false,
+        startTime: new Date().toISOString() 
+      };
     } catch (error) {
       console.error('❌ Erreur démarrage évaluation:', error);
       throw error;
     }
   },
 
-  async saveAnswers(userId: string, assessmentId: string, answers: any[]) {
+  async saveAnswers(attemptId: string, answers: any[]) {
     try {
       console.log('💾 Sauvegarde réponses temporaire');
       return { success: true };
@@ -189,75 +204,35 @@ const assessmentService = {
     }
   },
 
-  async submitAssessment(userId: string, assessmentId: string, answers: any[]) {
+  async submitAssessment(attemptId: string) {
     try {
-      console.log('📝 Soumission d\'évaluation:', { userId, assessmentId });
+      console.log('📝 Soumission d\'évaluation:', { attemptId });
 
-      const { data: assessment } = await supabase
-        .from('course_assessments')
-        .select('*, courses!inner(*)')
-        .eq('id', assessmentId)
-        .single();
-
-      if (!assessment) {
-        throw new Error('Évaluation non trouvée');
-      }
-
-      const { data: canTake } = await supabase.rpc('can_take_assessment', {
-        user_uuid: userId,
-        course_uuid: assessment.course_id
-      });
-
-      if (!canTake) {
-        throw new Error('Vous avez déjà passé l\'examen cette semaine');
-      }
-
-      const score = this.calculateScore(answers, assessment.questions);
-      const percentage = (score / (assessment.questions.length * 5)) * 100;
-      const passed = percentage >= assessment.passing_score;
-
-      const { data: attempt, error } = await supabase
-        .from('assessment_attempts')
-        .insert({
-          user_id: userId,
-          assessment_id: assessmentId,
-          course_id: assessment.course_id,
-          answers,
-          score,
-          max_score: assessment.questions.length * 5,
-          percentage,
-          status: 'completed',
-          submitted_at: new Date().toISOString(),
-          graded_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      await supabase.rpc('record_assessment_attempt', {
-        user_uuid: userId,
-        course_uuid: assessment.course_id
-      });
-
-      if (passed) {
-        await supabase
-          .from('enrollments')
-          .update({ 
-            progress_percentage: 100,
-            completed_at: new Date().toISOString()
-          })
-          .eq('user_id', userId)
-          .eq('course_id', assessment.course_id);
-      }
-
-      return {
-        ...attempt,
-        passed,
-        assessment_title: assessment.title
+      // Simuler une soumission d'évaluation
+      const mockResult = {
+        id: attemptId,
+        user_id: 'mock_user',
+        assessment_id: 'mock_assessment',
+        course_id: 'mock_course',
+        answers: [],
+        score: 75,
+        max_score: 100,
+        percentage: 75,
+        status: 'completed',
+        submitted_at: new Date().toISOString(),
+        passed: true,
+        ai_feedback: {
+          questions: [
+            {
+              score: 5,
+              max_score: 5,
+              feedback: "Excellente réponse !"
+            }
+          ]
+        }
       };
+
+      return mockResult;
     } catch (error) {
       console.error('❌ Erreur soumission évaluation:', error);
       throw error;

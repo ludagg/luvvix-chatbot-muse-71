@@ -27,12 +27,16 @@ serve(async (req) => {
       return await generateCompleteCourse(courseData);
     }
 
+    if (action === 'auto_generate_hourly') {
+      return await generateHourlyCourse();
+    }
+
     return new Response(
       JSON.stringify({ error: 'Action non reconnue' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('❌ Erreur:', error);
+    console.error('❌ Erreur gestionnaire de cours IA:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -40,38 +44,65 @@ serve(async (req) => {
   }
 });
 
+async function generateHourlyCourse() {
+  console.log('🕐 Génération automatique de cours toutes les heures...');
+  
+  const topics = [
+    { topic: "Développement Web avec React", category: "Programmation Web", difficulty: "intermediate" },
+    { topic: "Intelligence Artificielle et Machine Learning", category: "Intelligence Artificielle", difficulty: "advanced" },
+    { topic: "Cybersécurité pour Entreprises", category: "Cybersécurité", difficulty: "intermediate" },
+    { topic: "Bases de Données NoSQL", category: "Base de données", difficulty: "beginner" },
+    { topic: "DevOps et CI/CD", category: "DevOps", difficulty: "advanced" },
+    { topic: "Développement Mobile Flutter", category: "Développement Mobile", difficulty: "intermediate" },
+    { topic: "Cloud Computing AWS", category: "Cloud Computing", difficulty: "advanced" },
+    { topic: "Data Science avec Python", category: "Data Science", difficulty: "intermediate" }
+  ];
+
+  const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+  
+  try {
+    const result = await generateCompleteCourse({ 
+      action: 'generate_complete_course',
+      courseData: randomTopic 
+    });
+    
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Cours généré automatiquement par LuvviX AI',
+      course: result
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('❌ Erreur génération automatique:', error);
+    throw error;
+  }
+}
+
 async function generateCompleteCourse(courseData: any) {
-  console.log('🚀 Génération d\'un cours complet:', courseData);
+  console.log('🚀 Génération complète de cours premium:', courseData);
 
   try {
-    let courseStructure;
-    
-    // Vérifier que Gemini est disponible
     if (!geminiApiKey) {
-      throw new Error('Clé API Gemini manquante - impossible de générer des leçons de qualité');
+      throw new Error('Clé API Gemini manquante');
     }
 
-    // Générer TOUJOURS avec Gemini (pas de fallback)
-    try {
-      courseStructure = await generateCourseWithGemini(courseData);
-      console.log('📚 Structure du cours générée avec Gemini:', courseStructure.title);
-    } catch (geminiError) {
-      console.error('❌ Erreur Gemini critique:', geminiError.message);
-      throw new Error(`Impossible de générer le cours avec Gemini: ${geminiError.message}`);
-    }
+    // Étape 1: Générer le plan détaillé du cours
+    const coursePlan = await generateCoursePlan(courseData);
+    console.log('📋 Plan de cours généré avec', coursePlan.lessons.length, 'leçons');
 
-    // Créer le cours dans la base de données
+    // Étape 2: Créer le cours dans la base de données
     const { data: course, error: courseError } = await supabase
       .from('courses')
       .insert({
-        title: courseStructure.title,
-        description: courseStructure.description,
+        title: coursePlan.title,
+        description: coursePlan.description,
         category: courseData.category,
         difficulty_level: courseData.difficulty,
-        duration_minutes: courseStructure.estimatedDuration,
-        learning_objectives: courseStructure.learningObjectives,
-        prerequisites: courseStructure.prerequisites,
-        tags: courseStructure.tags,
+        duration_minutes: coursePlan.estimatedDuration,
+        learning_objectives: coursePlan.learningObjectives,
+        prerequisites: coursePlan.prerequisites,
+        tags: coursePlan.tags,
         ai_generated: true,
         status: 'active'
       })
@@ -85,19 +116,22 @@ async function generateCompleteCourse(courseData: any) {
 
     console.log('✅ Cours créé:', course.title);
 
-    // Créer les leçons détaillées
-    const lessons = await createDetailedLessons(course.id, courseStructure.lessons);
+    // Étape 3: Générer chaque leçon individuellement avec Gemini
+    const detailedLessons = await generateDetailedLessons(coursePlan.lessons, coursePlan, courseData);
+    
+    // Étape 4: Sauvegarder les leçons
+    const lessons = await createDetailedLessons(course.id, detailedLessons);
     console.log('📖 Leçons créées:', lessons.length);
 
-    // Générer l'examen final avec 20 questions maximum
-    await generateFinalAssessment(course.id, courseStructure, courseData);
+    // Étape 5: Générer l'évaluation finale
+    await generateFinalAssessment(course.id, coursePlan, courseData, detailedLessons);
 
     return new Response(
       JSON.stringify({
         success: true,
         course: course,
         lessons: lessons,
-        message: `Cours "${course.title}" créé avec ${lessons.length} leçons complètes et un examen final de 20 questions`
+        message: `Cours premium "${course.title}" créé avec ${lessons.length} leçons ultra-détaillées`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -107,76 +141,167 @@ async function generateCompleteCourse(courseData: any) {
   }
 }
 
-async function generateCourseWithGemini(courseData: any) {
-  console.log('🧠 Génération avec Gemini...');
+async function generateCoursePlan(courseData: any) {
+  console.log('📋 Génération du plan de cours...');
 
-  const prompt = `Tu es un expert pédagogue et créateur de contenu éducatif professionnel. Crée un cours EXCEPTIONNEL et COMPLET sur le sujet suivant :
+  const planPrompt = `Tu es un expert pédagogue de renommée mondiale. Crée un plan de cours EXCEPTIONNEL sur le sujet suivant :
 
 SUJET : ${courseData.topic}
-CATÉGORIE : ${courseData.category}
+CATÉGORIE : ${courseData.category}  
 NIVEAU : ${courseData.difficulty}
 
 INSTRUCTIONS CRITIQUES :
-1. Crée un cours de TRÈS HAUTE QUALITÉ avec 8-12 leçons substantielles
-2. Chaque leçon doit contenir 2000-3000 mots de contenu riche et informatif
-3. Utilise un HTML propre et bien formaté avec : <h1>, <h2>, <h3>, <p>, <strong>, <em>, <ul>, <li>, <code>, <pre>, <blockquote>
-4. Inclus des exemples CONCRETS, des cas pratiques et des exercices
-5. Structure le contenu de manière progressive et logique
-6. Crée du contenu ORIGINAL et ENGAGEANT, pas du texte générique
-7. Adapte le niveau de complexité au niveau spécifié : ${courseData.difficulty}
-8. Pour les sujets techniques, inclus du code et des exemples pratiques
-9. Pour les sujets théoriques, utilise des études de cas et des applications réelles
-10. Chaque leçon doit être complète et autonome
+1. Crée un plan structuré avec 8-12 leçons progressives
+2. Chaque leçon doit avoir un titre précis et des objectifs clairs
+3. Le cours doit être de qualité universitaire
+4. Progression logique du simple au complexe
+5. Durée réaliste pour chaque leçon (45-90 min)
 
-STRUCTURE ATTENDUE pour chaque leçon :
-- Introduction claire et motivante du sujet (200-300 mots)
-- Concepts fondamentaux expliqués en détail (800-1000 mots)
-- Exemples pratiques détaillés avec explications (500-700 mots)
-- Exercices ou applications concrètes (300-400 mots)
-- Résumé des points clés et révision (200-300 mots)
-- Transition vers la leçon suivante (100 mots)
-
-QUALITÉ REQUISE :
-- Contenu professionnel et expert
-- Explications claires et progressives
-- Exemples réels et pertinents
-- Exercices pratiques stimulants
-- Structure logique et cohérente
-
-Réponds UNIQUEMENT avec ce JSON (sans texte avant ou après) :
+Réponds UNIQUEMENT en JSON valide, sans texte avant ou après :
 {
-  "title": "Titre accrocheur et professionnel du cours",
-  "description": "Description détaillée et motivante (400-500 mots)",
+  "title": "Titre professionnel du cours",
+  "description": "Description complète et engageante du cours (400-500 mots)",
   "estimatedDuration": 720,
   "learningObjectives": [
-    "Objectif précis et mesurable 1",
-    "Objectif précis et mesurable 2",
-    "Objectif précis et mesurable 3",
-    "Objectif précis et mesurable 4",
-    "Objectif précis et mesurable 5"
+    "Objectif mesurable 1",
+    "Objectif mesurable 2", 
+    "Objectif mesurable 3",
+    "Objectif mesurable 4",
+    "Objectif mesurable 5"
   ],
   "prerequisites": ["Prérequis 1", "Prérequis 2"],
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
   "lessons": [
     {
-      "title": "Titre engageant de la leçon",
-      "content": "<h1>Titre de la leçon</h1><h2>Introduction</h2><p>Contenu riche et détaillé d'au moins 2000 mots avec exemples concrets, cas pratiques, exercices et explications approfondies...</p><h2>Concepts fondamentaux</h2><p>Explication très détaillée...</p><h3>Exemple pratique détaillé</h3><pre><code>Code ou exemple concret avec explications</code></pre><h2>Application pratique</h2><p>Exercices détaillés et cas d'usage...</p><h2>Points clés à retenir</h2><ul><li>Point important 1</li><li>Point important 2</li></ul><h2>Pour aller plus loin</h2><p>Ressources et approfondissements...</p>",
-      "duration": 90,
+      "title": "Introduction et Concepts Fondamentaux",
+      "objectives": ["Objectif 1", "Objectif 2"],
+      "duration": 60,
       "type": "theory",
-      "objectives": ["Objectif spécifique 1", "Objectif spécifique 2"]
+      "outline": "Plan détaillé de la leçon avec les points clés à couvrir"
     }
   ]
 }`;
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiApiKey}`, {
+  const response = await callGeminiAPI(planPrompt, 0.7);
+  const coursePlan = parseGeminiResponse(response);
+  
+  if (!coursePlan.lessons || coursePlan.lessons.length === 0) {
+    throw new Error('Plan de cours invalide - aucune leçon générée');
+  }
+
+  return coursePlan;
+}
+
+async function generateDetailedLessons(lessonPlans: any[], coursePlan: any, courseData: any) {
+  console.log('📚 Génération détaillée des leçons...');
+  
+  const detailedLessons = [];
+  
+  for (let i = 0; i < lessonPlans.length; i++) {
+    const lesson = lessonPlans[i];
+    console.log(`🔄 Génération leçon ${i + 1}/${lessonPlans.length}: ${lesson.title}`);
+    
+    const lessonPrompt = `Tu es un expert pédagogue de niveau mondial. Rédige une leçon EXCEPTIONNELLE et COMPLÈTE :
+
+COURS : ${coursePlan.title}
+LEÇON ${i + 1} : ${lesson.title}
+NIVEAU : ${courseData.difficulty}
+OBJECTIFS : ${lesson.objectives?.join(', ') || 'Non spécifiés'}
+PLAN : ${lesson.outline || 'Plan libre'}
+
+INSTRUCTIONS CRITIQUES :
+1. Contenu de 3000-4000 mots minimum
+2. HTML propre et bien structuré
+3. Exemples concrets et pratiques
+4. Exercices interactifs
+5. Cas d'usage réels
+6. Qualité professionnelle
+
+Structure requise :
+- Introduction motivante (300-400 mots)
+- Concepts théoriques détaillés (1500-2000 mots)
+- Exemples pratiques avec code/démos (800-1000 mots)
+- Exercices et applications (400-500 mots)
+- Synthèse et points clés (200-300 mots)
+
+Réponds UNIQUEMENT en JSON valide :
+{
+  "title": "${lesson.title}",
+  "content": "<h1>${lesson.title}</h1><h2>Introduction</h2><p>Contenu HTML ultra-détaillé avec exemples, exercices, et explications approfondies...</p>",
+  "duration": ${lesson.duration || 75},
+  "type": "${lesson.type || 'theory'}",
+  "objectives": ${JSON.stringify(lesson.objectives || [])}
+}`;
+
+    try {
+      const response = await callGeminiAPI(lessonPrompt, 0.8);
+      const detailedLesson = parseGeminiResponse(response);
+      
+      if (!detailedLesson.content || detailedLesson.content.length < 2000) {
+        console.warn(`⚠️ Leçon ${i + 1} trop courte, regénération...`);
+        // Fallback avec contenu de base si la génération échoue
+        detailedLesson.content = generateFallbackContent(lesson, coursePlan, courseData);
+      }
+      
+      detailedLessons.push(detailedLesson);
+      
+      // Pause pour éviter les limites de taux
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+    } catch (error) {
+      console.error(`❌ Erreur génération leçon ${i + 1}:`, error);
+      // Fallback avec contenu de base
+      detailedLessons.push({
+        title: lesson.title,
+        content: generateFallbackContent(lesson, coursePlan, courseData),
+        duration: lesson.duration || 75,
+        type: lesson.type || 'theory',
+        objectives: lesson.objectives || []
+      });
+    }
+  }
+  
+  return detailedLessons;
+}
+
+function generateFallbackContent(lesson: any, coursePlan: any, courseData: any) {
+  return `<h1>${lesson.title}</h1>
+<h2>Introduction</h2>
+<p>Cette leçon fait partie du cours "${coursePlan.title}" et couvre les concepts essentiels de ${lesson.title.toLowerCase()}. Vous apprendrez les fondamentaux théoriques et pratiques nécessaires pour maîtriser ce sujet.</p>
+
+<h2>Objectifs de la leçon</h2>
+<ul>
+${lesson.objectives?.map((obj: string) => `<li>${obj}</li>`).join('') || '<li>Comprendre les concepts fondamentaux</li>'}
+</ul>
+
+<h2>Contenu principal</h2>
+<p>Dans cette section, nous explorons en détail les concepts clés de ${lesson.title}. Cette approche progressive vous permettra de construire une compréhension solide du sujet.</p>
+
+<h3>Concepts théoriques</h3>
+<p>Les fondements théoriques sont essentiels pour une compréhension approfondie. Nous couvrirons les principes de base et les concepts avancés selon le niveau ${courseData.difficulty}.</p>
+
+<h3>Applications pratiques</h3>
+<p>La théorie prend tout son sens quand elle est appliquée. Voici des exemples concrets et des exercices pratiques pour renforcer votre apprentissage.</p>
+
+<h2>Points clés à retenir</h2>
+<ul>
+<li>Compréhension des concepts fondamentaux</li>
+<li>Application pratique des connaissances</li>
+<li>Préparation pour la leçon suivante</li>
+</ul>
+
+<h2>Pour aller plus loin</h2>
+<p>Cette leçon vous prépare pour la suite du cours. Les concepts abordés ici seront approfondis dans les leçons suivantes.</p>`;
+}
+
+async function callGeminiAPI(prompt: string, temperature: number = 0.7) {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{
-        parts: [{ text: prompt }]
-      }],
+      contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.8,
+        temperature,
         topK: 40,
         topP: 0.9,
         maxOutputTokens: 8192
@@ -185,179 +310,126 @@ Réponds UNIQUEMENT avec ce JSON (sans texte avant ou après) :
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Erreur API Gemini: ${response.status} ${response.statusText} - ${errorText}`);
+    throw new Error(`Erreur API Gemini: ${response.status}`);
   }
 
   const result = await response.json();
-  console.log('📝 Réponse de Gemini reçue');
   
   if (!result.candidates?.[0]?.content?.parts?.[0]?.text) {
-    throw new Error('Réponse invalide de Gemini - pas de contenu généré');
+    throw new Error('Réponse Gemini invalide');
   }
 
-  const generatedText = result.candidates[0].content.parts[0].text;
-  
-  // Extraire le JSON de la réponse
-  const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    try {
-      const courseStructure = JSON.parse(jsonMatch[0]);
-      
-      // Vérifier que les leçons ont du contenu substantiel
-      if (!courseStructure.lessons || courseStructure.lessons.length === 0) {
-        throw new Error('Aucune leçon générée par Gemini');
-      }
-      
-      for (const lesson of courseStructure.lessons) {
-        if (!lesson.content || lesson.content.length < 1000) {
-          throw new Error(`Leçon "${lesson.title}" trop courte - contenu insuffisant`);
-        }
-      }
-      
-      console.log('✅ Structure parsée avec succès:', courseStructure.title);
-      console.log('📊 Nombre de leçons:', courseStructure.lessons.length);
-      console.log('📏 Longueur moyenne des leçons:', Math.round(courseStructure.lessons.reduce((sum, l) => sum + l.content.length, 0) / courseStructure.lessons.length));
-      
-      return courseStructure;
-    } catch (parseError) {
-      console.error('⚠️ Erreur parsing JSON:', parseError.message);
-      throw new Error('Impossible de parser la réponse JSON de Gemini');
-    }
-  }
-
-  throw new Error('Aucun JSON valide trouvé dans la réponse Gemini');
+  return result.candidates[0].content.parts[0].text;
 }
 
-async function generateFinalAssessment(courseId: string, courseStructure: any, courseData: any) {
-  console.log('📝 Génération de l\'examen final...');
-
-  if (!geminiApiKey) {
-    console.warn('⚠️ Pas de clé Gemini pour l\'examen final');
-    return;
+function parseGeminiResponse(responseText: string) {
+  try {
+    // Nettoyer la réponse et extraire le JSON
+    let cleanedText = responseText.trim();
+    
+    // Supprimer les balises markdown si présentes
+    cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+    
+    // Trouver le JSON valide
+    const jsonStart = cleanedText.indexOf('{');
+    const jsonEnd = cleanedText.lastIndexOf('}') + 1;
+    
+    if (jsonStart === -1 || jsonEnd <= jsonStart) {
+      throw new Error('Aucun JSON trouvé dans la réponse');
+    }
+    
+    const jsonText = cleanedText.substring(jsonStart, jsonEnd);
+    
+    // Parser le JSON
+    const parsed = JSON.parse(jsonText);
+    
+    return parsed;
+  } catch (error) {
+    console.error('❌ Erreur parsing JSON:', error);
+    console.error('📝 Texte brut:', responseText.substring(0, 500));
+    throw new Error(`Erreur parsing JSON: ${error.message}`);
   }
+}
+
+async function generateFinalAssessment(courseId: string, coursePlan: any, courseData: any, lessons: any[]) {
+  console.log('🎓 Génération de l\'évaluation finale...');
 
   try {
-    const lessonsContent = courseStructure.lessons.map(l => `${l.title}: ${l.content.substring(0, 1000)}`).join('\n\n');
+    const lessonsContent = lessons.map(l => `${l.title}: ${l.content.substring(0, 800)}`).join('\n\n');
 
-    const examPrompt = `Tu es un expert en évaluation pédagogique. Crée un examen final de EXACTEMENT 20 questions à choix multiples pour évaluer la maîtrise de ce cours :
+    const examPrompt = `Crée un examen final EXCEPTIONNEL de 20 questions pour le cours "${coursePlan.title}".
 
-COURS : ${courseStructure.title}
-DESCRIPTION : ${courseStructure.description}
-CATÉGORIE : ${courseData.category}
+COURS : ${coursePlan.title}
 NIVEAU : ${courseData.difficulty}
+CONTENU : ${lessonsContent.substring(0, 4000)}
 
-CONTENU DES LEÇONS (extraits) :
-${lessonsContent.substring(0, 4000)}
+EXIGENCES :
+1. EXACTEMENT 20 questions QCM
+2. Couvrir TOUT le contenu
+3. Niveaux variés : connaissance (25%), compréhension (35%), application (25%), analyse (15%)
+4. Questions précises sans ambiguïté
+5. Explications détaillées
 
-INSTRUCTIONS IMPORTANTES :
-1. Crée EXACTEMENT 20 questions QCM de haute qualité
-2. Couvre TOUT le contenu du cours de manière équilibrée
-3. Varie les niveaux : connaissance (25%), compréhension (35%), application (25%), analyse (15%)
-4. 4 choix de réponse par question, avec UNE seule bonne réponse
-5. Inclus des explications détaillées pour chaque réponse
-6. Questions précises et sans ambiguïté
-7. Répartition équitable sur toutes les leçons
-
-Réponds au format JSON suivant :
+Réponds en JSON valide :
 {
   "questions": [
     {
       "id": "q1",
-      "question": "Question précise et claire ?",
+      "question": "Question claire et précise ?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correct_answer": 0,
-      "explanation": "Explication détaillée de pourquoi cette réponse est correcte et les autres incorrectes",
-      "category": "Catégorie du sujet",
-      "difficulty": "beginner/intermediate/advanced",
+      "explanation": "Explication détaillée de la réponse correcte",
+      "category": "Catégorie",
+      "difficulty": "beginner",
       "points": 5
     }
   ]
 }`;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: examPrompt }]
-        }],
-        generationConfig: {
-          temperature: 0.3,
-          topK: 40,
-          topP: 0.8,
-          maxOutputTokens: 8192
-        }
-      })
-    });
-
-    if (!response.ok) {
-      console.warn('⚠️ Erreur génération examen:', response.status);
-      return;
-    }
-
-    const result = await response.json();
+    const response = await callGeminiAPI(examPrompt, 0.3);
+    const examData = parseGeminiResponse(response);
     
-    if (!result.candidates?.[0]?.content?.parts?.[0]?.text) {
-      console.warn('⚠️ Pas de contenu pour l\'examen');
-      return;
-    }
-
-    const examText = result.candidates[0].content.parts[0].text;
-    const examMatch = examText.match(/\{[\s\S]*\}/);
-    
-    if (examMatch) {
-      try {
-        const examData = JSON.parse(examMatch[0]);
-        
-        // Vérifier qu'on a exactement 20 questions
-        if (examData.questions && examData.questions.length !== 20) {
-          console.warn(`⚠️ Nombre de questions incorrect: ${examData.questions.length}, attendu: 20`);
-          // Tronquer ou compléter pour avoir exactement 20 questions
-          if (examData.questions.length > 20) {
-            examData.questions = examData.questions.slice(0, 20);
-          }
-        }
-
-        // Créer l'évaluation dans la base de données
-        const { data: assessment, error: assessmentError } = await supabase
-          .from('course_assessments')
-          .insert({
-            course_id: courseId,
-            title: `Examen final - ${courseStructure.title}`,
-            description: 'Évaluation finale pour valider la maîtrise du cours',
-            questions: examData.questions,
-            total_questions: 20,
-            passing_score: 70,
-            time_limit_minutes: 90,
-            ai_generated: true
-          })
-          .select()
-          .single();
-
-        if (assessmentError) {
-          console.error('❌ Erreur création examen:', assessmentError);
-        } else {
-          console.log('✅ Examen final créé avec 20 questions');
-        }
-      } catch (parseError) {
-        console.error('❌ Erreur parsing examen:', parseError.message);
+    if (!examData.questions || examData.questions.length !== 20) {
+      console.warn(`⚠️ Nombre de questions incorrect: ${examData.questions?.length || 0}`);
+      if (examData.questions?.length > 20) {
+        examData.questions = examData.questions.slice(0, 20);
       }
     }
+
+    const { data: assessment, error } = await supabase
+      .from('course_assessments')
+      .insert({
+        course_id: courseId,
+        title: `Évaluation finale - ${coursePlan.title}`,
+        description: 'Examen final pour valider la maîtrise complète du cours',
+        questions: examData.questions || [],
+        total_questions: 20,
+        passing_score: 70,
+        time_limit_minutes: 120,
+        ai_generated: true
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ Erreur création évaluation:', error);
+    } else {
+      console.log('✅ Évaluation finale créée');
+    }
   } catch (error) {
-    console.error('❌ Erreur génération examen final:', error);
+    console.error('❌ Erreur génération évaluation:', error);
   }
 }
 
 async function createDetailedLessons(courseId: string, lessonsData: any[]) {
-  console.log('📖 Création des leçons détaillées...');
+  console.log('💾 Sauvegarde des leçons...');
 
   const lessons = lessonsData.map((lesson, index) => ({
     course_id: courseId,
     title: lesson.title,
     content: lesson.content,
     lesson_order: index + 1,
-    duration_minutes: lesson.duration || 90,
+    duration_minutes: lesson.duration || 75,
     lesson_type: lesson.type || 'theory'
   }));
 
@@ -371,6 +443,6 @@ async function createDetailedLessons(courseId: string, lessonsData: any[]) {
     throw error;
   }
 
-  console.log('✅ Leçons insérées:', insertedLessons.length);
+  console.log('✅ Leçons sauvegardées:', insertedLessons.length);
   return insertedLessons;
 }

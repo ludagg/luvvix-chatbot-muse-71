@@ -36,12 +36,12 @@ const DeveloperSection = () => {
   };
 
   const copyNpmCommand = () => {
-    navigator.clipboard.writeText("npm install luvvix-id");
+    navigator.clipboard.writeText("npm install luvvix-cameroon-sdk");
     setNpmCopied(true);
   };
 
   const copyApiUrl = () => {
-    navigator.clipboard.writeText("https://api.luvvix.com/v1");
+    navigator.clipboard.writeText("https://api.luvvix.cm/v1");
     setApiUrlCopied(true);
   };
 
@@ -49,16 +49,16 @@ const DeveloperSection = () => {
     <section id="developer" className="py-20 bg-gray-50">
       <div className="container px-4 mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900">Pour les développeurs</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Solutions pour Développeurs Camerounais</h2>
           <p className="text-lg text-gray-600 mt-2 max-w-2xl mx-auto">
-            Intégrez facilement LuvviX ID dans votre application avec notre SDK ou notre API REST
+            Intégrez facilement LuvviX ID dans vos applications avec notre SDK ou API REST adaptés au marché africain
           </p>
         </div>
 
         <div className="max-w-4xl mx-auto">
           <Tabs defaultValue="sdk" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger value="sdk">SDK</TabsTrigger>
+              <TabsTrigger value="sdk">SDK LuvviX</TabsTrigger>
               <TabsTrigger value="rest">API REST</TabsTrigger>
             </TabsList>
 
@@ -68,7 +68,7 @@ const DeveloperSection = () => {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-semibold flex items-center">
                     <Code className="mr-2 text-purple-600" size={20} />
-                    Installation du SDK
+                    Installation du SDK LuvviX
                   </h3>
                   <Button
                     variant="outline"
@@ -91,11 +91,12 @@ const DeveloperSection = () => {
                 </div>
                 
                 <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm mb-4">
-                  npm install luvvix-id
+                  npm install luvvix-cameroon-sdk
                 </div>
                 
                 <p className="text-gray-700 text-sm mb-4">
-                  Le SDK LuvviX ID est disponible sur npm et facilite l'intégration de l'authentification dans votre application front-end.
+                  Le SDK LuvviX est spécialement conçu pour les développeurs camerounais et africains, 
+                  avec support des langues locales et intégration des solutions de paiement mobile.
                 </p>
                 
                 {/* Code Examples */}
@@ -116,7 +117,7 @@ const DeveloperSection = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => copyToClipboard(javascriptExample, "js")}
+                        onClick={() => copyToClipboard(javascriptExampleCameroon, "js")}
                         className="absolute top-2 right-2 flex items-center space-x-1 z-10"
                       >
                         {copied === "js" ? (
@@ -132,7 +133,7 @@ const DeveloperSection = () => {
                         )}
                       </Button>
                       <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-auto max-h-96">
-                        {javascriptExample}
+                        {javascriptExampleCameroon}
                       </pre>
                     </TabsContent>
                     
@@ -140,7 +141,7 @@ const DeveloperSection = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => copyToClipboard(reactExample, "react")}
+                        onClick={() => copyToClipboard(reactExampleCameroon, "react")}
                         className="absolute top-2 right-2 flex items-center space-x-1 z-10"
                       >
                         {copied === "react" ? (
@@ -156,7 +157,7 @@ const DeveloperSection = () => {
                         )}
                       </Button>
                       <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-auto max-h-96">
-                        {reactExample}
+                        {reactExampleCameroon}
                       </pre>
                     </TabsContent>
                     
@@ -164,7 +165,7 @@ const DeveloperSection = () => {
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => copyToClipboard(vueExample, "vue")}
+                        onClick={() => copyToClipboard(vueExampleCameroon, "vue")}
                         className="absolute top-2 right-2 flex items-center space-x-1 z-10"
                       >
                         {copied === "vue" ? (
@@ -180,7 +181,7 @@ const DeveloperSection = () => {
                         )}
                       </Button>
                       <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-auto max-h-96">
-                        {vueExample}
+                        {vueExampleCameroon}
                       </pre>
                     </TabsContent>
                   </Tabs>
@@ -188,15 +189,16 @@ const DeveloperSection = () => {
                   <div className="mt-8 pt-4 border-t border-gray-200">
                     <h4 className="font-medium mb-2">Documentation complète</h4>
                     <p className="text-gray-700 text-sm mb-4">
-                      Pour une documentation complète avec tous les endpoints, paramètres et exemples de code, consultez notre page de documentation API.
+                      Documentation complète avec exemples spécifiques pour le marché camerounais, 
+                      intégration Mobile Money et Orange Money.
                     </p>
                     <Button 
                       variant="outline" 
                       className="flex items-center"
-                      onClick={() => window.location.href = "/api-docs"}
+                      onClick={() => window.open("https://docs.luvvix.cm", "_blank")}
                     >
                       <Code className="mr-2 h-4 w-4" />
-                      Voir la documentation API
+                      Documentation LuvviX Cameroun
                     </Button>
                   </div>
                 </div>
@@ -209,7 +211,7 @@ const DeveloperSection = () => {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-semibold flex items-center">
                     <Server className="mr-2 text-purple-600" size={20} />
-                    API REST
+                    API REST LuvviX Cameroun
                   </h3>
                   <Button
                     variant="outline"
@@ -232,7 +234,7 @@ const DeveloperSection = () => {
                 </div>
 
                 <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm mb-4">
-                  Base URL: https://api.luvvix.com/v1
+                  Base URL: https://api.luvvix.cm/v1
                 </div>
 
                 <div className="space-y-8">
@@ -241,27 +243,28 @@ const DeveloperSection = () => {
                     <h4 className="text-lg font-semibold mb-4">Authentification</h4>
                     <div className="bg-gray-100 p-4 rounded-lg">
                       <p className="text-sm text-gray-600 mb-2">
-                        Toutes les requêtes à l'API doivent inclure votre clé d'API dans l'en-tête :
+                        Utilisez votre clé API LuvviX Cameroun dans l'en-tête :
                       </p>
                       <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm">
-                        {`Authorization: Bearer YOUR_API_KEY`}
+                        {`Authorization: Bearer LUVVIX_CM_API_KEY`}
                       </pre>
                     </div>
                   </div>
 
-                  {/* Endpoints */}
+                  {/* Endpoints Cameroun */}
                   <div>
-                    <h4 className="text-lg font-semibold mb-4">Endpoints principaux</h4>
+                    <h4 className="text-lg font-semibold mb-4">Endpoints Cameroun</h4>
                     
                     {/* Verify Token */}
                     <div className="mb-6">
-                      <h5 className="font-medium mb-2">Vérifier un token</h5>
+                      <h5 className="font-medium mb-2">Vérifier un token utilisateur</h5>
                       <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-{`POST /auth/verify
+{`POST /auth/verify-cm
 Content-Type: application/json
 
 {
-  "token": "user_access_token"
+  "token": "user_access_token",
+  "region": "cameroon"
 }`}
                       </pre>
                     </div>
@@ -270,8 +273,9 @@ Content-Type: application/json
                     <div className="mb-6">
                       <h5 className="font-medium mb-2">Obtenir les informations utilisateur</h5>
                       <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-{`GET /users/me
-Authorization: Bearer user_access_token`}
+{`GET /users/profile-cm
+Authorization: Bearer user_access_token
+X-Region: cameroon`}
                       </pre>
                     </div>
 
@@ -284,6 +288,22 @@ Content-Type: application/json
 
 {
   "token": "user_access_token"
+}`}
+                      </pre>
+                    </div>
+
+                    {/* Paiement Mobile Money */}
+                    <div className="mb-6">
+                      <h5 className="font-medium mb-2">Paiement Mobile Money</h5>
+                      <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+{`POST /payments/mobile-money
+Content-Type: application/json
+
+{
+  "amount": 5000,
+  "currency": "XAF",
+  "phone": "+237612345678",
+  "provider": "orange_cm"
 }`}
                       </pre>
                     </div>
@@ -309,17 +329,18 @@ Content-Type: application/json
                 </div>
 
                 <div className="mt-8 pt-4 border-t border-gray-200">
-                  <h4 className="font-medium mb-2">Documentation complète</h4>
+                  <h4 className="font-medium mb-2">Support Développeurs Cameroun</h4>
                   <p className="text-gray-700 text-sm mb-4">
-                    Pour une documentation détaillée de tous les endpoints, paramètres et exemples de code, consultez notre documentation API complète.
+                    Support technique en français, intégration avec les banques camerounaises, 
+                    et documentation adaptée au contexte local.
                   </p>
                   <Button 
                     variant="outline" 
                     className="flex items-center"
-                    onClick={() => window.location.href = "/api-docs"}
+                    onClick={() => window.open("https://support.luvvix.cm", "_blank")}
                   >
                     <Server className="mr-2 h-4 w-4" />
-                    Voir la documentation API
+                    Support Technique Cameroun
                   </Button>
                 </div>
               </div>
@@ -331,251 +352,128 @@ Content-Type: application/json
   );
 };
 
-// Example code snippets
-const javascriptExample = `// Initialiser LuvviX ID
-import { LuvviXID } from 'luvvix-id';
+// Code examples adapted for Cameroon
+const javascriptExampleCameroon = `// SDK LuvviX Cameroun
+import { LuvviXCameroon } from 'luvvix-cameroon-sdk';
 
-// Configuration
-const luvvixID = new LuvviXID({
-  appName: 'your-app-name', // 'main', 'pharmacy', 'streaming', ou 'chat'
-  redirectUrl: 'https://votre-app.com/callback'
+const luvvix = new LuvviXCameroon({
+  apiKey: 'your-api-key',
+  region: 'cameroon',
+  language: 'fr', // français par défaut
+  currency: 'XAF'
 });
 
-// Rediriger vers la page de connexion
-function login() {
-  luvvixID.redirectToLogin();
-}
-
-// Gérer le callback après authentification
-async function handleCallback() {
+// Authentification avec numéro de téléphone camerounais
+async function loginWithPhone() {
   try {
-    // Récupère et vérifie le token depuis l'URL
-    const authResult = await luvvixID.handleCallback();
-    
-    if (authResult.success) {
-      console.log('Utilisateur connecté:', authResult.user);
-      // Stocker le token
-      localStorage.setItem('luvvix_token', authResult.token);
-      // Rediriger vers votre application
-      window.location.href = '/dashboard';
-    }
+    const result = await luvvix.auth.loginWithPhone({
+      phone: '+237612345678',
+      countryCode: 'CM'
+    });
+    console.log('Connexion réussie:', result);
   } catch (error) {
-    console.error('Erreur d\\'authentification:', error);
+    console.error('Erreur de connexion:', error);
   }
 }
 
-// Vérifier si l'utilisateur est authentifié
-function checkAuth() {
-  return luvvixID.isAuthenticated();
-}
+// Paiement Mobile Money
+async function payWithMobileMoney() {
+  const payment = await luvvix.payments.mobileMoney({
+    amount: 5000, // en FCFA
+    phone: '+237612345678',
+    provider: 'orange_cm' // ou 'mtn_cm'
+  });
+  return payment;
+}`;
 
-// Obtenir les informations de l'utilisateur
-async function getUserProfile() {
-  try {
-    const userProfile = await luvvixID.getUserProfile();
-    console.log('Profil utilisateur:', userProfile);
-    return userProfile;
-  } catch (error) {
-    console.error('Erreur lors de la récupération du profil:', error);
-    return null;
-  }
-}
+const reactExampleCameroon = `// Composant React pour LuvviX Cameroun
+import React from 'react';
+import { useLuvviXCameroon } from 'luvvix-cameroon-sdk/react';
 
-// Déconnexion
-function logout() {
-  luvvixID.logout();
-  window.location.href = '/login';
-}
-`;
-
-const reactExample = `// Exemple d'intégration avec React
-import { useState, useEffect } from 'react';
-import { LuvviXID } from 'luvvix-id';
-
-// Créer un hook personnalisé pour LuvviX ID
-function useLuvviXID() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  // Initialiser le SDK
-  const luvvixID = new LuvviXID({
-    appName: 'your-app-name', // 'main', 'pharmacy', 'streaming', ou 'chat'
-    redirectUrl: window.location.origin + '/callback'
+function AuthCameroon() {
+  const { user, login, logout, payMobileMoney } = useLuvviXCameroon({
+    region: 'cameroon',
+    language: 'fr'
   });
 
-  useEffect(() => {
-    // Vérifier l'authentification au chargement
-    const checkAuthentication = async () => {
-      try {
-        if (luvvixID.isAuthenticated()) {
-          const profile = await luvvixID.getUserProfile();
-          setUser(profile);
-        }
-      } catch (err) {
-        setError(err);
-        // Token invalide, déconnexion
-        luvvixID.logout();
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuthentication();
-  }, []);
-
-  // Fonction de connexion
-  const login = () => {
-    luvvixID.redirectToLogin();
-  };
-
-  // Gérer le callback
-  const handleCallback = async () => {
-    setLoading(true);
+  const handleMobileMoneyPayment = async () => {
     try {
-      const authResult = await luvviXID.handleCallback();
-      if (authResult.success) {
-        setUser(authResult.user);
-        return true;
-      }
-      return false;
-    } catch (err) {
-      setError(err);
-      return false;
-    } finally {
-      setLoading(false);
+      const payment = await payMobileMoney({
+        amount: 5000,
+        phone: '+237612345678',
+        provider: 'orange_cm'
+      });
+      alert('Paiement réussi!');
+    } catch (error) {
+      alert('Erreur de paiement');
     }
   };
 
-  // Fonction de déconnexion
-  const logout = () => {
-    luvvixID.logout();
-    setUser(null);
-  };
-
-  return { user, loading, error, login, logout, handleCallback };
-}
-
-// Exemple de composant d'authentification
-function AuthComponent() {
-  const { user, loading, login, logout } = useLuvviXID();
-
-  if (loading) return <div>Chargement...</div>;
-
   return (
-    <div>
+    <div className="auth-cameroon">
       {user ? (
         <div>
-          <h2>Bonjour, {user.full_name || user.email}</h2>
-          <button onClick={logout}>Déconnexion</button>
+          <p>Bienvenue {user.name}</p>
+          <button onClick={handleMobileMoneyPayment}>
+            Payer avec Orange Money
+          </button>
+          <button onClick={logout}>Se déconnecter</button>
         </div>
       ) : (
-        <button onClick={login}>Connexion avec LuvviX ID</button>
+        <button onClick={() => login({ region: 'cameroon' })}>
+          Se connecter avec LuvviX
+        </button>
       )}
     </div>
   );
-}
+}`;
 
-// Composant pour gérer le callback
-function CallbackHandler() {
-  const { handleCallback } = useLuvviXID();
-  const [processing, setProcessing] = useState(true);
-  const [error, setError] = useState(false);
-  
-  useEffect(() => {
-    const processCallback = async () => {
-      const success = await handleCallback();
-      if (success) {
-        window.location.href = '/dashboard';
-      } else {
-        setError(true);
-        setProcessing(false);
-      }
-    };
-    
-    processCallback();
-  }, [handleCallback]);
-
-  if (processing) return <div>Traitement de l'authentification...</div>;
-  if (error) return <div>Erreur d'authentification. <a href="/login">Réessayer</a></div>;
-  
-  return null;
-}
-`;
-
-const vueExample = `<!-- Vue.js 3 Composition API -->
-<script setup>
-import { ref, onMounted } from 'vue';
-import { LuvviXID } from 'luvvix-id';
-
-const user = ref(null);
-const loading = ref(true);
-const error = ref(null);
-
-// Initialiser le client LuvviX ID
-const luvvixID = new LuvviXID({
-  appName: 'your-app-name', // 'main', 'pharmacy', 'streaming', ou 'chat'
-  redirectUrl: window.location.origin + '/callback'
-});
-
-// Vérifier l'authentification au chargement
-onMounted(async () => {
-  try {
-    if (luvvixID.isAuthenticated()) {
-      const profile = await luvvixID.getUserProfile();
-      user.value = profile;
-    }
-  } catch (err) {
-    error.value = err;
-    // Token invalide, déconnexion
-    luvvixID.logout();
-  } finally {
-    loading.value = false;
-  }
-});
-
-// Fonction de connexion
-function login() {
-  luvvixID.redirectToLogin();
-}
-
-// Gérer le callback
-async function handleCallback() {
-  loading.value = true;
-  try {
-    const authResult = await luvvixID.handleCallback();
-    if (authResult.success) {
-      user.value = authResult.user;
-      return true;
-    }
-    return false;
-  } catch (err) {
-    error.value = err;
-    return false;
-  } finally {
-    loading.value = false;
-  }
-}
-
-// Fonction de déconnexion
-function logout() {
-  luvvixID.logout();
-  user.value = null;
-}
-</script>
-
+const vueExampleCameroon = `<!-- Composant Vue.js pour LuvviX Cameroun -->
 <template>
-  <div>
-    <div v-if="loading">Chargement...</div>
-    <div v-else-if="user">
-      <h2>Bonjour, {{ user.full_name || user.email }}</h2>
-      <button @click="logout">Déconnexion</button>
+  <div class="auth-cameroon">
+    <div v-if="user">
+      <p>Bienvenue {{ user.name }}</p>
+      <button @click="payWithOrangeMoney">Payer avec Orange Money</button>
+      <button @click="logout">Se déconnecter</button>
     </div>
     <div v-else>
-      <button @click="login">Connexion avec LuvviX ID</button>
+      <button @click="login">Se connecter avec LuvviX</button>
     </div>
   </div>
 </template>
-`;
+
+<script>
+import { LuvviXCameroon } from 'luvvix-cameroon-sdk';
+
+export default {
+  data() {
+    return {
+      user: null,
+      luvvix: new LuvviXCameroon({
+        region: 'cameroon',
+        language: 'fr'
+      })
+    };
+  },
+  methods: {
+    async login() {
+      this.user = await this.luvvix.auth.login({
+        region: 'cameroon'
+      });
+    },
+    async payWithOrangeMoney() {
+      await this.luvvix.payments.mobileMoney({
+        amount: 5000,
+        provider: 'orange_cm',
+        phone: '+237612345678'
+      });
+    },
+    logout() {
+      this.luvvix.auth.logout();
+      this.user = null;
+    }
+  }
+};
+</script>`;
 
 export default DeveloperSection;

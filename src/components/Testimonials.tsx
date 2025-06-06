@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 const testimonials = [
   {
     id: 1,
-    content: "En tant que PDG de LuvviX Technologies, je suis fier de voir comment notre écosystème transforme la vie numérique des Camerounais. Notre vision d'une Afrique connectée et innovante devient réalité chaque jour.",
+    content: "En tant que PDG de LuvviX Technologies, je suis fier de voir comment notre écosystème transforme la vie numérique des utilisateurs. Notre vision d'une technologie accessible et innovante devient réalité chaque jour.",
     name: "Ludovic Aggaï N.",
     role: "PDG & Fondateur",
     company: "LuvviX Technologies",
@@ -17,7 +17,7 @@ const testimonials = [
     content: "LuvviX Learn a complètement transformé ma façon d'apprendre. Les cours d'IA sont excellents et l'assistant virtuel m'aide vraiment à progresser. Je recommande vivement cette plateforme !",
     name: "Barbara T.",
     role: "Utilisatrice",
-    company: "Étudiante en Informatique - Université de Douala",
+    company: "Étudiante en Marketing Digital",
     image: null
   },
   {
@@ -25,7 +25,7 @@ const testimonials = [
     content: "En tant qu'ingénieur logiciel, j'utilise quotidiennement les APIs LuvviX dans mes projets. La documentation est claire et le support technique répond rapidement. Un écosystème vraiment professionnel.",
     name: "Fabrice Fotso",
     role: "Ingénieur Logiciel",
-    company: "Senior Developer - MTN Cameroun",
+    company: "Senior Developer",
     image: null
   }
 ];
@@ -67,7 +67,7 @@ const Testimonials = () => {
       <div className="container mx-auto px-4">
         <h2 className="section-heading">Témoignages de notre communauté</h2>
         <p className="section-subheading">
-          Découvrez ce que disent les utilisateurs, partenaires et leaders de LuvviX Technologies au Cameroun
+          Découvrez ce que disent les utilisateurs, partenaires et leaders de LuvviX Technologies
         </p>
 
         <div className="mt-12 mb-24 max-w-4xl mx-auto">
@@ -130,7 +130,7 @@ const Testimonials = () => {
         </div>
 
         <div className="max-w-5xl mx-auto">
-          <h3 className="text-2xl font-bold text-center mb-6">LuvviX Technologies : L'Innovation Camerounaise</h3>
+          <h3 className="text-2xl font-bold text-center mb-6">LuvviX Technologies : L'Innovation Globale</h3>
           <div className="aspect-w-16 aspect-h-9 bg-black rounded-lg shadow-lg overflow-hidden relative">
             <div className="absolute inset-0 bg-gradient-to-br from-luvvix-purple to-luvvix-darkpurple opacity-90"></div>
             <div className="absolute inset-0 flex items-center justify-center">
@@ -145,10 +145,10 @@ const Testimonials = () => {
             </div>
             
             <div className="absolute bottom-6 left-6 right-6 text-white">
-              <h4 className="text-2xl font-bold mb-2">🇨🇲 Made in Cameroon, Pensé pour l'Afrique</h4>
+              <h4 className="text-2xl font-bold mb-2">🌍 Innovation Mondiale, Impact Local</h4>
               <p className="text-sm md:text-base opacity-90">
-                Découvrez comment LuvviX Technologies révolutionne le paysage technologique camerounais 
-                avec des solutions innovantes adaptées aux réalités locales.
+                Découvrez comment LuvviX Technologies révolutionne l'écosystème technologique mondial 
+                avec des solutions innovantes adaptées aux besoins modernes.
               </p>
               <div className="flex flex-wrap gap-4 mt-4">
                 <span className="bg-white/20 px-3 py-1 rounded-full text-sm">🏥 Santé Digitale</span>
@@ -165,13 +165,13 @@ const Testimonials = () => {
               onPause={() => setIsPlaying(false)}
               onEnded={() => setIsPlaying(false)}
             >
-              <source src="/luvvix-cameroon-presentation.mp4" type="video/mp4" />
+              <source src="/luvvix-presentation.mp4" type="video/mp4" />
               Votre navigateur ne prend pas en charge la lecture de vidéos.
             </video>
           </div>
           
           <div className="mt-4 text-center text-sm text-gray-500">
-            © 2024 LuvviX Technologies Cameroun | Tous droits réservés | Siège social : Douala, Cameroun
+            © 2024 LuvviX Technologies | Tous droits réservés | Innovation mondiale
           </div>
         </div>
       </div>

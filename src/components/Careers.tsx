@@ -9,7 +9,7 @@ const jobs = [
     id: 1,
     title: "Ingénieur IA Senior",
     department: "LuvviX AI",
-    location: "Douala, Cameroun",
+    location: "Remote Worldwide",
     type: "CDI",
     remote: true
   },
@@ -17,15 +17,15 @@ const jobs = [
     id: 2,
     title: "Développeur Mobile Flutter",
     department: "LuvviX Mobile",
-    location: "Yaoundé, Cameroun",
+    location: "Remote - Europe/Afrique",
     type: "CDI",
-    remote: false
+    remote: true
   },
   {
     id: 3,
     title: "Data Scientist",
     department: "LuvviX Analytics",
-    location: "Douala, Cameroun",
+    location: "Remote Worldwide",
     type: "CDI",
     remote: true
   },
@@ -33,15 +33,15 @@ const jobs = [
     id: 4,
     title: "Responsable Produit",
     department: "LuvviX Learn",
-    location: "Yaoundé, Cameroun",
+    location: "Remote - Francophone",
     type: "CDI",
-    remote: false
+    remote: true
   },
   {
     id: 5,
     title: "Spécialiste DevOps",
     department: "LuvviX Infrastructure",
-    location: "Remote Afrique",
+    location: "Remote Global",
     type: "Freelance",
     remote: true
   },
@@ -49,9 +49,9 @@ const jobs = [
     id: 6,
     title: "UX/UI Designer",
     department: "LuvviX Design",
-    location: "Douala, Cameroun",
+    location: "Remote Europe",
     type: "Stage",
-    remote: false
+    remote: true
   }
 ];
 
@@ -59,10 +59,10 @@ const Careers = () => {
   return (
     <section id="careers" className="container-padding bg-white">
       <div className="container mx-auto px-4">
-        <h2 className="section-heading">Carrières LuvviX Cameroun</h2>
+        <h2 className="section-heading">Carrières LuvviX</h2>
         <p className="section-subheading">
-          Rejoignez l'équipe qui révolutionne la technologie en Afrique. 
-          Construisons ensemble l'avenir numérique du Cameroun.
+          Rejoignez l'équipe qui révolutionne la technologie mondiale. 
+          Construisons ensemble l'avenir numérique de demain.
         </p>
 
         <Tabs defaultValue="careers" className="w-full">
@@ -129,7 +129,7 @@ const Careers = () => {
                 </div>
                 
                 <div className="bg-gray-50 rounded-lg p-6 h-fit">
-                  <h3 className="text-xl font-bold mb-4">Pourquoi LuvviX Cameroun?</h3>
+                  <h3 className="text-xl font-bold mb-4">Pourquoi LuvviX ?</h3>
                   <ul className="space-y-4 mb-6">
                     <li className="flex">
                       <div className="h-6 w-6 rounded-full bg-luvvix-purple/20 flex items-center justify-center text-luvvix-purple mr-3 mt-0.5 flex-shrink-0">
@@ -137,7 +137,7 @@ const Careers = () => {
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       </div>
-                      <span>Pionnier de l'innovation technologique au Cameroun</span>
+                      <span>Pionnier de l'innovation technologique mondiale</span>
                     </li>
                     <li className="flex">
                       <div className="h-6 w-6 rounded-full bg-luvvix-purple/20 flex items-center justify-center text-luvvix-purple mr-3 mt-0.5 flex-shrink-0">
@@ -145,7 +145,7 @@ const Careers = () => {
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       </div>
-                      <span>Salaires compétitifs en FCFA et avantages locaux</span>
+                      <span>Salaires compétitifs et avantages globaux</span>
                     </li>
                     <li className="flex">
                       <div className="h-6 w-6 rounded-full bg-luvvix-purple/20 flex items-center justify-center text-luvvix-purple mr-3 mt-0.5 flex-shrink-0">
@@ -161,13 +161,13 @@ const Careers = () => {
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       </div>
-                      <span>Impact réel sur le développement numérique africain</span>
+                      <span>Impact réel sur le développement numérique mondial</span>
                     </li>
                   </ul>
                   <div className="bg-luvvix-purple rounded-lg p-4 text-white">
                     <h4 className="font-medium mb-2">Programme de Stage</h4>
                     <p className="text-sm mb-3">
-                      Programme de stage de 6 mois pour étudiants camerounais avec 
+                      Programme de stage de 6 mois pour étudiants internationaux avec 
                       possibilité d'embauche et mentorat par nos experts.
                     </p>
                     <Button variant="outline" className="w-full border-white text-white hover:bg-white hover:text-luvvix-purple">
@@ -181,18 +181,18 @@ const Careers = () => {
           
           <TabsContent value="culture" className="border-none outline-none">
             <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
-              <h3 className="text-2xl font-bold mb-6">Notre Culture chez LuvviX Cameroun</h3>
+              <h3 className="text-2xl font-bold mb-6">Notre Culture chez LuvviX</h3>
               <p className="text-gray-600 mb-8">
-                Chez LuvviX, nous croyons au potentiel infini du talent camerounais. 
+                Chez LuvviX, nous croyons au potentiel infini du talent mondial. 
                 Notre culture d'entreprise valorise l'innovation, la collaboration et l'impact social.
               </p>
               
               <div className="grid md:grid-cols-2 gap-6 mb-8">
                 <div className="border rounded-lg p-6">
-                  <h4 className="font-bold mb-3 text-luvvix-purple">🇨🇲 Fierté Camerounaise</h4>
+                  <h4 className="font-bold mb-3 text-luvvix-purple">🌍 Vision Mondiale</h4>
                   <p className="text-sm text-gray-600">
-                    Nous développons des solutions qui répondent aux besoins spécifiques 
-                    du marché camerounais et africain.
+                    Nous développons des solutions qui répondent aux besoins 
+                    du marché mondial avec une approche locale.
                   </p>
                 </div>
                 
@@ -208,31 +208,31 @@ const Careers = () => {
                   <h4 className="font-bold mb-3 text-luvvix-purple">🤝 Équipe Diverse</h4>
                   <p className="text-sm text-gray-600">
                     Équipe multiculturelle avec talents de toutes les régions 
-                    du Cameroun et d'Afrique francophone.
+                    du monde travaillant en parfaite harmonie.
                   </p>
                 </div>
                 
                 <div className="border rounded-lg p-6">
                   <h4 className="font-bold mb-3 text-luvvix-purple">📚 Formation Continue</h4>
                   <p className="text-sm text-gray-600">
-                    Budget formation de 500,000 FCFA par employé pour 
+                    Budget formation personnalisé pour 
                     certifications et conférences internationales.
                   </p>
                 </div>
               </div>
               
               <div className="bg-gradient-to-r from-luvvix-purple to-luvvix-darkpurple rounded-lg p-6 text-white">
-                <h4 className="font-bold text-lg mb-4">Rejoignez la Révolution Tech Camerounaise</h4>
+                <h4 className="font-bold text-lg mb-4">Rejoignez la Révolution Tech Mondiale</h4>
                 <p className="mb-4">
-                  Vous êtes passionné(e) par la technologie et vous voulez faire la différence au Cameroun ? 
+                  Vous êtes passionné(e) par la technologie et vous voulez faire la différence ? 
                   Envoyez-nous votre CV et parlons de votre avenir chez LuvviX.
                 </p>
                 <div className="flex gap-4">
                   <Button variant="outline" className="border-white text-white hover:bg-white hover:text-luvvix-purple">
-                    📧 careers@luvvix.cm
+                    📧 careers@luvvix.com
                   </Button>
                   <Button variant="outline" className="border-white text-white hover:bg-white hover:text-luvvix-purple">
-                    📱 +237 6XX XXX XXX
+                    🌐 Remote Friendly
                   </Button>
                 </div>
               </div>

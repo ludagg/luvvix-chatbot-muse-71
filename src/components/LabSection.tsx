@@ -6,42 +6,42 @@ const researchProjects = [
   {
     id: 1,
     year: "2025",
-    title: "LuvviX Vision AI Cameroun",
-    description: "Système de reconnaissance d'images adapté au contexte camerounais : reconnaissance de plantes médicinales locales, identification de produits agricoles et analyse de documents administratifs en français.",
+    title: "LuvviX Vision AI",
+    description: "Système de reconnaissance d'images avancé : reconnaissance de documents, analyse d'images médicales, identification de produits et analyse de contenus visuels en temps réel.",
     status: "En développement",
-    impact: "Agriculture et Santé"
+    impact: "IA & Vision"
   },
   {
     id: 2,
     year: "2024",
-    title: "Assistant IA Langues Locales",
-    description: "Intelligence artificielle multilingue supportant le français, l'anglais, et les principales langues camerounaises (Bamiléké, Bassa, Duala). Intégration avec reconnaissance vocale adaptée aux accents locaux.",
+    title: "Assistant IA Multilingue",
+    description: "Intelligence artificielle supportant plus de 50 langues avec reconnaissance vocale adaptative et traduction en temps réel pour une communication globale fluide.",
     status: "Alpha",
-    impact: "Éducation et Inclusion"
+    impact: "Communication"
   },
   {
     id: 3,
     year: "2024",
-    title: "Blockchain Santé Cameroun",
-    description: "Système de gestion sécurisée des dossiers médicaux sur blockchain, interopérable entre hôpitaux camerounais avec support des cartes d'identité nationales.",
+    title: "Blockchain Santé Globale",
+    description: "Système de gestion sécurisée des dossiers médicaux sur blockchain, interopérable entre établissements de santé avec conformité HIPAA et RGPD.",
     status: "Recherche",
     impact: "Santé Publique"
   },
   {
     id: 4,
     year: "2024",
-    title: "FinTech Mobile Money",
-    description: "API unifiée pour l'intégration des solutions de paiement mobile (Orange Money, MTN MoMo) avec fonctionnalités avancées de micro-crédit et épargne collaborative.",
+    title: "FinTech Solutions",
+    description: "API unifiée pour l'intégration des solutions de paiement globales avec fonctionnalités avancées de micro-crédit, épargne collaborative et gestion financière.",
     status: "Beta",
-    impact: "Inclusion Financière"
+    impact: "Finance"
   },
   {
     id: 5,
     year: "2023",
     title: "AgriTech IoT Platform",
-    description: "Plateforme IoT pour agriculture intelligente : capteurs de sol, prédiction météo, conseils personnalisés pour cultures camerounaises (cacao, café, banane plantain).",
+    description: "Plateforme IoT pour agriculture intelligente : capteurs environnementaux, prédiction météo, conseils personnalisés pour optimisation des rendements agricoles.",
     status: "Production",
-    impact: "Agriculture Durable"
+    impact: "Agriculture"
   }
 ];
 
@@ -53,12 +53,12 @@ const LabSection = () => {
           <div className="bg-luvvix-purple/20 p-3 rounded-full mr-3">
             <FlaskConical size={24} className="text-luvvix-purple" />
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold">LuvviX Lab Cameroun</h2>
+          <h2 className="text-3xl md:text-4xl font-bold">LuvviX Lab</h2>
         </div>
 
         <p className="section-subheading">
-          Notre laboratoire de recherche et développement au cœur de l'Afrique. 
-          Nous développons les technologies de demain adaptées aux réalités camerounaises.
+          Notre laboratoire de recherche et développement mondial. 
+          Nous développons les technologies de demain pour transformer l'avenir numérique.
         </p>
 
         {/* Innovation Metrics */}
@@ -67,7 +67,7 @@ const LabSection = () => {
             <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
               <Brain size={24} className="text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold text-luvvix-purple mb-2">15+</h3>
+            <h3 className="text-2xl font-bold text-luvvix-purple mb-2">25+</h3>
             <p className="text-gray-600">Projets R&D Actifs</p>
           </div>
           
@@ -75,7 +75,7 @@ const LabSection = () => {
             <div className="w-12 h-12 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
               <Cpu size={24} className="text-green-600" />
             </div>
-            <h3 className="text-2xl font-bold text-luvvix-purple mb-2">8</h3>
+            <h3 className="text-2xl font-bold text-luvvix-purple mb-2">15</h3>
             <p className="text-gray-600">Brevets Déposés</p>
           </div>
           
@@ -83,7 +83,7 @@ const LabSection = () => {
             <div className="w-12 h-12 mx-auto bg-purple-100 rounded-full flex items-center justify-center mb-4">
               <Smartphone size={24} className="text-purple-600" />
             </div>
-            <h3 className="text-2xl font-bold text-luvvix-purple mb-2">12</h3>
+            <h3 className="text-2xl font-bold text-luvvix-purple mb-2">30</h3>
             <p className="text-gray-600">Chercheurs Ph.D</p>
           </div>
           
@@ -91,8 +91,8 @@ const LabSection = () => {
             <div className="w-12 h-12 mx-auto bg-orange-100 rounded-full flex items-center justify-center mb-4">
               <Cloud size={24} className="text-orange-600" />
             </div>
-            <h3 className="text-2xl font-bold text-luvvix-purple mb-2">3M</h3>
-            <p className="text-gray-600">FCFA Investis R&D</p>
+            <h3 className="text-2xl font-bold text-luvvix-purple mb-2">$2M</h3>
+            <p className="text-gray-600">Investis R&D</p>
           </div>
         </div>
 
@@ -138,11 +138,11 @@ const LabSection = () => {
         <div className="mt-24 bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="grid md:grid-cols-2">
             <div className="p-8 md:p-12">
-              <h3 className="text-2xl font-bold mb-4">Innovation Made in Cameroon</h3>
+              <h3 className="text-2xl font-bold mb-4">Innovation Technologique Mondiale</h3>
               <p className="text-gray-600 mb-6">
-                Le LuvviX Lab Cameroun est le premier centre de recherche technologique privé du pays. 
-                Nos équipes développent des solutions qui transforment la vie quotidienne des Camerounais 
-                tout en rayonnant sur l'ensemble du continent africain.
+                Le LuvviX Lab est un centre de recherche technologique de pointe. 
+                Nos équipes développent des solutions qui transforment les industries 
+                et améliorent la vie quotidienne à travers le monde.
               </p>
               <ul className="space-y-3 mb-8">
                 <li className="flex items-start">
@@ -151,7 +151,7 @@ const LabSection = () => {
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <span>IA multilingue avec support des langues camerounaises</span>
+                  <span>IA multilingue avec support de 50+ langues</span>
                 </li>
                 <li className="flex items-start">
                   <div className="h-6 w-6 rounded-full bg-luvvix-purple/20 flex items-center justify-center text-luvvix-purple mr-3 mt-0.5">
@@ -159,7 +159,7 @@ const LabSection = () => {
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <span>Solutions AgriTech pour le cacao et café camerounais</span>
+                  <span>Solutions AgriTech pour l'agriculture mondiale</span>
                 </li>
                 <li className="flex items-start">
                   <div className="h-6 w-6 rounded-full bg-luvvix-purple/20 flex items-center justify-center text-luvvix-purple mr-3 mt-0.5">
@@ -167,7 +167,7 @@ const LabSection = () => {
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <span>Blockchain pour la sécurisation des données médicales</span>
+                  <span>Blockchain pour la sécurisation des données</span>
                 </li>
               </ul>
               <Button className="bg-luvvix-purple hover:bg-luvvix-darkpurple">
@@ -179,15 +179,14 @@ const LabSection = () => {
               <div>
                 <h3 className="text-2xl font-bold mb-4">Programme Innovation Étudiants</h3>
                 <p className="mb-6">
-                  Étudiants camerounais en informatique ? Rejoignez notre programme 
-                  d'innovation et travaillez sur des projets révolutionnaires tout en 
-                  poursuivant vos études.
+                  Étudiants en informatique ? Rejoignez notre programme 
+                  d'innovation mondial et travaillez sur des projets révolutionnaires.
                 </p>
                 <div className="space-y-2 mb-6">
-                  <p className="text-sm">✅ Bourse de recherche : 150,000 FCFA/mois</p>
+                  <p className="text-sm">✅ Bourse de recherche mensuelle</p>
                   <p className="text-sm">✅ Mentorat par nos experts</p>
                   <p className="text-sm">✅ Accès aux technologies de pointe</p>
-                  <p className="text-sm">✅ Possibilité d'embauche post-diplôme</p>
+                  <p className="text-sm">✅ Opportunités d'emploi international</p>
                 </div>
                 <Button variant="outline" className="border-white text-white hover:bg-white hover:text-luvvix-purple">
                   Candidater au programme

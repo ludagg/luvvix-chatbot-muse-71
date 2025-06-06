@@ -15,11 +15,11 @@ serve(async (req) => {
   }
 
   try {
-    const { course, lessons, questionCount = 20 } = await req.json();
+    const { course, lessons, questionCount = 10 } = await req.json();
     console.log('🧩 Génération de quiz pour:', course.title, 'avec', questionCount, 'questions');
 
-    // Limiter à 20 questions maximum
-    const finalQuestionCount = Math.min(questionCount, 20);
+    // Forcer à 10 questions maximum
+    const finalQuestionCount = Math.min(questionCount, 10);
     
     const quiz = await generateQuizWithGemini(course, lessons, finalQuestionCount);
 
@@ -37,7 +37,7 @@ serve(async (req) => {
 });
 
 async function generateQuizWithGemini(course: any, lessons: any[], questionCount: number) {
-  console.log('🧠 Génération de quiz intelligent avec Gemini...');
+  console.log('🧠 Génération de quiz intelligent avec Gemini 1.5 Flash...');
 
   const lessonsContent = lessons.map(l => `${l.title}: ${l.content}`).join('\n\n');
 
@@ -50,17 +50,17 @@ NIVEAU : ${course.difficulty}
 OBJECTIFS : ${course.objectives?.join(', ')}
 
 CONTENU DES LEÇONS :
-${lessonsContent.substring(0, 6000)}
+${lessonsContent.substring(0, 4000)}
 
 INSTRUCTIONS IMPORTANTES :
 1. Crée EXACTEMENT ${questionCount} questions QCM de qualité professionnelle
 2. Couvre TOUT le contenu du cours de manière équilibrée
-3. Varie les niveaux : connaissance (25%), compréhension (35%), application (25%), analyse (15%)
+3. Varie les niveaux : connaissance (30%), compréhension (40%), application (30%)
 4. 4 choix de réponse par question, avec UNE seule bonne réponse
 5. Inclus des explications détaillées pour chaque réponse
 6. Répartis les questions sur tous les sujets abordés
 7. Assure-toi que les questions sont précises et sans ambiguïté
-8. Chaque question vaut 5 points (total: ${questionCount * 5} points)
+8. Chaque question vaut 10 points (total: ${questionCount * 10} points)
 
 Réponds UNIQUEMENT au format JSON suivant :
 {
@@ -73,12 +73,13 @@ Réponds UNIQUEMENT au format JSON suivant :
       "explanation": "Explication détaillée de pourquoi cette réponse est correcte et les autres incorrectes",
       "category": "Catégorie du sujet",
       "difficulty": "beginner/intermediate/advanced",
-      "points": 5
+      "points": 10,
+      "type": "multiple_choice"
     }
   ]
 }`;
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiApiKey}`, {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -89,7 +90,7 @@ Réponds UNIQUEMENT au format JSON suivant :
         temperature: 0.3,
         topK: 40,
         topP: 0.8,
-        maxOutputTokens: 8192
+        maxOutputTokens: 4096
       }
     })
   });
@@ -97,7 +98,7 @@ Réponds UNIQUEMENT au format JSON suivant :
   const result = await response.json();
   
   if (!result.candidates?.[0]?.content?.parts?.[0]?.text) {
-    throw new Error('Réponse invalide de Gemini');
+    throw new Error('Réponse invalide de Gemini 1.5 Flash');
   }
 
   const generatedText = result.candidates[0].content.parts[0].text;
@@ -122,7 +123,7 @@ Réponds UNIQUEMENT au format JSON suivant :
     }
   }
   
-  console.log('✅ Quiz généré:', quizData.questions.length, 'questions');
+  console.log('✅ Quiz généré avec Gemini 1.5 Flash:', quizData.questions.length, 'questions');
 
   return quizData;
 }

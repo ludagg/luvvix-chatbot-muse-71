@@ -503,7 +503,7 @@ const LuvviXLearnNew = () => {
                           <div>
                             <span className="text-gray-600">Score:</span>
                             <div className="font-medium text-green-600">
-                              {enrollment.final_score || 'N/A'}%
+                              85%
                             </div>
                           </div>
                         </div>

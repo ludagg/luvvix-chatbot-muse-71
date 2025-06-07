@@ -2,7 +2,7 @@
 import { useState, useMemo } from "react";
 import AppIcon from "./AppIcon";
 import SearchBar from "./SearchBar";
-import { Brain, FileText, Newspaper, CloudSun, Settings, User, ShieldCheck, Cloud, Bot, Sparkles, GraduationCap, Code } from "lucide-react";
+import { Brain, FileText, Newspaper, CloudSun, Settings, User, ShieldCheck, Cloud, Bot, Sparkles, Code } from "lucide-react";
 
 interface AppDefinition {
   id: string;
@@ -23,15 +23,6 @@ const apps: AppDefinition[] = [
     to: "/ai-studio",
     color: "bg-violet-500",
     keywords: ["ia", "intelligence", "artificielle", "ai", "assistant", "chatbot", "studio", "agent"]
-  },
-  {
-    id: "learn",
-    name: "LuvviX Learn",
-    description: "Plateforme d'apprentissage IA",
-    icon: GraduationCap,
-    to: "/learn",
-    color: "bg-blue-500",
-    keywords: ["learn", "apprentissage", "formation", "cours", "certification", "éducation"]
   },
   {
     id: "code-studio",
@@ -72,11 +63,11 @@ const apps: AppDefinition[] = [
   {
     id: "cloud",
     name: "LuvviX Cloud",
-    description: "Stockage et partage de fichiers",
+    description: "Gestion cloud intelligente avec IA",
     icon: Cloud,
     to: "/cloud",
     color: "bg-indigo-500",
-    keywords: ["cloud", "stockage", "files", "fichiers"]
+    keywords: ["cloud", "stockage", "files", "fichiers", "dropbox", "google", "drive", "ia"]
   },
   {
     id: "settings",

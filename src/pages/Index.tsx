@@ -96,7 +96,7 @@ const Index = () => {
                     <Cloud className="w-8 h-8 text-sky-600 dark:text-sky-400" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">{t.app.cloud}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">Stockez et partagez vos fichiers en toute sécurité.</p>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Connectez vos services cloud et gérez vos fichiers avec l'IA.</p>
                   <Link to="/cloud">
                     <Button variant="outline" size="sm">{t.common.view}</Button>
                   </Link>

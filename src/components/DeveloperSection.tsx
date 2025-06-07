@@ -1,479 +1,514 @@
-import { Button } from "@/components/ui/button";
+
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, Code, Server } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Code, ExternalLink, Key, Shield, Zap, Copy, Check } from "lucide-react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 const DeveloperSection = () => {
-  const [copied, setCopied] = useState<string | null>(null);
-  const [npmCopied, setNpmCopied] = useState(false);
-  const [apiUrlCopied, setApiUrlCopied] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
-  // Reset copy states after 2 seconds
-  useEffect(() => {
-    if (copied) {
-      const timeout = setTimeout(() => setCopied(null), 2000);
-      return () => clearTimeout(timeout);
-    }
-  }, [copied]);
-
-  useEffect(() => {
-    if (npmCopied) {
-      const timeout = setTimeout(() => setNpmCopied(false), 2000);
-      return () => clearTimeout(timeout);
-    }
-  }, [npmCopied]);
-
-  useEffect(() => {
-    if (apiUrlCopied) {
-      const timeout = setTimeout(() => setApiUrlCopied(false), 2000);
-      return () => clearTimeout(timeout);
-    }
-  }, [apiUrlCopied]);
-
-  const copyToClipboard = (text: string, id: string) => {
+  const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    setCopied(id);
+    setCopiedCode(label);
+    toast.success(`${label} copié dans le presse-papiers`);
+    setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const copyNpmCommand = () => {
-    navigator.clipboard.writeText("npm install luvvix-cameroon-sdk");
-    setNpmCopied(true);
-  };
-
-  const copyApiUrl = () => {
-    navigator.clipboard.writeText("https://api.luvvix.cm/v1");
-    setApiUrlCopied(true);
-  };
+  const apiKeys = [
+    'luvvix_api_sk_live_51H1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6',
+    'luvvix_api_sk_live_61A2B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T1U2V3W4X5Y6Z7',
+    'luvvix_api_sk_live_71B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T1U2V3W4X5Y6Z7A8',
+    'luvvix_api_sk_live_81C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T1U2V3W4X5Y6Z7A8B9',
+    'luvvix_api_sk_live_91D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T1U2V3W4X5Y6Z7A8B9C0'
+  ];
 
   return (
-    <section id="developer" className="py-20 bg-gray-50">
-      <div className="container px-4 mx-auto">
+    <section className="py-16 bg-gray-50 dark:bg-gray-900" id="developers">
+      <div className="container mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900">Solutions pour Développeurs Camerounais</h2>
-          <p className="text-lg text-gray-600 mt-2 max-w-2xl mx-auto">
-            Intégrez facilement LuvviX ID dans vos applications avec notre SDK ou API REST adaptés au marché africain
+          <h2 className="text-3xl font-bold mb-4">API LuvviX ID</h2>
+          <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            Intégrez l'authentification LuvviX ID dans vos applications avec notre API REST simple et sécurisée
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          <Tabs defaultValue="sdk" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger value="sdk">SDK LuvviX</TabsTrigger>
-              <TabsTrigger value="rest">API REST</TabsTrigger>
-            </TabsList>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+            <TabsTrigger value="authentication">Authentification</TabsTrigger>
+            <TabsTrigger value="endpoints">Endpoints</TabsTrigger>
+            <TabsTrigger value="examples">Exemples</TabsTrigger>
+            <TabsTrigger value="keys">Clés API</TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="sdk">
-              {/* SDK Installation */}
-              <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold flex items-center">
-                    <Code className="mr-2 text-purple-600" size={20} />
-                    Installation du SDK LuvviX
-                  </h3>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center space-x-1"
-                    onClick={copyNpmCommand}
-                  >
-                    {npmCopied ? (
-                      <>
-                        <Check size={14} />
-                        <span>Copié!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={14} />
-                        <span>Copier</span>
-                      </>
-                    )}
-                  </Button>
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <Shield className="h-8 w-8 text-blue-600 mb-2" />
+                  <CardTitle>Authentification Sécurisée</CardTitle>
+                  <CardDescription>
+                    Système d'authentification robuste avec tokens JWT et OAuth 2.0
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <Zap className="h-8 w-8 text-green-600 mb-2" />
+                  <CardTitle>API REST Simple</CardTitle>
+                  <CardDescription>
+                    Endpoints HTTPS simples, documentation complète et réponses JSON
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <Key className="h-8 w-8 text-purple-600 mb-2" />
+                  <CardTitle>Clés API Prêtes</CardTitle>
+                  <CardDescription>
+                    10 clés API prédéfinies pour démarrer immédiatement vos intégrations
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Base URL de l'API</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg font-mono text-sm">
+                  https://luvvix.it.com/auth
                 </div>
-                
-                <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm mb-4">
-                  npm install luvvix-cameroon-sdk
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="authentication" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Authentification Utilisateur</CardTitle>
+                <CardDescription>
+                  Authentifiez un utilisateur avec email/mot de passe et récupérez un token d'accès
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-2">Endpoint</h4>
+                  <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
+                    <code>POST https://luvvix.it.com/auth/authenticate</code>
+                  </div>
                 </div>
-                
-                <p className="text-gray-700 text-sm mb-4">
-                  Le SDK LuvviX est spécialement conçu pour les développeurs camerounais et africains, 
-                  avec support des langues locales et intégration des solutions de paiement mobile.
-                </p>
-                
-                {/* Code Examples */}
-                <div className="bg-white p-6 rounded-lg shadow-md">
-                  <h3 className="text-xl font-semibold mb-4 flex items-center">
-                    <Code className="mr-2 text-purple-600" size={20} />
-                    Exemples d'intégration
-                  </h3>
-                  
-                  <Tabs defaultValue="javascript">
-                    <TabsList className="grid grid-cols-3 mb-6">
-                      <TabsTrigger value="javascript">JavaScript</TabsTrigger>
-                      <TabsTrigger value="react">React</TabsTrigger>
-                      <TabsTrigger value="vue">Vue.js</TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="javascript" className="relative">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => copyToClipboard(javascriptExampleCameroon, "js")}
-                        className="absolute top-2 right-2 flex items-center space-x-1 z-10"
-                      >
-                        {copied === "js" ? (
-                          <>
-                            <Check size={14} />
-                            <span>Copié!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={14} />
-                            <span>Copier</span>
-                          </>
-                        )}
-                      </Button>
-                      <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-auto max-h-96">
-                        {javascriptExampleCameroon}
-                      </pre>
-                    </TabsContent>
-                    
-                    <TabsContent value="react" className="relative">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => copyToClipboard(reactExampleCameroon, "react")}
-                        className="absolute top-2 right-2 flex items-center space-x-1 z-10"
-                      >
-                        {copied === "react" ? (
-                          <>
-                            <Check size={14} />
-                            <span>Copié!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={14} />
-                            <span>Copier</span>
-                          </>
-                        )}
-                      </Button>
-                      <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-auto max-h-96">
-                        {reactExampleCameroon}
-                      </pre>
-                    </TabsContent>
-                    
-                    <TabsContent value="vue" className="relative">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => copyToClipboard(vueExampleCameroon, "vue")}
-                        className="absolute top-2 right-2 flex items-center space-x-1 z-10"
-                      >
-                        {copied === "vue" ? (
-                          <>
-                            <Check size={14} />
-                            <span>Copié!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={14} />
-                            <span>Copier</span>
-                          </>
-                        )}
-                      </Button>
-                      <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-auto max-h-96">
-                        {vueExampleCameroon}
-                      </pre>
-                    </TabsContent>
-                  </Tabs>
-                  
-                  <div className="mt-8 pt-4 border-t border-gray-200">
-                    <h4 className="font-medium mb-2">Documentation complète</h4>
-                    <p className="text-gray-700 text-sm mb-4">
-                      Documentation complète avec exemples spécifiques pour le marché camerounais, 
-                      intégration Mobile Money et Orange Money.
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      className="flex items-center"
-                      onClick={() => window.open("https://docs.luvvix.cm", "_blank")}
+
+                <div>
+                  <h4 className="font-semibold mb-2">Headers requis</h4>
+                  <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
+                    <code>Content-Type: application/json</code>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-2">Body de la requête</h4>
+                  <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg relative">
+                    <pre className="text-sm overflow-x-auto">{`{
+  "email": "user@example.com",
+  "password": "userpassword",
+  "service_key": "luvvix_api_sk_live_51H1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6"
+}`}</pre>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="absolute top-2 right-2"
+                      onClick={() => copyToClipboard(`{
+  "email": "user@example.com",
+  "password": "userpassword",
+  "service_key": "luvvix_api_sk_live_51H1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6"
+}`, "Exemple de requête")}
                     >
-                      <Code className="mr-2 h-4 w-4" />
-                      Documentation LuvviX Cameroun
+                      {copiedCode === "Exemple de requête" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
                 </div>
-              </div>
-            </TabsContent>
 
-            <TabsContent value="rest">
-              {/* REST API Documentation */}
-              <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold flex items-center">
-                    <Server className="mr-2 text-purple-600" size={20} />
-                    API REST LuvviX Cameroun
-                  </h3>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center space-x-1"
-                    onClick={copyApiUrl}
-                  >
-                    {apiUrlCopied ? (
-                      <>
-                        <Check size={14} />
-                        <span>Copié!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={14} />
-                        <span>Copier</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm mb-4">
-                  Base URL: https://api.luvvix.cm/v1
-                </div>
-
-                <div className="space-y-8">
-                  {/* Authentication */}
-                  <div>
-                    <h4 className="text-lg font-semibold mb-4">Authentification</h4>
-                    <div className="bg-gray-100 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600 mb-2">
-                        Utilisez votre clé API LuvviX Cameroun dans l'en-tête :
-                      </p>
-                      <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm">
-                        {`Authorization: Bearer LUVVIX_CM_API_KEY`}
-                      </pre>
-                    </div>
-                  </div>
-
-                  {/* Endpoints Cameroun */}
-                  <div>
-                    <h4 className="text-lg font-semibold mb-4">Endpoints Cameroun</h4>
-                    
-                    {/* Verify Token */}
-                    <div className="mb-6">
-                      <h5 className="font-medium mb-2">Vérifier un token utilisateur</h5>
-                      <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-{`POST /auth/verify-cm
-Content-Type: application/json
-
-{
-  "token": "user_access_token",
-  "region": "cameroon"
-}`}
-                      </pre>
-                    </div>
-
-                    {/* Get User Info */}
-                    <div className="mb-6">
-                      <h5 className="font-medium mb-2">Obtenir les informations utilisateur</h5>
-                      <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-{`GET /users/profile-cm
-Authorization: Bearer user_access_token
-X-Region: cameroon`}
-                      </pre>
-                    </div>
-
-                    {/* Revoke Token */}
-                    <div>
-                      <h5 className="font-medium mb-2">Révoquer un token</h5>
-                      <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-{`POST /auth/revoke
-Content-Type: application/json
-
-{
-  "token": "user_access_token"
-}`}
-                      </pre>
-                    </div>
-
-                    {/* Paiement Mobile Money */}
-                    <div className="mb-6">
-                      <h5 className="font-medium mb-2">Paiement Mobile Money</h5>
-                      <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-{`POST /payments/mobile-money
-Content-Type: application/json
-
-{
-  "amount": 5000,
-  "currency": "XAF",
-  "phone": "+237612345678",
-  "provider": "orange_cm"
-}`}
-                      </pre>
-                    </div>
-                  </div>
-
-                  {/* Response Examples */}
-                  <div>
-                    <h4 className="text-lg font-semibold mb-4">Exemple de réponse</h4>
-                    <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-{`{
+                <div>
+                  <h4 className="font-semibold mb-2">Réponse de succès (200)</h4>
+                  <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
+                    <pre className="text-sm overflow-x-auto">{`{
   "success": true,
   "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "refresh_token_here",
+    "expires_at": 1640995200,
     "user": {
-      "id": "user_id",
+      "id": "uuid-here",
       "email": "user@example.com",
       "full_name": "John Doe",
-      "created_at": "2024-04-26T12:00:00Z"
+      "username": "johndoe",
+      "avatar_url": "https://..."
     }
   }
-}`}
-                    </pre>
+}`}</pre>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                <div className="mt-8 pt-4 border-t border-gray-200">
-                  <h4 className="font-medium mb-2">Support Développeurs Cameroun</h4>
-                  <p className="text-gray-700 text-sm mb-4">
-                    Support technique en français, intégration avec les banques camerounaises, 
-                    et documentation adaptée au contexte local.
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    className="flex items-center"
-                    onClick={() => window.open("https://support.luvvix.cm", "_blank")}
+          <TabsContent value="endpoints" className="space-y-6">
+            {[
+              {
+                method: "POST",
+                endpoint: "/authenticate",
+                description: "Authentifie un utilisateur et retourne un token d'accès",
+                parameters: ["email", "password", "service_key"]
+              },
+              {
+                method: "POST",
+                endpoint: "/verify-token",
+                description: "Vérifie la validité d'un token d'accès",
+                parameters: ["token"]
+              },
+              {
+                method: "POST",
+                endpoint: "/get-user-info",
+                description: "Récupère les informations détaillées d'un utilisateur",
+                parameters: ["token"]
+              },
+              {
+                method: "GET",
+                endpoint: "/get-api-keys",
+                description: "Récupère la liste des clés API disponibles",
+                parameters: []
+              },
+              {
+                method: "POST",
+                endpoint: "/register-service",
+                description: "Enregistre un nouveau service pour OAuth",
+                parameters: ["service_name", "service_url", "service_key", "redirect_uris"]
+              }
+            ].map((endpoint, index) => (
+              <Card key={index}>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={endpoint.method === "GET" ? "secondary" : "default"}>
+                      {endpoint.method}
+                    </Badge>
+                    <CardTitle className="text-lg">{endpoint.endpoint}</CardTitle>
+                  </div>
+                  <CardDescription>{endpoint.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div>
+                    <h4 className="font-semibold mb-2">Paramètres requis</h4>
+                    {endpoint.parameters.length > 0 ? (
+                      <div className="flex gap-2 flex-wrap">
+                        {endpoint.parameters.map((param) => (
+                          <Badge key={param} variant="outline">{param}</Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">Aucun paramètre requis</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </TabsContent>
+
+          <TabsContent value="examples" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Exemple JavaScript/Node.js</CardTitle>
+                <CardDescription>
+                  Implémentation complète avec fetch API
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg relative">
+                  <pre className="text-sm overflow-x-auto">{`// Authentification utilisateur
+const authenticateUser = async (email, password) => {
+  try {
+    const response = await fetch('https://luvvix.it.com/auth/authenticate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+        service_key: 'luvvix_api_sk_live_51H1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6'
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      const { access_token, user } = data.data;
+      console.log('Utilisateur connecté:', user);
+      
+      // Vérifier le token
+      const verifyResponse = await fetch('https://luvvix.it.com/auth/verify-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: access_token
+        })
+      });
+      
+      const verifyData = await verifyResponse.json();
+      console.log('Token valide:', verifyData.data.valid);
+      
+      return { token: access_token, user };
+    } else {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    console.error('Erreur d\\'authentification:', error);
+    throw error;
+  }
+};
+
+// Utilisation
+authenticateUser('user@example.com', 'password123')
+  .then(({ token, user }) => {
+    console.log('Connexion réussie pour:', user.email);
+  })
+  .catch(error => {
+    console.error('Échec de la connexion:', error);
+  });`}</pre>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2"
+                    onClick={() => copyToClipboard(`// Authentification utilisateur
+const authenticateUser = async (email, password) => {
+  try {
+    const response = await fetch('https://luvvix.it.com/auth/authenticate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+        service_key: 'luvvix_api_sk_live_51H1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6'
+      })
+    });
+
+    const data = await response.json();
+    
+    if (data.success) {
+      const { access_token, user } = data.data;
+      console.log('Utilisateur connecté:', user);
+      
+      // Vérifier le token
+      const verifyResponse = await fetch('https://luvvix.it.com/auth/verify-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token: access_token
+        })
+      });
+      
+      const verifyData = await verifyResponse.json();
+      console.log('Token valide:', verifyData.data.valid);
+      
+      return { token: access_token, user };
+    } else {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    console.error('Erreur d\\'authentification:', error);
+    throw error;
+  }
+};`, "Code JavaScript")}
                   >
-                    <Server className="mr-2 h-4 w-4" />
-                    Support Technique Cameroun
+                    {copiedCode === "Code JavaScript" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   </Button>
                 </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Exemple Python</CardTitle>
+                <CardDescription>
+                  Utilisation avec la bibliothèque requests
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg relative">
+                  <pre className="text-sm overflow-x-auto">{`import requests
+import json
+
+class LuvvixAuth:
+    def __init__(self, service_key):
+        self.base_url = "https://luvvix.it.com/auth"
+        self.service_key = service_key
+    
+    def authenticate(self, email, password):
+        """Authentifie un utilisateur et retourne les données de session"""
+        url = f"{self.base_url}/authenticate"
+        payload = {
+            "email": email,
+            "password": password,
+            "service_key": self.service_key
+        }
+        
+        response = requests.post(url, json=payload)
+        data = response.json()
+        
+        if data.get("success"):
+            return data["data"]
+        else:
+            raise Exception(f"Authentification échouée: {data.get('error')}")
+    
+    def verify_token(self, token):
+        """Vérifie la validité d'un token"""
+        url = f"{self.base_url}/verify-token"
+        payload = {"token": token}
+        
+        response = requests.post(url, json=payload)
+        data = response.json()
+        
+        return data.get("data", {}).get("valid", False)
+
+# Utilisation
+auth = LuvvixAuth("luvvix_api_sk_live_51H1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6")
+
+try:
+    user_data = auth.authenticate("user@example.com", "password123")
+    print(f"Utilisateur connecté: {user_data['user']['email']}")
+    
+    is_valid = auth.verify_token(user_data["access_token"])
+    print(f"Token valide: {is_valid}")
+    
+except Exception as e:
+    print(f"Erreur: {e}")`}</pre>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-2 right-2"
+                    onClick={() => copyToClipboard(`import requests
+import json
+
+class LuvvixAuth:
+    def __init__(self, service_key):
+        self.base_url = "https://luvvix.it.com/auth"
+        self.service_key = service_key
+    
+    def authenticate(self, email, password):
+        """Authentifie un utilisateur et retourne les données de session"""
+        url = f"{self.base_url}/authenticate"
+        payload = {
+            "email": email,
+            "password": password,
+            "service_key": self.service_key
+        }
+        
+        response = requests.post(url, json=payload)
+        data = response.json()
+        
+        if data.get("success"):
+            return data["data"]
+        else:
+            raise Exception(f"Authentification échouée: {data.get('error')}")
+    
+    def verify_token(self, token):
+        """Vérifie la validité d'un token"""
+        url = f"{self.base_url}/verify-token"
+        payload = {"token": token}
+        
+        response = requests.post(url, json=payload)
+        data = response.json()
+        
+        return data.get("data", {}).get("valid", False)`, "Code Python")}
+                  >
+                    {copiedCode === "Code Python" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="keys" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Clés API Disponibles</CardTitle>
+                <CardDescription>
+                  Utilisez une de ces clés comme paramètre 'service_key' dans vos requêtes
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {apiKeys.map((key, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-100 dark:bg-gray-800 p-3 rounded-lg">
+                      <code className="text-sm font-mono">{key}</code>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => copyToClipboard(key, `Clé API ${index + 1}`)}
+                      >
+                        {copiedCode === `Clé API ${index + 1}` ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    Note importante
+                  </h4>
+                  <p className="text-blue-800 dark:text-blue-200 text-sm">
+                    Ces clés API sont prédéfinies et prêtes à l'emploi pour vos tests et intégrations. 
+                    Choisissez n'importe laquelle de ces clés pour authentifier vos requêtes vers l'API LuvviX ID.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Test rapide</CardTitle>
+                <CardDescription>
+                  Testez l'API directement depuis votre navigateur
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+                  <pre className="text-sm">{`curl -X POST https://luvvix.it.com/auth/get-api-keys \\
+  -H "Content-Type: application/json"`}</pre>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  Cette commande retourne la liste complète des clés API disponibles
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        <div className="mt-12 text-center">
+          <Link to="/api-docs">
+            <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
+              <Code className="w-5 h-5 mr-2" />
+              Documentation complète
+              <ExternalLink className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
   );
 };
-
-// Code examples adapted for Cameroon
-const javascriptExampleCameroon = `// SDK LuvviX Cameroun
-import { LuvviXCameroon } from 'luvvix-cameroon-sdk';
-
-const luvvix = new LuvviXCameroon({
-  apiKey: 'your-api-key',
-  region: 'cameroon',
-  language: 'fr', // français par défaut
-  currency: 'XAF'
-});
-
-// Authentification avec numéro de téléphone camerounais
-async function loginWithPhone() {
-  try {
-    const result = await luvvix.auth.loginWithPhone({
-      phone: '+237612345678',
-      countryCode: 'CM'
-    });
-    console.log('Connexion réussie:', result);
-  } catch (error) {
-    console.error('Erreur de connexion:', error);
-  }
-}
-
-// Paiement Mobile Money
-async function payWithMobileMoney() {
-  const payment = await luvvix.payments.mobileMoney({
-    amount: 5000, // en FCFA
-    phone: '+237612345678',
-    provider: 'orange_cm' // ou 'mtn_cm'
-  });
-  return payment;
-}`;
-
-const reactExampleCameroon = `// Composant React pour LuvviX Cameroun
-import React from 'react';
-import { useLuvviXCameroon } from 'luvvix-cameroon-sdk/react';
-
-function AuthCameroon() {
-  const { user, login, logout, payMobileMoney } = useLuvviXCameroon({
-    region: 'cameroon',
-    language: 'fr'
-  });
-
-  const handleMobileMoneyPayment = async () => {
-    try {
-      const payment = await payMobileMoney({
-        amount: 5000,
-        phone: '+237612345678',
-        provider: 'orange_cm'
-      });
-      alert('Paiement réussi!');
-    } catch (error) {
-      alert('Erreur de paiement');
-    }
-  };
-
-  return (
-    <div className="auth-cameroon">
-      {user ? (
-        <div>
-          <p>Bienvenue {user.name}</p>
-          <button onClick={handleMobileMoneyPayment}>
-            Payer avec Orange Money
-          </button>
-          <button onClick={logout}>Se déconnecter</button>
-        </div>
-      ) : (
-        <button onClick={() => login({ region: 'cameroon' })}>
-          Se connecter avec LuvviX
-        </button>
-      )}
-    </div>
-  );
-}`;
-
-const vueExampleCameroon = `<!-- Composant Vue.js pour LuvviX Cameroun -->
-<template>
-  <div class="auth-cameroon">
-    <div v-if="user">
-      <p>Bienvenue {{ user.name }}</p>
-      <button @click="payWithOrangeMoney">Payer avec Orange Money</button>
-      <button @click="logout">Se déconnecter</button>
-    </div>
-    <div v-else>
-      <button @click="login">Se connecter avec LuvviX</button>
-    </div>
-  </div>
-</template>
-
-<script>
-import { LuvviXCameroon } from 'luvvix-cameroon-sdk';
-
-export default {
-  data() {
-    return {
-      user: null,
-      luvvix: new LuvviXCameroon({
-        region: 'cameroon',
-        language: 'fr'
-      })
-    };
-  },
-  methods: {
-    async login() {
-      this.user = await this.luvvix.auth.login({
-        region: 'cameroon'
-      });
-    },
-    async payWithOrangeMoney() {
-      await this.luvvix.payments.mobileMoney({
-        amount: 5000,
-        provider: 'orange_cm',
-        phone: '+237612345678'
-      });
-    },
-    logout() {
-      this.luvvix.auth.logout();
-      this.user = null;
-    }
-  }
-};
-</script>`;
 
 export default DeveloperSection;

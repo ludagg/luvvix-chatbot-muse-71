@@ -5,102 +5,96 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { BookOpen, Users, Trophy, Clock, Plus, Search, Filter, GraduationCap, Star, Play, CheckCircle } from "lucide-react";
+import { BookOpen, Users, Trophy, Clock, Plus, Search, Filter, GraduationCap, Star, Play, CheckCircle, Video, FileText, Award, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import luvvixLearnService from "@/services/luvvix-learn-service";
+import NewCourseCreator from "./learn/NewCourseCreator";
 
 interface Course {
   id: string;
   title: string;
   description: string;
   category: string;
-  difficulty: 'Débutant' | 'Intermédiaire' | 'Avancé';
-  duration: string;
-  lessons: number;
-  enrolled: number;
+  difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+  duration_minutes: number;
+  instructor_name: string;
+  thumbnail_url: string;
+  enrollment_count: number;
   rating: number;
   price: number;
-  isFree: boolean;
-  instructor: string;
-  thumbnail: string;
-  progress?: number;
-  completed?: boolean;
+  is_free: boolean;
+  what_you_will_learn: string[];
+  course_material: string[];
+  certificate_available: boolean;
+  learning_objectives: string[];
+  prerequisites: string[];
 }
 
-const SAMPLE_COURSES: Course[] = [
-  {
-    id: '1',
-    title: 'Marketing Digital avec l\'IA',
-    description: 'Apprenez à utiliser l\'intelligence artificielle pour optimiser vos campagnes marketing et automatiser vos processus.',
-    category: 'Marketing Digital',
-    difficulty: 'Intermédiaire',
-    duration: '8 heures',
-    lessons: 12,
-    enrolled: 1250,
-    rating: 4.8,
-    price: 99,
-    isFree: false,
-    instructor: 'Sophie Martin',
-    thumbnail: '📱',
-    progress: 65
-  },
-  {
-    id: '2',
-    title: 'Administration Moderne et Efficace',
-    description: 'Maîtrisez les outils numériques et les techniques modernes d\'administration pour une productivité maximale.',
-    category: 'Administration',
-    difficulty: 'Débutant',
-    duration: '5 heures',
-    lessons: 8,
-    enrolled: 890,
-    rating: 4.6,
-    price: 0,
-    isFree: true,
-    instructor: 'Jean Dubois',
-    thumbnail: '📊',
-    progress: 30
-  },
-  {
-    id: '3',
-    title: 'Business Intelligence et Analytics',
-    description: 'Transformez vos données en insights business actionables avec les outils d\'analyse modernes.',
-    category: 'Business',
-    difficulty: 'Avancé',
-    duration: '12 heures',
-    lessons: 15,
-    enrolled: 650,
-    rating: 4.9,
-    price: 149,
-    isFree: false,
-    instructor: 'Marie Claire',
-    thumbnail: '📈',
-    completed: true
-  },
-  {
-    id: '4',
-    title: 'Utilisation Avancée de ChatGPT',
-    description: 'Découvrez comment utiliser ChatGPT et l\'IA générative pour automatiser vos tâches quotidiennes.',
-    category: 'IA Générative',
-    difficulty: 'Débutant',
-    duration: '6 heures',
-    lessons: 10,
-    enrolled: 2100,
-    rating: 4.7,
-    price: 79,
-    isFree: false,
-    instructor: 'Alexandre Tech',
-    thumbnail: '🤖'
-  }
-];
+interface Enrollment {
+  id: string;
+  course_id: string;
+  progress_percentage: number;
+  completed_at: string | null;
+  courses: Course;
+}
 
 const LuvviXLearnNew = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tous');
-  const [courses] = useState<Course[]>(SAMPLE_COURSES);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const categories = ['Tous', 'Marketing Digital', 'Administration', 'Business', 'IA Générative'];
+
+  useEffect(() => {
+    loadCourses();
+    if (user) {
+      loadEnrollments();
+    }
+  }, [user]);
+
+  const loadCourses = async () => {
+    try {
+      setLoading(true);
+      const coursesData = await luvvixLearnService.getCourses();
+      setCourses(coursesData);
+    } catch (error) {
+      console.error('Erreur chargement cours:', error);
+      toast.error('Erreur lors du chargement des cours');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadEnrollments = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const enrollmentsData = await luvvixLearnService.getUserEnrollments(user.id);
+      setEnrollments(enrollmentsData);
+    } catch (error) {
+      console.error('Erreur chargement inscriptions:', error);
+    }
+  };
+
+  const handleEnroll = async (courseId: string) => {
+    if (!user?.id) {
+      toast.error('Veuillez vous connecter pour vous inscrire');
+      return;
+    }
+
+    try {
+      await luvvixLearnService.enrollInCourse(courseId, user.id);
+      toast.success('Inscription réussie !');
+      loadEnrollments();
+    } catch (error: any) {
+      toast.error(error.message || 'Erreur lors de l\'inscription');
+    }
+  };
 
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -111,174 +105,272 @@ const LuvviXLearnNew = () => {
 
   const getDifficultyColor = (level: string) => {
     switch (level) {
-      case 'Débutant': return 'bg-green-100 text-green-800';
-      case 'Intermédiaire': return 'bg-yellow-100 text-yellow-800';
-      case 'Avancé': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'beginner': return 'bg-green-100 text-green-800 border-green-200';
+      case 'intermediate': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'advanced': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const myCourses = courses.filter(course => course.progress !== undefined || course.completed);
-  const completedCourses = courses.filter(course => course.completed).length;
+  const getDifficultyLabel = (level: string) => {
+    switch (level) {
+      case 'beginner': return 'Débutant';
+      case 'intermediate': return 'Intermédiaire';
+      case 'advanced': return 'Avancé';
+      default: return level;
+    }
+  };
+
+  const isEnrolled = (courseId: string) => {
+    return enrollments.some(enrollment => enrollment.course_id === courseId);
+  };
+
+  const getEnrollmentProgress = (courseId: string) => {
+    const enrollment = enrollments.find(e => e.course_id === courseId);
+    return enrollment ? enrollment.progress_percentage : 0;
+  };
+
+  const completedCourses = enrollments.filter(e => e.completed_at).length;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header moderne */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <GraduationCap className="h-8 w-8" />
-                <h1 className="text-3xl font-bold">LuvviX Learn</h1>
-              </div>
-              <p className="text-blue-100">Plateforme d'apprentissage professionnelle</p>
+      {/* Header moderne inspiré d'edX */}
+      <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-blue-600 text-white">
+        <div className="container mx-auto px-4 py-12">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <GraduationCap className="h-12 w-12" />
+              <h1 className="text-4xl font-bold">LuvviX Learn</h1>
             </div>
-            <div className="flex items-center gap-6">
+            <p className="text-xl text-blue-100 mb-8">
+              Développez vos compétences avec des cours professionnels certifiés
+            </p>
+            <div className="flex items-center justify-center gap-8 text-blue-100">
               <div className="text-center">
-                <div className="text-2xl font-bold">{courses.length}</div>
-                <div className="text-sm text-blue-100">Cours disponibles</div>
+                <div className="text-3xl font-bold text-white">{courses.length}</div>
+                <div className="text-sm">Cours disponibles</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold">5,840</div>
-                <div className="text-sm text-blue-100">Étudiants actifs</div>
+                <div className="text-3xl font-bold text-white">5,840</div>
+                <div className="text-sm">Étudiants actifs</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white">1,200+</div>
+                <div className="text-sm">Certificats délivrés</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 -mt-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-lg grid-cols-4">
-            <TabsTrigger value="catalog" className="flex items-center gap-2">
-              <BookOpen size={16} />
-              Catalogue
-            </TabsTrigger>
-            <TabsTrigger value="my-courses" className="flex items-center gap-2">
-              <Play size={16} />
-              Mes Cours
-            </TabsTrigger>
-            <TabsTrigger value="create" className="flex items-center gap-2">
-              <Plus size={16} />
-              Créer
-            </TabsTrigger>
-            <TabsTrigger value="certificates" className="flex items-center gap-2">
-              <Trophy size={16} />
-              Certificats
-            </TabsTrigger>
-          </TabsList>
+          <div className="bg-white rounded-lg shadow-sm p-2 mb-8">
+            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 bg-gray-100">
+              <TabsTrigger value="catalog" className="flex items-center gap-2 data-[state=active]:bg-white">
+                <BookOpen size={16} />
+                <span className="hidden sm:inline">Catalogue</span>
+              </TabsTrigger>
+              <TabsTrigger value="my-courses" className="flex items-center gap-2 data-[state=active]:bg-white">
+                <Play size={16} />
+                <span className="hidden sm:inline">Mes Cours</span>
+              </TabsTrigger>
+              <TabsTrigger value="create" className="flex items-center gap-2 data-[state=active]:bg-white">
+                <Plus size={16} />
+                <span className="hidden sm:inline">Créer</span>
+              </TabsTrigger>
+              <TabsTrigger value="certificates" className="flex items-center gap-2 data-[state=active]:bg-white">
+                <Trophy size={16} />
+                <span className="hidden sm:inline">Certificats</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          <TabsContent value="catalog" className="mt-8">
-            <div className="space-y-6">
-              {/* Filtres */}
-              <div className="flex gap-4 items-center">
+          <TabsContent value="catalog" className="space-y-8">
+            {/* Filtres de recherche */}
+            <div className="bg-white rounded-lg shadow-sm p-6 space-y-4">
+              <div className="flex flex-col md:flex-row gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                   <Input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Rechercher des cours..."
-                    className="pl-10"
+                    placeholder="Rechercher des cours par titre, description..."
+                    className="pl-10 h-12"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   {categories.map((category) => (
                     <Button
                       key={category}
                       variant={selectedCategory === category ? "default" : "outline"}
                       size="sm"
                       onClick={() => setSelectedCategory(category)}
+                      className="h-12"
                     >
                       {category}
                     </Button>
                   ))}
                 </div>
               </div>
+            </div>
 
-              {/* Grille des cours */}
+            {/* Grille des cours */}
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader className="pb-4">
+                      <div className="w-full h-48 bg-gray-200 rounded-lg mb-4"></div>
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-full"></div>
+                    </CardHeader>
+                  </Card>
+                ))}
+              </div>
+            ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredCourses.map((course) => (
-                  <Card key={course.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="text-4xl">{course.thumbnail}</div>
-                        <Badge className={getDifficultyColor(course.difficulty)}>
-                          {course.difficulty}
+                  <Card key={course.id} className="hover:shadow-lg transition-all duration-300 border-0 shadow-sm overflow-hidden">
+                    {/* Image du cours */}
+                    <div className="relative">
+                      <img 
+                        src={course.thumbnail_url} 
+                        alt={course.title}
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="absolute top-3 left-3">
+                        <Badge className={getDifficultyColor(course.difficulty_level)}>
+                          {getDifficultyLabel(course.difficulty_level)}
                         </Badge>
                       </div>
-                      <CardTitle className="text-lg">{course.title}</CardTitle>
-                      <p className="text-sm text-gray-600 line-clamp-2">{course.description}</p>
+                      {!course.is_free && (
+                        <div className="absolute top-3 right-3 bg-white rounded-full px-2 py-1">
+                          <span className="text-sm font-bold text-gray-900">{course.price}€</span>
+                        </div>
+                      )}
+                      {course.is_free && (
+                        <div className="absolute top-3 right-3">
+                          <Badge className="bg-green-500 text-white border-0">Gratuit</Badge>
+                        </div>
+                      )}
+                    </div>
+
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">
+                          {course.category}
+                        </span>
+                        {course.certificate_available && (
+                          <Award className="h-4 w-4 text-yellow-500" />
+                        )}
+                      </div>
+                      <CardTitle className="text-lg leading-tight line-clamp-2 mb-2">
+                        {course.title}
+                      </CardTitle>
+                      <p className="text-sm text-gray-600 line-clamp-3">
+                        {course.description}
+                      </p>
                     </CardHeader>
                     
-                    <CardContent className="space-y-4">
+                    <CardContent className="pt-0 space-y-4">
+                      {/* Instructeur */}
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Users size={14} />
+                        <span>{course.instructor_name}</span>
+                      </div>
+
+                      {/* Métriques du cours */}
                       <div className="flex items-center justify-between text-sm text-gray-500">
                         <div className="flex items-center gap-1">
                           <Clock size={14} />
-                          {course.duration}
+                          <span>{Math.round(course.duration_minutes / 60)}h</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <BookOpen size={14} />
-                          {course.lessons} leçons
+                          <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                          <span className="font-medium">{course.rating}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Users size={14} />
-                          {course.enrolled}
+                          <span>{course.enrollment_count}</span>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                            <span className="font-medium">{course.rating}</span>
+
+                      {/* Progrès si inscrit */}
+                      {isEnrolled(course.id) && (
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Progression</span>
+                            <span className="font-medium">{getEnrollmentProgress(course.id)}%</span>
                           </div>
-                          <span className="text-sm text-gray-500">• {course.instructor}</span>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                              style={{ width: `${getEnrollmentProgress(course.id)}%` }}
+                            ></div>
+                          </div>
                         </div>
-                        
-                        <div className="text-right">
-                          {course.isFree ? (
-                            <Badge variant="outline" className="text-green-600">
-                              Gratuit
-                            </Badge>
-                          ) : (
-                            <div className="font-bold text-lg">{course.price}€</div>
-                          )}
-                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="pt-2">
+                        {!isEnrolled(course.id) ? (
+                          <Button 
+                            onClick={() => handleEnroll(course.id)}
+                            className="w-full bg-blue-600 hover:bg-blue-700 h-10"
+                          >
+                            {course.is_free ? 'S\'inscrire gratuitement' : `S'inscrire - ${course.price}€`}
+                          </Button>
+                        ) : (
+                          <Button 
+                            className="w-full bg-green-600 hover:bg-green-700 h-10"
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Continuer le cours
+                          </Button>
+                        )}
                       </div>
-                      
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                        {course.progress !== undefined ? "Continuer" : "S'inscrire"}
-                      </Button>
                     </CardContent>
                   </Card>
                 ))}
               </div>
-            </div>
+            )}
+
+            {filteredCourses.length === 0 && !loading && (
+              <div className="text-center py-12">
+                <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">
+                  Aucun cours trouvé
+                </h3>
+                <p className="text-gray-500">
+                  Essayez de modifier vos critères de recherche
+                </p>
+              </div>
+            )}
           </TabsContent>
 
-          <TabsContent value="my-courses" className="mt-8">
+          <TabsContent value="my-courses" className="space-y-8">
             {!user ? (
-              <Card className="text-center p-8">
+              <Card className="text-center p-12">
                 <CardContent>
                   <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-600 mb-2">
                     Connectez-vous pour voir vos cours
                   </h3>
-                  <p className="text-gray-500 mb-4">
+                  <p className="text-gray-500 mb-6">
                     Accédez à vos cours en cours et votre progression
                   </p>
                   <Button>Se connecter</Button>
                 </CardContent>
               </Card>
-            ) : myCourses.length === 0 ? (
-              <Card className="text-center p-8">
+            ) : enrollments.length === 0 ? (
+              <Card className="text-center p-12">
                 <CardContent>
                   <BookOpen className="h-16 w-16 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-gray-600 mb-2">
                     Aucun cours en cours
                   </h3>
-                  <p className="text-gray-500 mb-4">
+                  <p className="text-gray-500 mb-6">
                     Explorez notre catalogue pour commencer votre apprentissage
                   </p>
                   <Button onClick={() => setActiveTab('catalog')}>
@@ -287,63 +379,79 @@ const LuvviXLearnNew = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-6">
-                {/* Statistiques */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <Card>
+              <div className="space-y-8">
+                {/* Statistiques d'apprentissage */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-0">
                     <CardContent className="p-6 text-center">
-                      <BookOpen className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-                      <h3 className="text-2xl font-bold text-blue-700 mb-2">{myCourses.length}</h3>
-                      <p className="text-gray-600">Cours actifs</p>
+                      <BookOpen className="h-8 w-8 mx-auto mb-3 opacity-80" />
+                      <h3 className="text-2xl font-bold mb-1">{enrollments.length}</h3>
+                      <p className="text-blue-100 text-sm">Cours actifs</p>
                     </CardContent>
                   </Card>
                   
-                  <Card>
+                  <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0">
                     <CardContent className="p-6 text-center">
-                      <Trophy className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                      <h3 className="text-2xl font-bold text-green-700 mb-2">{completedCourses}</h3>
-                      <p className="text-gray-600">Cours terminés</p>
+                      <Trophy className="h-8 w-8 mx-auto mb-3 opacity-80" />
+                      <h3 className="text-2xl font-bold mb-1">{completedCourses}</h3>
+                      <p className="text-green-100 text-sm">Cours terminés</p>
                     </CardContent>
                   </Card>
                   
-                  <Card>
+                  <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white border-0">
                     <CardContent className="p-6 text-center">
-                      <Clock className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-                      <h3 className="text-2xl font-bold text-purple-700 mb-2">42h</h3>
-                      <p className="text-gray-600">Temps d'apprentissage</p>
+                      <Clock className="h-8 w-8 mx-auto mb-3 opacity-80" />
+                      <h3 className="text-2xl font-bold mb-1">42h</h3>
+                      <p className="text-purple-100 text-sm">Temps d'apprentissage</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white border-0">
+                    <CardContent className="p-6 text-center">
+                      <Award className="h-8 w-8 mx-auto mb-3 opacity-80" />
+                      <h3 className="text-2xl font-bold mb-1">{completedCourses}</h3>
+                      <p className="text-yellow-100 text-sm">Certificats</p>
                     </CardContent>
                   </Card>
                 </div>
 
-                {/* Cours en cours */}
+                {/* Liste des cours inscrits */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {myCourses.map((course) => (
-                    <Card key={course.id}>
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="text-3xl">{course.thumbnail}</div>
-                            <div>
-                              <CardTitle className="text-lg">{course.title}</CardTitle>
-                              <p className="text-sm text-gray-600">{course.instructor}</p>
+                  {enrollments.map((enrollment) => (
+                    <Card key={enrollment.id} className="hover:shadow-lg transition-all duration-300">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-start gap-4">
+                          <img 
+                            src={enrollment.courses.thumbnail_url} 
+                            alt={enrollment.courses.title}
+                            className="w-20 h-20 object-cover rounded-lg"
+                          />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={getDifficultyColor(enrollment.courses.difficulty_level)} variant="outline">
+                                {getDifficultyLabel(enrollment.courses.difficulty_level)}
+                              </Badge>
+                              {enrollment.completed_at && (
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                              )}
                             </div>
+                            <CardTitle className="text-lg mb-1">{enrollment.courses.title}</CardTitle>
+                            <p className="text-sm text-gray-600">{enrollment.courses.instructor_name}</p>
                           </div>
-                          {course.completed && (
-                            <CheckCircle className="h-6 w-6 text-green-600" />
-                          )}
                         </div>
                       </CardHeader>
+                      
                       <CardContent className="space-y-4">
-                        {course.progress !== undefined && !course.completed && (
+                        {!enrollment.completed_at && (
                           <div className="space-y-2">
                             <div className="flex items-center justify-between text-sm">
                               <span>Progression</span>
-                              <span className="font-medium">{course.progress}%</span>
+                              <span className="font-medium">{enrollment.progress_percentage}%</span>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div className="w-full bg-gray-200 rounded-full h-3">
                               <div 
-                                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                                style={{ width: `${course.progress}%` }}
+                                className="bg-blue-600 h-3 rounded-full transition-all duration-300" 
+                                style={{ width: `${enrollment.progress_percentage}%` }}
                               ></div>
                             </div>
                           </div>
@@ -351,10 +459,10 @@ const LuvviXLearnNew = () => {
                         
                         <Button 
                           className="w-full" 
-                          variant={course.completed ? "outline" : "default"}
+                          variant={enrollment.completed_at ? "outline" : "default"}
                         >
                           <Play className="h-4 w-4 mr-2" />
-                          {course.completed ? "Revoir le cours" : "Continuer"}
+                          {enrollment.completed_at ? "Revoir le cours" : "Continuer"}
                         </Button>
                       </CardContent>
                     </Card>
@@ -364,89 +472,60 @@ const LuvviXLearnNew = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="create" className="mt-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Créer un cours
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="text-center py-8">
-                  <div className="bg-blue-100 rounded-full p-6 w-24 h-24 mx-auto mb-4 flex items-center justify-center">
-                    <BookOpen className="h-12 w-12 text-blue-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                    Accès réservé aux créateurs
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    Vous devez avoir un token d'accès valide pour créer des cours sur LuvviX Learn
-                  </p>
-                  
-                  <div className="max-w-md mx-auto space-y-4">
-                    <Input 
-                      placeholder="Entrez votre token d'accès..."
-                      className="text-center"
-                    />
-                    <Button className="w-full bg-green-600 hover:bg-green-700">
-                      Valider le token
-                    </Button>
-                  </div>
-                  
-                  <div className="mt-6 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
-                    <p>
-                      <strong>Note :</strong> Seuls les examens finaux sont générés automatiquement par IA. 
-                      Le contenu des cours doit être créé manuellement par les instructeurs certifiés.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="create" className="space-y-8">
+            <NewCourseCreator />
           </TabsContent>
 
-          <TabsContent value="certificates" className="mt-8">
+          <TabsContent value="certificates" className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {completedCourses > 0 ? (
-                <Card className="border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <Trophy className="h-8 w-8 text-yellow-600" />
-                      <Badge className="bg-yellow-100 text-yellow-700">
-                        Certifié
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-xl">Business Intelligence et Analytics</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Date d'obtention:</span>
-                        <div className="font-medium">15 Janvier 2024</div>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Score:</span>
-                        <div className="font-medium text-green-600">92%</div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <span className="text-sm text-gray-600">ID de vérification:</span>
-                      <div className="font-mono text-sm bg-white p-2 rounded border">
-                        LXL-BI-2024-001
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        Télécharger PDF
-                      </Button>
-                      <Button variant="outline" size="sm" className="flex-1">
-                        Partager
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                enrollments
+                  .filter(e => e.completed_at)
+                  .map((enrollment) => (
+                    <Card key={enrollment.id} className="border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <Trophy className="h-8 w-8 text-yellow-600" />
+                          <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300">
+                            Certifié
+                          </Badge>
+                        </div>
+                        <CardTitle className="text-xl">{enrollment.courses.title}</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-600">Date d'obtention:</span>
+                            <div className="font-medium">
+                              {new Date(enrollment.completed_at!).toLocaleDateString('fr-FR')}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Score:</span>
+                            <div className="font-medium text-green-600">
+                              {enrollment.final_score || 'N/A'}%
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <span className="text-sm text-gray-600">ID de vérification:</span>
+                          <div className="font-mono text-sm bg-white p-2 rounded border">
+                            LXL-{enrollment.id.slice(0, 8).toUpperCase()}
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" className="flex-1">
+                            Télécharger PDF
+                          </Button>
+                          <Button variant="outline" size="sm" className="flex-1">
+                            Partager
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
               ) : null}
               
               <Card className="border-2 border-dashed border-gray-300 bg-gray-50 flex items-center justify-center min-h-[300px]">

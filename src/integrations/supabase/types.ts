@@ -1560,6 +1560,41 @@ export type Database = {
           },
         ]
       }
+      course_reviews: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          id: string
+          rating: number | null
+          review_text: string | null
+          user_id: string
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number | null
+          review_text?: string | null
+          user_id: string
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number | null
+          review_text?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_reviews_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_templates: {
         Row: {
           category: string
@@ -1598,67 +1633,94 @@ export type Database = {
           ai_generated: boolean | null
           ai_last_update: string | null
           category: string
+          certificate_available: boolean | null
           certification_criteria: Json | null
+          course_material: string[] | null
           created_at: string | null
           description: string | null
           difficulty_level: string
           duration_minutes: number | null
+          enrollment_count: number | null
           estimated_hours: number | null
           final_quiz_id: string | null
           id: string
+          instructor_name: string | null
           instructor_notes: string | null
+          is_free: boolean | null
           learning_objectives: string[] | null
           max_attempts: number | null
           passing_grade: number | null
           prerequisites: string[] | null
+          price: number | null
+          rating: number | null
           status: string | null
           tags: string[] | null
+          thumbnail_url: string | null
           title: string
           updated_at: string | null
+          what_you_will_learn: string[] | null
         }
         Insert: {
           ai_generated?: boolean | null
           ai_last_update?: string | null
           category: string
+          certificate_available?: boolean | null
           certification_criteria?: Json | null
+          course_material?: string[] | null
           created_at?: string | null
           description?: string | null
           difficulty_level: string
           duration_minutes?: number | null
+          enrollment_count?: number | null
           estimated_hours?: number | null
           final_quiz_id?: string | null
           id?: string
+          instructor_name?: string | null
           instructor_notes?: string | null
+          is_free?: boolean | null
           learning_objectives?: string[] | null
           max_attempts?: number | null
           passing_grade?: number | null
           prerequisites?: string[] | null
+          price?: number | null
+          rating?: number | null
           status?: string | null
           tags?: string[] | null
+          thumbnail_url?: string | null
           title: string
           updated_at?: string | null
+          what_you_will_learn?: string[] | null
         }
         Update: {
           ai_generated?: boolean | null
           ai_last_update?: string | null
           category?: string
+          certificate_available?: boolean | null
           certification_criteria?: Json | null
+          course_material?: string[] | null
           created_at?: string | null
           description?: string | null
           difficulty_level?: string
           duration_minutes?: number | null
+          enrollment_count?: number | null
           estimated_hours?: number | null
           final_quiz_id?: string | null
           id?: string
+          instructor_name?: string | null
           instructor_notes?: string | null
+          is_free?: boolean | null
           learning_objectives?: string[] | null
           max_attempts?: number | null
           passing_grade?: number | null
           prerequisites?: string[] | null
+          price?: number | null
+          rating?: number | null
           status?: string | null
           tags?: string[] | null
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string | null
+          what_you_will_learn?: string[] | null
         }
         Relationships: [
           {
@@ -1730,40 +1792,49 @@ export type Database = {
       enrollments: {
         Row: {
           ai_recommendations: Json | null
+          certificate_earned: boolean | null
           completed_at: string | null
           course_id: string | null
           current_lesson_id: string | null
           enrolled_at: string | null
+          final_score: number | null
           id: string
           last_activity_at: string | null
           performance_metrics: Json | null
           progress_percentage: number | null
+          started_at: string | null
           total_time_spent: number | null
           user_id: string | null
         }
         Insert: {
           ai_recommendations?: Json | null
+          certificate_earned?: boolean | null
           completed_at?: string | null
           course_id?: string | null
           current_lesson_id?: string | null
           enrolled_at?: string | null
+          final_score?: number | null
           id?: string
           last_activity_at?: string | null
           performance_metrics?: Json | null
           progress_percentage?: number | null
+          started_at?: string | null
           total_time_spent?: number | null
           user_id?: string | null
         }
         Update: {
           ai_recommendations?: Json | null
+          certificate_earned?: boolean | null
           completed_at?: string | null
           course_id?: string | null
           current_lesson_id?: string | null
           enrolled_at?: string | null
+          final_score?: number | null
           id?: string
           last_activity_at?: string | null
           performance_metrics?: Json | null
           progress_percentage?: number | null
+          started_at?: string | null
           total_time_spent?: number | null
           user_id?: string | null
         }
@@ -1973,6 +2044,42 @@ export type Database = {
         }
         Relationships: []
       }
+      instructors: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          courses_count: number | null
+          created_at: string | null
+          expertise: string[] | null
+          id: string
+          name: string
+          rating: number | null
+          students_count: number | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          courses_count?: number | null
+          created_at?: string | null
+          expertise?: string[] | null
+          id?: string
+          name: string
+          rating?: number | null
+          students_count?: number | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          courses_count?: number | null
+          created_at?: string | null
+          expertise?: string[] | null
+          id?: string
+          name?: string
+          rating?: number | null
+          students_count?: number | null
+        }
+        Relationships: []
+      }
       learning_analytics: {
         Row: {
           action_type: string
@@ -2129,9 +2236,12 @@ export type Database = {
           learning_outcomes: Json | null
           lesson_order: number
           lesson_type: string | null
+          materials: string[] | null
           prerequisites: Json | null
+          quiz_id: string | null
           title: string
           updated_at: string | null
+          video_url: string | null
         }
         Insert: {
           ai_content?: Json | null
@@ -2144,9 +2254,12 @@ export type Database = {
           learning_outcomes?: Json | null
           lesson_order: number
           lesson_type?: string | null
+          materials?: string[] | null
           prerequisites?: Json | null
+          quiz_id?: string | null
           title: string
           updated_at?: string | null
+          video_url?: string | null
         }
         Update: {
           ai_content?: Json | null
@@ -2159,9 +2272,12 @@ export type Database = {
           learning_outcomes?: Json | null
           lesson_order?: number
           lesson_type?: string | null
+          materials?: string[] | null
           prerequisites?: Json | null
+          quiz_id?: string | null
           title?: string
           updated_at?: string | null
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -2169,6 +2285,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lessons_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
             referencedColumns: ["id"]
           },
         ]

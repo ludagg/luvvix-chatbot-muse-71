@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -20,10 +19,9 @@ import {
   Settings,
   Plus,
   Link as LinkIcon,
-  Dropbox,
-  Google,
-  Apple,
-  OneDrive
+  Box,
+  Database,
+  Apple
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -61,9 +59,9 @@ const CloudSidebar = ({ toggleSidebar, cloudStatus, onExportCloud }: CloudSideba
   const storageUsedPercentage = Math.min((cloudStatus.usedStorage / (5 * 1024 * 1024 * 1024)) * 100, 100);
 
   const cloudProviders = [
-    { id: 'dropbox', name: 'Dropbox', icon: Dropbox, color: 'text-blue-600' },
-    { id: 'google', name: 'Google Drive', icon: Google, color: 'text-green-600' },
-    { id: 'onedrive', name: 'Microsoft OneDrive', icon: OneDrive, color: 'text-blue-500' },
+    { id: 'dropbox', name: 'Dropbox', icon: Box, color: 'text-blue-600' },
+    { id: 'google', name: 'Google Drive', icon: Database, color: 'text-green-600' },
+    { id: 'onedrive', name: 'Microsoft OneDrive', icon: Cloud, color: 'text-blue-500' },
     { id: 'icloud', name: 'Apple iCloud', icon: Apple, color: 'text-gray-700' }
   ];
 

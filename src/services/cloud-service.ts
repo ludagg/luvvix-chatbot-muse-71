@@ -6,279 +6,240 @@ export interface CloudProvider {
   id: string;
   name: string;
   type: 'google_drive' | 'dropbox' | 'onedrive' | 'icloud';
-  icon: string;
-  color: string;
-}
-
-export interface CloudConnection {
-  id: string;
-  provider: string;
   access_token: string;
   refresh_token?: string;
-  expires_at?: string;
-  account_info: any;
-  is_active: boolean;
+  is_connected: boolean;
+  last_sync: string;
+  storage_used: number;
+  storage_total: number;
 }
 
 export interface CloudFile {
   id: string;
   name: string;
-  path: string;
-  provider_file_id: string;
-  mime_type: string;
+  type: 'file' | 'folder';
   size: number;
-  is_starred: boolean;
-  tags: string[];
-  metadata: any;
-  created_at: string;
-  updated_at: string;
+  modified_at: string;
+  provider: string;
+  path: string;
+  mime_type?: string;
+  download_url?: string;
+  thumbnail_url?: string;
+  is_shared: boolean;
 }
 
-export interface CloudFolder {
-  id: string;
-  name: string;
-  path: string;
-  parent_id?: string;
-  provider_folder_id: string;
-  created_at: string;
-  updated_at: string;
+export interface SyncStatus {
+  provider: string;
+  status: 'syncing' | 'completed' | 'error' | 'paused';
+  progress: number;
+  files_synced: number;
+  total_files: number;
+  last_update: string;
 }
 
 class CloudService {
-  private providers: CloudProvider[] = [
-    {
-      id: 'google_drive',
-      name: 'Google Drive',
-      type: 'google_drive',
-      icon: 'https://developers.google.com/drive/images/drive_icon.png',
-      color: '#4285F4'
-    },
-    {
-      id: 'dropbox',
-      name: 'Dropbox',
-      type: 'dropbox',
-      icon: 'https://logos-world.net/wp-content/uploads/2020/11/Dropbox-Logo.png',
-      color: '#0061FF'
-    },
-    {
-      id: 'onedrive',
-      name: 'Microsoft OneDrive',
-      type: 'onedrive',
-      icon: 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Microsoft_Office_OneDrive_%282019%E2%80%93present%29.svg',
-      color: '#0078D4'
-    }
-  ];
-
-  getAvailableProviders(): CloudProvider[] {
-    return this.providers;
-  }
-
-  async getUserConnection(): Promise<CloudConnection | null> {
-    try {
-      const user = await getCurrentUser();
-      if (!user) return null;
-
-      const { data, error } = await supabase
-        .from('cloud_connections')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error getting user connection:', error);
-      return null;
-    }
-  }
-
-  async connectProvider(provider: string): Promise<string> {
+  async getConnectedProviders(): Promise<CloudProvider[]> {
     try {
       const user = await getCurrentUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Vérifier si l'utilisateur a déjà une connexion
-      const existingConnection = await this.getUserConnection();
-      if (existingConnection) {
-        throw new Error('Vous avez déjà un fournisseur connecté. Déconnectez-le d\'abord.');
-      }
+      const { data, error } = await supabase
+        .from('cloud_providers')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_connected', true)
+        .order('name');
 
-      // Générer l'URL d'autorisation OAuth
-      const authUrl = await this.generateAuthUrl(provider);
-      
-      // Rediriger vers l'autorisation OAuth
-      window.location.href = authUrl;
-      
-      return authUrl;
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error getting cloud providers:', error);
+      return [];
+    }
+  }
+
+  async connectProvider(providerType: string): Promise<string> {
+    try {
+      const user = await getCurrentUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Generate OAuth URL based on provider
+      const { data, error } = await supabase.functions.invoke('cloud-oauth', {
+        body: { 
+          action: 'generate_auth_url',
+          provider: providerType,
+          user_id: user.id,
+          redirect_uri: `${window.location.origin}/cloud/callback`
+        }
+      });
+
+      if (error) throw error;
+      return data.auth_url;
     } catch (error) {
       console.error('Error connecting provider:', error);
       throw error;
     }
   }
 
-  private async generateAuthUrl(provider: string): Promise<string> {
-    const { data, error } = await supabase.functions.invoke('cloud-oauth', {
-      body: { 
-        action: 'generate_auth_url',
-        provider,
-        redirect_uri: `${window.location.origin}/cloud/callback`
-      }
-    });
-
-    if (error) throw error;
-    return data.auth_url;
-  }
-
-  async handleOAuthCallback(code: string, state: string): Promise<void> {
+  async handleOAuthCallback(code: string, state: string, provider: string): Promise<void> {
     try {
       const user = await getCurrentUser();
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase.functions.invoke('cloud-oauth', {
+      const { error } = await supabase.functions.invoke('cloud-oauth', {
         body: { 
           action: 'handle_callback',
           code,
           state,
+          provider,
           user_id: user.id
         }
       });
 
       if (error) throw error;
-
-      // Sauvegarder la connexion en base
-      await supabase.from('cloud_connections').insert({
-        user_id: user.id,
-        provider: data.provider,
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        expires_at: data.expires_at,
-        account_info: data.account_info
-      });
-
     } catch (error) {
       console.error('Error handling OAuth callback:', error);
       throw error;
     }
   }
 
-  async disconnectProvider(): Promise<void> {
+  async syncProvider(providerId: string): Promise<void> {
     try {
       const user = await getCurrentUser();
       if (!user) throw new Error('User not authenticated');
 
-      await supabase
-        .from('cloud_connections')
-        .update({ is_active: false })
-        .eq('user_id', user.id);
-
-    } catch (error) {
-      console.error('Error disconnecting provider:', error);
-      throw error;
-    }
-  }
-
-  async getFiles(folderId?: string): Promise<CloudFile[]> {
-    try {
-      const user = await getCurrentUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const connection = await this.getUserConnection();
-      if (!connection) throw new Error('Aucun fournisseur connecté');
-
-      const { data, error } = await supabase.functions.invoke('cloud-files', {
+      const { error } = await supabase.functions.invoke('cloud-sync', {
         body: { 
-          action: 'list_files',
-          provider: connection.provider,
-          access_token: connection.access_token,
-          folder_id: folderId
+          action: 'sync_provider',
+          provider_id: providerId,
+          user_id: user.id
         }
       });
 
       if (error) throw error;
-      return data.files;
+    } catch (error) {
+      console.error('Error syncing provider:', error);
+      throw error;
+    }
+  }
 
+  async getFiles(providerId?: string, path: string = '/'): Promise<CloudFile[]> {
+    try {
+      const user = await getCurrentUser();
+      if (!user) throw new Error('User not authenticated');
+
+      let query = supabase
+        .from('cloud_files')
+        .select(`
+          *,
+          cloud_providers!inner(user_id)
+        `)
+        .eq('cloud_providers.user_id', user.id)
+        .eq('path', path)
+        .order('type', { ascending: false })
+        .order('name');
+
+      if (providerId) {
+        query = query.eq('provider_id', providerId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       console.error('Error getting files:', error);
-      throw error;
+      return [];
     }
   }
 
-  async getFolders(parentId?: string): Promise<CloudFolder[]> {
+  async searchFiles(query: string, providerId?: string): Promise<CloudFile[]> {
     try {
       const user = await getCurrentUser();
       if (!user) throw new Error('User not authenticated');
 
-      const connection = await this.getUserConnection();
-      if (!connection) throw new Error('Aucun fournisseur connecté');
+      let dbQuery = supabase
+        .from('cloud_files')
+        .select(`
+          *,
+          cloud_providers!inner(user_id)
+        `)
+        .eq('cloud_providers.user_id', user.id)
+        .ilike('name', `%${query}%`)
+        .order('modified_at', { ascending: false })
+        .limit(50);
 
-      const { data, error } = await supabase.functions.invoke('cloud-files', {
+      if (providerId) {
+        dbQuery = dbQuery.eq('provider_id', providerId);
+      }
+
+      const { data, error } = await dbQuery;
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error searching files:', error);
+      return [];
+    }
+  }
+
+  async downloadFile(fileId: string): Promise<string> {
+    try {
+      const user = await getCurrentUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data, error } = await supabase.functions.invoke('cloud-download', {
         body: { 
-          action: 'list_folders',
-          provider: connection.provider,
-          access_token: connection.access_token,
-          parent_id: parentId
+          file_id: fileId,
+          user_id: user.id
         }
       });
 
       if (error) throw error;
-      return data.folders;
-
+      return data.download_url;
     } catch (error) {
-      console.error('Error getting folders:', error);
+      console.error('Error downloading file:', error);
       throw error;
     }
   }
 
-  async uploadFile(file: File, folderId?: string): Promise<void> {
+  async uploadFile(providerId: string, file: File, path: string = '/'): Promise<void> {
     try {
       const user = await getCurrentUser();
       if (!user) throw new Error('User not authenticated');
-
-      const connection = await this.getUserConnection();
-      if (!connection) throw new Error('Aucun fournisseur connecté');
 
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('provider', connection.provider);
-      formData.append('access_token', connection.access_token);
-      if (folderId) formData.append('folder_id', folderId);
+      formData.append('provider_id', providerId);
+      formData.append('path', path);
+      formData.append('user_id', user.id);
 
       const { error } = await supabase.functions.invoke('cloud-upload', {
         body: formData
       });
 
       if (error) throw error;
-
     } catch (error) {
       console.error('Error uploading file:', error);
       throw error;
     }
   }
 
-  async createFolder(name: string, parentId?: string): Promise<void> {
+  async createFolder(providerId: string, name: string, path: string = '/'): Promise<void> {
     try {
       const user = await getCurrentUser();
       if (!user) throw new Error('User not authenticated');
 
-      const connection = await this.getUserConnection();
-      if (!connection) throw new Error('Aucun fournisseur connecté');
-
-      const { error } = await supabase.functions.invoke('cloud-folders', {
+      const { error } = await supabase.functions.invoke('cloud-create-folder', {
         body: { 
-          action: 'create_folder',
-          provider: connection.provider,
-          access_token: connection.access_token,
+          provider_id: providerId,
           name,
-          parent_id: parentId
+          path,
+          user_id: user.id
         }
       });
 
       if (error) throw error;
-
     } catch (error) {
       console.error('Error creating folder:', error);
       throw error;
@@ -290,50 +251,110 @@ class CloudService {
       const user = await getCurrentUser();
       if (!user) throw new Error('User not authenticated');
 
-      const connection = await this.getUserConnection();
-      if (!connection) throw new Error('Aucun fournisseur connecté');
-
-      const { error } = await supabase.functions.invoke('cloud-files', {
+      const { error } = await supabase.functions.invoke('cloud-delete', {
         body: { 
-          action: 'delete_file',
-          provider: connection.provider,
-          access_token: connection.access_token,
-          file_id: fileId
+          file_id: fileId,
+          user_id: user.id
         }
       });
 
       if (error) throw error;
-
     } catch (error) {
       console.error('Error deleting file:', error);
       throw error;
     }
   }
 
-  async downloadFile(fileId: string): Promise<Blob> {
+  async shareFile(fileId: string, permissions: string[] = ['read']): Promise<string> {
     try {
       const user = await getCurrentUser();
       if (!user) throw new Error('User not authenticated');
 
-      const connection = await this.getUserConnection();
-      if (!connection) throw new Error('Aucun fournisseur connecté');
-
-      const { data, error } = await supabase.functions.invoke('cloud-download', {
+      const { data, error } = await supabase.functions.invoke('cloud-share', {
         body: { 
-          provider: connection.provider,
-          access_token: connection.access_token,
-          file_id: fileId
+          file_id: fileId,
+          permissions,
+          user_id: user.id
         }
       });
 
       if (error) throw error;
-      
-      // Convertir la réponse en blob
-      return new Blob([data.content], { type: data.mime_type });
-
+      return data.share_url;
     } catch (error) {
-      console.error('Error downloading file:', error);
+      console.error('Error sharing file:', error);
       throw error;
+    }
+  }
+
+  async getSyncStatus(): Promise<SyncStatus[]> {
+    try {
+      const user = await getCurrentUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data, error } = await supabase
+        .from('sync_status')
+        .select(`
+          *,
+          cloud_providers!inner(user_id, name)
+        `)
+        .eq('cloud_providers.user_id', user.id)
+        .order('last_update', { ascending: false });
+
+      if (error) throw error;
+      
+      return (data || []).map(item => ({
+        provider: item.cloud_providers.name,
+        status: item.status,
+        progress: item.progress,
+        files_synced: item.files_synced,
+        total_files: item.total_files,
+        last_update: item.last_update
+      }));
+    } catch (error) {
+      console.error('Error getting sync status:', error);
+      return [];
+    }
+  }
+
+  async disconnectProvider(providerId: string): Promise<void> {
+    try {
+      const user = await getCurrentUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('cloud_providers')
+        .update({ is_connected: false })
+        .eq('id', providerId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error disconnecting provider:', error);
+      throw error;
+    }
+  }
+
+  async getStorageStats(): Promise<{totalUsed: number, totalAvailable: number, byProvider: {[key: string]: {used: number, total: number}}}> {
+    try {
+      const providers = await this.getConnectedProviders();
+      
+      let totalUsed = 0;
+      let totalAvailable = 0;
+      const byProvider: {[key: string]: {used: number, total: number}} = {};
+
+      providers.forEach(provider => {
+        totalUsed += provider.storage_used;
+        totalAvailable += provider.storage_total;
+        byProvider[provider.name] = {
+          used: provider.storage_used,
+          total: provider.storage_total
+        };
+      });
+
+      return { totalUsed, totalAvailable, byProvider };
+    } catch (error) {
+      console.error('Error getting storage stats:', error);
+      return { totalUsed: 0, totalAvailable: 0, byProvider: {} };
     }
   }
 }

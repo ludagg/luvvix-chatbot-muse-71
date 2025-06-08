@@ -1,11 +1,11 @@
 
 import { motion } from "framer-motion";
-import ModernHero from "@/components/home/ModernHero";
-import ProductShowcase from "@/components/home/ProductShowcase";
-import TrustSection from "@/components/home/TrustSection";
-import CallToAction from "@/components/home/CallToAction";
-import StatsSection from "@/components/home/StatsSection";
-import TestimonialsSection from "@/components/home/TestimonialsSection";
+import Hero from "@/components/Hero";
+import Ecosystem from "@/components/Ecosystem";
+import ProductDemos from "@/components/ProductDemos";
+import Testimonials from "@/components/Testimonials";
+import CeoSection from "@/components/CeoSection";
+import DeveloperSection from "@/components/DeveloperSection";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -14,17 +14,17 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
       <Navbar />
       
-      <ModernHero />
+      <Hero />
       
-      <ProductShowcase />
+      <Ecosystem />
       
-      <StatsSection />
+      <ProductDemos />
       
-      <TrustSection />
+      <Testimonials />
       
-      <TestimonialsSection />
+      <CeoSection />
       
-      <CallToAction />
+      <DeveloperSection />
       
       <Footer />
     </div>

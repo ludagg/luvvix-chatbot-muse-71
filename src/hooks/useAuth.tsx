@@ -1,9 +1,9 @@
+
 import { useState, useEffect, createContext, useContext } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { authentivix } from '@/utils/authentivix';
-import { multiAccountService } from '@/services/multi-account-service';
 
 interface UserProfile {
   id: string;
@@ -47,10 +47,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Store the session and account for multi-account support
+          // Use setTimeout to prevent auth deadlock
           setTimeout(() => {
-            multiAccountService.storeAccount(session.user);
-            multiAccountService.saveSession(session.user, session);
             fetchProfile(session.user.id);
             
             // Check if the user has biometric data enrolled
@@ -86,9 +84,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     
     checkBiometricAvailability();
-
-    // Cleanup expired sessions
-    multiAccountService.cleanupExpiredSessions();
 
     return () => subscription.unsubscribe();
   }, []);
@@ -273,11 +268,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const globalSignOut = async () => {
     try {
-      // Sign out from all sessions for this user
-      if (user) {
-        await multiAccountService.removeAccount(user.id);
-      }
-      
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       

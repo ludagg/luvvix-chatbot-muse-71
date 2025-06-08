@@ -1379,45 +1379,6 @@ export type Database = {
         }
         Relationships: []
       }
-      cloud_connections: {
-        Row: {
-          access_token: string
-          account_info: Json | null
-          created_at: string | null
-          expires_at: string | null
-          id: string
-          is_active: boolean | null
-          provider: string
-          refresh_token: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          access_token: string
-          account_info?: Json | null
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          provider: string
-          refresh_token?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          access_token?: string
-          account_info?: Json | null
-          created_at?: string | null
-          expires_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          provider?: string
-          refresh_token?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       cloud_files: {
         Row: {
           created_at: string
@@ -1430,9 +1391,6 @@ export type Database = {
           modified_at: string
           name: string
           parent_folder_id: string | null
-          provider_file_id: string | null
-          provider_metadata: Json | null
-          provider_type: string | null
           size: number
           starred: boolean
           tags: string[]
@@ -1450,9 +1408,6 @@ export type Database = {
           modified_at?: string
           name: string
           parent_folder_id?: string | null
-          provider_file_id?: string | null
-          provider_metadata?: Json | null
-          provider_type?: string | null
           size: number
           starred?: boolean
           tags?: string[]
@@ -1470,9 +1425,6 @@ export type Database = {
           modified_at?: string
           name?: string
           parent_folder_id?: string | null
-          provider_file_id?: string | null
-          provider_metadata?: Json | null
-          provider_type?: string | null
           size?: number
           starred?: boolean
           tags?: string[]
@@ -1488,89 +1440,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      cloud_folders: {
-        Row: {
-          created_at: string | null
-          id: string
-          name: string
-          parent_id: string | null
-          path: string
-          provider_folder_id: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          name: string
-          parent_id?: string | null
-          path: string
-          provider_folder_id?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          name?: string
-          parent_id?: string | null
-          path?: string
-          provider_folder_id?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "cloud_folders_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "cloud_folders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      cloud_providers: {
-        Row: {
-          access_token: string
-          account_info: Json
-          created_at: string | null
-          id: string
-          is_active: boolean | null
-          provider_name: string
-          provider_type: string
-          refresh_token: string | null
-          token_expires_at: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          access_token: string
-          account_info?: Json
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          provider_name: string
-          provider_type: string
-          refresh_token?: string | null
-          token_expires_at?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          access_token?: string
-          account_info?: Json
-          created_at?: string | null
-          id?: string
-          is_active?: boolean | null
-          provider_name?: string
-          provider_type?: string
-          refresh_token?: string | null
-          token_expires_at?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
       }
       comments: {
         Row: {
@@ -1919,124 +1788,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      email_attachments: {
-        Row: {
-          cloud_file_id: string | null
-          content_type: string | null
-          created_at: string | null
-          download_url: string | null
-          email_id: string
-          filename: string
-          id: string
-          size_bytes: number | null
-        }
-        Insert: {
-          cloud_file_id?: string | null
-          content_type?: string | null
-          created_at?: string | null
-          download_url?: string | null
-          email_id: string
-          filename: string
-          id?: string
-          size_bytes?: number | null
-        }
-        Update: {
-          cloud_file_id?: string | null
-          content_type?: string | null
-          created_at?: string | null
-          download_url?: string | null
-          email_id?: string
-          filename?: string
-          id?: string
-          size_bytes?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "email_attachments_email_id_fkey"
-            columns: ["email_id"]
-            isOneToOne: false
-            referencedRelation: "emails"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      emails: {
-        Row: {
-          attachments: Json | null
-          bcc: Json | null
-          body_html: string | null
-          body_text: string | null
-          cc: Json | null
-          created_at: string | null
-          id: string
-          is_read: boolean | null
-          is_spam: boolean | null
-          is_starred: boolean | null
-          is_trash: boolean | null
-          labels: Json | null
-          mail_account_id: string
-          message_id: string
-          received_at: string
-          recipients: Json
-          sender_email: string
-          sender_name: string | null
-          subject: string | null
-          thread_id: string | null
-        }
-        Insert: {
-          attachments?: Json | null
-          bcc?: Json | null
-          body_html?: string | null
-          body_text?: string | null
-          cc?: Json | null
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          is_spam?: boolean | null
-          is_starred?: boolean | null
-          is_trash?: boolean | null
-          labels?: Json | null
-          mail_account_id: string
-          message_id: string
-          received_at: string
-          recipients?: Json
-          sender_email: string
-          sender_name?: string | null
-          subject?: string | null
-          thread_id?: string | null
-        }
-        Update: {
-          attachments?: Json | null
-          bcc?: Json | null
-          body_html?: string | null
-          body_text?: string | null
-          cc?: Json | null
-          created_at?: string | null
-          id?: string
-          is_read?: boolean | null
-          is_spam?: boolean | null
-          is_starred?: boolean | null
-          is_trash?: boolean | null
-          labels?: Json | null
-          mail_account_id?: string
-          message_id?: string
-          received_at?: string
-          recipients?: Json
-          sender_email?: string
-          sender_name?: string | null
-          subject?: string | null
-          thread_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "emails_mail_account_id_fkey"
-            columns: ["mail_account_id"]
-            isOneToOne: false
-            referencedRelation: "mail_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       enrollments: {
         Row: {
@@ -2545,48 +2296,6 @@ export type Database = {
           },
         ]
       }
-      mail_accounts: {
-        Row: {
-          access_token: string
-          created_at: string | null
-          email_address: string
-          id: string
-          is_active: boolean | null
-          provider: string
-          refresh_token: string | null
-          sync_settings: Json | null
-          token_expires_at: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          access_token: string
-          created_at?: string | null
-          email_address: string
-          id?: string
-          is_active?: boolean | null
-          provider: string
-          refresh_token?: string | null
-          sync_settings?: Json | null
-          token_expires_at?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          access_token?: string
-          created_at?: string | null
-          email_address?: string
-          id?: string
-          is_active?: boolean | null
-          provider?: string
-          refresh_token?: string | null
-          sync_settings?: Json | null
-          token_expires_at?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       messages: {
         Row: {
           content: string
@@ -2868,33 +2577,6 @@ export type Database = {
           },
         ]
       }
-      stored_accounts: {
-        Row: {
-          account_data: Json
-          created_at: string | null
-          device_fingerprint: string
-          id: string
-          last_used_at: string | null
-          user_id: string
-        }
-        Insert: {
-          account_data: Json
-          created_at?: string | null
-          device_fingerprint: string
-          id?: string
-          last_used_at?: string | null
-          user_id: string
-        }
-        Update: {
-          account_data?: Json
-          created_at?: string | null
-          device_fingerprint?: string
-          id?: string
-          last_used_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       User: {
         Row: {
           country: string | null
@@ -3054,36 +2736,6 @@ export type Database = {
           id?: string
           updated_at?: string | null
           username?: string | null
-        }
-        Relationships: []
-      }
-      user_sessions: {
-        Row: {
-          created_at: string | null
-          device_id: string
-          id: string
-          is_active: boolean | null
-          last_used: string | null
-          session_data: Json
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          device_id: string
-          id?: string
-          is_active?: boolean | null
-          last_used?: string | null
-          session_data: Json
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          device_id?: string
-          id?: string
-          is_active?: boolean | null
-          last_used?: string | null
-          session_data?: Json
-          user_id?: string | null
         }
         Relationships: []
       }

@@ -28,7 +28,7 @@ const DeveloperPage = () => {
     },
     {
       name: "LuvviX AI API",
-      description: "Intelligence artificielle Gemini 1.5 Flash",
+      description: "Intelligence artificielle Flash",
       endpoint: "https://api.luvvix.it.com/ai",
       icon: Bot,
       color: "from-purple-500 to-pink-500",

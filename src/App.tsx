@@ -1,4 +1,3 @@
-
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { LanguageProvider } from "@/hooks/useLanguage";
@@ -44,6 +43,8 @@ import MindMapPage from "./pages/MindMapPage";
 import CodeStudioPage from "./pages/CodeStudioPage";
 import DocsGeneratorPage from "./pages/DocsGeneratorPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import MailPage from "./pages/MailPage";
+import AccountSelector from "./components/auth/AccountSelector";
 
 function App() {
   return (
@@ -142,6 +143,9 @@ function App() {
                 
                 <Route path="/docs/*" element={<DocsPage />} />
                 <Route path="/docs-generator" element={<DocsGeneratorPage />} />
+                
+                <Route path="/mail" element={<MailPage />} />
+                <Route path="/mail/callback" element={<MailPage />} />
                 
                 <Route path="*" element={<NotFound />} />
               </Routes>

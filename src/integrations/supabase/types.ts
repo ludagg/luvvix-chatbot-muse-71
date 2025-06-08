@@ -1379,6 +1379,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cloud_connections: {
+        Row: {
+          access_token: string
+          account_info: Json | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          provider: string
+          refresh_token: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_token: string
+          account_info?: Json | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          provider: string
+          refresh_token?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_token?: string
+          account_info?: Json | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          provider?: string
+          refresh_token?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       cloud_files: {
         Row: {
           created_at: string
@@ -1446,6 +1485,47 @@ export type Database = {
             columns: ["parent_folder_id"]
             isOneToOne: false
             referencedRelation: "cloud_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cloud_folders: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          path: string
+          provider_folder_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          path: string
+          provider_folder_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          path?: string
+          provider_folder_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cloud_folders_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "cloud_folders"
             referencedColumns: ["id"]
           },
         ]
@@ -2974,6 +3054,36 @@ export type Database = {
           id?: string
           updated_at?: string | null
           username?: string | null
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          created_at: string | null
+          device_id: string
+          id: string
+          is_active: boolean | null
+          last_used: string | null
+          session_data: Json
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_id: string
+          id?: string
+          is_active?: boolean | null
+          last_used?: string | null
+          session_data: Json
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_id?: string
+          id?: string
+          is_active?: boolean | null
+          last_used?: string | null
+          session_data?: Json
+          user_id?: string | null
         }
         Relationships: []
       }

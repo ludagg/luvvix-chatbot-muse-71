@@ -15,7 +15,6 @@ import Dashboard from "./pages/Dashboard";
 import CloudPage from "./pages/CloudPage";
 import NewsPage from "./pages/NewsPage";
 import WeatherPage from "./pages/WeatherPage";
-import MailPage from "./pages/MailPage";
 import OAuth from "./pages/OAuth";
 import AdminPanel from "./pages/AdminPanel";
 import OAuthTest from "./pages/OAuthTest";
@@ -61,7 +60,6 @@ function App() {
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/news" element={<NewsPage />} />
                 <Route path="/weather" element={<WeatherPage />} />
-                <Route path="/mail" element={<MailPage />} />
                 <Route path="/translate" element={<TranslatePage />} />
                 <Route path="/mindmap" element={<MindMapPage />} />
                 <Route path="/code-studio" element={<CodeStudioPage />} />

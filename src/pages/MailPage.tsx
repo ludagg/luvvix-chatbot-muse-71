@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -24,6 +25,8 @@ import {
   Bot,
   Sparkles,
   Paperclip,
+  Calendar,
+  Users,
   Settings,
   Plus,
   Filter,
@@ -36,32 +39,19 @@ import {
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import AccountSetup from "@/components/mail/AccountSetup";
-import EmailComposer from "@/components/mail/EmailComposer";
 
 interface Email {
   id: string;
-  message_id: string;
+  from: string;
+  to: string;
   subject: string;
-  sender_email: string;
-  sender_name: string;
-  body_text: string;
-  body_html: string;
-  received_at: string;
-  is_read: boolean;
-  is_starred: boolean;
+  body: string;
+  timestamp: Date;
+  isRead: boolean;
+  isStarred: boolean;
+  isImportant: boolean;
   labels: string[];
-  attachments: Array<{ filename: string; size_bytes: number; content_type: string }>;
-}
-
-interface MailAccount {
-  id: string;
-  email_address: string;
-  display_name: string;
-  provider: string;
-  is_primary: boolean;
-  is_active: boolean;
+  attachments?: Array<{ name: string; size: string; type: string }>;
 }
 
 interface AIInsight {
@@ -74,142 +64,129 @@ const MailPage = () => {
   const { user } = useAuth();
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [emails, setEmails] = useState<Email[]>([]);
-  const [mailAccounts, setMailAccounts] = useState<MailAccount[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<string>('');
   const [currentFolder, setCurrentFolder] = useState('inbox');
   const [searchQuery, setSearchQuery] = useState('');
   const [isComposing, setIsComposing] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Données de démonstration réalistes
+  const demoEmails: Email[] = [
+    {
+      id: '1',
+      from: 'marie.dubois@techcorp.com',
+      to: user?.email || 'user@example.com',
+      subject: 'Proposition de collaboration stratégique - Q1 2025',
+      body: `Bonjour,
+
+J'espère que ce message vous trouve en bonne santé. Je suis Marie Dubois, Directrice du Développement Commercial chez TechCorp Solutions.
+
+Nous sommes très impressionnés par votre travail récent et aimerions explorer une collaboration stratégique pour le premier trimestre 2025. Notre équipe a identifié des synergies potentielles qui pourraient bénéficier à nos deux organisations.
+
+Seriez-vous disponible pour une réunion la semaine prochaine ? Je peux m'adapter à votre emploi du temps.
+
+Dans l'attente de votre retour,
+
+Cordialement,
+Marie Dubois
+Directrice du Développement Commercial
+TechCorp Solutions`,
+      timestamp: new Date('2024-12-08T10:30:00'),
+      isRead: false,
+      isStarred: true,
+      isImportant: true,
+      labels: ['Business', 'Urgent'],
+      attachments: [
+        { name: 'Proposition_TechCorp_2025.pdf', size: '2.3 MB', type: 'pdf' },
+        { name: 'Calendrier_projet.xlsx', size: '890 KB', type: 'excel' }
+      ]
+    },
+    {
+      id: '2',
+      from: 'notifications@luvvix.com',
+      to: user?.email || 'user@example.com',
+      subject: '🚀 Nouvelles fonctionnalités LuvviX - Décembre 2024',
+      body: `Découvrez les dernières améliorations de votre suite LuvviX !
+
+✨ Nouvelles fonctionnalités :
+• Assistant IA avancé dans LuvviX Mail
+• Traduction automatique en temps réel
+• Synchronisation améliorée avec le cloud
+• Interface utilisateur redessinée
+
+🔧 Améliorations :
+• Performances accrues de 40%
+• Sécurité renforcée
+• Support de nouveaux formats de fichiers
+
+Connectez-vous dès maintenant pour découvrir ces améliorations !
+
+L'équipe LuvviX`,
+      timestamp: new Date('2024-12-08T09:15:00'),
+      isRead: true,
+      isStarred: false,
+      isImportant: false,
+      labels: ['LuvviX', 'Updates']
+    },
+    {
+      id: '3',
+      from: 'jean.martin@innovcorp.fr',
+      to: user?.email || 'user@example.com',
+      subject: 'Re: Analyse des résultats Q4 - Action requise',
+      body: `Merci pour votre analyse détaillée des résultats Q4.
+
+Les chiffres sont effectivement encourageants, avec une croissance de 23% par rapport au trimestre précédent. J'ai quelques questions spécifiques :
+
+1. Comment expliquez-vous le pic d'activité en novembre ?
+2. Quelles sont vos recommandations pour maintenir cette tendance ?
+3. Avez-vous identifié des risques potentiels pour Q1 ?
+
+Pouvons-nous planifier une réunion cette semaine pour discuter de la stratégie 2025 ?
+
+Bien à vous,
+Jean Martin`,
+      timestamp: new Date('2024-12-08T08:45:00'),
+      isRead: false,
+      isStarred: false,
+      isImportant: true,
+      labels: ['Work', 'Analysis']
+    }
+  ];
 
   useEffect(() => {
-    if (user) {
-      loadMailAccounts();
-    }
+    setEmails(demoEmails);
   }, [user]);
-
-  useEffect(() => {
-    if (selectedAccount) {
-      loadEmails();
-    }
-  }, [selectedAccount, currentFolder]);
-
-  const loadMailAccounts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('mail_accounts')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('is_primary', { ascending: false });
-
-      if (error) throw error;
-
-      setMailAccounts(data || []);
-      if (data && data.length > 0) {
-        setSelectedAccount(data[0].id);
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des comptes:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadEmails = async () => {
-    if (!selectedAccount) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('emails')
-        .select(`
-          *,
-          email_attachments (
-            filename,
-            size_bytes,
-            content_type
-          )
-        `)
-        .eq('mail_account_id', selectedAccount)
-        .order('received_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-
-      setEmails(data || []);
-    } catch (error) {
-      console.error('Erreur lors du chargement des emails:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de charger les emails"
-      });
-    }
-  };
-
-  const syncEmails = async () => {
-    if (!selectedAccount) return;
-
-    setIsSyncing(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Session non trouvée');
-
-      const { data, error } = await supabase.functions.invoke('sync-emails', {
-        body: { accountId: selectedAccount, maxResults: 50 },
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Synchronisation terminée",
-        description: `${data.synced} nouveaux emails synchronisés`
-      });
-
-      await loadEmails();
-    } catch (error) {
-      console.error('Erreur de synchronisation:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur de synchronisation",
-        description: "Impossible de synchroniser les emails"
-      });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   const generateAIInsights = async (email: Email) => {
     setIsLoadingAI(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Session non trouvée');
-
-      const { data, error } = await supabase.functions.invoke('luvvix-mail-ai', {
-        body: {
-          emailContent: `Objet: ${email.subject}\n\nDe: ${email.sender_email}\n\nContenu: ${email.body_text}`,
-          analysisType: 'insights'
-        },
-        headers: { Authorization: `Bearer ${session.access_token}` }
-      });
-
-      if (error) throw error;
-
+      // Simulation d'analyse IA
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       const insights: AIInsight[] = [
         {
           type: 'summary',
-          content: data.analysis,
-          confidence: data.confidence
+          content: `Résumé : ${email.subject.length > 50 ? email.subject.substring(0, 50) + '...' : email.subject}`,
+          confidence: 0.92
+        },
+        {
+          type: 'priority',
+          content: email.isImportant ? 'Priorité élevée détectée' : 'Priorité normale',
+          confidence: 0.88
         }
       ];
 
+      if (email.attachments && email.attachments.length > 0) {
+        insights.push({
+          type: 'action',
+          content: `${email.attachments.length} pièce(s) jointe(s) à examiner`,
+          confidence: 0.95
+        });
+      }
+
       setAiInsights(insights);
     } catch (error) {
-      console.error('Erreur IA:', error);
       toast({
         variant: "destructive",
         title: "Erreur IA",
@@ -220,28 +197,19 @@ const MailPage = () => {
     }
   };
 
-  const handleEmailSelect = async (email: Email) => {
+  const handleEmailSelect = (email: Email) => {
     setSelectedEmail(email);
     generateAIInsights(email);
     
     // Marquer comme lu
-    if (!email.is_read) {
-      const { error } = await supabase
-        .from('emails')
-        .update({ is_read: true })
-        .eq('id', email.id);
-
-      if (!error) {
-        setEmails(prev => prev.map(e => 
-          e.id === email.id ? { ...e, is_read: true } : e
-        ));
-      }
-    }
+    setEmails(prev => prev.map(e => 
+      e.id === email.id ? { ...e, isRead: true } : e
+    ));
   };
 
   const folders = [
-    { id: 'inbox', name: 'Boîte de réception', icon: Inbox, count: emails.filter(e => !e.is_read).length },
-    { id: 'starred', name: 'Messages suivis', icon: Star, count: emails.filter(e => e.is_starred).length },
+    { id: 'inbox', name: 'Boîte de réception', icon: Inbox, count: emails.filter(e => !e.isRead).length },
+    { id: 'starred', name: 'Messages suivis', icon: Star, count: emails.filter(e => e.isStarred).length },
     { id: 'sent', name: 'Envoyés', icon: Send, count: 0 },
     { id: 'drafts', name: 'Brouillons', icon: FileText, count: 0 },
     { id: 'archive', name: 'Archives', icon: Archive, count: 0 },
@@ -250,12 +218,12 @@ const MailPage = () => {
 
   const filteredEmails = emails.filter(email => {
     const matchesSearch = email.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         email.sender_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         email.body_text.toLowerCase().includes(searchQuery.toLowerCase());
+                         email.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         email.body.toLowerCase().includes(searchQuery.toLowerCase());
     
     switch (currentFolder) {
       case 'starred':
-        return matchesSearch && email.is_starred;
+        return matchesSearch && email.isStarred;
       case 'inbox':
       default:
         return matchesSearch;
@@ -346,21 +314,6 @@ const MailPage = () => {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p>Chargement de LuvviX Mail...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (mailAccounts.length === 0) {
-    return <AccountSetup onAccountAdded={loadMailAccounts} />;
-  }
-
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -397,13 +350,8 @@ const MailPage = () => {
               />
             </div>
             
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={syncEmails}
-              disabled={isSyncing}
-            >
-              <RefreshCw className={cn("w-4 h-4", isSyncing && "animate-spin")} />
+            <Button variant="ghost" size="icon">
+              <RefreshCw className="w-4 h-4" />
             </Button>
             
             <Button variant="ghost" size="icon">
@@ -443,32 +391,19 @@ const MailPage = () => {
           selectedEmail ? "hidden md:block md:w-96" : "flex-1"
         )}>
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between">
               <h2 className="font-semibold text-gray-900 dark:text-gray-100">
                 {folders.find(f => f.id === currentFolder)?.name}
               </h2>
-              <Button 
-                onClick={() => setIsComposing(true)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nouveau
-              </Button>
+              <div className="flex space-x-1">
+                <Button variant="ghost" size="icon">
+                  <Filter className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon">
+                  <SortDesc className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-            
-            {mailAccounts.length > 1 && (
-              <select 
-                value={selectedAccount}
-                onChange={(e) => setSelectedAccount(e.target.value)}
-                className="w-full p-2 border rounded-md mb-4"
-              >
-                {mailAccounts.map(account => (
-                  <option key={account.id} value={account.id}>
-                    {account.display_name} ({account.email_address})
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
 
           <ScrollArea className="flex-1">
@@ -483,14 +418,14 @@ const MailPage = () => {
                     className={cn(
                       "p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
                       selectedEmail?.id === email.id && "bg-blue-50 dark:bg-blue-900/20 border-r-2 border-blue-600",
-                      !email.is_read && "bg-blue-50/50 dark:bg-blue-900/10"
+                      !email.isRead && "bg-blue-50/50 dark:bg-blue-900/10"
                     )}
                     onClick={() => handleEmailSelect(email)}
                   >
                     <div className="flex items-start space-x-3">
                       <Avatar className="w-10 h-10 flex-shrink-0">
                         <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-                          {email.sender_email.charAt(0).toUpperCase()}
+                          {email.from.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       
@@ -498,14 +433,15 @@ const MailPage = () => {
                         <div className="flex items-center justify-between mb-1">
                           <p className={cn(
                             "text-sm truncate",
-                            !email.is_read ? "font-semibold text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300"
+                            !email.isRead ? "font-semibold text-gray-900 dark:text-gray-100" : "text-gray-700 dark:text-gray-300"
                           )}>
-                            {email.sender_name || email.sender_email.split('@')[0]}
+                            {email.from.split('@')[0]}
                           </p>
                           <div className="flex items-center space-x-1 flex-shrink-0 ml-2">
-                            {email.is_starred && <Star className="w-4 h-4 text-yellow-500 fill-current" />}
+                            {email.isStarred && <Star className="w-4 h-4 text-yellow-500 fill-current" />}
+                            {email.isImportant && <Zap className="w-4 h-4 text-red-500" />}
                             <span className="text-xs text-gray-500">
-                              {new Date(email.received_at).toLocaleTimeString('fr-FR', { 
+                              {email.timestamp.toLocaleTimeString('fr-FR', { 
                                 hour: '2-digit', 
                                 minute: '2-digit' 
                               })}
@@ -515,18 +451,18 @@ const MailPage = () => {
                         
                         <p className={cn(
                           "text-sm truncate mb-1",
-                          !email.is_read ? "font-medium text-gray-900 dark:text-gray-100" : "text-gray-600 dark:text-gray-400"
+                          !email.isRead ? "font-medium text-gray-900 dark:text-gray-100" : "text-gray-600 dark:text-gray-400"
                         )}>
                           {email.subject}
                         </p>
                         
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {email.body_text?.substring(0, 100)}...
+                          {email.body.substring(0, 100)}...
                         </p>
                         
                         {email.labels.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
-                            {email.labels.slice(0, 3).map((label) => (
+                            {email.labels.map((label) => (
                               <Badge key={label} variant="secondary" className="text-xs">
                                 {label}
                               </Badge>
@@ -566,7 +502,7 @@ const MailPage = () => {
                   <Button variant="ghost" size="icon">
                     <Star className={cn(
                       "w-4 h-4",
-                      selectedEmail.is_starred ? "text-yellow-500 fill-current" : ""
+                      selectedEmail.isStarred ? "text-yellow-500 fill-current" : ""
                     )} />
                   </Button>
                   <Button variant="ghost" size="icon">
@@ -591,8 +527,14 @@ const MailPage = () => {
                       </div>
                       <div className="space-y-2">
                         {aiInsights.map((insight, index) => (
-                          <div key={index} className="text-sm text-purple-700 dark:text-purple-300">
-                            {insight.content}
+                          <div key={index} className="flex items-center text-sm">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                            <span className="text-purple-700 dark:text-purple-300">
+                              {insight.content}
+                            </span>
+                            <Badge variant="outline" className="ml-auto text-xs border-purple-300">
+                              {Math.round(insight.confidence * 100)}%
+                            </Badge>
                           </div>
                         ))}
                       </div>
@@ -610,22 +552,22 @@ const MailPage = () => {
                   <div className="flex items-center space-x-2">
                     <Avatar className="w-8 h-8">
                       <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
-                        {selectedEmail.sender_email.charAt(0).toUpperCase()}
+                        {selectedEmail.from.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-medium text-gray-900 dark:text-gray-100">
-                        {selectedEmail.sender_name || selectedEmail.sender_email}
+                        {selectedEmail.from}
                       </p>
-                      <p>{selectedEmail.sender_email}</p>
+                      <p>à {selectedEmail.to}</p>
                     </div>
                   </div>
                   
                   <div className="flex-1"></div>
                   
                   <div className="text-right">
-                    <p>{new Date(selectedEmail.received_at).toLocaleDateString('fr-FR')}</p>
-                    <p>{new Date(selectedEmail.received_at).toLocaleTimeString('fr-FR')}</p>
+                    <p>{selectedEmail.timestamp.toLocaleDateString('fr-FR')}</p>
+                    <p>{selectedEmail.timestamp.toLocaleTimeString('fr-FR')}</p>
                   </div>
                 </div>
               </div>
@@ -633,15 +575,11 @@ const MailPage = () => {
 
             <ScrollArea className="flex-1 p-6">
               <div className="prose max-w-none dark:prose-invert">
-                {selectedEmail.body_html ? (
-                  <div dangerouslySetInnerHTML={{ __html: selectedEmail.body_html }} />
-                ) : (
-                  selectedEmail.body_text?.split('\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4 text-gray-700 dark:text-gray-300 leading-relaxed">
-                      {paragraph}
-                    </p>
-                  ))
-                )}
+                {selectedEmail.body.split('\n').map((paragraph, index) => (
+                  <p key={index} className="mb-4 text-gray-700 dark:text-gray-300 leading-relaxed">
+                    {paragraph}
+                  </p>
+                ))}
               </div>
 
               {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
@@ -658,11 +596,9 @@ const MailPage = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                              {attachment.filename}
+                              {attachment.name}
                             </p>
-                            <p className="text-xs text-gray-500">
-                              {attachment.size_bytes ? `${Math.round(attachment.size_bytes / 1024)} KB` : 'Taille inconnue'}
-                            </p>
+                            <p className="text-xs text-gray-500">{attachment.size}</p>
                           </div>
                         </div>
                       </Card>
@@ -674,16 +610,17 @@ const MailPage = () => {
 
             <div className="p-4 border-t border-gray-200 dark:border-gray-700">
               <div className="flex space-x-2">
-                <Button 
-                  className="bg-blue-600 hover:bg-blue-700"
-                  onClick={() => setIsComposing(true)}
-                >
+                <Button className="bg-blue-600 hover:bg-blue-700">
                   <Reply className="w-4 h-4 mr-2" />
                   Répondre
                 </Button>
                 <Button variant="outline">
                   <Forward className="w-4 h-4 mr-2" />
                   Transférer
+                </Button>
+                <Button variant="outline">
+                  <Globe className="w-4 h-4 mr-2" />
+                  Traduire
                 </Button>
               </div>
             </div>

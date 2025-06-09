@@ -13,7 +13,7 @@ import {
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Sparkles, Bot, Cloud, FileText, User, AppWindow, Newspaper, Radio, Network, Languages, Code, Search } from "lucide-react";
+import { Menu, Sparkles, Bot, Cloud, FileText, User, AppWindow, Newspaper, Radio, Network, Languages, Code, Search, Mail } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -74,6 +74,16 @@ const Navbar = () => {
                 </NavigationMenuTrigger>
                 <NavigationMenuContent className="rounded-xl p-4 min-w-[500px]">
                   <div className="grid gap-3 md:grid-cols-3">
+                    <Link to="/mail" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full">
+                        <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">LuvviX Mail</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Messagerie professionnelle</p>
+                      </div>
+                    </Link>
+                    
                     <Link to="/explore" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                       <div className="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full">
                         <Search className="w-5 h-5 text-orange-600 dark:text-orange-400" />
@@ -95,8 +105,8 @@ const Navbar = () => {
                     </Link>
                     
                     <Link to="/translate" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                      <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full">
-                        <Languages className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <div className="bg-cyan-100 dark:bg-cyan-900/30 p-2 rounded-full">
+                        <Languages className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                       </div>
                       <div>
                         <h3 className="font-medium">LuvviX Translate</h3>
@@ -151,26 +161,6 @@ const Navbar = () => {
                       <div>
                         <h3 className="font-medium">{t.news.title}</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">{t.news.subtitle}</p>
-                      </div>
-                    </Link>
-                    
-                    <Link to="/weather" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                      <div className="bg-cyan-100 dark:bg-cyan-900/30 p-2 rounded-full">
-                        <Cloud className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">LuvviX Weather</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Météo intelligente</p>
-                      </div>
-                    </Link>
-                    
-                    <Link to="/#" className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors opacity-60">
-                      <div className="bg-red-100 dark:bg-red-900/30 p-2 rounded-full">
-                        <Radio className="w-5 h-5 text-red-600 dark:text-red-400" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">StreamMix</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Streaming intelligent</p>
                       </div>
                     </Link>
                   </div>
@@ -236,6 +226,10 @@ const Navbar = () => {
                     <AppWindow className="mr-2 h-4 w-4" />
                     Tableau de bord
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/mail")}>
+                    <Mail className="mr-2 h-4 w-4" />
+                    LuvviX Mail
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/ai-studio/dashboard")}>
                     <Bot className="mr-2 h-4 w-4" />
                     {t.aiStudio.title}
@@ -287,6 +281,11 @@ const Navbar = () => {
                   <div className="space-y-2">
                     <p className="px-4 text-sm font-medium text-gray-500 dark:text-gray-400">Applications</p>
                     
+                    <Link to="/mail" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <Mail className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <span>LuvviX Mail</span>
+                    </Link>
+                    
                     <Link to="/explore" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Search className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                       <span>LuvviX Explore</span>
@@ -298,7 +297,7 @@ const Navbar = () => {
                     </Link>
                     
                     <Link to="/translate" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                      <Languages className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      <Languages className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                       <span>LuvviX Translate</span>
                     </Link>
                     
@@ -325,11 +324,6 @@ const Navbar = () => {
                     <Link to="/news" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                       <Newspaper className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                       <span>{t.news.title}</span>
-                    </Link>
-                    
-                    <Link to="/weather" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                      <Cloud className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
-                      <span>LuvviX Weather</span>
                     </Link>
                     
                     <div className="border-t my-4"></div>

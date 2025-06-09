@@ -44,6 +44,7 @@ import MindMapPage from "./pages/MindMapPage";
 import CodeStudioPage from "./pages/CodeStudioPage";
 import DocsGeneratorPage from "./pages/DocsGeneratorPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
+import MailPage from "./pages/MailPage";
 
 function App() {
   return (
@@ -64,6 +65,7 @@ function App() {
                 <Route path="/mindmap" element={<MindMapPage />} />
                 <Route path="/code-studio" element={<CodeStudioPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
+                <Route path="/mail" element={<MailPage />} />
                 <Route path="/oauth/authorize" element={
                   <ProtectedRoute>
                     <OAuth />

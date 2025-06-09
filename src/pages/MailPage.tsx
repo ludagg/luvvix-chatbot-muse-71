@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -22,10 +21,10 @@ import {
   Menu,
   Inbox,
   Send,
-  Drafts,
+  FileText,
   Bot,
   Sparkles,
-  Attachment,
+  Paperclip,
   Calendar,
   Users,
   Settings,
@@ -212,7 +211,7 @@ Jean Martin`,
     { id: 'inbox', name: 'Boîte de réception', icon: Inbox, count: emails.filter(e => !e.isRead).length },
     { id: 'starred', name: 'Messages suivis', icon: Star, count: emails.filter(e => e.isStarred).length },
     { id: 'sent', name: 'Envoyés', icon: Send, count: 0 },
-    { id: 'drafts', name: 'Brouillons', icon: Drafts, count: 0 },
+    { id: 'drafts', name: 'Brouillons', icon: FileText, count: 0 },
     { id: 'archive', name: 'Archives', icon: Archive, count: 0 },
     { id: 'trash', name: 'Corbeille', icon: Trash2, count: 0 }
   ];
@@ -593,7 +592,7 @@ Jean Martin`,
                       <Card key={index} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
-                            <Attachment className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            <Paperclip className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">

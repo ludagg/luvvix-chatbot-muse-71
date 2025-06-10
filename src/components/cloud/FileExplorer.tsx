@@ -14,9 +14,10 @@ import { useAuth } from '@/hooks/useAuth';
 interface FileExplorerProps {
   folderId?: string;
   filterType?: 'folders' | 'starred' | 'recent' | 'tags';
+  viewMode?: 'grid' | 'list';
 }
 
-const FileExplorer = ({ folderId, filterType }: FileExplorerProps) => {
+const FileExplorer = ({ folderId, filterType, viewMode = 'grid' }: FileExplorerProps) => {
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -265,6 +266,11 @@ const FileExplorer = ({ folderId, filterType }: FileExplorerProps) => {
   if (filterType === 'recent') pageTitle = "Fichiers récents";
   if (filterType === 'tags') pageTitle = "Fichiers avec tags";
 
+  // Use viewMode for styling (you can customize this further)
+  const gridClasses = viewMode === 'list' 
+    ? "flex flex-col space-y-2" 
+    : "grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4";
+
   return (
     <div className="space-y-4">
       {/* Breadcrumbs */}
@@ -339,7 +345,7 @@ const FileExplorer = ({ folderId, filterType }: FileExplorerProps) => {
             
             <TabsContent value={activeTab} className="mt-4">
               {loading ? (
-                <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                <div className={gridClasses}>
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="border rounded-lg p-4 animate-pulse">
                       <div className="h-8 w-8 bg-gray-200 rounded mb-2"></div>
@@ -348,11 +354,13 @@ const FileExplorer = ({ folderId, filterType }: FileExplorerProps) => {
                   ))}
                 </div>
               ) : sortedFiles.length > 0 ? (
-                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                <div className={gridClasses}>
                   {sortedFiles.map((file) => (
                     <div
                       key={file.id}
-                      className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors relative group"
+                      className={`border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors relative group ${
+                        viewMode === 'list' ? 'flex items-center space-x-4' : ''
+                      }`}
                       onClick={() => file.type === 'folder' ? handleFolderClick(file.id) : handleFileClick(file.id)}
                     >
                       <div className="flex items-center">
@@ -361,7 +369,7 @@ const FileExplorer = ({ folderId, filterType }: FileExplorerProps) => {
                           <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 absolute top-2 right-2" />
                         )}
                       </div>
-                      <div className="mt-2">
+                      <div className={`${viewMode === 'list' ? 'flex-1' : 'mt-2'}`}>
                         <p className="font-medium truncate" title={file.name}>
                           {file.name}
                         </p>

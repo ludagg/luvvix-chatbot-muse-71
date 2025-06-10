@@ -14,6 +14,23 @@ const CloudPage = () => {
   const { user } = useAuth();
   const [currentView, setCurrentView] = useState<'connections' | 'files'>('connections');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Mock cloud status - in a real app this would come from your cloud service
+  const cloudStatus = {
+    totalFiles: 42,
+    usedStorage: 2.5 * 1024 * 1024 * 1024, // 2.5 GB in bytes
+    syncing: false
+  };
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleExportCloud = () => {
+    // Mock export functionality
+    console.log('Exporting cloud data...');
+  };
 
   if (!user) {
     return (
@@ -41,7 +58,7 @@ const CloudPage = () => {
       <Navbar />
       
       <div className="flex-grow">
-        <CloudHeader />
+        <CloudHeader toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
         
         <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-6">
@@ -85,7 +102,11 @@ const CloudPage = () => {
           <div className="flex gap-6">
             {currentView === 'files' && (
               <div className="w-64 flex-shrink-0">
-                <CloudSidebar />
+                <CloudSidebar 
+                  toggleSidebar={toggleSidebar}
+                  cloudStatus={cloudStatus}
+                  onExportCloud={handleExportCloud}
+                />
               </div>
             )}
             
@@ -93,7 +114,7 @@ const CloudPage = () => {
               {currentView === 'connections' ? (
                 <CloudConnection />
               ) : (
-                <FileExplorer viewMode={viewMode} />
+                <FileExplorer />
               )}
             </div>
           </div>

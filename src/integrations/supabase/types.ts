@@ -2548,6 +2548,7 @@ export type Database = {
       mail_accounts: {
         Row: {
           access_token: string
+          app_password: string | null
           created_at: string | null
           email_address: string
           id: string
@@ -2561,6 +2562,7 @@ export type Database = {
         }
         Insert: {
           access_token: string
+          app_password?: string | null
           created_at?: string | null
           email_address: string
           id?: string
@@ -2574,6 +2576,7 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          app_password?: string | null
           created_at?: string | null
           email_address?: string
           id?: string

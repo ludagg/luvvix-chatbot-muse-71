@@ -29,82 +29,54 @@ const AccountSetup: React.FC<AccountSetupProps> = ({ onAccountAdded }) => {
   });
 
   const providers = [
-    { id: 'gmail', name: 'Gmail', icon: '📧', description: 'Connexion sécurisée via OAuth' },
-    { id: 'outlook', name: 'Outlook', icon: '📨', description: 'Connexion sécurisée via OAuth' },
+    { id: 'gmail', name: 'Gmail', icon: '📧', description: 'Configuration IMAP/SMTP sécurisée' },
+    { id: 'outlook', name: 'Outlook', icon: '📨', description: 'Configuration IMAP/SMTP sécurisée' },
     { id: 'yahoo', name: 'Yahoo Mail', icon: '📩', description: 'Configuration IMAP/SMTP' },
     { id: 'imap', name: 'IMAP/SMTP', icon: '⚙️', description: 'Configuration manuelle' }
   ];
 
-  const handleOAuthConnect = async (provider: string) => {
-    setIsConnecting(true);
+  const handleProviderSelect = (providerId: string) => {
+    setSelectedProvider(providerId);
+    setShowImapForm(true);
     
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          variant: "destructive",
-          title: "Authentification requise",
-          description: "Veuillez vous connecter pour ajouter un compte email"
-        });
-        setIsConnecting(false);
-        return;
-      }
-
-      if (provider === 'gmail') {
-        // Configuration pour Gmail OAuth
-        const clientId = '877724002157-8e4p4o5j7k6l8m9n0o1p2q3r4s5t6u7v.apps.googleusercontent.com';
-        const redirectUri = `${window.location.origin}/oauth`;
-        const scope = encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile');
-        
-        const authUrl = `https://accounts.google.com/oauth2/auth?` +
-          `client_id=${clientId}&` +
-          `redirect_uri=${redirectUri}&` +
-          `scope=${scope}&` +
-          `response_type=code&` +
-          `access_type=offline&` +
-          `prompt=consent&` +
-          `state=gmail`;
-        
-        window.location.href = authUrl;
-        
-      } else if (provider === 'outlook') {
-        // Configuration pour Outlook OAuth
-        const clientId = 'a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6';
-        const redirectUri = `${window.location.origin}/oauth`;
-        const scope = encodeURIComponent('https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.Send https://graph.microsoft.com/User.Read offline_access');
-        
-        const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
-          `client_id=${clientId}&` +
-          `response_type=code&` +
-          `redirect_uri=${redirectUri}&` +
-          `scope=${scope}&` +
-          `state=outlook`;
-        
-        window.location.href = authUrl;
-      } else if (provider === 'yahoo') {
-        // Yahoo utilise IMAP/SMTP
-        setShowImapForm(true);
-        setImapConfig(prev => ({
-          ...prev,
-          imapServer: 'imap.mail.yahoo.com',
-          imapPort: '993',
-          smtpServer: 'smtp.mail.yahoo.com',
-          smtpPort: '587'
-        }));
-      }
-    } catch (error) {
-      console.error('Erreur lors de la connexion:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur de connexion",
-        description: "Impossible de se connecter au service de messagerie"
-      });
-    } finally {
-      setIsConnecting(false);
+    // Pré-remplir les configurations connues
+    if (providerId === 'gmail') {
+      setImapConfig(prev => ({
+        ...prev,
+        imapServer: 'imap.gmail.com',
+        imapPort: '993',
+        smtpServer: 'smtp.gmail.com',
+        smtpPort: '587'
+      }));
+    } else if (providerId === 'outlook') {
+      setImapConfig(prev => ({
+        ...prev,
+        imapServer: 'outlook.office365.com',
+        imapPort: '993',
+        smtpServer: 'smtp-mail.outlook.com',
+        smtpPort: '587'
+      }));
+    } else if (providerId === 'yahoo') {
+      setImapConfig(prev => ({
+        ...prev,
+        imapServer: 'imap.mail.yahoo.com',
+        imapPort: '993',
+        smtpServer: 'smtp.mail.yahoo.com',
+        smtpPort: '587'
+      }));
     }
   };
 
   const handleImapConnect = async () => {
+    if (!imapConfig.email || !imapConfig.password) {
+      toast({
+        variant: "destructive",
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs obligatoires"
+      });
+      return;
+    }
+
     setIsConnecting(true);
     
     try {
@@ -113,39 +85,47 @@ const AccountSetup: React.FC<AccountSetupProps> = ({ onAccountAdded }) => {
         throw new Error('Session non trouvée');
       }
 
-      // Sauvegarder la configuration IMAP directement dans la base
       const { data, error } = await supabase
         .from('mail_accounts')
         .insert({
           user_id: session.user.id,
           email_address: imapConfig.email,
           display_name: imapConfig.displayName || imapConfig.email,
-          provider: 'imap',
+          provider: selectedProvider === 'imap' ? 'imap' : selectedProvider,
+          app_password: imapConfig.password,
           provider_config: {
             imap_server: imapConfig.imapServer,
             imap_port: parseInt(imapConfig.imapPort),
             smtp_server: imapConfig.smtpServer,
             smtp_port: parseInt(imapConfig.smtpPort),
             use_ssl: true
-          },
-          app_password: imapConfig.password
+          }
         });
 
       if (error) throw error;
 
       toast({
-        title: "Compte IMAP connecté",
+        title: "Compte connecté",
         description: "Votre compte a été configuré avec succès"
       });
 
       onAccountAdded();
       setShowImapForm(false);
+      setImapConfig({
+        email: '',
+        password: '',
+        imapServer: '',
+        imapPort: '993',
+        smtpServer: '',
+        smtpPort: '587',
+        displayName: ''
+      });
       
     } catch (error: any) {
-      console.error('Erreur IMAP:', error);
+      console.error('Erreur de connexion:', error);
       toast({
         variant: "destructive",
-        title: "Erreur de connexion IMAP",
+        title: "Erreur de connexion",
         description: error.message || "Vérifiez vos paramètres de connexion"
       });
     } finally {
@@ -170,8 +150,7 @@ const AccountSetup: React.FC<AccountSetupProps> = ({ onAccountAdded }) => {
           <Alert>
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Note: Les clés API OAuth doivent être configurées côté serveur pour Gmail et Outlook. 
-              En attendant, vous pouvez utiliser la configuration IMAP/SMTP.
+              Pour Gmail et Outlook, utilisez un mot de passe d'application généré depuis les paramètres de sécurité de votre compte.
             </AlertDescription>
           </Alert>
 
@@ -182,23 +161,7 @@ const AccountSetup: React.FC<AccountSetupProps> = ({ onAccountAdded }) => {
                   <Card 
                     key={provider.id}
                     className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    onClick={() => {
-                      if (provider.id === 'imap' || provider.id === 'yahoo') {
-                        setShowImapForm(true);
-                        if (provider.id === 'yahoo') {
-                          setImapConfig(prev => ({
-                            ...prev,
-                            imapServer: 'imap.mail.yahoo.com',
-                            imapPort: '993',
-                            smtpServer: 'smtp.mail.yahoo.com',
-                            smtpPort: '587'
-                          }));
-                        }
-                      } else {
-                        setSelectedProvider(provider.id);
-                        handleOAuthConnect(provider.id);
-                      }
-                    }}
+                    onClick={() => handleProviderSelect(provider.id)}
                   >
                     <CardContent className="p-6 text-center">
                       <div className="text-4xl mb-3">{provider.icon}</div>
@@ -206,33 +169,13 @@ const AccountSetup: React.FC<AccountSetupProps> = ({ onAccountAdded }) => {
                       <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                         {provider.description}
                       </p>
-                      <Button 
-                        className="w-full" 
-                        variant="outline"
-                        disabled={isConnecting}
-                      >
+                      <Button className="w-full" variant="outline">
                         <Plus className="w-4 h-4 mr-2" />
                         Connecter
                       </Button>
                     </CardContent>
                   </Card>
                 ))}
-              </div>
-
-              <Separator />
-
-              <div className="text-center">
-                <h3 className="font-semibold mb-2">Configuration avancée</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  Pour d'autres fournisseurs ou configurations personnalisées
-                </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowImapForm(true)}
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Configuration IMAP/SMTP
-                </Button>
               </div>
             </>
           ) : (
@@ -245,30 +188,32 @@ const AccountSetup: React.FC<AccountSetupProps> = ({ onAccountAdded }) => {
                 >
                   ← Retour
                 </Button>
-                <h3 className="text-lg font-semibold">Configuration IMAP/SMTP</h3>
+                <h3 className="text-lg font-semibold">Configuration {providers.find(p => p.id === selectedProvider)?.name}</h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="email">Adresse email</Label>
+                    <Label htmlFor="email">Adresse email *</Label>
                     <Input
                       id="email"
                       type="email"
                       value={imapConfig.email}
                       onChange={(e) => setImapConfig(prev => ({ ...prev, email: e.target.value }))}
                       placeholder="votre@email.com"
+                      required
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="password">Mot de passe / App Password</Label>
+                    <Label htmlFor="password">Mot de passe d'application *</Label>
                     <Input
                       id="password"
                       type="password"
                       value={imapConfig.password}
                       onChange={(e) => setImapConfig(prev => ({ ...prev, password: e.target.value }))}
-                      placeholder="Utilisez un mot de passe d'application si disponible"
+                      placeholder="Mot de passe d'application"
+                      required
                     />
                   </div>
 
@@ -329,18 +274,16 @@ const AccountSetup: React.FC<AccountSetupProps> = ({ onAccountAdded }) => {
               </div>
 
               <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                <h4 className="font-medium mb-2">Configurations rapides :</h4>
+                <h4 className="font-medium mb-2">Comment obtenir un mot de passe d'application :</h4>
                 <div className="space-y-2 text-sm">
                   <div>
-                    <strong>Gmail:</strong> IMAP: imap.gmail.com:993, SMTP: smtp.gmail.com:587
-                    <br />
-                    <em>Utilisez un mot de passe d'application depuis votre compte Google</em>
+                    <strong>Gmail:</strong> Compte Google → Sécurité → Validation en 2 étapes → Mots de passe d'application
                   </div>
                   <div>
-                    <strong>Outlook/Hotmail:</strong> IMAP: outlook.office365.com:993, SMTP: smtp-mail.outlook.com:587
+                    <strong>Outlook:</strong> Compte Microsoft → Sécurité → Options de sécurité avancées → Mots de passe d'application
                   </div>
                   <div>
-                    <strong>Yahoo:</strong> IMAP: imap.mail.yahoo.com:993, SMTP: smtp.mail.yahoo.com:587
+                    <strong>Yahoo:</strong> Compte Yahoo → Sécurité du compte → Générer un mot de passe d'application
                   </div>
                 </div>
               </div>

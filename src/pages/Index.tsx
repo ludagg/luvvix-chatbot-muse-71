@@ -32,6 +32,74 @@ const Index = () => {
       <Navbar />
       <Hero />
       
+      {/* Revolutionary Dashboard Promo - New Section */}
+      <section className="py-20 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-black opacity-20"></div>
+        <div className="container mx-auto px-4 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center max-w-4xl mx-auto"
+          >
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <Brain className="w-12 h-12 text-yellow-300" />
+              <Sparkles className="w-8 h-8 text-yellow-300" />
+              <Zap className="w-10 h-10 text-yellow-300" />
+            </div>
+            
+            <h2 className="text-5xl font-bold mb-6 bg-gradient-to-r from-yellow-300 to-white bg-clip-text text-transparent">
+              Révolutionnaire : LuvviX Neural Dashboard
+            </h2>
+            
+            <p className="text-xl mb-8 opacity-90 leading-relaxed">
+              L'IA qui apprend de vous, prédit vos besoins et automatise votre vie digitale. 
+              <br />
+              Expérience révolutionnaire qui change tout.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                <Brain className="w-8 h-8 text-yellow-300 mx-auto mb-3" />
+                <h3 className="font-bold mb-2">IA Prédictive</h3>
+                <p className="text-sm opacity-80">Anticipe vos besoins avant que vous ne les ressentiez</p>
+              </div>
+              
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                <Workflow className="w-8 h-8 text-yellow-300 mx-auto mb-3" />
+                <h3 className="font-bold mb-2">Automatisation Totale</h3>
+                <p className="text-sm opacity-80">Workflows intelligents qui s'adaptent à votre style</p>
+              </div>
+              
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
+                <TrendingUp className="w-8 h-8 text-yellow-300 mx-auto mb-3" />
+                <h3 className="font-bold mb-2">Analyse du Futur</h3>
+                <p className="text-sm opacity-80">Tendances et insights pour optimiser votre productivité</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <Link to="/revolutionary">
+                <Button size="lg" className="bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black font-bold text-lg px-8 py-4 rounded-full shadow-2xl transform hover:scale-105 transition-all duration-300">
+                  <Sparkles className="w-6 h-6 mr-3" />
+                  Découvrir l'Expérience Révolutionnaire
+                  <ArrowRight className="w-6 h-6 ml-3" />
+                </Button>
+              </Link>
+              
+              <p className="text-sm opacity-75">
+                🚀 Bêta exclusive • Accès anticipé à la révolution LuvviX
+              </p>
+            </div>
+          </motion.div>
+        </div>
+        
+        {/* Animated background elements */}
+        <div className="absolute top-20 left-10 w-20 h-20 bg-yellow-300 rounded-full opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-16 h-16 bg-blue-300 rounded-full opacity-20 animate-bounce"></div>
+        <div className="absolute top-1/2 left-1/4 w-12 h-12 bg-purple-300 rounded-full opacity-20 animate-ping"></div>
+      </section>
+      
       {/* Sections promotionnelles */}
       <PromotionalSections />
       

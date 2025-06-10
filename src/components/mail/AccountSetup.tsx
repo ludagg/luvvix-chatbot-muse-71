@@ -90,7 +90,6 @@ const AccountSetup: React.FC<AccountSetupProps> = ({ onAccountAdded }) => {
         .insert({
           user_id: session.user.id,
           email_address: imapConfig.email,
-          display_name: imapConfig.displayName || imapConfig.email,
           provider: selectedProvider === 'imap' ? 'imap' : selectedProvider,
           app_password: imapConfig.password,
           provider_config: {
@@ -98,7 +97,8 @@ const AccountSetup: React.FC<AccountSetupProps> = ({ onAccountAdded }) => {
             imap_port: parseInt(imapConfig.imapPort),
             smtp_server: imapConfig.smtpServer,
             smtp_port: parseInt(imapConfig.smtpPort),
-            use_ssl: true
+            use_ssl: true,
+            display_name: imapConfig.displayName || imapConfig.email
           }
         });
 

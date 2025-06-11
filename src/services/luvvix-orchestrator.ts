@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 interface AutomationRule {
@@ -310,6 +309,36 @@ class LuvviXOrchestrator {
 
   private async syncFormsToAnalytics(data: any) {
     console.log('Syncing form responses to analytics:', data);
+  }
+
+  async getAutomationInsights(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('ecosystem_automations')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      const totalAutomations = data?.length || 0;
+      const activeAutomations = data?.filter(a => a.is_active).length || 0;
+      const totalExecutions = data?.reduce((sum, a) => sum + (a.execution_count || 0), 0) || 0;
+
+      return {
+        total_automations: totalAutomations,
+        active_automations: activeAutomations,
+        total_executions: totalExecutions,
+        efficiency_score: totalExecutions > 0 ? Math.round((activeAutomations / totalAutomations) * 100) : 0
+      };
+    } catch (error) {
+      console.error('Failed to get automation insights:', error);
+      return {
+        total_automations: 0,
+        active_automations: 0,
+        total_executions: 0,
+        efficiency_score: 0
+      };
+    }
   }
 
   async getWorkflowInsights(userId: string) {

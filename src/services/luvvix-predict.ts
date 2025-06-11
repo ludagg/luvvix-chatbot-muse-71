@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { neuralNetwork, PredictionResult } from './luvvix-neural-network';
 import { orchestrator } from './luvvix-orchestrator';
@@ -568,5 +567,6 @@ class LuvviXPredict {
   }
 }
 
+export const predictService = LuvviXPredict.getInstance();
 export const predictEngine = LuvviXPredict.getInstance();
 export type { PredictiveInsight, FutureTrend, SmartNotification };

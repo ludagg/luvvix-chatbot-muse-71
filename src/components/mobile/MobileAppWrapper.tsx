@@ -10,11 +10,13 @@ interface MobileAppWrapperProps {
 
 const MobileAppWrapper = ({ children }: MobileAppWrapperProps) => {
   const { isMobileApp } = useMobileApp();
-  const [showSplash, setShowSplash] = useState(isMobileApp);
+  const [showSplash, setShowSplash] = useState(false);
 
   useEffect(() => {
-    if (isMobileApp) {
+    // Afficher le splash screen seulement au premier chargement
+    if (isMobileApp && !sessionStorage.getItem('splashShown')) {
       setShowSplash(true);
+      sessionStorage.setItem('splashShown', 'true');
     }
   }, [isMobileApp]);
 
@@ -22,6 +24,7 @@ const MobileAppWrapper = ({ children }: MobileAppWrapperProps) => {
     setShowSplash(false);
   };
 
+  // Si on doit afficher le splash screen
   if (showSplash && isMobileApp) {
     return <SplashScreen onComplete={handleSplashComplete} />;
   }

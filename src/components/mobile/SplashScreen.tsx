@@ -23,23 +23,30 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           return prev + 1;
         } else {
           clearInterval(timer);
+          // Attendre 1 seconde après la dernière étape puis disparaître
           setTimeout(onComplete, 1000);
           return prev;
         }
       });
-    }, 1500);
+    }, 1200); // Réduit le temps entre les étapes
 
-    return () => clearInterval(timer);
+    // Timer de sécurité pour s'assurer que le splash disparaît après 4 secondes max
+    const fallbackTimer = setTimeout(onComplete, 4000);
+
+    return () => {
+      clearInterval(timer);
+      clearTimeout(fallbackTimer);
+    };
   }, [onComplete]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 flex items-center justify-center z-[9999]">
       <div className="text-center space-y-8">
         {/* Logo animé */}
         <motion.div
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
-          transition={{ duration: 1, ease: "easeOut" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
           className="relative"
         >
           <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-2xl">
@@ -60,7 +67,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.8 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
         >
           <h1 className="text-4xl font-bold text-white mb-2">LuvviX</h1>
           <p className="text-xl text-blue-100">Écosystème Intelligent</p>
@@ -74,7 +81,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.4 }}
               className="flex items-center justify-center space-x-3"
             >
               {React.createElement(steps[currentStep].icon, {
@@ -92,7 +99,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full"
               initial={{ width: "0%" }}
               animate={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.4 }}
             />
           </div>
         </div>
@@ -106,7 +113,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
                 index <= currentStep ? 'bg-white' : 'bg-white/30'
               }`}
               animate={index === currentStep ? { scale: [1, 1.2, 1] } : {}}
-              transition={{ duration: 0.5, repeat: index === currentStep ? Infinity : 0 }}
+              transition={{ duration: 0.4, repeat: index === currentStep ? Infinity : 0 }}
             />
           ))}
         </div>

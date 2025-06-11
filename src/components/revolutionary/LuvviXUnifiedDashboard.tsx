@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -74,8 +73,8 @@ const LuvviXUnifiedDashboard = () => {
       const activeAutomations = await orchestrator.getActiveAutomations(user.id);
       setAutomations(activeAutomations);
 
-      // Get trend predictions
-      const futureTrends = await predictService.generateTrendPredictions(user.id);
+      // Get trend predictions - Fixed method name
+      const futureTrends = await predictService.generateFutureTrends(user.id);
       setTrends(futureTrends);
 
       setIsLoading(false);
@@ -393,7 +392,7 @@ const LuvviXUnifiedDashboard = () => {
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
                       <TrendingUp className="w-5 h-5 text-orange-600" />
-                      <span>{trend.title}</span>
+                      <span>{trend.category}</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -401,9 +400,9 @@ const LuvviXUnifiedDashboard = () => {
                       {trend.description}
                     </p>
                     <div className="flex items-center justify-between text-sm">
-                      <span>Impact prévu:</span>
-                      <Badge variant={trend.impact === 'high' ? 'default' : 'secondary'}>
-                        {trend.impact}
+                      <span>Direction:</span>
+                      <Badge variant={trend.trend_direction === 'increasing' ? 'default' : 'secondary'}>
+                        {trend.trend_direction}
                       </Badge>
                     </div>
                   </CardContent>

@@ -1,4 +1,3 @@
-
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import FeaturedAppsCarousel from "@/components/FeaturedAppsCarousel";
@@ -17,6 +16,8 @@ import CeoSection from "@/components/CeoSection";
 import AIStudioPromo from "@/components/ai-studio/AIStudioPromo";
 import LuvvixIdPromo from "@/components/LuvvixIdPromo";
 import PromotionalSections from "@/components/home/PromotionalSections";
+import MobileHomePage from "@/components/mobile/MobileHomePage";
+import { useMobileApp } from "@/hooks/use-mobile-app";
 import { Bot, FileText, Newspaper, Cloud, Sparkles, AppWindow, ArrowRight, Languages, Network, Code, CloudSun, Search, Mail, Brain, Zap, TrendingUp, Workflow } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,12 @@ import { useLanguage } from "@/hooks/useLanguage";
 
 const Index = () => {
   const { t } = useLanguage();
+  const { isMobileApp } = useMobileApp();
+  
+  // Si c'est une app mobile, afficher la page d'accueil simplifiée
+  if (isMobileApp) {
+    return <MobileHomePage />;
+  }
   
   return (
     <div className="min-h-screen">
@@ -246,3 +253,5 @@ const Index = () => {
 };
 
 export default Index;
+
+</edits_to_apply>

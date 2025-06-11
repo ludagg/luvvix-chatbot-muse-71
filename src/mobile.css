@@ -1,7 +1,7 @@
 
 /* Styles pour l'application mobile */
 .mobile-app {
-  padding-bottom: 4rem; /* Espace pour la navigation en bas */
+  padding-bottom: 5rem; /* Espace pour la navigation en bas plus haute */
 }
 
 /* Safe area pour les appareils avec encoche */
@@ -42,4 +42,36 @@
   50% {
     transform: translateY(-2px);
   }
+}
+
+/* Animation pour le bouton IA spécial */
+@keyframes pulse-light {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-light {
+  animation: pulse-light 2s ease-in-out infinite;
+}
+
+/* Gradient animé pour le bouton IA */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-animate {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
 }

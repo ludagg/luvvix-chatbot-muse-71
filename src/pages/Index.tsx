@@ -1,3 +1,4 @@
+
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import FeaturedAppsCarousel from "@/components/FeaturedAppsCarousel";
@@ -253,5 +254,3 @@ const Index = () => {
 };
 
 export default Index;
-
-</edits_to_apply>

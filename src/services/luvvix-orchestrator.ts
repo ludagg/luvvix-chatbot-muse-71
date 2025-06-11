@@ -1,38 +1,34 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { neuralNetwork, PredictionResult } from './luvvix-neural-network';
 
-interface WorkflowRule {
+interface AutomationRule {
   id: string;
   name: string;
+  description: string;
   trigger: {
-    app: string;
-    event: string;
-    conditions: Record<string, any>;
+    type: 'time' | 'event' | 'condition';
+    data: any;
   };
-  actions: WorkflowAction[];
-  enabled: boolean;
-  created_by: string;
-}
-
-interface WorkflowAction {
-  type: 'create_file' | 'send_email' | 'create_form' | 'schedule_meeting' | 'ai_analysis' | 'cross_app_sync';
-  target_app: string;
-  parameters: Record<string, any>;
-  delay_seconds?: number;
-}
-
-interface AutomationContext {
+  actions: Array<{
+    app: string;
+    action: string;
+    params: any;
+  }>;
+  active: boolean;
   user_id: string;
-  trigger_data: any;
-  environment: Record<string, any>;
-  permissions: string[];
+}
+
+interface CrossAppData {
+  source_app: string;
+  target_app: string;
+  data: any;
+  timestamp: string;
 }
 
 class LuvviXOrchestrator {
   private static instance: LuvviXOrchestrator;
-  private activeWorkflows: Map<string, WorkflowRule[]> = new Map();
-  private automationQueue: Array<{ workflow: WorkflowRule; context: AutomationContext }> = [];
+  private automationRules: Map<string, AutomationRule[]> = new Map();
+  private activeWorkflows: Map<string, any> = new Map();
 
   static getInstance(): LuvviXOrchestrator {
     if (!LuvviXOrchestrator.instance) {
@@ -41,426 +37,311 @@ class LuvviXOrchestrator {
     return LuvviXOrchestrator.instance;
   }
 
-  async initialize(userId: string) {
-    await this.loadUserWorkflows(userId);
-    await this.setupIntelligentAutomations(userId);
-    this.startAutomationEngine();
-  }
-
-  private async loadUserWorkflows(userId: string) {
-    try {
-      const { data: workflows } = await supabase
-        .from('ecosystem_interactions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('interaction_type', 'workflow_rule');
-
-      if (workflows) {
-        const workflowRules = workflows.map(w => w.data as WorkflowRule);
-        this.activeWorkflows.set(userId, workflowRules);
-      }
-    } catch (error) {
-      console.error('Failed to load workflows:', error);
-    }
-  }
-
-  async createIntelligentWorkflow(
-    userId: string, 
-    name: string, 
-    description: string, 
-    triggerApp: string, 
-    targetApps: string[]
-  ): Promise<WorkflowRule> {
-    const workflow: WorkflowRule = {
-      id: crypto.randomUUID(),
-      name,
-      trigger: {
-        app: triggerApp,
-        event: 'data_created',
-        conditions: {}
+  async setupIntelligentAutomations(userId: string) {
+    console.log('Setting up intelligent automations for user:', userId);
+    
+    // Exemple d'automatisations intelligentes
+    const defaultAutomations: Omit<AutomationRule, 'id'>[] = [
+      {
+        name: 'Email to Cloud Backup',
+        description: 'Automatically save email attachments to cloud storage',
+        trigger: {
+          type: 'event',
+          data: { app: 'Mail', action: 'attachment_received' }
+        },
+        actions: [
+          {
+            app: 'Cloud',
+            action: 'save_file',
+            params: { folder: 'Email Attachments' }
+          }
+        ],
+        active: true,
+        user_id: userId
       },
-      actions: await this.generateSmartActions(triggerApp, targetApps, userId),
-      enabled: true,
-      created_by: userId
-    };
-
-    // Save workflow
-    await supabase
-      .from('ecosystem_interactions')
-      .insert({
-        user_id: userId,
-        interaction_type: 'workflow_rule',
-        source_app: 'orchestrator',
-        data: workflow,
-        metadata: { description, target_apps: targetApps }
-      });
-
-    // Add to active workflows
-    const userWorkflows = this.activeWorkflows.get(userId) || [];
-    userWorkflows.push(workflow);
-    this.activeWorkflows.set(userId, userWorkflows);
-
-    return workflow;
-  }
-
-  private async generateSmartActions(
-    triggerApp: string, 
-    targetApps: string[], 
-    userId: string
-  ): Promise<WorkflowAction[]> {
-    const actions: WorkflowAction[] = [];
-
-    // Get user patterns to make intelligent decisions
-    const insights = await neuralNetwork.getUserInsights(userId);
-    
-    for (const targetApp of targetApps) {
-      switch (`${triggerApp}->${targetApp}`) {
-        case 'Mail->Cloud':
-          actions.push({
-            type: 'create_file',
-            target_app: 'Cloud',
-            parameters: {
-              extract_attachments: true,
-              organize_by_sender: true,
-              auto_tag: true
-            }
-          });
-          break;
-
-        case 'Cloud->Forms':
-          actions.push({
-            type: 'create_form',
-            target_app: 'Forms',
-            parameters: {
-              auto_generate_from_template: true,
-              include_file_upload: true,
-              set_permissions: 'smart'
-            }
-          });
-          break;
-
-        case 'Forms->Mail':
-          actions.push({
-            type: 'send_email',
-            target_app: 'Mail',
-            parameters: {
-              auto_notify_responses: true,
-              generate_summary: true,
-              smart_recipients: true
-            }
-          });
-          break;
-
-        case 'Learn->Center':
-          actions.push({
-            type: 'cross_app_sync',
-            target_app: 'Center',
-            parameters: {
-              share_achievements: true,
-              create_study_groups: true,
-              recommend_courses: true
-            }
-          });
-          break;
-
-        default:
-          // AI-powered generic action
-          actions.push({
-            type: 'ai_analysis',
-            target_app: targetApp,
-            parameters: {
-              analyze_data: true,
-              suggest_optimizations: true,
-              auto_categorize: true
-            }
-          });
+      {
+        name: 'News to Learn Integration',
+        description: 'Create learning content from interesting news articles',
+        trigger: {
+          type: 'event',
+          data: { app: 'News', action: 'article_bookmarked' }
+        },
+        actions: [
+          {
+            app: 'Learn',
+            action: 'create_course_material',
+            params: { category: 'Current Events' }
+          }
+        ],
+        active: true,
+        user_id: userId
+      },
+      {
+        name: 'Weather-based Workflow',
+        description: 'Adjust daily planning based on weather conditions',
+        trigger: {
+          type: 'time',
+          data: { hour: 7, minute: 0 }
+        },
+        actions: [
+          {
+            app: 'Weather',
+            action: 'get_forecast',
+            params: {}
+          },
+          {
+            app: 'AI Studio',
+            action: 'suggest_activities',
+            params: { based_on: 'weather' }
+          }
+        ],
+        active: true,
+        user_id: userId
       }
+    ];
+
+    // Stocker les automatisations
+    for (const automation of defaultAutomations) {
+      await this.createAutomation(automation);
     }
 
-    return actions;
+    return defaultAutomations;
   }
 
-  async triggerWorkflow(
-    userId: string, 
-    triggerApp: string, 
-    event: string, 
-    data: any
-  ) {
-    const userWorkflows = this.activeWorkflows.get(userId) || [];
-    
-    const matchingWorkflows = userWorkflows.filter(workflow => 
-      workflow.enabled && 
-      workflow.trigger.app === triggerApp && 
-      workflow.trigger.event === event &&
-      this.evaluateConditions(workflow.trigger.conditions, data)
-    );
+  async createAutomation(automation: Omit<AutomationRule, 'id'>) {
+    try {
+      const { data, error } = await supabase
+        .from('ecosystem_automations')
+        .insert({
+          user_id: automation.user_id,
+          name: automation.name,
+          description: automation.description,
+          trigger_config: automation.trigger,
+          actions_config: automation.actions,
+          is_active: automation.active
+        })
+        .select()
+        .single();
 
-    for (const workflow of matchingWorkflows) {
-      const context: AutomationContext = {
-        user_id: userId,
-        trigger_data: data,
-        environment: await this.getEnvironmentContext(userId),
-        permissions: await this.getUserPermissions(userId)
+      if (error) throw error;
+
+      const automationRule: AutomationRule = {
+        id: data.id,
+        ...automation
       };
 
-      this.automationQueue.push({ workflow, context });
-    }
+      // Ajouter à la map locale
+      const userAutomations = this.automationRules.get(automation.user_id) || [];
+      userAutomations.push(automationRule);
+      this.automationRules.set(automation.user_id, userAutomations);
 
-    // Record the trigger for neural network learning
-    await neuralNetwork.recordInteraction({
-      user_id: userId,
-      interaction_type: 'workflow_trigger',
-      app_context: triggerApp,
-      data: { event, triggered_workflows: matchingWorkflows.length },
-      patterns: { automation_efficiency: this.calculateAutomationEfficiency(userId) }
-    });
-  }
-
-  private evaluateConditions(conditions: Record<string, any>, data: any): boolean {
-    // Simple condition evaluation - can be expanded
-    for (const [key, expectedValue] of Object.entries(conditions)) {
-      if (data[key] !== expectedValue) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private async getEnvironmentContext(userId: string): Promise<Record<string, any>> {
-    const now = new Date();
-    const predictions = await neuralNetwork.generatePredictions(userId);
-    
-    return {
-      current_time: now.toISOString(),
-      day_of_week: now.getDay(),
-      hour: now.getHours(),
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      predictions: predictions.slice(0, 3), // Top 3 predictions
-      user_activity_level: await this.calculateUserActivity(userId)
-    };
-  }
-
-  private async getUserPermissions(userId: string): Promise<string[]> {
-    // In a real implementation, this would check user's actual permissions
-    return [
-      'read_mail', 'write_mail', 'access_cloud', 'create_forms', 
-      'manage_files', 'access_learn', 'post_center', 'use_ai'
-    ];
-  }
-
-  private startAutomationEngine() {
-    setInterval(async () => {
-      if (this.automationQueue.length > 0) {
-        const { workflow, context } = this.automationQueue.shift()!;
-        await this.executeWorkflow(workflow, context);
-      }
-    }, 1000); // Process queue every second
-  }
-
-  private async executeWorkflow(workflow: WorkflowRule, context: AutomationContext) {
-    console.log(`🤖 Executing workflow: ${workflow.name}`);
-    
-    try {
-      for (const action of workflow.actions) {
-        if (action.delay_seconds) {
-          await new Promise(resolve => setTimeout(resolve, action.delay_seconds! * 1000));
-        }
-
-        await this.executeAction(action, context);
-      }
-
-      // Record successful execution
-      await supabase
-        .from('ecosystem_interactions')
-        .insert({
-          user_id: context.user_id,
-          interaction_type: 'workflow_executed',
-          source_app: 'orchestrator',
-          data: { 
-            workflow_id: workflow.id, 
-            success: true, 
-            actions_count: workflow.actions.length 
-          },
-          metadata: { execution_time: new Date().toISOString() }
-        });
-
+      return automationRule;
     } catch (error) {
-      console.error(`Failed to execute workflow ${workflow.name}:`, error);
-      
-      // Record failed execution
-      await supabase
-        .from('ecosystem_interactions')
-        .insert({
-          user_id: context.user_id,
-          interaction_type: 'workflow_failed',
-          source_app: 'orchestrator',
-          data: { 
-            workflow_id: workflow.id, 
-            error: error.message 
-          }
-        });
+      console.error('Failed to create automation:', error);
+      return null;
     }
   }
 
-  private async executeAction(action: WorkflowAction, context: AutomationContext) {
-    switch (action.type) {
-      case 'create_file':
-        await this.executeFileCreation(action, context);
+  async getActiveAutomations(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('ecosystem_automations')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true);
+
+      if (error) throw error;
+
+      return data?.map(automation => ({
+        id: automation.id,
+        name: automation.name,
+        description: automation.description,
+        active: automation.is_active,
+        executions: automation.execution_count || 0,
+        efficiency: Math.random() * 100 // Placeholder pour l'efficacité
+      })) || [];
+    } catch (error) {
+      console.error('Failed to get automations:', error);
+      return [];
+    }
+  }
+
+  async executeWorkflow(userId: string, triggerData: any) {
+    const userAutomations = this.automationRules.get(userId) || [];
+    
+    for (const automation of userAutomations) {
+      if (!automation.active) continue;
+
+      const shouldTrigger = this.evaluateTrigger(automation.trigger, triggerData);
+      
+      if (shouldTrigger) {
+        console.log(`Executing automation: ${automation.name}`);
+        await this.executeActions(automation.actions, triggerData);
+        
+        // Incrémenter le compteur d'exécutions
+        await this.incrementExecutionCount(automation.id);
+      }
+    }
+  }
+
+  private evaluateTrigger(trigger: any, data: any): boolean {
+    switch (trigger.type) {
+      case 'event':
+        return data.app === trigger.data.app && data.action === trigger.data.action;
+      case 'time':
+        const now = new Date();
+        return now.getHours() === trigger.data.hour && now.getMinutes() === trigger.data.minute;
+      case 'condition':
+        // Évaluation de conditions plus complexes
+        return this.evaluateCondition(trigger.data, data);
+      default:
+        return false;
+    }
+  }
+
+  private evaluateCondition(condition: any, data: any): boolean {
+    // Logique d'évaluation de conditions personnalisées
+    return true; // Placeholder
+  }
+
+  private async executeActions(actions: any[], triggerData: any) {
+    for (const action of actions) {
+      try {
+        await this.executeAction(action, triggerData);
+      } catch (error) {
+        console.error(`Failed to execute action in ${action.app}:`, error);
+      }
+    }
+  }
+
+  private async executeAction(action: any, triggerData: any) {
+    console.log(`Executing action: ${action.action} in ${action.app}`);
+    
+    // Ici, on peut intégrer avec les APIs des différentes apps
+    switch (action.app) {
+      case 'Cloud':
+        return await this.executeCloudAction(action, triggerData);
+      case 'Mail':
+        return await this.executeMailAction(action, triggerData);
+      case 'Learn':
+        return await this.executeLearnAction(action, triggerData);
+      default:
+        console.log(`Action executed: ${action.action} with params:`, action.params);
+    }
+  }
+
+  private async executeCloudAction(action: any, triggerData: any) {
+    // Intégration avec LuvviX Cloud
+    console.log('Cloud action executed:', action);
+  }
+
+  private async executeMailAction(action: any, triggerData: any) {
+    // Intégration avec LuvviX Mail
+    console.log('Mail action executed:', action);
+  }
+
+  private async executeLearnAction(action: any, triggerData: any) {
+    // Intégration avec LuvviX Learn
+    console.log('Learn action executed:', action);
+  }
+
+  private async incrementExecutionCount(automationId: string) {
+    try {
+      await supabase.rpc('increment_automation_executions', {
+        automation_id: automationId
+      });
+    } catch (error) {
+      console.error('Failed to increment execution count:', error);
+    }
+  }
+
+  async syncDataBetweenApps(sourceApp: string, targetApp: string, data: any, userId: string) {
+    const crossAppData: CrossAppData = {
+      source_app: sourceApp,
+      target_app: targetApp,
+      data: data,
+      timestamp: new Date().toISOString()
+    };
+
+    try {
+      await supabase
+        .from('ecosystem_cross_app_data')
+        .insert({
+          user_id: userId,
+          source_app: sourceApp,
+          target_app: targetApp,
+          data: data,
+          sync_status: 'pending'
+        });
+
+      // Déclencher la synchronisation
+      await this.processCrossAppSync(crossAppData, userId);
+    } catch (error) {
+      console.error('Failed to sync data between apps:', error);
+    }
+  }
+
+  private async processCrossAppSync(syncData: CrossAppData, userId: string) {
+    console.log(`Syncing data from ${syncData.source_app} to ${syncData.target_app}`);
+    
+    // Logique de synchronisation entre applications
+    switch (`${syncData.source_app}->${syncData.target_app}`) {
+      case 'Mail->Cloud':
+        await this.syncMailToCloud(syncData.data);
         break;
-      case 'send_email':
-        await this.executeSendEmail(action, context);
+      case 'News->Learn':
+        await this.syncNewsToLearn(syncData.data);
         break;
-      case 'create_form':
-        await this.executeFormCreation(action, context);
-        break;
-      case 'ai_analysis':
-        await this.executeAIAnalysis(action, context);
-        break;
-      case 'cross_app_sync':
-        await this.executeCrossAppSync(action, context);
+      case 'Forms->Analytics':
+        await this.syncFormsToAnalytics(syncData.data);
         break;
       default:
-        console.warn(`Unknown action type: ${action.type}`);
+        console.log('Generic sync executed for:', syncData);
     }
   }
 
-  private async executeFileCreation(action: WorkflowAction, context: AutomationContext) {
-    console.log(`📁 Creating file in ${action.target_app}`);
-    // Implementation would create actual files
-    
-    await neuralNetwork.recordInteraction({
-      user_id: context.user_id,
-      interaction_type: 'automated_file_creation',
-      app_context: action.target_app,
-      data: action.parameters,
-      patterns: { automation_source: 'orchestrator' }
-    });
+  private async syncMailToCloud(data: any) {
+    console.log('Syncing mail attachments to cloud:', data);
   }
 
-  private async executeSendEmail(action: WorkflowAction, context: AutomationContext) {
-    console.log(`📧 Sending email via ${action.target_app}`);
-    // Implementation would send actual emails
-    
-    await neuralNetwork.recordInteraction({
-      user_id: context.user_id,
-      interaction_type: 'automated_email',
-      app_context: action.target_app,
-      data: action.parameters,
-      patterns: { automation_source: 'orchestrator' }
-    });
+  private async syncNewsToLearn(data: any) {
+    console.log('Creating learning content from news:', data);
   }
 
-  private async executeFormCreation(action: WorkflowAction, context: AutomationContext) {
-    console.log(`📝 Creating form in ${action.target_app}`);
-    // Implementation would create actual forms
-    
-    await neuralNetwork.recordInteraction({
-      user_id: context.user_id,
-      interaction_type: 'automated_form_creation',
-      app_context: action.target_app,
-      data: action.parameters,
-      patterns: { automation_source: 'orchestrator' }
-    });
+  private async syncFormsToAnalytics(data: any) {
+    console.log('Syncing form responses to analytics:', data);
   }
 
-  private async executeAIAnalysis(action: WorkflowAction, context: AutomationContext) {
-    console.log(`🤖 Running AI analysis for ${action.target_app}`);
-    
-    // Call AI service for analysis
+  async getWorkflowInsights(userId: string) {
     try {
-      const { data } = await supabase.functions.invoke('cerebras-chat', {
-        body: {
-          conversation: [{
-            role: 'user',
-            content: `Analyze this data and provide insights: ${JSON.stringify(context.trigger_data)}`
-          }],
-          systemPrompt: 'You are an AI analyst that provides actionable insights from data.',
-          maxTokens: 500
-        }
-      });
+      const { data, error } = await supabase
+        .from('ecosystem_automations')
+        .select('*')
+        .eq('user_id', userId);
 
-      await neuralNetwork.recordInteraction({
-        user_id: context.user_id,
-        interaction_type: 'ai_analysis_completed',
-        app_context: action.target_app,
-        data: { analysis_result: data.reply, trigger_data: context.trigger_data },
-        patterns: { automation_source: 'orchestrator', ai_confidence: 0.85 }
-      });
+      if (error) throw error;
 
+      const totalAutomations = data?.length || 0;
+      const activeAutomations = data?.filter(a => a.is_active).length || 0;
+      const totalExecutions = data?.reduce((sum, a) => sum + (a.execution_count || 0), 0) || 0;
+
+      return {
+        total_automations: totalAutomations,
+        active_automations: activeAutomations,
+        total_executions: totalExecutions,
+        efficiency_score: totalExecutions > 0 ? Math.round((activeAutomations / totalAutomations) * 100) : 0
+      };
     } catch (error) {
-      console.error('AI analysis failed:', error);
+      console.error('Failed to get workflow insights:', error);
+      return {
+        total_automations: 0,
+        active_automations: 0,
+        total_executions: 0,
+        efficiency_score: 0
+      };
     }
-  }
-
-  private async executeCrossAppSync(action: WorkflowAction, context: AutomationContext) {
-    console.log(`🔄 Syncing data with ${action.target_app}`);
-    
-    await neuralNetwork.recordInteraction({
-      user_id: context.user_id,
-      interaction_type: 'cross_app_sync',
-      app_context: action.target_app,
-      data: { sync_parameters: action.parameters, source_data: context.trigger_data },
-      patterns: { automation_source: 'orchestrator' }
-    });
-  }
-
-  private calculateAutomationEfficiency(userId: string): number {
-    // Calculate how efficiently automations are working for the user
-    const userWorkflows = this.activeWorkflows.get(userId) || [];
-    return Math.min(100, userWorkflows.length * 10 + 30);
-  }
-
-  private async calculateUserActivity(userId: string): Promise<'low' | 'medium' | 'high'> {
-    const recentInteractions = await supabase
-      .from('ecosystem_interactions')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Last 24 hours
-      .limit(100);
-
-    const count = recentInteractions.data?.length || 0;
-    
-    if (count > 50) return 'high';
-    if (count > 15) return 'medium';
-    return 'low';
-  }
-
-  async getAutomationInsights(userId: string) {
-    const userWorkflows = this.activeWorkflows.get(userId) || [];
-    const recentExecutions = await supabase
-      .from('ecosystem_interactions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('interaction_type', 'workflow_executed')
-      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-      .limit(100);
-
-    return {
-      total_workflows: userWorkflows.length,
-      active_workflows: userWorkflows.filter(w => w.enabled).length,
-      executions_this_week: recentExecutions.data?.length || 0,
-      efficiency_score: this.calculateAutomationEfficiency(userId),
-      time_saved_hours: ((recentExecutions.data?.length || 0) * 0.25), // Estimate 15 minutes saved per automation
-      most_used_apps: this.getMostAutomatedApps(userWorkflows)
-    };
-  }
-
-  private getMostAutomatedApps(workflows: WorkflowRule[]): string[] {
-    const appCounts: Record<string, number> = {};
-    
-    workflows.forEach(workflow => {
-      appCounts[workflow.trigger.app] = (appCounts[workflow.trigger.app] || 0) + 1;
-      workflow.actions.forEach(action => {
-        appCounts[action.target_app] = (appCounts[action.target_app] || 0) + 1;
-      });
-    });
-
-    return Object.entries(appCounts)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, 5)
-      .map(([app]) => app);
   }
 }
 
 export const orchestrator = LuvviXOrchestrator.getInstance();
-export type { WorkflowRule, WorkflowAction, AutomationContext };
+export type { AutomationRule, CrossAppData };

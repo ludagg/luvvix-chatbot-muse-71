@@ -7,6 +7,18 @@ import { fetchLatestNews } from '@/services/news-service';
 import { NewsItem } from '@/types/news';
 import { useNotifications } from '@/hooks/use-notifications';
 import { toast } from '@/hooks/use-toast';
+import { 
+  Sparkles, 
+  Cloud, 
+  Newspaper, 
+  Globe, 
+  Calendar, 
+  TrendingUp,
+  MapPin,
+  Clock,
+  Zap,
+  Users
+} from 'lucide-react';
 
 interface WeatherData {
   temperature: number;
@@ -30,7 +42,7 @@ const MobileHome = () => {
   useEffect(() => {
     const loadWeather = async () => {
       try {
-        const response = await fetch('/api/weather?city=Paris'); // Utilise notre API météo
+        const response = await fetch('/api/weather?city=Paris');
         if (response.ok) {
           const data = await response.json();
           setWeather({
@@ -42,7 +54,6 @@ const MobileHome = () => {
         }
       } catch (error) {
         console.error('Erreur météo:', error);
-        // Données par défaut
         setWeather({
           temperature: 22,
           condition: 'Ensoleillé',
@@ -62,7 +73,7 @@ const MobileHome = () => {
     const loadNews = async () => {
       try {
         const newsItems = await fetchLatestNews('all', 'fr', '');
-        setNews(newsItems.slice(0, 3)); // Prendre les 3 premières
+        setNews(newsItems.slice(0, 3));
       } catch (error) {
         console.error('Erreur actualités:', error);
       } finally {
@@ -86,10 +97,9 @@ const MobileHome = () => {
     {
       id: 'ai-chat',
       title: 'Assistant IA',
-      icon: '🤖',
-      bgColor: 'bg-purple-500',
+      icon: <Sparkles className="w-6 h-6" />,
+      bgColor: 'bg-gradient-to-br from-purple-500 to-pink-500',
       action: () => {
-        // Naviguer vers l'assistant
         const event = new CustomEvent('navigate-to-assistant');
         window.dispatchEvent(event);
       }
@@ -97,8 +107,8 @@ const MobileHome = () => {
     {
       id: 'weather',
       title: 'Météo complète',
-      icon: '🌤️',
-      bgColor: 'bg-blue-500',
+      icon: <Cloud className="w-6 h-6" />,
+      bgColor: 'bg-gradient-to-br from-blue-500 to-cyan-500',
       action: () => {
         toast({
           title: "Météo",
@@ -109,8 +119,8 @@ const MobileHome = () => {
     {
       id: 'news',
       title: 'Actualités',
-      icon: '📰',
-      bgColor: 'bg-red-500',
+      icon: <Newspaper className="w-6 h-6" />,
+      bgColor: 'bg-gradient-to-br from-red-500 to-orange-500',
       action: () => {
         if (news.length > 0) {
           toast({
@@ -123,8 +133,8 @@ const MobileHome = () => {
     {
       id: 'translate',
       title: 'Traduire',
-      icon: '🌐',
-      bgColor: 'bg-green-500',
+      icon: <Globe className="w-6 h-6" />,
+      bgColor: 'bg-gradient-to-br from-green-500 to-emerald-500',
       action: () => {
         toast({
           title: "LuvviX Translate",
@@ -144,13 +154,14 @@ const MobileHome = () => {
   return (
     <div className="flex-1 overflow-auto p-4 pb-20">
       {/* Section de bienvenue avec météo intégrée */}
-      <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl p-6 text-white mb-6">
+      <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl p-6 text-white mb-6 shadow-xl">
         <div className="flex justify-between items-start mb-4">
           <div>
             <h2 className="text-2xl font-bold mb-1">
               {getGreeting()} {userName} !
             </h2>
-            <p className="text-blue-100 text-sm">
+            <p className="text-blue-100 text-sm flex items-center">
+              <Clock className="w-4 h-4 mr-1" />
               {format(currentTime, 'EEEE d MMMM yyyy', { locale: fr })}
             </p>
           </div>
@@ -162,7 +173,10 @@ const MobileHome = () => {
                 <span className="text-2xl font-light">{weather.temperature}°C</span>
               </div>
               <p className="text-sm text-blue-100">{weather.condition}</p>
-              <p className="text-xs text-blue-200">{weather.location}</p>
+              <p className="text-xs text-blue-200 flex items-center justify-end">
+                <MapPin className="w-3 h-3 mr-1" />
+                {weather.location}
+              </p>
             </div>
           )}
         </div>
@@ -174,7 +188,8 @@ const MobileHome = () => {
 
       {/* Actions rapides */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Zap className="w-5 h-5 mr-2 text-blue-500" />
           Actions rapides
         </h3>
         
@@ -183,10 +198,10 @@ const MobileHome = () => {
             <button
               key={action.id}
               onClick={action.action}
-              className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition-transform"
+              className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition-transform hover:shadow-md"
             >
-              <div className={`w-12 h-12 ${action.bgColor} rounded-xl flex items-center justify-center mb-3`}>
-                <span className="text-2xl">{action.icon}</span>
+              <div className={`w-12 h-12 ${action.bgColor} rounded-xl flex items-center justify-center mb-3 text-white shadow-lg`}>
+                {action.icon}
               </div>
               <p className="text-sm font-medium text-gray-900 text-left leading-snug">
                 {action.title}
@@ -196,11 +211,41 @@ const MobileHome = () => {
         </div>
       </div>
 
+      {/* Statistiques rapides */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+            <TrendingUp className="w-4 h-4 text-green-600" />
+          </div>
+          <p className="text-xl font-bold text-gray-900">12</p>
+          <p className="text-xs text-gray-600">Services actifs</p>
+        </div>
+        
+        <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+            <Users className="w-4 h-4 text-blue-600" />
+          </div>
+          <p className="text-xl font-bold text-gray-900">2.4M</p>
+          <p className="text-xs text-gray-600">Utilisateurs</p>
+        </div>
+        
+        <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+            <Sparkles className="w-4 h-4 text-purple-600" />
+          </div>
+          <p className="text-xl font-bold text-gray-900">99.9%</p>
+          <p className="text-xs text-gray-600">Uptime</p>
+        </div>
+      </div>
+
       {/* Actualités en bref */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Actualités</h3>
-          <button className="text-blue-500 text-sm">Voir tout →</button>
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <Newspaper className="w-5 h-5 mr-2 text-red-500" />
+            Actualités
+          </h3>
+          <button className="text-blue-500 text-sm font-medium">Voir tout →</button>
         </div>
         
         {loadingNews ? (
@@ -217,7 +262,7 @@ const MobileHome = () => {
         ) : (
           <div className="space-y-3">
             {news.map((item, index) => (
-              <div key={item.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div key={item.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                 <h4 className="font-medium text-gray-900 text-sm mb-1 line-clamp-2">
                   {item.title}
                 </h4>
@@ -246,7 +291,7 @@ const MobileHome = () => {
             </div>
             <button 
               onClick={requestPermission}
-              className="bg-orange-500 text-white px-3 py-1 rounded-lg text-sm"
+              className="bg-orange-500 text-white px-3 py-1 rounded-lg text-sm font-medium"
             >
               Activer
             </button>
@@ -257,25 +302,19 @@ const MobileHome = () => {
       {/* Prochain événement */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
         <div className="flex items-center space-x-3 mb-3">
-          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-          </svg>
+          <Calendar className="w-5 h-5 text-gray-600" />
           <h3 className="font-semibold text-gray-900">Prochain événement</h3>
         </div>
         
         <div className="flex items-start space-x-3">
           <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-            <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zM4 18v-6h2.5l6 6H4zm16.5-9.5L19 7l-7.5 7.5L9 12l-2 2 5.5 5.5L22 9.5h-1.5z"/>
-            </svg>
+            <Users className="w-5 h-5 text-purple-600" />
           </div>
           
           <div className="flex-1">
             <h4 className="font-medium text-gray-900">Réunion équipe projet</h4>
             <p className="text-sm text-gray-600 flex items-center space-x-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
+              <Clock className="w-4 h-4" />
               <span>Aujourd'hui à 14:30</span>
             </p>
           </div>

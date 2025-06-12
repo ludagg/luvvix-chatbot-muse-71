@@ -1,120 +1,186 @@
 
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { User, Settings, Award, TrendingUp, Calendar, Star } from 'lucide-react';
 
 const MobileProfile = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Alex';
-  const userEmail = user?.email || 'alex@luvvix.com';
-
-  const profileOptions = [
-    { id: 'account', icon: '👤', title: 'Informations du compte', description: 'Gérer vos données personnelles' },
-    { id: 'security', icon: '🔒', title: 'Sécurité et confidentialité', description: 'Paramètres de sécurité' },
-    { id: 'notifications', icon: '🔔', title: 'Notifications', description: 'Préférences de notification' },
-    { id: 'storage', icon: '💾', title: 'Stockage', description: 'Gestion de l\'espace de stockage' },
-    { id: 'appearance', icon: '🎨', title: 'Apparence', description: 'Thème et personnalisation' },
-    { id: 'language', icon: '🌐', title: 'Langue et région', description: 'Paramètres de localisation' },
-    { id: 'help', icon: '❓', title: 'Aide et support', description: 'Centre d\'aide et contact' },
-    { id: 'about', icon: 'ℹ️', title: 'À propos', description: 'Version et informations légales' },
-  ];
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Utilisateur';
+  const userEmail = user?.email || '';
 
   const stats = [
-    { label: 'Services utilisés', value: '12', color: 'text-blue-600' },
-    { label: 'Stockage utilisé', value: '15.2 GB', color: 'text-green-600' },
-    { label: 'Jours actifs', value: '247', color: 'text-purple-600' },
+    {
+      icon: <TrendingUp className="w-5 h-5 text-blue-500" />,
+      label: "Services utilisés",
+      value: "8/12",
+      trend: "+2 ce mois"
+    },
+    {
+      icon: <Calendar className="w-5 h-5 text-green-500" />,
+      label: "Membre depuis",
+      value: "Jan 2024",
+      trend: "6 mois"
+    },
+    {
+      icon: <Star className="w-5 h-5 text-yellow-500" />,
+      label: "Score LuvviX",
+      value: "4.8/5",
+      trend: "Excellent"
+    }
+  ];
+
+  const recentActivity = [
+    {
+      icon: "🤖",
+      title: "Assistant IA utilisé",
+      time: "Il y a 2h",
+      description: "Génération de contenu"
+    },
+    {
+      icon: "🌤️",
+      title: "Météo consultée",
+      time: "Il y a 4h",
+      description: "Paris, France"
+    },
+    {
+      icon: "📰",
+      title: "Actualités lues",
+      time: "Hier",
+      description: "3 articles"
+    }
+  ];
+
+  const achievements = [
+    {
+      icon: "🏆",
+      title: "Explorateur",
+      description: "Premier service utilisé",
+      unlocked: true
+    },
+    {
+      icon: "🚀",
+      title: "Power User",
+      description: "10 services utilisés",
+      unlocked: false
+    },
+    {
+      icon: "⭐",
+      title: "Expert LuvviX",
+      description: "Tous les services maîtrisés",
+      unlocked: false
+    }
   ];
 
   return (
-    <div className="flex-1 overflow-auto bg-gray-50 pb-20">
-      {/* Profile Header */}
-      <div className="bg-gradient-to-br from-blue-500 to-purple-600 px-4 py-8">
-        <div className="text-center">
-          <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl text-white">👤</span>
+    <div className="flex-1 overflow-auto pb-20">
+      {/* Header profil */}
+      <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white">
+        <div className="flex items-center space-x-4 mb-4">
+          <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+            <User className="w-10 h-10" />
           </div>
-          <h2 className="text-xl font-bold text-white mb-1">{userName}</h2>
-          <p className="text-blue-100">{userEmail}</p>
-          
-          <div className="flex items-center justify-center space-x-1 mt-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-            <span className="text-sm text-blue-100">En ligne</span>
+          <div>
+            <h2 className="text-2xl font-bold">{userName}</h2>
+            <p className="text-blue-100">{userEmail}</p>
+            <div className="flex items-center mt-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+              <span className="text-blue-100 text-sm">En ligne</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white bg-opacity-10 rounded-2xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-blue-100 text-sm">Niveau LuvviX</p>
+              <p className="text-xl font-bold">Explorateur</p>
+            </div>
+            <div className="text-right">
+              <p className="text-blue-100 text-sm">XP</p>
+              <p className="text-xl font-bold">1,250</p>
+            </div>
+          </div>
+          <div className="w-full bg-white bg-opacity-20 rounded-full h-2 mt-3">
+            <div className="bg-white h-2 rounded-full" style={{ width: '65%' }}></div>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="px-4 -mt-6 mb-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-          <div className="grid grid-cols-3 divide-x divide-gray-100">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center px-2">
-                <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
-                <p className="text-xs text-gray-600">{stat.label}</p>
+      {/* Statistiques */}
+      <div className="p-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistiques</h3>
+        <div className="grid grid-cols-1 gap-4 mb-6">
+          {stats.map((stat, index) => (
+            <div key={index} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center">
+                    {stat.icon}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{stat.label}</p>
+                    <p className="text-sm text-gray-600">{stat.trend}</p>
+                  </div>
+                </div>
+                <p className="text-xl font-bold text-gray-900">{stat.value}</p>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="px-4 mb-6">
-        <div className="grid grid-cols-2 gap-3">
-          <button className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 active:scale-95 transition-transform">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-3">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-              </svg>
             </div>
-            <p className="font-medium text-gray-900 text-sm">Modifier le profil</p>
-          </button>
-          
-          <button className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 active:scale-95 transition-transform">
-            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-3">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"/>
-              </svg>
-            </div>
-            <p className="font-medium text-gray-900 text-sm">Partager profil</p>
-          </button>
+          ))}
         </div>
-      </div>
 
-      {/* Settings Options */}
-      <div className="px-4">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          {profileOptions.map((option, index) => (
-            <button
-              key={option.id}
-              className={`w-full p-4 text-left hover:bg-gray-50 active:bg-gray-100 transition-colors ${
-                index !== profileOptions.length - 1 ? 'border-b border-gray-100' : ''
+        {/* Activité récente */}
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Activité récente</h3>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+          {recentActivity.map((activity, index) => (
+            <div key={index} className="p-4 border-b border-gray-50 last:border-b-0">
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-lg">
+                  {activity.icon}
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900">{activity.title}</h4>
+                  <p className="text-sm text-gray-600">{activity.description}</p>
+                  <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Achievements */}
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Succès</h3>
+        <div className="space-y-3">
+          {achievements.map((achievement, index) => (
+            <div 
+              key={index} 
+              className={`bg-white rounded-2xl p-4 shadow-sm border border-gray-100 ${
+                !achievement.unlocked ? 'opacity-60' : ''
               }`}
             >
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-                  <span className="text-lg">{option.icon}</span>
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${
+                  achievement.unlocked 
+                    ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+                    : 'bg-gray-100'
+                }`}>
+                  {achievement.icon}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{option.title}</h3>
-                  <p className="text-sm text-gray-600">{option.description}</p>
+                  <h4 className="font-medium text-gray-900">{achievement.title}</h4>
+                  <p className="text-sm text-gray-600">{achievement.description}</p>
                 </div>
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
-                </svg>
+                {achievement.unlocked && (
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                  </div>
+                )}
               </div>
-            </button>
+            </div>
           ))}
         </div>
-      </div>
-
-      {/* Sign Out Button */}
-      <div className="px-4 mt-6">
-        <button
-          onClick={() => signOut()}
-          className="w-full bg-red-500 text-white rounded-2xl p-4 font-medium active:scale-95 transition-transform"
-        >
-          Se déconnecter
-        </button>
       </div>
     </div>
   );

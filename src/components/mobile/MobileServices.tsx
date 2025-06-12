@@ -1,6 +1,29 @@
 
 import React, { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
+import { 
+  Search, 
+  Grid3X3, 
+  Sparkles, 
+  Globe, 
+  FileText, 
+  Cloud, 
+  Mail, 
+  BarChart3, 
+  Users, 
+  BookOpen, 
+  Code, 
+  Bot,
+  Newspaper,
+  MessageCircle,
+  Shield,
+  Camera,
+  Calendar,
+  Palette,
+  Zap,
+  Database,
+  Settings
+} from 'lucide-react';
 
 const MobileServices = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -11,8 +34,8 @@ const MobileServices = () => {
       id: 'luvvix-ai-studio',
       name: 'LuvviX AI Studio',
       description: 'Studio de création d\'agents IA',
-      icon: '🤖',
-      bgColor: 'bg-purple-500',
+      icon: <Bot className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-purple-500 to-indigo-600',
       badge: 'Populaire',
       category: 'ai',
       url: '/ai-studio'
@@ -21,8 +44,8 @@ const MobileServices = () => {
       id: 'luvvix-translate',
       name: 'LuvviX Translate',
       description: 'Traduction instantanée multilingue',
-      icon: '🌐',
-      bgColor: 'bg-green-500',
+      icon: <Globe className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-green-500 to-emerald-600',
       category: 'productivity',
       url: '/translate'
     },
@@ -30,8 +53,8 @@ const MobileServices = () => {
       id: 'luvvix-weather',
       name: 'LuvviX Weather',
       description: 'Prévisions météo avancées',
-      icon: '🌤️',
-      bgColor: 'bg-blue-500',
+      icon: <Cloud className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-blue-500 to-cyan-600',
       category: 'lifestyle',
       url: '/weather'
     },
@@ -39,8 +62,8 @@ const MobileServices = () => {
       id: 'luvvix-forms',
       name: 'LuvviX Forms',
       description: 'Création de formulaires intelligents',
-      icon: '📝',
-      bgColor: 'bg-orange-500',
+      icon: <FileText className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-orange-500 to-red-600',
       category: 'productivity',
       url: '/forms'
     },
@@ -48,8 +71,8 @@ const MobileServices = () => {
       id: 'luvvix-learn',
       name: 'LuvviX Learn',
       description: 'Plateforme d\'apprentissage IA',
-      icon: '🎓',
-      bgColor: 'bg-indigo-500',
+      icon: <BookOpen className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-indigo-500 to-purple-600',
       badge: 'Nouveau',
       category: 'education',
       url: '/learn'
@@ -58,8 +81,8 @@ const MobileServices = () => {
       id: 'luvvix-news',
       name: 'LuvviX News',
       description: 'Actualités personnalisées',
-      icon: '📰',
-      bgColor: 'bg-red-500',
+      icon: <Newspaper className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-red-500 to-pink-600',
       category: 'information',
       url: '/news'
     },
@@ -67,8 +90,8 @@ const MobileServices = () => {
       id: 'luvvix-cloud',
       name: 'LuvviX Cloud',
       description: 'Stockage et partage sécurisé',
-      icon: '☁️',
-      bgColor: 'bg-cyan-500',
+      icon: <Database className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-cyan-500 to-blue-600',
       category: 'storage',
       url: '/cloud'
     },
@@ -76,8 +99,8 @@ const MobileServices = () => {
       id: 'luvvix-mail',
       name: 'LuvviX Mail',
       description: 'Messagerie intelligente',
-      icon: '✉️',
-      bgColor: 'bg-pink-500',
+      icon: <Mail className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-pink-500 to-rose-600',
       category: 'communication',
       url: '/mail'
     },
@@ -85,8 +108,8 @@ const MobileServices = () => {
       id: 'luvvix-analytics',
       name: 'LuvviX Analytics',
       description: 'Analyse de données avancée',
-      icon: '📊',
-      bgColor: 'bg-emerald-500',
+      icon: <BarChart3 className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-emerald-500 to-teal-600',
       category: 'analytics',
       url: '/analytics'
     },
@@ -94,8 +117,8 @@ const MobileServices = () => {
       id: 'luvvix-docs',
       name: 'LuvviX Docs',
       description: 'Documentation collaborative',
-      icon: '📚',
-      bgColor: 'bg-violet-500',
+      icon: <FileText className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-violet-500 to-purple-600',
       category: 'productivity',
       url: '/docs'
     },
@@ -103,8 +126,8 @@ const MobileServices = () => {
       id: 'luvvix-center',
       name: 'LuvviX Center',
       description: 'Réseau social professionnel',
-      icon: '👥',
-      bgColor: 'bg-rose-500',
+      icon: <Users className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-rose-500 to-pink-600',
       category: 'social',
       url: '/center'
     },
@@ -112,19 +135,56 @@ const MobileServices = () => {
       id: 'luvvix-crawler',
       name: 'LuvviX Crawler',
       description: 'Exploration web intelligente',
-      icon: '🕷️',
-      bgColor: 'bg-gray-500',
+      icon: <Search className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-gray-500 to-slate-600',
       category: 'tools',
       url: '/crawler'
+    },
+    {
+      id: 'code-studio',
+      name: 'Code Studio',
+      description: 'Environnement de développement',
+      icon: <Code className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-yellow-500 to-orange-600',
+      category: 'development',
+      url: '/code-studio'
+    },
+    {
+      id: 'luvvix-chat',
+      name: 'LuvviX Chat',
+      description: 'Messagerie instantanée',
+      icon: <MessageCircle className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+      category: 'communication',
+      url: '/chat'
+    },
+    {
+      id: 'luvvix-security',
+      name: 'LuvviX Security',
+      description: 'Centre de sécurité',
+      icon: <Shield className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-green-500 to-teal-600',
+      category: 'security',
+      url: '/security'
+    },
+    {
+      id: 'luvvix-media',
+      name: 'LuvviX Media',
+      description: 'Gestionnaire multimédia',
+      icon: <Camera className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-purple-500 to-pink-600',
+      category: 'media',
+      url: '/media'
     }
   ];
 
   const categories = [
-    { id: 'all', label: 'Tous', icon: '⚡' },
-    { id: 'ai', label: 'IA', icon: '🤖' },
-    { id: 'productivity', label: 'Productivité', icon: '📊' },
-    { id: 'communication', label: 'Communication', icon: '💬' },
-    { id: 'education', label: 'Éducation', icon: '🎓' }
+    { id: 'all', label: 'Tous', icon: <Grid3X3 className="w-4 h-4" /> },
+    { id: 'ai', label: 'IA', icon: <Bot className="w-4 h-4" /> },
+    { id: 'productivity', label: 'Productivité', icon: <Zap className="w-4 h-4" /> },
+    { id: 'communication', label: 'Communication', icon: <MessageCircle className="w-4 h-4" /> },
+    { id: 'education', label: 'Éducation', icon: <BookOpen className="w-4 h-4" /> },
+    { id: 'development', label: 'Développement', icon: <Code className="w-4 h-4" /> }
   ];
 
   const filteredServices = services.filter(service => {
@@ -159,9 +219,7 @@ const MobileServices = () => {
         {/* Barre de recherche */}
         <div className="relative mb-6">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
+            <Search className="h-5 w-5 text-gray-400" />
           </div>
           <input
             type="text"
@@ -178,14 +236,14 @@ const MobileServices = () => {
             <button
               key={category.id}
               onClick={() => setActiveTab(category.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center space-x-2 ${
                 activeTab === category.id
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              <span className="mr-1">{category.icon}</span>
-              {category.label}
+              {category.icon}
+              <span>{category.label}</span>
             </button>
           ))}
         </div>
@@ -198,15 +256,15 @@ const MobileServices = () => {
             <button
               key={service.id}
               onClick={() => handleServiceClick(service)}
-              className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 active:scale-95 transition-transform text-left"
+              className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 active:scale-95 transition-transform text-left relative overflow-hidden"
             >
-              <div className="relative">
-                <div className={`w-14 h-14 ${service.bgColor} rounded-2xl flex items-center justify-center mb-3`}>
-                  <span className="text-2xl">{service.icon}</span>
+              <div className="relative z-10">
+                <div className={`w-14 h-14 ${service.bgColor} rounded-2xl flex items-center justify-center mb-3 text-white shadow-lg`}>
+                  {service.icon}
                 </div>
                 
                 {service.badge && (
-                  <div className="absolute -top-2 -right-2">
+                  <div className="absolute top-0 right-0">
                     <span className={`text-white text-xs px-2 py-1 rounded-full ${
                       service.badge === 'Nouveau' ? 'bg-green-500' : 'bg-blue-500'
                     }`}>
@@ -214,14 +272,14 @@ const MobileServices = () => {
                     </span>
                   </div>
                 )}
+                
+                <h3 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-1">
+                  {service.name}
+                </h3>
+                <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
+                  {service.description}
+                </p>
               </div>
-              
-              <h3 className="font-semibold text-gray-900 text-sm mb-1 line-clamp-1">
-                {service.name}
-              </h3>
-              <p className="text-xs text-gray-600 line-clamp-2">
-                {service.description}
-              </p>
             </button>
           ))}
         </div>
@@ -229,9 +287,7 @@ const MobileServices = () => {
         {filteredServices.length === 0 && (
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-              </svg>
+              <Search className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun service trouvé</h3>
             <p className="text-gray-600">Essayez avec d'autres mots-clés</p>

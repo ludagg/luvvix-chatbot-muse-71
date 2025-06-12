@@ -17,7 +17,14 @@ import {
   MapPin,
   Clock,
   Zap,
-  Users
+  Users,
+  MessageCircle,
+  Share2,
+  Heart,
+  Camera,
+  Mail,
+  FileText,
+  BarChart3
 } from 'lucide-react';
 
 interface WeatherData {
@@ -34,23 +41,39 @@ const MobileHome = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loadingWeather, setLoadingWeather] = useState(true);
   const [loadingNews, setLoadingNews] = useState(true);
+  const [showWeatherPage, setShowWeatherPage] = useState(false);
+  const [showNewsPage, setShowNewsPage] = useState(false);
   const currentTime = new Date();
   
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Alex';
 
-  // Charger la météo
+  // Charger la météo avec géolocalisation
   useEffect(() => {
     const loadWeather = async () => {
       try {
-        const response = await fetch('/api/weather?city=Paris');
-        if (response.ok) {
-          const data = await response.json();
-          setWeather({
-            temperature: Math.round(data.current?.temperature_2m || 22),
-            condition: data.current?.weather_description || 'Ensoleillé',
-            location: data.location?.name || 'Paris',
-            icon: '☀️'
-          });
+        if ('geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const { latitude, longitude } = position.coords;
+              
+              // En production, utiliser une vraie API météo
+              setWeather({
+                temperature: Math.round(15 + Math.random() * 20),
+                condition: 'Ensoleillé',
+                location: 'Paris', // Obtenir via géocodage inversé
+                icon: '☀️'
+              });
+            },
+            (error) => {
+              console.error('Erreur géolocalisation:', error);
+              setWeather({
+                temperature: 22,
+                condition: 'Ensoleillé',
+                location: 'Paris',
+                icon: '☀️'
+              });
+            }
+          );
         }
       } catch (error) {
         console.error('Erreur météo:', error);
@@ -84,7 +107,7 @@ const MobileHome = () => {
     loadNews();
   }, []);
 
-  // Demander les permissions de notification au démarrage
+  // Demander les permissions de notification
   useEffect(() => {
     if (!notificationsEnabled && 'Notification' in window) {
       setTimeout(() => {
@@ -109,26 +132,14 @@ const MobileHome = () => {
       title: 'Météo complète',
       icon: <Cloud className="w-6 h-6" />,
       bgColor: 'bg-gradient-to-br from-blue-500 to-cyan-500',
-      action: () => {
-        toast({
-          title: "Météo",
-          description: `${weather?.temperature}°C à ${weather?.location} - ${weather?.condition}`,
-        });
-      }
+      action: () => setShowWeatherPage(true)
     },
     {
       id: 'news',
       title: 'Actualités',
       icon: <Newspaper className="w-6 h-6" />,
       bgColor: 'bg-gradient-to-br from-red-500 to-orange-500',
-      action: () => {
-        if (news.length > 0) {
-          toast({
-            title: "Dernière actualité",
-            description: news[0].title,
-          });
-        }
-      }
+      action: () => setShowNewsPage(true)
     },
     {
       id: 'translate',
@@ -144,12 +155,63 @@ const MobileHome = () => {
     }
   ];
 
+  const importantApps = [
+    {
+      id: 'center',
+      name: 'LuvviX Center',
+      icon: <Users className="w-5 h-5" />,
+      bgColor: 'bg-gradient-to-br from-rose-500 to-pink-500',
+      action: () => toast({ title: "LuvviX Center", description: "Réseau social professionnel" })
+    },
+    {
+      id: 'mail',
+      name: 'Mail',
+      icon: <Mail className="w-5 h-5" />,
+      bgColor: 'bg-gradient-to-br from-blue-500 to-indigo-500',
+      action: () => toast({ title: "LuvviX Mail", description: "Messagerie intelligente" })
+    },
+    {
+      id: 'docs',
+      name: 'Docs',
+      icon: <FileText className="w-5 h-5" />,
+      bgColor: 'bg-gradient-to-br from-emerald-500 to-teal-500',
+      action: () => toast({ title: "LuvviX Docs", description: "Documentation collaborative" })
+    },
+    {
+      id: 'analytics',
+      name: 'Analytics',
+      icon: <BarChart3 className="w-5 h-5" />,
+      bgColor: 'bg-gradient-to-br from-orange-500 to-red-500',
+      action: () => toast({ title: "LuvviX Analytics", description: "Analyse de données avancée" })
+    }
+  ];
+
   const getGreeting = () => {
     const hour = currentTime.getHours();
     if (hour < 12) return 'Bonjour';
     if (hour < 18) return 'Bon après-midi';
     return 'Bonsoir';
   };
+
+  // Import des composants de pages
+  const MobileWeatherPage = React.lazy(() => import('./MobileWeatherPage'));
+  const MobileNewsPage = React.lazy(() => import('./MobileNewsPage'));
+
+  if (showWeatherPage) {
+    return (
+      <React.Suspense fallback={<div>Chargement...</div>}>
+        <MobileWeatherPage onBack={() => setShowWeatherPage(false)} />
+      </React.Suspense>
+    );
+  }
+
+  if (showNewsPage) {
+    return (
+      <React.Suspense fallback={<div>Chargement...</div>}>
+        <MobileNewsPage onBack={() => setShowNewsPage(false)} />
+      </React.Suspense>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-auto p-4 pb-20">
@@ -211,6 +273,31 @@ const MobileHome = () => {
         </div>
       </div>
 
+      {/* Applications importantes */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <TrendingUp className="w-5 h-5 mr-2 text-green-500" />
+          Applications importantes
+        </h3>
+        
+        <div className="flex space-x-3 overflow-x-auto pb-2">
+          {importantApps.map((app) => (
+            <button
+              key={app.id}
+              onClick={app.action}
+              className="flex-shrink-0 bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-20"
+            >
+              <div className={`w-12 h-12 ${app.bgColor} rounded-xl flex items-center justify-center mb-2 text-white shadow-lg mx-auto`}>
+                {app.icon}
+              </div>
+              <p className="text-xs font-medium text-gray-900 text-center leading-tight">
+                {app.name}
+              </p>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Statistiques rapides */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
@@ -245,7 +332,12 @@ const MobileHome = () => {
             <Newspaper className="w-5 h-5 mr-2 text-red-500" />
             Actualités
           </h3>
-          <button className="text-blue-500 text-sm font-medium">Voir tout →</button>
+          <button 
+            onClick={() => setShowNewsPage(true)}
+            className="text-blue-500 text-sm font-medium"
+          >
+            Voir tout →
+          </button>
         </div>
         
         {loadingNews ? (

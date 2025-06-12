@@ -19,19 +19,21 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
 
   return (
     <div className={`fixed inset-0 bg-white z-50 flex flex-col items-center justify-center transition-opacity duration-500 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}>
-      {/* Logo principal */}
+      {/* Logo officiel LuvviX */}
       <div className="flex flex-col items-center mb-8">
-        <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center mb-4 shadow-2xl">
-          <svg className="w-12 h-12 text-white" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M13 3L4 14h7v7l9-11h-7V3z"/>
-          </svg>
+        <div className="w-32 h-32 mb-6 relative">
+          <img 
+            src="/lovable-uploads/4e135247-8f83-4117-8247-edc3de222f86.png" 
+            alt="LuvviX Logo" 
+            className="w-full h-full object-contain"
+          />
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">LuvviX OS</h1>
         <p className="text-lg text-gray-600 font-medium">L'écosystème intelligent</p>
       </div>
 
-      {/* Animation de chargement */}
-      <div className="w-12 h-1 bg-gray-200 rounded-full overflow-hidden mb-16">
+      {/* Animation de chargement élégante */}
+      <div className="w-12 h-1 bg-gray-200 rounded-full overflow-hidden mb-20">
         <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-pulse"></div>
       </div>
 

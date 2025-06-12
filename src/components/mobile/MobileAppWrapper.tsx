@@ -13,10 +13,12 @@ import MobileAssistant from './MobileAssistant';
 import MobileCloud from './MobileCloud';
 import MobileProfile from './MobileProfile';
 import MobileSettings from './MobileSettings';
+import MobileSearch from './MobileSearch';
 import MobileBottomNav from './MobileBottomNav';
 import MobileNotifications from './MobileNotifications';
+import AIFloatingButton from './AIFloatingButton';
 
-type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings';
+type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search';
 
 const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   const isMobile = useIsMobile();
@@ -115,6 +117,8 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
         return <MobileProfile />;
       case 'settings':
         return <MobileSettings />;
+      case 'search':
+        return <MobileSearch />;
       default:
         return <MobileHome />;
     }
@@ -129,21 +133,37 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
     setActiveView('settings');
   };
 
+  const handleSearchClick = () => {
+    setActiveView('search');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header amélioré */}
+      {/* Header professionnel */}
       <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M13 3L4 14h7v7l9-11h-7V3z"/>
-            </svg>
+          <div className="w-10 h-10 relative">
+            <img 
+              src="/lovable-uploads/4e135247-8f83-4117-8247-edc3de222f86.png" 
+              alt="LuvviX Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
           <h1 className="text-xl font-bold text-gray-900">LuvviX OS</h1>
         </div>
         
         <div className="flex items-center space-x-3">
-          {/* Bouton notifications avec vraie icône */}
+          {/* Bouton recherche */}
+          <button
+            onClick={handleSearchClick}
+            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+          >
+            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </button>
+
+          {/* Bouton notifications avec icône Lucide */}
           <button
             onClick={handleNotificationClick}
             className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors"
@@ -154,7 +174,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
             <Bell className="w-6 h-6 text-gray-600" />
           </button>
 
-          {/* Bouton paramètres avec vraie icône */}
+          {/* Bouton paramètres */}
           <button 
             onClick={handleSettingsClick}
             className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
@@ -180,6 +200,9 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
         isOpen={showNotifications} 
         onClose={() => setShowNotifications(false)} 
       />
+
+      {/* Bouton IA flottant */}
+      <AIFloatingButton />
     </div>
   );
 };

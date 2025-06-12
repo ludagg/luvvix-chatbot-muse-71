@@ -1,11 +1,16 @@
 
-import React from 'react';
-import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Globe, Palette, Database } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import ProfilePage from './AccountPages/ProfilePage';
+import SecurityPage from './AccountPages/SecurityPage';
+import NotificationsPage from './AccountPages/NotificationsPage';
+import PrivacyPage from './AccountPages/PrivacyPage';
 
 const MobileSettings = () => {
   const { user, signOut } = useAuth();
+  const [currentPage, setCurrentPage] = useState<string | null>(null);
 
   const handleSignOut = async () => {
     try {
@@ -31,13 +36,13 @@ const MobileSettings = () => {
           icon: <User className="w-5 h-5" />,
           label: "Profil utilisateur",
           description: "Gérer vos informations personnelles",
-          action: () => {}
+          action: () => setCurrentPage('profile')
         },
         {
           icon: <Shield className="w-5 h-5" />,
           label: "Sécurité",
           description: "Mot de passe et authentification",
-          action: () => {}
+          action: () => setCurrentPage('security')
         }
       ]
     },
@@ -48,13 +53,25 @@ const MobileSettings = () => {
           icon: <Bell className="w-5 h-5" />,
           label: "Notifications",
           description: "Gérer vos alertes",
-          action: () => {}
+          action: () => setCurrentPage('notifications')
         },
         {
-          icon: <Settings className="w-5 h-5" />,
-          label: "Paramètres généraux",
-          description: "Langue, thème, etc.",
-          action: () => {}
+          icon: <Database className="w-5 h-5" />,
+          label: "Confidentialité",
+          description: "Contrôle de vos données",
+          action: () => setCurrentPage('privacy')
+        },
+        {
+          icon: <Globe className="w-5 h-5" />,
+          label: "Langue et région",
+          description: "Paramètres de localisation",
+          action: () => toast({ title: "Bientôt disponible", description: "Cette fonctionnalité arrive prochainement" })
+        },
+        {
+          icon: <Palette className="w-5 h-5" />,
+          label: "Apparence",
+          description: "Thème et personnalisation",
+          action: () => toast({ title: "Bientôt disponible", description: "Cette fonctionnalité arrive prochainement" })
         }
       ]
     },
@@ -65,11 +82,34 @@ const MobileSettings = () => {
           icon: <HelpCircle className="w-5 h-5" />,
           label: "Aide et support",
           description: "FAQ et assistance",
-          action: () => {}
+          action: () => toast({ title: "Aide", description: "Redirection vers le centre d'aide" })
+        },
+        {
+          icon: <Settings className="w-5 h-5" />,
+          label: "À propos de LuvviX OS",
+          description: "Version et informations",
+          action: () => toast({ title: "LuvviX OS", description: "Version 1.0.0 - Conçu par Ludovic Aggaï" })
         }
       ]
     }
   ];
+
+  // Rendu conditionnel des pages
+  if (currentPage === 'profile') {
+    return <ProfilePage onBack={() => setCurrentPage(null)} />;
+  }
+  
+  if (currentPage === 'security') {
+    return <SecurityPage onBack={() => setCurrentPage(null)} />;
+  }
+  
+  if (currentPage === 'notifications') {
+    return <NotificationsPage onBack={() => setCurrentPage(null)} />;
+  }
+  
+  if (currentPage === 'privacy') {
+    return <PrivacyPage onBack={() => setCurrentPage(null)} />;
+  }
 
   return (
     <div className="flex-1 overflow-auto pb-20">

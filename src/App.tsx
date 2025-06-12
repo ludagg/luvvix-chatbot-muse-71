@@ -1,10 +1,9 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-// Remove ThemeProvider import from next-themes since we're using our custom one
+import MobileAppWrapper from "./components/mobile/MobileAppWrapper";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import AuthPage from "./pages/AuthPage";
@@ -59,210 +58,212 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/oauth" element={<OAuth />} />
-          <Route path="/oauth-test" element={<OAuthTest />} />
-          
-          {/* Revolutionary Dashboard */}
-          <Route 
-            path="/revolutionary" 
-            element={
-              <ProtectedRoute>
-                <RevolutionaryDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Dashboard and Settings */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/settings" 
-            element={
-              <ProtectedRoute>
-                <AccountSettings />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/admin" 
-            element={
-              <ProtectedRoute>
-                <AdminPanel />
-              </ProtectedRoute>
-            } 
-          />
+        <MobileAppWrapper>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/oauth" element={<OAuth />} />
+            <Route path="/oauth-test" element={<OAuthTest />} />
+            
+            {/* Revolutionary Dashboard */}
+            <Route 
+              path="/revolutionary" 
+              element={
+                <ProtectedRoute>
+                  <RevolutionaryDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Dashboard and Settings */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute>
+                  <AccountSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminPanel />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Core Apps */}
-          <Route path="/ecosystem" element={<EcosystemPage />} />
-          <Route path="/news" element={<NewsPage />} />
-          <Route path="/weather" element={<WeatherPage />} />
-          <Route path="/translate" element={<TranslatePage />} />
-          <Route path="/mindmap" element={<MindMapPage />} />
-          <Route path="/code-studio" element={<CodeStudioPage />} />
-          <Route path="/explore" element={<ExplorePage />} />
-          <Route path="/crawler" element={<CrawlerPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
+            {/* Core Apps */}
+            <Route path="/ecosystem" element={<EcosystemPage />} />
+            <Route path="/news" element={<NewsPage />} />
+            <Route path="/weather" element={<WeatherPage />} />
+            <Route path="/translate" element={<TranslatePage />} />
+            <Route path="/mindmap" element={<MindMapPage />} />
+            <Route path="/code-studio" element={<CodeStudioPage />} />
+            <Route path="/explore" element={<ExplorePage />} />
+            <Route path="/crawler" element={<CrawlerPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
 
-          {/* Cloud routes */}
-          <Route 
-            path="/cloud" 
-            element={
-              <ProtectedRoute>
-                <CloudPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/cloud/folder/:folderId" 
-            element={
-              <ProtectedRoute>
-                <CloudPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/cloud/file/:fileId" 
-            element={
-              <ProtectedRoute>
-                <CloudPage />
-              </ProtectedRoute>
-            } 
-          />
+            {/* Cloud routes */}
+            <Route 
+              path="/cloud" 
+              element={
+                <ProtectedRoute>
+                  <CloudPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/cloud/folder/:folderId" 
+              element={
+                <ProtectedRoute>
+                  <CloudPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/cloud/file/:fileId" 
+              element={
+                <ProtectedRoute>
+                  <CloudPage />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Mail routes */}
-          <Route 
-            path="/mail" 
-            element={
-              <ProtectedRoute>
-                <MailPage />
-              </ProtectedRoute>
-            } 
-          />
+            {/* Mail routes */}
+            <Route 
+              path="/mail" 
+              element={
+                <ProtectedRoute>
+                  <MailPage />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Center routes */}
-          <Route 
-            path="/center" 
-            element={
-              <ProtectedRoute>
-                <CenterPage />
-              </ProtectedRoute>
-            } 
-          />
+            {/* Center routes */}
+            <Route 
+              path="/center" 
+              element={
+                <ProtectedRoute>
+                  <CenterPage />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Forms routes */}
-          <Route 
-            path="/forms" 
-            element={
-              <ProtectedRoute>
-                <FormsPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/forms/create" 
-            element={
-              <ProtectedRoute>
-                <FormEditorPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/forms/:id/edit" 
-            element={
-              <ProtectedRoute>
-                <FormEditorPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route path="/forms/:id/view" element={<FormViewPage />} />
-          <Route 
-            path="/forms/:id/responses" 
-            element={
-              <ProtectedRoute>
-                <FormResponsesPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/forms/:id/settings" 
-            element={
-              <ProtectedRoute>
-                <FormSettingsPage />
-              </ProtectedRoute>
-            } 
-          />
+            {/* Forms routes */}
+            <Route 
+              path="/forms" 
+              element={
+                <ProtectedRoute>
+                  <FormsPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/forms/create" 
+              element={
+                <ProtectedRoute>
+                  <FormEditorPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/forms/:id/edit" 
+              element={
+                <ProtectedRoute>
+                  <FormEditorPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/forms/:id/view" element={<FormViewPage />} />
+            <Route 
+              path="/forms/:id/responses" 
+              element={
+                <ProtectedRoute>
+                  <FormResponsesPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/forms/:id/settings" 
+              element={
+                <ProtectedRoute>
+                  <FormSettingsPage />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Learn routes */}
-          <Route path="/luvvix-learn" element={<LuvviXLearnPage />} />
-          <Route 
-            path="/learn" 
-            element={
-              <ProtectedRoute>
-                <LearnPage />
-              </ProtectedRoute>
-            } 
-          />
+            {/* Learn routes */}
+            <Route path="/luvvix-learn" element={<LuvviXLearnPage />} />
+            <Route 
+              path="/learn" 
+              element={
+                <ProtectedRoute>
+                  <LearnPage />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* AI Studio routes */}
-          <Route path="/ai-studio" element={<AIStudioPage />} />
-          <Route 
-            path="/ai-studio/dashboard" 
-            element={
-              <ProtectedRoute>
-                <AIStudioDashboardPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/ai-studio/create" 
-            element={
-              <ProtectedRoute>
-                <AIStudioCreateAgentPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/ai-studio/edit/:id" 
-            element={
-              <ProtectedRoute>
-                <AIStudioEditAgentPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route path="/ai-studio/marketplace" element={<AIStudioMarketplacePage />} />
-          <Route path="/ai-studio/agent/:slug" element={<AIStudioAgentPage />} />
-          <Route path="/ai-studio/chat/:agentId" element={<AIStudioChatPage />} />
-          <Route 
-            path="/ai-studio/admin" 
-            element={
-              <ProtectedRoute>
-                <AIStudioAdminPage />
-              </ProtectedRoute>
-            } 
-          />
-          <Route path="/ai-embed/:agentId" element={<AIEmbedPage />} />
+            {/* AI Studio routes */}
+            <Route path="/ai-studio" element={<AIStudioPage />} />
+            <Route 
+              path="/ai-studio/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <AIStudioDashboardPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/ai-studio/create" 
+              element={
+                <ProtectedRoute>
+                  <AIStudioCreateAgentPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/ai-studio/edit/:id" 
+              element={
+                <ProtectedRoute>
+                  <AIStudioEditAgentPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/ai-studio/marketplace" element={<AIStudioMarketplacePage />} />
+            <Route path="/ai-studio/agent/:slug" element={<AIStudioAgentPage />} />
+            <Route path="/ai-studio/chat/:agentId" element={<AIStudioChatPage />} />
+            <Route 
+              path="/ai-studio/admin" 
+              element={
+                <ProtectedRoute>
+                  <AIStudioAdminPage />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/ai-embed/:agentId" element={<AIEmbedPage />} />
 
-          {/* Documentation and Legal */}
-          <Route path="/docs" element={<DocsPage />} />
-          <Route path="/docs-generator" element={<DocsGeneratorPage />} />
-          <Route path="/ai-integration" element={<LuvvixAIIntegrationPage />} />
-          <Route path="/api-docs" element={<ApiDocs />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/cookies" element={<CookiesPage />} />
+            {/* Documentation and Legal */}
+            <Route path="/docs" element={<DocsPage />} />
+            <Route path="/docs-generator" element={<DocsGeneratorPage />} />
+            <Route path="/ai-integration" element={<LuvvixAIIntegrationPage />} />
+            <Route path="/api-docs" element={<ApiDocs />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/cookies" element={<CookiesPage />} />
 
-          {/* 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </MobileAppWrapper>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

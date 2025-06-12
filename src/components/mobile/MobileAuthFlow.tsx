@@ -24,11 +24,11 @@ const MobileAuthFlow = ({ onSuccess, onBack }: MobileAuthFlowProps) => {
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) {
+        const success = await signIn(email, password);
+        if (!success) {
           toast({
             title: "Erreur de connexion",
-            description: error.message,
+            description: "Email ou mot de passe incorrect",
             variant: "destructive",
           });
         } else {
@@ -48,11 +48,13 @@ const MobileAuthFlow = ({ onSuccess, onBack }: MobileAuthFlowProps) => {
           return;
         }
 
-        const { error } = await signUp(email, password);
-        if (error) {
+        const success = await signUp(email, password, {
+          full_name: email.split('@')[0]
+        });
+        if (!success) {
           toast({
             title: "Erreur d'inscription",
-            description: error.message,
+            description: "Une erreur est survenue lors de l'inscription",
             variant: "destructive",
           });
         } else {

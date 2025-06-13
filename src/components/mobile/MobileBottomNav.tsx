@@ -3,11 +3,11 @@ import React from 'react';
 import { Home, Grid3X3, Sparkles, Cloud, User } from 'lucide-react';
 
 interface MobileBottomNavProps {
-  currentPage: string;
-  onPageChange: (page: string) => void;
+  activeView: string;
+  setActiveView: (view: any) => void;
 }
 
-const MobileBottomNav = ({ currentPage, onPageChange }: MobileBottomNavProps) => {
+const MobileBottomNav = ({ activeView, setActiveView }: MobileBottomNavProps) => {
   const navItems = [
     {
       id: 'home',
@@ -31,7 +31,7 @@ const MobileBottomNav = ({ currentPage, onPageChange }: MobileBottomNavProps) =>
       icon: Cloud
     },
     {
-      id: 'settings',
+      id: 'profile',
       label: 'Profil',
       icon: User
     }
@@ -41,13 +41,13 @@ const MobileBottomNav = ({ currentPage, onPageChange }: MobileBottomNavProps) =>
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-1 safe-area-bottom shadow-lg">
       <div className="flex items-end justify-around">
         {navItems.map((item) => {
-          const isActive = currentPage === item.id;
+          const isActive = activeView === item.id;
           const IconComponent = item.icon;
           
           return (
             <button
               key={item.id}
-              onClick={() => onPageChange(item.id)}
+              onClick={() => setActiveView(item.id)}
               className={`flex flex-col items-center py-2 px-3 transition-all duration-200 ${
                 item.isSpecial ? '-mt-6' : ''
               }`}
@@ -84,7 +84,7 @@ const MobileBottomNav = ({ currentPage, onPageChange }: MobileBottomNavProps) =>
           <div
             key={`dot-${item.id}`}
             className={`w-1 h-1 rounded-full transition-colors ${
-              currentPage === item.id ? 'bg-blue-600' : 'bg-gray-300'
+              activeView === item.id ? 'bg-blue-600' : 'bg-gray-300'
             }`}
           />
         ))}

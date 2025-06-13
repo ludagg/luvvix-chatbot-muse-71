@@ -1,160 +1,207 @@
 
 import React, { useState, useEffect } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
+import { useNotifications } from '@/hooks/use-notifications';
+import { Bell } from 'lucide-react';
 import SplashScreen from './SplashScreen';
 import OnboardingFlow from './OnboardingFlow';
 import MobileAuthFlow from './MobileAuthFlow';
 import MobileHome from './MobileHome';
 import MobileServices from './MobileServices';
-import MobileSettings from './MobileSettings';
 import MobileAssistant from './MobileAssistant';
-import MobileCalendar from './MobileCalendar';
-import MobileForms from './MobileForms';
-import MobileTranslate from './MobileTranslate';
-import MobileWeather from './MobileWeather';
-import MobileNewsPage from './MobileNewsPage';
+import MobileCloud from './MobileCloud';
+import MobileProfile from './MobileProfile';
+import MobileSettings from './MobileSettings';
+import MobileSearch from './MobileSearch';
 import MobileBottomNav from './MobileBottomNav';
+import MobileNotifications from './MobileNotifications';
 import AIFloatingButton from './AIFloatingButton';
 
-const MobileAppWrapper = () => {
-  const { user, loading } = useAuth();
-  const [currentStep, setCurrentStep] = useState<'splash' | 'onboarding' | 'auth' | 'app'>('splash');
-  const [currentPage, setCurrentPage] = useState('home');
-  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search';
 
-  useEffect(() => {
-    // Vérifier si l'utilisateur a déjà vu l'onboarding
-    const onboardingSeen = localStorage.getItem('luvvix_onboarding_seen');
-    setHasSeenOnboarding(!!onboardingSeen);
-  }, []);
+const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
+  const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { notificationsEnabled } = useNotifications();
+  const [showSplash, setShowSplash] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const [activeView, setActiveView] = useState<MobileView>('home');
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
 
+  // Vérifier si c'est la première visite
   useEffect(() => {
-    if (!loading) {
-      if (user) {
-        setCurrentStep('app');
-      } else if (hasSeenOnboarding) {
-        setCurrentStep('auth');
-      } else {
-        // L'étape splash se terminera automatiquement
-      }
+    const hasSeenOnboarding = localStorage.getItem('luvvix_onboarding_seen');
+    if (!hasSeenOnboarding && isMobile) {
+      setShowOnboarding(true);
     }
-  }, [user, loading, hasSeenOnboarding]);
+  }, [isMobile]);
 
-  // Gestion des événements de navigation
-  useEffect(() => {
-    const handleNavigationEvents = () => {
-      window.addEventListener('navigate-to-services', () => setCurrentPage('services'));
-      window.addEventListener('navigate-to-assistant', () => setCurrentPage('assistant'));
-      window.addEventListener('navigate-to-calendar', () => setCurrentPage('calendar'));
-      window.addEventListener('navigate-to-forms', () => setCurrentPage('forms'));
-      window.addEventListener('navigate-to-translate', () => setCurrentPage('translate'));
-      window.addEventListener('navigate-to-weather', () => setCurrentPage('weather'));
-      window.addEventListener('navigate-to-news', () => setCurrentPage('news'));
-      window.addEventListener('navigate-to-settings', () => setCurrentPage('settings'));
-      window.addEventListener('navigate-to-home', () => setCurrentPage('home'));
-    };
-
-    handleNavigationEvents();
-
-    return () => {
-      window.removeEventListener('navigate-to-services', () => setCurrentPage('services'));
-      window.removeEventListener('navigate-to-assistant', () => setCurrentPage('assistant'));
-      window.removeEventListener('navigate-to-calendar', () => setCurrentPage('calendar'));
-      window.removeEventListener('navigate-to-forms', () => setCurrentPage('forms'));
-      window.removeEventListener('navigate-to-translate', () => setCurrentPage('translate'));
-      window.removeEventListener('navigate-to-weather', () => setCurrentPage('weather'));
-      window.removeEventListener('navigate-to-news', () => setCurrentPage('news'));
-      window.removeEventListener('navigate-to-settings', () => setCurrentPage('settings'));
-      window.removeEventListener('navigate-to-home', () => setCurrentPage('home'));
-    };
-  }, []);
-
+  // Gérer la fin du splash screen
   const handleSplashComplete = () => {
-    if (hasSeenOnboarding) {
-      setCurrentStep(user ? 'app' : 'auth');
-    } else {
-      setCurrentStep('onboarding');
+    setShowSplash(false);
+    const hasSeenOnboarding = localStorage.getItem('luvvix_onboarding_seen');
+    if (!hasSeenOnboarding) {
+      setShowOnboarding(true);
     }
   };
 
+  // Gérer la fin de l'onboarding
   const handleOnboardingComplete = () => {
     localStorage.setItem('luvvix_onboarding_seen', 'true');
-    setHasSeenOnboarding(true);
-    setCurrentStep(user ? 'app' : 'auth');
-  };
-
-  const handleAuthSuccess = () => {
-    setCurrentStep('app');
-  };
-
-  const handleAuthBack = () => {
-    setCurrentStep('onboarding');
-  };
-
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'home':
-        return <MobileHome />;
-      case 'services':
-        return <MobileServices />;
-      case 'assistant':
-        return <MobileAssistant />;
-      case 'calendar':
-        return <MobileCalendar />;
-      case 'forms':
-        return <MobileForms />;
-      case 'translate':
-        return <MobileTranslate />;
-      case 'weather':
-        return <MobileWeather />;
-      case 'news':
-        return <MobileNewsPage onBack={() => setCurrentPage('home')} />;
-      case 'settings':
-        return <MobileSettings />;
-      default:
-        return <MobileHome />;
+    setShowOnboarding(false);
+    if (!user) {
+      setShowAuth(true);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-      </div>
-    );
+  // Gérer le succès de l'authentification
+  const handleAuthSuccess = () => {
+    setShowAuth(false);
+  };
+
+  // Gérer le retour depuis l'auth
+  const handleAuthBack = () => {
+    setShowAuth(false);
+    setShowOnboarding(true);
+  };
+
+  // Écouter les événements de navigation personnalisés
+  useEffect(() => {
+    const handleNavigateToAssistant = () => {
+      setActiveView('assistant');
+    };
+
+    window.addEventListener('navigate-to-assistant', handleNavigateToAssistant);
+
+    return () => {
+      window.removeEventListener('navigate-to-assistant', handleNavigateToAssistant);
+    };
+  }, []);
+
+  if (!isMobile) {
+    return <>{children}</>;
   }
 
-  if (currentStep === 'splash') {
+  // Afficher le splash screen
+  if (showSplash) {
     return <SplashScreen onComplete={handleSplashComplete} />;
   }
 
-  if (currentStep === 'onboarding') {
+  // Afficher l'onboarding
+  if (showOnboarding) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 
-  if (currentStep === 'auth') {
+  // Afficher l'authentification si pas connecté
+  if (showAuth || !user) {
     return (
-      <MobileAuthFlow
-        onSuccess={handleAuthSuccess}
+      <MobileAuthFlow 
+        onSuccess={handleAuthSuccess} 
         onBack={handleAuthBack}
       />
     );
   }
 
+  const renderMobileView = () => {
+    switch (activeView) {
+      case 'services':
+        return <MobileServices />;
+      case 'assistant':
+        return <MobileAssistant />;
+      case 'cloud':
+        return <MobileCloud />;
+      case 'profile':
+        return <MobileProfile />;
+      case 'settings':
+        return <MobileSettings />;
+      case 'search':
+        return <MobileSearch />;
+      default:
+        return <MobileHome />;
+    }
+  };
+
+  const handleNotificationClick = () => {
+    setShowNotifications(true);
+    setHasUnreadNotifications(false);
+  };
+
+  const handleSettingsClick = () => {
+    setActiveView('settings');
+  };
+
+  const handleSearchClick = () => {
+    setActiveView('search');
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col relative">
-      {/* Contenu principal */}
-      <div className="flex-1 overflow-hidden">
-        {renderCurrentPage()}
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header professionnel */}
+      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 relative">
+            <img 
+              src="/lovable-uploads/4e135247-8f83-4117-8247-edc3de222f86.png" 
+              alt="LuvviX Logo" 
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <h1 className="text-xl font-bold text-gray-900">LuvviX OS</h1>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          {/* Bouton recherche */}
+          <button
+            onClick={handleSearchClick}
+            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+          >
+            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </button>
+
+          {/* Bouton notifications avec icône Lucide */}
+          <button
+            onClick={handleNotificationClick}
+            className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors"
+          >
+            {hasUnreadNotifications && (
+              <div className="w-3 h-3 bg-red-500 rounded-full absolute -top-1 -right-1 border-2 border-white"></div>
+            )}
+            <Bell className="w-6 h-6 text-gray-600" />
+          </button>
+
+          {/* Bouton paramètres */}
+          <button 
+            onClick={handleSettingsClick}
+            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+          >
+            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
-      {/* Navigation du bas */}
-      <MobileBottomNav 
-        currentPage={currentPage} 
-        onPageChange={setCurrentPage} 
+      {/* Main Content */}
+      <div className="flex-1 overflow-hidden">
+        {renderMobileView()}
+      </div>
+
+      {/* Bottom Navigation */}
+      <MobileBottomNav activeView={activeView} setActiveView={setActiveView} />
+
+      {/* Notifications Modal */}
+      <MobileNotifications 
+        isOpen={showNotifications} 
+        onClose={() => setShowNotifications(false)} 
       />
 
-      {/* Bouton flottant IA */}
+      {/* Bouton IA flottant */}
       <AIFloatingButton />
     </div>
   );

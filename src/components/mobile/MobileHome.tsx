@@ -1,233 +1,415 @@
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, TrendingUp, Bell, Plus, ChevronRight, Sun, CloudRain, Thermometer, Globe } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { fetchLatestNews } from '@/services/news-service';
+import { NewsItem } from '@/types/news';
+import { useNotifications } from '@/hooks/use-notifications';
 import { toast } from '@/hooks/use-toast';
+import { 
+  Sparkles, 
+  Cloud, 
+  Newspaper, 
+  Globe, 
+  Calendar, 
+  TrendingUp,
+  MapPin,
+  Clock,
+  Zap,
+  Users,
+  MessageCircle,
+  Share2,
+  Heart,
+  Camera,
+  Mail,
+  FileText,
+  BarChart3
+} from 'lucide-react';
+
+interface WeatherData {
+  temperature: number;
+  condition: string;
+  location: string;
+  icon: string;
+}
 
 const MobileHome = () => {
   const { user } = useAuth();
-  const [weather, setWeather] = useState<any>(null);
-  const [nextEvent, setNextEvent] = useState<any>(null);
+  const { notificationsEnabled, requestPermission } = useNotifications();
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [loadingWeather, setLoadingWeather] = useState(true);
+  const [loadingNews, setLoadingNews] = useState(true);
+  const [showWeatherPage, setShowWeatherPage] = useState(false);
+  const [showNewsPage, setShowNewsPage] = useState(false);
+  const currentTime = new Date();
+  
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Alex';
 
+  // Charger la météo avec géolocalisation
   useEffect(() => {
-    loadWeatherData();
-    loadNextEvent();
+    const loadWeather = async () => {
+      try {
+        if ('geolocation' in navigator) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const { latitude, longitude } = position.coords;
+              
+              // En production, utiliser une vraie API météo
+              setWeather({
+                temperature: Math.round(15 + Math.random() * 20),
+                condition: 'Ensoleillé',
+                location: 'Paris', // Obtenir via géocodage inversé
+                icon: '☀️'
+              });
+            },
+            (error) => {
+              console.error('Erreur géolocalisation:', error);
+              setWeather({
+                temperature: 22,
+                condition: 'Ensoleillé',
+                location: 'Paris',
+                icon: '☀️'
+              });
+            }
+          );
+        }
+      } catch (error) {
+        console.error('Erreur météo:', error);
+        setWeather({
+          temperature: 22,
+          condition: 'Ensoleillé',
+          location: 'Paris',
+          icon: '☀️'
+        });
+      } finally {
+        setLoadingWeather(false);
+      }
+    };
+
+    loadWeather();
   }, []);
 
-  const loadWeatherData = async () => {
-    try {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-          const { latitude, longitude } = position.coords;
-          // Simuler des données météo réelles
-          setWeather({
-            temperature: 22,
-            condition: 'Ensoleillé',
-            location: 'Paris, France',
-            icon: '☀️'
-          });
+  // Charger les actualités
+  useEffect(() => {
+    const loadNews = async () => {
+      try {
+        const newsItems = await fetchLatestNews('all', 'fr', '');
+        setNews(newsItems.slice(0, 3));
+      } catch (error) {
+        console.error('Erreur actualités:', error);
+      } finally {
+        setLoadingNews(false);
+      }
+    };
+
+    loadNews();
+  }, []);
+
+  // Demander les permissions de notification
+  useEffect(() => {
+    if (!notificationsEnabled && 'Notification' in window) {
+      setTimeout(() => {
+        requestPermission();
+      }, 2000);
+    }
+  }, [notificationsEnabled, requestPermission]);
+
+  const quickActions = [
+    {
+      id: 'ai-chat',
+      title: 'Assistant IA',
+      icon: <Sparkles className="w-6 h-6" />,
+      bgColor: 'bg-gradient-to-br from-purple-500 to-pink-500',
+      action: () => {
+        const event = new CustomEvent('navigate-to-assistant');
+        window.dispatchEvent(event);
+      }
+    },
+    {
+      id: 'weather',
+      title: 'Météo complète',
+      icon: <Cloud className="w-6 h-6" />,
+      bgColor: 'bg-gradient-to-br from-blue-500 to-cyan-500',
+      action: () => setShowWeatherPage(true)
+    },
+    {
+      id: 'news',
+      title: 'Actualités',
+      icon: <Newspaper className="w-6 h-6" />,
+      bgColor: 'bg-gradient-to-br from-red-500 to-orange-500',
+      action: () => setShowNewsPage(true)
+    },
+    {
+      id: 'translate',
+      title: 'Traduire',
+      icon: <Globe className="w-6 h-6" />,
+      bgColor: 'bg-gradient-to-br from-green-500 to-emerald-500',
+      action: () => {
+        toast({
+          title: "LuvviX Translate",
+          description: "Service de traduction disponible dans Services",
         });
       }
-    } catch (error) {
-      console.error('Erreur météo:', error);
     }
-  };
-
-  const loadNextEvent = () => {
-    // Simuler un prochain événement
-    setNextEvent({
-      title: 'Réunion équipe',
-      time: '14:00',
-      date: 'Aujourd\'hui',
-      location: 'Salle de conférence'
-    });
-  };
+  ];
 
   const importantApps = [
     {
       id: 'center',
       name: 'LuvviX Center',
-      icon: <Users className="w-6 h-6" />,
-      color: 'bg-gradient-to-br from-blue-500 to-purple-600',
-      action: () => console.log('Ouvrir Center')
+      icon: <Users className="w-5 h-5" />,
+      bgColor: 'bg-gradient-to-br from-rose-500 to-pink-500',
+      action: () => toast({ title: "LuvviX Center", description: "Réseau social professionnel" })
     },
     {
-      id: 'calendar',
-      name: 'Calendar',
-      icon: <Calendar className="w-6 h-6" />,
-      color: 'bg-gradient-to-br from-green-500 to-emerald-600',
-      action: () => {
-        const event = new CustomEvent('navigate-to-calendar');
-        window.dispatchEvent(event);
-      }
+      id: 'mail',
+      name: 'Mail',
+      icon: <Mail className="w-5 h-5" />,
+      bgColor: 'bg-gradient-to-br from-blue-500 to-indigo-500',
+      action: () => toast({ title: "LuvviX Mail", description: "Messagerie intelligente" })
     },
     {
-      id: 'forms',
-      name: 'Forms',
-      icon: <Plus className="w-6 h-6" />,
-      color: 'bg-gradient-to-br from-orange-500 to-red-600',
-      action: () => {
-        const event = new CustomEvent('navigate-to-forms');
-        window.dispatchEvent(event);
-      }
+      id: 'docs',
+      name: 'Docs',
+      icon: <FileText className="w-5 h-5" />,
+      bgColor: 'bg-gradient-to-br from-emerald-500 to-teal-500',
+      action: () => toast({ title: "LuvviX Docs", description: "Documentation collaborative" })
     },
     {
-      id: 'translate',
-      name: 'Translate',
-      icon: <Globe className="w-6 h-6" />,
-      color: 'bg-gradient-to-br from-purple-500 to-pink-600',
-      action: () => {
-        const event = new CustomEvent('navigate-to-translate');
-        window.dispatchEvent(event);
-      }
+      id: 'analytics',
+      name: 'Analytics',
+      icon: <BarChart3 className="w-5 h-5" />,
+      bgColor: 'bg-gradient-to-br from-orange-500 to-red-500',
+      action: () => toast({ title: "LuvviX Analytics", description: "Analyse de données avancée" })
     }
   ];
 
-  const handleConsultCalendar = () => {
-    const event = new CustomEvent('navigate-to-calendar');
-    window.dispatchEvent(event);
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 12) return 'Bonjour';
+    if (hour < 18) return 'Bon après-midi';
+    return 'Bonsoir';
   };
 
+  // Import des composants de pages
+  const MobileWeatherPage = React.lazy(() => import('./MobileWeatherPage'));
+  const MobileNewsPage = React.lazy(() => import('./MobileNewsPage'));
+
+  if (showWeatherPage) {
+    return (
+      <React.Suspense fallback={<div>Chargement...</div>}>
+        <MobileWeatherPage onBack={() => setShowWeatherPage(false)} />
+      </React.Suspense>
+    );
+  }
+
+  if (showNewsPage) {
+    return (
+      <React.Suspense fallback={<div>Chargement...</div>}>
+        <MobileNewsPage onBack={() => setShowNewsPage(false)} />
+      </React.Suspense>
+    );
+  }
+
   return (
-    <div className="flex-1 overflow-auto bg-gray-50 pb-20">
-      {/* Header avec salutation */}
-      <div className="bg-white p-6 pt-12">
-        <div className="flex items-center justify-between mb-4">
+    <div className="flex-1 overflow-auto p-4 pb-20">
+      {/* Section de bienvenue avec météo intégrée */}
+      <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl p-6 text-white mb-6 shadow-xl">
+        <div className="flex justify-between items-start mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Bonjour, {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Utilisateur'} 👋
-            </h1>
-            <p className="text-gray-600">Que souhaitez-vous faire aujourd'hui ?</p>
+            <h2 className="text-2xl font-bold mb-1">
+              {getGreeting()} {userName} !
+            </h2>
+            <p className="text-blue-100 text-sm flex items-center">
+              <Clock className="w-4 h-4 mr-1" />
+              {format(currentTime, 'EEEE d MMMM yyyy', { locale: fr })}
+            </p>
           </div>
-          <div className="relative">
-            <Bell className="w-6 h-6 text-gray-600" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
-          </div>
+          
+          {weather && !loadingWeather && (
+            <div className="text-right">
+              <div className="flex items-center space-x-2 mb-1">
+                <span className="text-2xl">{weather.icon}</span>
+                <span className="text-2xl font-light">{weather.temperature}°C</span>
+              </div>
+              <p className="text-sm text-blue-100">{weather.condition}</p>
+              <p className="text-xs text-blue-200 flex items-center justify-end">
+                <MapPin className="w-3 h-3 mr-1" />
+                {weather.location}
+              </p>
+            </div>
+          )}
         </div>
+        
+        <p className="text-blue-100 text-center leading-relaxed">
+          Votre écosystème intelligent est prêt. Que souhaitez-vous accomplir aujourd'hui ?
+        </p>
       </div>
 
-      {/* Widget météo */}
-      {weather && (
-        <div className="mx-4 mb-6 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl p-4 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center space-x-2 mb-1">
-                <MapPin className="w-4 h-4" />
-                <span className="text-sm opacity-90">{weather.location}</span>
+      {/* Actions rapides */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Zap className="w-5 h-5 mr-2 text-blue-500" />
+          Actions rapides
+        </h3>
+        
+        <div className="grid grid-cols-2 gap-4">
+          {quickActions.map((action) => (
+            <button
+              key={action.id}
+              onClick={action.action}
+              className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100 active:scale-95 transition-transform hover:shadow-md"
+            >
+              <div className={`w-12 h-12 ${action.bgColor} rounded-xl flex items-center justify-center mb-3 text-white shadow-lg`}>
+                {action.icon}
               </div>
-              <div className="text-3xl font-bold">{weather.temperature}°C</div>
-              <div className="text-sm opacity-90">{weather.condition}</div>
-            </div>
-            <div className="text-4xl">{weather.icon}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Prochain événement du calendrier */}
-      <div className="mx-4 mb-6 bg-white rounded-2xl p-4 border border-gray-100">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-gray-900">Prochain événement</h3>
-          <Calendar className="w-5 h-5 text-blue-500" />
-        </div>
-        {nextEvent ? (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium text-gray-900">{nextEvent.title}</h4>
-              <span className="text-sm text-gray-500">{nextEvent.time}</span>
-            </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <span>{nextEvent.date}</span>
-              <span>•</span>
-              <span>{nextEvent.location}</span>
-            </div>
-            <button
-              onClick={handleConsultCalendar}
-              className="w-full mt-3 bg-blue-50 text-blue-600 font-medium py-2 rounded-xl text-sm hover:bg-blue-100 transition-colors"
-            >
-              Consulter mon calendrier
+              <p className="text-sm font-medium text-gray-900 text-left leading-snug">
+                {action.title}
+              </p>
             </button>
-          </div>
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-gray-500 text-sm mb-3">Aucun événement prévu</p>
-            <button
-              onClick={handleConsultCalendar}
-              className="bg-blue-50 text-blue-600 font-medium px-4 py-2 rounded-xl text-sm hover:bg-blue-100 transition-colors"
-            >
-              Consulter mon calendrier
-            </button>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
 
       {/* Applications importantes */}
-      <div className="mx-4 mb-6">
-        <h3 className="font-semibold text-gray-900 mb-3">Applications importantes</h3>
-        <div className="flex space-x-3 overflow-x-auto">
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <TrendingUp className="w-5 h-5 mr-2 text-green-500" />
+          Applications importantes
+        </h3>
+        
+        <div className="flex space-x-3 overflow-x-auto pb-2">
           {importantApps.map((app) => (
             <button
               key={app.id}
               onClick={app.action}
-              className="flex-shrink-0 flex flex-col items-center space-y-2 p-3 bg-white rounded-2xl border border-gray-100 hover:shadow-md transition-all"
+              className="flex-shrink-0 bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all min-w-20"
             >
-              <div className={`w-12 h-12 ${app.color} rounded-2xl flex items-center justify-center text-white shadow-lg`}>
+              <div className={`w-12 h-12 ${app.bgColor} rounded-xl flex items-center justify-center mb-2 text-white shadow-lg mx-auto`}>
                 {app.icon}
               </div>
-              <span className="text-xs font-medium text-gray-700">{app.name}</span>
+              <p className="text-xs font-medium text-gray-900 text-center leading-tight">
+                {app.name}
+              </p>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Actualités */}
-      <div className="mx-4 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-900">Actualités</h3>
-          <button className="text-blue-500 text-sm font-medium">Voir tout</button>
+      {/* Statistiques rapides */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+            <TrendingUp className="w-4 h-4 text-green-600" />
+          </div>
+          <p className="text-xl font-bold text-gray-900">12</p>
+          <p className="text-xs text-gray-600">Services actifs</p>
         </div>
         
-        <div className="space-y-3">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="bg-white rounded-2xl p-4 border border-gray-100">
-              <div className="flex items-start space-x-3">
-                <div className="w-16 h-16 bg-gray-200 rounded-xl"></div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900 text-sm line-clamp-2 mb-1">
-                    Titre de l'actualité {item}
-                  </h4>
-                  <p className="text-gray-600 text-xs line-clamp-2 mb-2">
-                    Description courte de l'actualité...
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">Il y a 2h</span>
-                    <ChevronRight className="w-4 h-4 text-gray-400" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+            <Users className="w-4 h-4 text-blue-600" />
+          </div>
+          <p className="text-xl font-bold text-gray-900">2.4M</p>
+          <p className="text-xs text-gray-600">Utilisateurs</p>
+        </div>
+        
+        <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+            <Sparkles className="w-4 h-4 text-purple-600" />
+          </div>
+          <p className="text-xl font-bold text-gray-900">99.9%</p>
+          <p className="text-xs text-gray-600">Uptime</p>
         </div>
       </div>
 
-      {/* Activité récente */}
-      <div className="mx-4 mb-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Activité récente</h3>
-        <div className="space-y-3">
-          {[
-            { icon: <TrendingUp className="w-4 h-4" />, text: "Nouveau formulaire créé", time: "il y a 1h" },
-            { icon: <Users className="w-4 h-4" />, text: "Invitation de groupe acceptée", time: "il y a 3h" },
-            { icon: <Calendar className="w-4 h-4" />, text: "Événement ajouté au calendrier", time: "il y a 5h" }
-          ].map((activity, index) => (
-            <div key={index} className="flex items-center space-x-3 p-3 bg-white rounded-xl border border-gray-100">
-              <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
-                {activity.icon}
+      {/* Actualités en bref */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <Newspaper className="w-5 h-5 mr-2 text-red-500" />
+            Actualités
+          </h3>
+          <button 
+            onClick={() => setShowNewsPage(true)}
+            className="text-blue-500 text-sm font-medium"
+          >
+            Voir tout →
+          </button>
+        </div>
+        
+        {loadingNews ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-900">{activity.text}</p>
-                <p className="text-xs text-gray-500">{activity.time}</p>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {news.map((item, index) => (
+              <div key={item.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <h4 className="font-medium text-gray-900 text-sm mb-1 line-clamp-2">
+                  {item.title}
+                </h4>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-600">{item.source}</p>
+                  <p className="text-xs text-gray-500">
+                    {format(new Date(item.publishedAt), 'HH:mm')}
+                  </p>
+                </div>
               </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Notifications si désactivées */}
+      {!notificationsEnabled && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+              <span className="text-xl">🔔</span>
             </div>
-          ))}
+            <div className="flex-1">
+              <h4 className="font-medium text-orange-900">Notifications désactivées</h4>
+              <p className="text-sm text-orange-700">Activez pour recevoir les alertes importantes</p>
+            </div>
+            <button 
+              onClick={requestPermission}
+              className="bg-orange-500 text-white px-3 py-1 rounded-lg text-sm font-medium"
+            >
+              Activer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Prochain événement */}
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+        <div className="flex items-center space-x-3 mb-3">
+          <Calendar className="w-5 h-5 text-gray-600" />
+          <h3 className="font-semibold text-gray-900">Prochain événement</h3>
+        </div>
+        
+        <div className="flex items-start space-x-3">
+          <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+            <Users className="w-5 h-5 text-purple-600" />
+          </div>
+          
+          <div className="flex-1">
+            <h4 className="font-medium text-gray-900">Réunion équipe projet</h4>
+            <p className="text-sm text-gray-600 flex items-center space-x-1">
+              <Clock className="w-4 h-4" />
+              <span>Aujourd'hui à 14:30</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>

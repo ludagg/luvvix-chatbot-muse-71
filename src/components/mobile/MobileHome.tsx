@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, TrendingUp, Bell, Plus, ChevronRight, Sun, CloudRain, Thermometer } from 'lucide-react';
+import { Calendar, MapPin, Users, TrendingUp, Bell, Plus, ChevronRight, Sun, CloudRain, Thermometer, Globe } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
@@ -55,21 +56,30 @@ const MobileHome = () => {
       name: 'Calendar',
       icon: <Calendar className="w-6 h-6" />,
       color: 'bg-gradient-to-br from-green-500 to-emerald-600',
-      action: () => console.log('Ouvrir Calendar')
+      action: () => {
+        const event = new CustomEvent('navigate-to-calendar');
+        window.dispatchEvent(event);
+      }
     },
     {
       id: 'forms',
       name: 'Forms',
       icon: <Plus className="w-6 h-6" />,
       color: 'bg-gradient-to-br from-orange-500 to-red-600',
-      action: () => console.log('Ouvrir Forms')
+      action: () => {
+        const event = new CustomEvent('navigate-to-forms');
+        window.dispatchEvent(event);
+      }
     },
     {
       id: 'translate',
       name: 'Translate',
       icon: <Globe className="w-6 h-6" />,
       color: 'bg-gradient-to-br from-purple-500 to-pink-600',
-      action: () => console.log('Ouvrir Translate')
+      action: () => {
+        const event = new CustomEvent('navigate-to-translate');
+        window.dispatchEvent(event);
+      }
     }
   ];
 

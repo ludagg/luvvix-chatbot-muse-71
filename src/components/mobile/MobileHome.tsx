@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, TrendingUp, Bell, Plus, ChevronRight, Sun, CloudRain, Thermometer, Globe } from 'lucide-react';
+import { Calendar, MapPin, Users, TrendingUp, Bell, Plus, ChevronRight, Sun, CloudRain, Thermometer } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 

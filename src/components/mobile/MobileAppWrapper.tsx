@@ -108,7 +108,7 @@ const MobileAppWrapper = () => {
       case 'weather':
         return <MobileWeather />;
       case 'news':
-        return <MobileNewsPage onBack={() => setCurrentPage('home')} />;
+        return <MobileNewsPage />;
       case 'settings':
         return <MobileSettings />;
       default:

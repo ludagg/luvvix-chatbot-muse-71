@@ -4,7 +4,7 @@ import { toast } from '@/hooks/use-toast';
 import { 
   Search, 
   Grid3X3, 
-  Sparkles, 
+  Bot,
   Globe, 
   FileText, 
   Cloud, 
@@ -13,7 +13,6 @@ import {
   Users, 
   BookOpen, 
   Code, 
-  Bot,
   Newspaper,
   MessageCircle,
   Shield,
@@ -114,15 +113,6 @@ const MobileServices = () => {
       url: '/analytics'
     },
     {
-      id: 'luvvix-docs',
-      name: 'LuvviX Docs',
-      description: 'Documentation collaborative',
-      icon: <FileText className="w-8 h-8" />,
-      bgColor: 'bg-gradient-to-br from-violet-500 to-purple-600',
-      category: 'productivity',
-      url: '/docs'
-    },
-    {
       id: 'luvvix-center',
       name: 'LuvviX Center',
       description: 'Réseau social professionnel',
@@ -130,15 +120,6 @@ const MobileServices = () => {
       bgColor: 'bg-gradient-to-br from-rose-500 to-pink-600',
       category: 'social',
       url: '/center'
-    },
-    {
-      id: 'luvvix-crawler',
-      name: 'LuvviX Crawler',
-      description: 'Exploration web intelligente',
-      icon: <Search className="w-8 h-8" />,
-      bgColor: 'bg-gradient-to-br from-gray-500 to-slate-600',
-      category: 'tools',
-      url: '/crawler'
     },
     {
       id: 'code-studio',
@@ -150,15 +131,6 @@ const MobileServices = () => {
       url: '/code-studio'
     },
     {
-      id: 'luvvix-chat',
-      name: 'LuvviX Chat',
-      description: 'Messagerie instantanée',
-      icon: <MessageCircle className="w-8 h-8" />,
-      bgColor: 'bg-gradient-to-br from-blue-500 to-indigo-600',
-      category: 'communication',
-      url: '/chat'
-    },
-    {
       id: 'luvvix-security',
       name: 'LuvviX Security',
       description: 'Centre de sécurité',
@@ -166,15 +138,6 @@ const MobileServices = () => {
       bgColor: 'bg-gradient-to-br from-green-500 to-teal-600',
       category: 'security',
       url: '/security'
-    },
-    {
-      id: 'luvvix-media',
-      name: 'LuvviX Media',
-      description: 'Gestionnaire multimédia',
-      icon: <Camera className="w-8 h-8" />,
-      bgColor: 'bg-gradient-to-br from-purple-500 to-pink-600',
-      category: 'media',
-      url: '/media'
     }
   ];
 
@@ -199,58 +162,51 @@ const MobileServices = () => {
       title: service.name,
       description: `Ouverture de ${service.description}`,
     });
-
-    // Simuler l'ouverture du service
-    setTimeout(() => {
-      if (service.url.startsWith('/')) {
-        window.location.href = service.url;
-      } else {
-        window.open(service.url, '_blank');
-      }
-    }, 1000);
   };
 
   return (
-    <div className="flex-1 overflow-auto pb-20">
-      {/* Header avec recherche */}
-      <div className="px-4 py-6">
-        <h1 className="text-2xl font-bold text-gray-900 text-center mb-6">Services LuvviX</h1>
-        
-        {/* Barre de recherche */}
-        <div className="relative mb-6">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+    <div className="flex-1 bg-gray-50 pb-20">
+      <div className="bg-white">
+        {/* Header */}
+        <div className="px-4 py-6">
+          <h1 className="text-2xl font-bold text-gray-900 text-center mb-6">Services LuvviX</h1>
+          
+          {/* Barre de recherche */}
+          <div className="relative mb-6">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Rechercher un service..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-gray-100 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Rechercher un service..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-gray-100 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-          />
-        </div>
 
-        {/* Onglets de catégories */}
-        <div className="flex space-x-2 mb-6 overflow-x-auto">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setActiveTab(category.id)}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center space-x-2 ${
-                activeTab === category.id
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {category.icon}
-              <span>{category.label}</span>
-            </button>
-          ))}
+          {/* Onglets de catégories */}
+          <div className="flex space-x-2 overflow-x-auto">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setActiveTab(category.id)}
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center space-x-2 ${
+                  activeTab === category.id
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {category.icon}
+                <span>{category.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Grille des services */}
-      <div className="px-4">
+      <div className="px-4 pt-4">
         <div className="grid grid-cols-2 gap-4">
           {filteredServices.map((service) => (
             <button

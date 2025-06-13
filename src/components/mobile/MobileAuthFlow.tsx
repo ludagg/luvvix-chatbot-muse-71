@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
@@ -10,65 +10,57 @@ interface MobileAuthFlowProps {
 }
 
 const MobileAuthFlow = ({ onSuccess, onBack }: MobileAuthFlowProps) => {
+  const { signIn, signUp } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAuth = async () => {
+    if (!email || !password) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez remplir tous les champs",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isLogin && password !== confirmPassword) {
+      toast({
+        title: "Erreur",
+        description: "Les mots de passe ne correspondent pas",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
+      let result;
       if (isLogin) {
-        const success = await signIn(email, password);
-        if (!success) {
-          toast({
-            title: "Erreur de connexion",
-            description: "Email ou mot de passe incorrect",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Connexion réussie",
-            description: "Bienvenue dans l'écosystème LuvviX !",
-          });
-          onSuccess();
-        }
+        result = await signIn(email, password);
       } else {
-        if (password !== confirmPassword) {
-          toast({
-            title: "Erreur",
-            description: "Les mots de passe ne correspondent pas",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        const success = await signUp(email, password, {
-          full_name: email.split('@')[0]
-        });
-        if (!success) {
-          toast({
-            title: "Erreur d'inscription",
-            description: "Une erreur est survenue lors de l'inscription",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Inscription réussie",
-            description: "Vérifiez votre email pour activer votre compte",
-          });
-          setIsLogin(true);
-        }
+        result = await signUp(email, password, fullName);
       }
-    } catch (error) {
+
+      if (result && !result.error) {
+        toast({
+          title: "Succès",
+          description: isLogin ? "Connexion réussie !" : "Inscription réussie !",
+        });
+        onSuccess();
+      } else {
+        throw new Error(result?.error?.message || "Erreur d'authentification");
+      }
+    } catch (error: any) {
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue. Veuillez réessayer.",
+        description: error.message || "Erreur d'authentification",
         variant: "destructive",
       });
     } finally {
@@ -79,108 +71,113 @@ const MobileAuthFlow = ({ onSuccess, onBack }: MobileAuthFlowProps) => {
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-100">
-        <button
-          onClick={onBack}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
+      <div className="flex items-center justify-between p-4 pt-12">
+        <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full">
           <ArrowLeft className="w-6 h-6 text-gray-600" />
         </button>
-        
-        <div className="text-center">
-          <h1 className="text-lg font-bold text-gray-900">LuvviX ID</h1>
-          <p className="text-sm text-gray-600">Votre clé vers l'écosystème</p>
-        </div>
-        
-        <div className="w-10"></div>
+        <h1 className="text-lg font-bold text-gray-900">
+          {isLogin ? 'Connexion' : 'Inscription'}
+        </h1>
+        <div className="w-10" />
       </div>
 
-      {/* Logo et description */}
-      <div className="text-center py-8">
-        <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-          <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M13 3L4 14h7v7l9-11h-7V3z"/>
-          </svg>
+      {/* Logo et titre */}
+      <div className="flex flex-col items-center px-8 mt-8 mb-8">
+        <div className="w-24 h-24 mb-6">
+          <img 
+            src="/lovable-uploads/4e135247-8f83-4117-8247-edc3de222f86.png" 
+            alt="LuvviX Logo" 
+            className="w-full h-full object-contain"
+          />
         </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">
-          {isLogin ? 'Connexion' : 'Créer un compte'}
-        </h2>
-        <p className="text-gray-600 px-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">LuvviX ID</h2>
+        <p className="text-gray-600 text-center">
           {isLogin 
-            ? 'Connectez-vous pour accéder à tous vos services LuvviX'
-            : 'Rejoignez la révolution numérique avec LuvviX'
+            ? 'Connectez-vous à votre écosystème intelligent' 
+            : 'Créez votre accès à l\'écosystème LuvviX'
           }
         </p>
       </div>
 
       {/* Formulaire */}
-      <form onSubmit={handleSubmit} className="flex-1 px-6">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Adresse email
-            </label>
+      <div className="flex-1 px-6 space-y-4">
+        {!isLogin && (
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <User className="h-5 w-5 text-gray-400" />
+            </div>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              placeholder="votre@email.com"
-              required
+              type="text"
+              placeholder="Nom complet"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-full pl-10 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-base"
             />
           </div>
+        )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Mot de passe
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
-                placeholder="••••••••"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Mail className="h-5 w-5 text-gray-400" />
           </div>
-
-          {!isLogin && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Confirmer le mot de passe
-              </label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-          )}
+          <input
+            type="email"
+            placeholder="Adresse email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full pl-10 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-base"
+          />
         </div>
 
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Lock className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Mot de passe"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full pl-10 pr-12 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-base"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+          >
+            {showPassword ? (
+              <EyeOff className="h-5 w-5 text-gray-400" />
+            ) : (
+              <Eye className="h-5 w-5 text-gray-400" />
+            )}
+          </button>
+        </div>
+
+        {!isLogin && (
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Lock className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Confirmer le mot de passe"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full pl-10 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-base"
+            />
+          </div>
+        )}
+
         <button
-          type="submit"
+          onClick={handleAuth}
           disabled={loading}
-          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-4 rounded-2xl mt-8 shadow-lg active:scale-95 transition-transform disabled:opacity-50"
+          className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-4 rounded-2xl mt-6 disabled:opacity-50 hover:shadow-lg transition-all text-base"
         >
-          {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'Créer mon compte')}
+          {loading ? 'Chargement...' : (isLogin ? 'Se connecter' : 'S\'inscrire')}
         </button>
 
         <div className="text-center mt-6">
           <button
-            type="button"
             onClick={() => setIsLogin(!isLogin)}
             className="text-blue-500 font-medium"
           >
@@ -190,7 +187,7 @@ const MobileAuthFlow = ({ onSuccess, onBack }: MobileAuthFlowProps) => {
             }
           </button>
         </div>
-      </form>
+      </div>
 
       {/* Footer */}
       <div className="p-6 text-center">

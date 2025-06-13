@@ -1,301 +1,321 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { Send, Mic, MicOff, Plus, Zap, Brain, Globe, Cloud, Users, FileText, Settings, Sparkles } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
 interface Message {
-  id: number;
-  text: string;
-  sender: 'user' | 'ai';
+  id: string;
+  type: 'user' | 'assistant';
+  content: string;
   timestamp: Date;
-  isTyping?: boolean;
+  actions?: any[];
 }
 
 const MobileAssistant = () => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: 1,
-      text: "Bonjour ! Je suis votre assistant IA LuvviX. Comment puis-je vous aider aujourd'hui ?",
-      sender: 'ai',
+      id: '1',
+      type: 'assistant',
+      content: 'Bonjour ! Je suis votre assistant IA LuvviX. Je peux vous aider avec tout dans l\'écosystème : créer des documents, gérer vos fichiers cloud, traduire du contenu, consulter la météo, et bien plus encore. Comment puis-je vous aider aujourd\'hui ?',
       timestamp: new Date()
     }
   ]);
   const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [selectedMode, setSelectedMode] = useState('general');
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const quickActions = [
-    { 
-      id: 'weather', 
-      text: 'Météo du jour', 
-      icon: '☀️',
-      response: 'La température actuelle est de 22°C avec un ciel dégagé. Parfait pour une promenade !'
+  const assistantModes = [
+    {
+      id: 'general',
+      name: 'Assistant Général',
+      icon: <Brain className="w-5 h-5" />,
+      color: 'from-purple-500 to-indigo-600',
+      description: 'Questions générales et aide'
     },
-    { 
-      id: 'schedule', 
-      text: 'Mon planning', 
-      icon: '📅',
-      response: 'Vous avez une réunion équipe projet prévue à 14:30 aujourd\'hui en salle de conférence A.'
+    {
+      id: 'productivity',
+      name: 'Productivité',
+      icon: <Zap className="w-5 h-5" />,
+      color: 'from-blue-500 to-cyan-600',
+      description: 'Workflows et automatisation'
     },
-    { 
-      id: 'news', 
-      text: 'Actualités', 
-      icon: '📰',
-      response: 'Voici les dernières actualités : Les développements en IA continuent de progresser rapidement...'
+    {
+      id: 'translation',
+      name: 'Traduction',
+      icon: <Globe className="w-5 h-5" />,
+      color: 'from-green-500 to-emerald-600',
+      description: 'Traduction multilingue'
     },
-    { 
-      id: 'translate', 
-      text: 'Traduire', 
-      icon: '🌐',
-      response: 'Je peux vous aider à traduire dans plus de 100 langues. Que souhaitez-vous traduire ?'
+    {
+      id: 'cloud',
+      name: 'Gestion Cloud',
+      icon: <Cloud className="w-5 h-5" />,
+      color: 'from-orange-500 to-red-600',
+      description: 'Organiser vos fichiers'
     },
-    { 
-      id: 'help', 
-      text: 'Aide', 
-      icon: '❓',
-      response: 'Je peux vous aider avec la météo, vos rendez-vous, traduire du texte, chercher des informations et bien plus !'
+    {
+      id: 'social',
+      name: 'Réseau Social',
+      icon: <Users className="w-5 h-5" />,
+      color: 'from-pink-500 to-rose-600',
+      description: 'Publications et groupes'
     },
-    { 
-      id: 'services', 
-      text: 'Services LuvviX', 
-      icon: '⚡',
-      response: 'LuvviX offre une suite complète de services : AI Studio, Translate, Weather, Forms, Learn, News, Cloud, Mail et bien plus !'
+    {
+      id: 'content',
+      name: 'Création Contenu',
+      icon: <FileText className="w-5 h-5" />,
+      color: 'from-violet-500 to-purple-600',
+      description: 'Rédaction et édition'
     }
   ];
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  const quickActions = [
+    'Créer un document',
+    'Traduire ce texte',
+    'Consulter la météo',
+    'Organiser mes fichiers',
+    'Créer une publication',
+    'Chercher des groupes',
+    'Programmer un rappel',
+    'Analyser des données'
+  ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const generateAIResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.includes('météo') || lowerMessage.includes('temps')) {
-      return 'Il fait actuellement 22°C avec un ciel dégagé. La température maximale prévue est de 25°C. Parfait pour sortir !';
-    }
-    
-    if (lowerMessage.includes('planning') || lowerMessage.includes('agenda') || lowerMessage.includes('rendez-vous')) {
-      return 'Selon votre agenda, vous avez une réunion équipe projet à 14:30 aujourd\'hui. Souhaitez-vous que je vous rappelle 15 minutes avant ?';
-    }
-    
-    if (lowerMessage.includes('actualité') || lowerMessage.includes('news') || lowerMessage.includes('nouvelle')) {
-      return 'Voici les dernières actualités importantes : Les innovations en intelligence artificielle continuent de transformer notre quotidien...';
-    }
-    
-    if (lowerMessage.includes('traduire') || lowerMessage.includes('traduction')) {
-      return 'Je peux traduire dans plus de 100 langues grâce à LuvviX Translate. Dans quelle langue souhaitez-vous traduire ?';
-    }
-    
-    if (lowerMessage.includes('services') || lowerMessage.includes('luvvix')) {
-      return 'LuvviX propose une suite complète de services intelligents : AI Studio pour créer des agents IA, Translate pour la traduction, Weather pour la météo, Forms pour les formulaires, Learn pour l\'apprentissage, et bien plus encore !';
-    }
-    
-    if (lowerMessage.includes('aide') || lowerMessage.includes('help')) {
-      return 'Je suis là pour vous aider ! Je peux vous renseigner sur la météo, vos rendez-vous, traduire du texte, vous donner les actualités, vous expliquer les services LuvviX, et répondre à vos questions.';
-    }
-    
-    // Réponses génériques intelligentes
-    const responses = [
-      'C\'est une excellente question ! Laissez-moi vous aider avec ça.',
-      'Je comprends votre demande. Voici ce que je peux vous proposer...',
-      'Intéressant ! Permettez-moi de vous donner plus d\'informations à ce sujet.',
-      'Je vais faire de mon mieux pour vous aider. Pouvez-vous me donner plus de détails ?',
-      'C\'est dans mes compétences ! Je vais vous assister avec plaisir.'
-    ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
-  };
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || isLoading) return;
 
-    const newMessage: Message = {
-      id: messages.length + 1,
-      text: inputText,
-      sender: 'user',
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, newMessage]);
-    setInputText('');
-    setIsTyping(true);
-
-    // Simuler le temps de réponse de l'IA
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: messages.length + 2,
-        text: generateAIResponse(inputText),
-        sender: 'ai',
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, aiResponse]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 2000); // 1-3 secondes
-  };
-
-  const handleQuickAction = (action: typeof quickActions[0]) => {
     const userMessage: Message = {
-      id: messages.length + 1,
-      text: action.text,
-      sender: 'user',
+      id: Date.now().toString(),
+      type: 'user',
+      content: inputText,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setIsTyping(true);
+    setInputText('');
+    setIsLoading(true);
 
+    // Simuler une réponse de l'IA
     setTimeout(() => {
-      const aiResponse: Message = {
-        id: messages.length + 2,
-        text: action.response,
-        sender: 'ai',
-        timestamp: new Date()
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: getAIResponse(inputText, selectedMode),
+        timestamp: new Date(),
+        actions: getActionButtons(inputText, selectedMode)
       };
-      
-      setMessages(prev => [...prev, aiResponse]);
-      setIsTyping(false);
+      setMessages(prev => [...prev, assistantMessage]);
+      setIsLoading(false);
     }, 1500);
   };
 
-  const handleVoiceInput = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      const recognition = new SpeechRecognition();
-      
-      recognition.lang = 'fr-FR';
-      recognition.continuous = false;
-      recognition.interimResults = false;
+  const getAIResponse = (input: string, mode: string) => {
+    const responses = {
+      general: `Je comprends votre demande "${input}". Voici ce que je peux faire pour vous aider avec l'écosystème LuvviX.`,
+      productivity: `Pour optimiser votre productivité avec "${input}", je peux créer un workflow automatisé ou vous suggérer des raccourcis.`,
+      translation: `Je peux traduire "${input}" dans la langue de votre choix. Dans quelle langue souhaitez-vous la traduction ?`,
+      cloud: `Pour gérer "${input}" dans votre cloud, je peux organiser vos fichiers ou créer une nouvelle structure.`,
+      social: `Concernant "${input}", je peux vous aider à créer du contenu pour vos réseaux sociaux ou trouver des groupes pertinents.`,
+      content: `Pour créer du contenu sur "${input}", je peux rédiger un article, une présentation ou tout autre format que vous souhaitez.`
+    };
+    return responses[mode as keyof typeof responses] || responses.general;
+  };
 
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputText(transcript);
-      };
+  const getActionButtons = (input: string, mode: string) => {
+    const actions = {
+      general: [
+        { label: 'Ouvrir Services', action: 'navigate_services' },
+        { label: 'Voir Profil', action: 'navigate_profile' }
+      ],
+      productivity: [
+        { label: 'Créer Workflow', action: 'create_workflow' },
+        { label: 'Ouvrir Forms', action: 'navigate_forms' }
+      ],
+      translation: [
+        { label: 'LuvviX Translate', action: 'open_translate' },
+        { label: 'Traduire maintenant', action: 'translate_now' }
+      ],
+      cloud: [
+        { label: 'Ouvrir Cloud', action: 'navigate_cloud' },
+        { label: 'Créer Dossier', action: 'create_folder' }
+      ],
+      social: [
+        { label: 'LuvviX Center', action: 'navigate_center' },
+        { label: 'Créer Publication', action: 'create_post' }
+      ],
+      content: [
+        { label: 'LuvviX Docs', action: 'navigate_docs' },
+        { label: 'Nouveau Document', action: 'create_document' }
+      ]
+    };
+    return actions[mode as keyof typeof actions] || actions.general;
+  };
 
-      recognition.onerror = () => {
-        toast({
-          title: "Erreur",
-          description: "Impossible d'accéder au microphone",
-          variant: "destructive",
-        });
-      };
+  const handleActionClick = (action: string) => {
+    toast({
+      title: "Action exécutée",
+      description: `Action: ${action}`,
+    });
+  };
 
-      recognition.start();
-    } else {
+  const handleQuickAction = (action: string) => {
+    setInputText(action);
+  };
+
+  const toggleVoiceRecording = () => {
+    setIsListening(!isListening);
+    if (!isListening) {
       toast({
-        title: "Non supporté",
-        description: "La reconnaissance vocale n'est pas supportée par votre navigateur",
-        variant: "destructive",
+        title: "Écoute vocale",
+        description: "Fonction vocale bientôt disponible",
       });
     }
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-gray-50">
-      {/* Header */}
+    <div className="flex-1 flex flex-col bg-gray-50 pb-20">
+      {/* Header avec modes */}
       <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-bold text-gray-900">Assistant IA</h1>
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-sm text-green-600 font-medium">En ligne</span>
           </div>
-          <div>
-            <h2 className="font-semibold text-gray-900">Assistant LuvviX</h2>
-            <p className="text-sm text-green-500 flex items-center">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
-              En ligne
-            </p>
-          </div>
+        </div>
+
+        {/* Sélecteur de mode */}
+        <div className="flex space-x-2 overflow-x-auto pb-2">
+          {assistantModes.map((mode) => (
+            <button
+              key={mode.id}
+              onClick={() => setSelectedMode(mode.id)}
+              className={`flex-shrink-0 px-3 py-2 rounded-xl text-sm font-medium transition-all flex items-center space-x-2 ${
+                selectedMode === mode.id
+                  ? `bg-gradient-to-r ${mode.color} text-white shadow-lg`
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {mode.icon}
+              <span>{mode.name}</span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-auto p-4 space-y-4">
+      {/* Zone de messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                message.sender === 'user'
+              className={`max-w-[80%] rounded-2xl p-4 ${
+                message.type === 'user'
                   ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-900 border border-gray-200 shadow-sm'
+                  : 'bg-white text-gray-900 shadow-sm border border-gray-100'
               }`}
             >
-              <p className="text-sm">{message.text}</p>
-              <p className={`text-xs mt-2 ${
-                message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
-              }`}>
-                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <p className="text-sm leading-relaxed">{message.content}</p>
+              
+              {message.actions && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {message.actions.map((action, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleActionClick(action.action)}
+                      className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              <p className="text-xs opacity-70 mt-2">
+                {message.timestamp.toLocaleTimeString()}
               </p>
             </div>
           </div>
         ))}
-        
-        {isTyping && (
+
+        {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-white text-gray-900 border border-gray-200 shadow-sm px-4 py-3 rounded-2xl">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center space-x-2">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+                <span className="text-sm text-gray-500">L'assistant réfléchit...</span>
               </div>
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Actions */}
-      <div className="p-4 bg-white border-t border-gray-200">
-        <p className="text-sm text-gray-600 mb-3">Actions rapides :</p>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {quickActions.map((action) => (
-            <button
-              key={action.id}
-              onClick={() => handleQuickAction(action)}
-              className="flex items-center space-x-2 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors active:scale-95"
-            >
-              <span className="text-lg">{action.icon}</span>
-              <span className="text-sm font-medium text-gray-700">{action.text}</span>
-            </button>
-          ))}
+      {/* Actions rapides */}
+      <div className="bg-white border-t border-gray-200 p-4">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Actions rapides</h3>
+          <div className="flex space-x-2 overflow-x-auto">
+            {quickActions.map((action, index) => (
+              <button
+                key={index}
+                onClick={() => handleQuickAction(action)}
+                className="flex-shrink-0 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs hover:bg-gray-200 transition-colors"
+              >
+                {action}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Input */}
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="Tapez votre message..."
-            className="flex-1 px-4 py-3 bg-gray-100 rounded-2xl border-0 focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-          />
+        {/* Zone de saisie */}
+        <div className="flex items-center space-x-3">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              placeholder={`Demandez quelque chose en mode ${assistantModes.find(m => m.id === selectedMode)?.name}...`}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              className="w-full px-4 py-3 bg-gray-100 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+            />
+          </div>
           
           <button
-            onClick={handleVoiceInput}
-            className="w-12 h-12 bg-gray-200 text-gray-600 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+            onClick={toggleVoiceRecording}
+            className={`p-3 rounded-2xl transition-all ${
+              isListening 
+                ? 'bg-red-500 text-white' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
-            </svg>
+            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
           </button>
-          
+
           <button
             onClick={handleSendMessage}
-            disabled={!inputText.trim()}
-            className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-600 transition-colors"
+            disabled={!inputText.trim() || isLoading}
+            className="p-3 bg-blue-500 text-white rounded-2xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-            </svg>
+            <Send className="w-5 h-5" />
           </button>
         </div>
       </div>

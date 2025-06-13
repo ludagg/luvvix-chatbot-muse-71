@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, MicOff, Plus, Zap, Brain, Globe, Cloud, Users, FileText, Settings, Sparkles, Calendar, BarChart3, Translate, Home, Bot } from 'lucide-react';
+import { Send, Mic, MicOff, Plus, Zap, Brain, Globe, Cloud, Users, FileText, Settings, Sparkles, Calendar, BarChart3, Home, Bot } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
@@ -60,7 +59,7 @@ const MobileAssistant = () => {
     {
       id: 'translation',
       name: 'Traduction',
-      icon: <Translate className="w-5 h-5" />,
+      icon: <Globe className="w-5 h-5" />,
       color: 'from-rose-500 to-pink-600',
       description: 'Traduction multilingue'
     },
@@ -90,7 +89,7 @@ const MobileAssistant = () => {
   const quickActions = [
     { text: 'Créer un événement', mode: 'calendar', icon: <Calendar className="w-4 h-4" /> },
     { text: 'Nouveau formulaire', mode: 'forms', icon: <FileText className="w-4 h-4" /> },
-    { text: 'Traduire ce texte', mode: 'translation', icon: <Translate className="w-4 h-4" /> },
+    { text: 'Traduire ce texte', mode: 'translation', icon: <Globe className="w-4 h-4" /> },
     { text: 'Consulter la météo', mode: 'general', icon: <Cloud className="w-4 h-4" /> },
     { text: 'Organiser mes fichiers', mode: 'cloud', icon: <Cloud className="w-4 h-4" /> },
     { text: 'Créer une publication', mode: 'social', icon: <Users className="w-4 h-4" /> },

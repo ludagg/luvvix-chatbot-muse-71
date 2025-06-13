@@ -17,8 +17,12 @@ import MobileSearch from './MobileSearch';
 import MobileBottomNav from './MobileBottomNav';
 import MobileNotifications from './MobileNotifications';
 import AIFloatingButton from './AIFloatingButton';
+import MobileCalendar from './MobileCalendar';
+import MobileForms from './MobileForms';
+import MobileTranslate from './MobileTranslate';
+import MobileWeather from './MobileWeather';
 
-type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search';
+type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search' | 'calendar' | 'forms' | 'translate' | 'weather';
 
 const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   const isMobile = useIsMobile();
@@ -74,10 +78,34 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
       setActiveView('assistant');
     };
 
+    const handleNavigateToCalendar = () => {
+      setActiveView('calendar');
+    };
+
+    const handleNavigateToForms = () => {
+      setActiveView('forms');
+    };
+
+    const handleNavigateToTranslate = () => {
+      setActiveView('translate');
+    };
+
+    const handleNavigateToWeather = () => {
+      setActiveView('weather');
+    };
+
     window.addEventListener('navigate-to-assistant', handleNavigateToAssistant);
+    window.addEventListener('navigate-to-calendar', handleNavigateToCalendar);
+    window.addEventListener('navigate-to-forms', handleNavigateToForms);
+    window.addEventListener('navigate-to-translate', handleNavigateToTranslate);
+    window.addEventListener('navigate-to-weather', handleNavigateToWeather);
 
     return () => {
       window.removeEventListener('navigate-to-assistant', handleNavigateToAssistant);
+      window.removeEventListener('navigate-to-calendar', handleNavigateToCalendar);
+      window.removeEventListener('navigate-to-forms', handleNavigateToForms);
+      window.removeEventListener('navigate-to-translate', handleNavigateToTranslate);
+      window.removeEventListener('navigate-to-weather', handleNavigateToWeather);
     };
   }, []);
 
@@ -119,6 +147,14 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
         return <MobileSettings />;
       case 'search':
         return <MobileSearch />;
+      case 'calendar':
+        return <MobileCalendar onBack={() => setActiveView('home')} />;
+      case 'forms':
+        return <MobileForms onBack={() => setActiveView('home')} />;
+      case 'translate':
+        return <MobileTranslate onBack={() => setActiveView('home')} />;
+      case 'weather':
+        return <MobileWeather onBack={() => setActiveView('home')} />;
       default:
         return <MobileHome />;
     }
@@ -136,6 +172,17 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   const handleSearchClick = () => {
     setActiveView('search');
   };
+
+  // Ne pas afficher le header et la navigation pour les vues en plein écran
+  const isFullScreenView = ['calendar', 'forms', 'translate', 'weather'].includes(activeView);
+
+  if (isFullScreenView) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        {renderMobileView()}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

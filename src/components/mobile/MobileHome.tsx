@@ -24,7 +24,9 @@ import {
   Camera,
   Mail,
   FileText,
-  BarChart3
+  BarChart3,
+  CalendarDays,
+  Bell
 } from 'lucide-react';
 
 interface WeatherData {
@@ -34,6 +36,14 @@ interface WeatherData {
   icon: string;
 }
 
+interface CalendarEvent {
+  id: string;
+  title: string;
+  time: string;
+  type: 'meeting' | 'task' | 'reminder';
+  attendees?: number;
+}
+
 const MobileHome = () => {
   const { user } = useAuth();
   const { notificationsEnabled, requestPermission } = useNotifications();
@@ -41,11 +51,45 @@ const MobileHome = () => {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loadingWeather, setLoadingWeather] = useState(true);
   const [loadingNews, setLoadingNews] = useState(true);
+  const [nextEvent, setNextEvent] = useState<CalendarEvent | null>(null);
   const [showWeatherPage, setShowWeatherPage] = useState(false);
   const [showNewsPage, setShowNewsPage] = useState(false);
   const currentTime = new Date();
   
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Alex';
+
+  // Load next calendar event
+  useEffect(() => {
+    const loadNextEvent = () => {
+      // Simuler un événement à venir
+      const events: CalendarEvent[] = [
+        {
+          id: '1',
+          title: 'Réunion équipe projet',
+          time: '14:30',
+          type: 'meeting',
+          attendees: 5
+        },
+        {
+          id: '2', 
+          title: 'Présentation client',
+          time: '16:00',
+          type: 'meeting',
+          attendees: 3
+        },
+        {
+          id: '3',
+          title: 'Rappel: Révision cours',
+          time: '18:00',
+          type: 'reminder'
+        }
+      ];
+      
+      setNextEvent(events[0]);
+    };
+    
+    loadNextEvent();
+  }, []);
 
   // Charger la météo avec géolocalisation
   useEffect(() => {
@@ -60,7 +104,7 @@ const MobileHome = () => {
               setWeather({
                 temperature: Math.round(15 + Math.random() * 20),
                 condition: 'Ensoleillé',
-                location: 'Paris', // Obtenir via géocodage inversé
+                location: 'Paris',
                 icon: '☀️'
               });
             },
@@ -132,33 +176,47 @@ const MobileHome = () => {
       title: 'Météo complète',
       icon: <Cloud className="w-6 h-6" />,
       bgColor: 'bg-gradient-to-br from-blue-500 to-cyan-500',
-      action: () => setShowWeatherPage(true)
+      action: () => {
+        const event = new CustomEvent('navigate-to-weather');
+        window.dispatchEvent(event);
+      }
     },
     {
-      id: 'news',
-      title: 'Actualités',
-      icon: <Newspaper className="w-6 h-6" />,
-      bgColor: 'bg-gradient-to-br from-red-500 to-orange-500',
-      action: () => setShowNewsPage(true)
-    },
-    {
-      id: 'translate',
-      title: 'Traduire',
-      icon: <Globe className="w-6 h-6" />,
+      id: 'calendar',
+      title: 'Mon Calendrier',
+      icon: <CalendarDays className="w-6 h-6" />,
       bgColor: 'bg-gradient-to-br from-green-500 to-emerald-500',
       action: () => {
-        toast({
-          title: "LuvviX Translate",
-          description: "Service de traduction disponible dans Services",
-        });
+        const event = new CustomEvent('navigate-to-calendar');
+        window.dispatchEvent(event);
+      }
+    },
+    {
+      id: 'forms',
+      title: 'Formulaires',
+      icon: <FileText className="w-6 h-6" />,
+      bgColor: 'bg-gradient-to-br from-orange-500 to-red-500',
+      action: () => {
+        const event = new CustomEvent('navigate-to-forms');
+        window.dispatchEvent(event);
       }
     }
   ];
 
   const importantApps = [
     {
+      id: 'translate',
+      name: 'Translate',
+      icon: <Globe className="w-5 h-5" />,
+      bgColor: 'bg-gradient-to-br from-indigo-500 to-purple-500',
+      action: () => {
+        const event = new CustomEvent('navigate-to-translate');
+        window.dispatchEvent(event);
+      }
+    },
+    {
       id: 'center',
-      name: 'LuvviX Center',
+      name: 'Center',
       icon: <Users className="w-5 h-5" />,
       bgColor: 'bg-gradient-to-br from-rose-500 to-pink-500',
       action: () => toast({ title: "LuvviX Center", description: "Réseau social professionnel" })
@@ -169,13 +227,6 @@ const MobileHome = () => {
       icon: <Mail className="w-5 h-5" />,
       bgColor: 'bg-gradient-to-br from-blue-500 to-indigo-500',
       action: () => toast({ title: "LuvviX Mail", description: "Messagerie intelligente" })
-    },
-    {
-      id: 'docs',
-      name: 'Docs',
-      icon: <FileText className="w-5 h-5" />,
-      bgColor: 'bg-gradient-to-br from-emerald-500 to-teal-500',
-      action: () => toast({ title: "LuvviX Docs", description: "Documentation collaborative" })
     },
     {
       id: 'analytics',
@@ -191,6 +242,11 @@ const MobileHome = () => {
     if (hour < 12) return 'Bonjour';
     if (hour < 18) return 'Bon après-midi';
     return 'Bonsoir';
+  };
+
+  const openCalendar = () => {
+    const event = new CustomEvent('navigate-to-calendar');
+    window.dispatchEvent(event);
   };
 
   // Import des composants de pages
@@ -375,7 +431,7 @@ const MobileHome = () => {
         <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-              <span className="text-xl">🔔</span>
+              <Bell className="w-5 h-5 text-orange-600" />
             </div>
             <div className="flex-1">
               <h4 className="font-medium text-orange-900">Notifications désactivées</h4>
@@ -391,26 +447,58 @@ const MobileHome = () => {
         </div>
       )}
 
-      {/* Prochain événement */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-        <div className="flex items-center space-x-3 mb-3">
-          <Calendar className="w-5 h-5 text-gray-600" />
-          <h3 className="font-semibold text-gray-900">Prochain événement</h3>
+      {/* Prochain événement du calendrier */}
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-gray-900 flex items-center">
+            <Calendar className="w-5 h-5 mr-2 text-blue-600" />
+            Prochain événement
+          </h3>
+          <button
+            onClick={openCalendar}
+            className="text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
+          >
+            Consulter mon calendrier →
+          </button>
         </div>
         
-        <div className="flex items-start space-x-3">
-          <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-            <Users className="w-5 h-5 text-purple-600" />
+        {nextEvent ? (
+          <div className="flex items-start space-x-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+              {nextEvent.type === 'meeting' ? (
+                <Users className="w-5 h-5 text-blue-600" />
+              ) : (
+                <Bell className="w-5 h-5 text-blue-600" />
+              )}
+            </div>
+            
+            <div className="flex-1">
+              <h4 className="font-medium text-gray-900">{nextEvent.title}</h4>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-sm text-gray-600 flex items-center space-x-1">
+                  <Clock className="w-4 h-4" />
+                  <span>Aujourd'hui à {nextEvent.time}</span>
+                </p>
+                {nextEvent.attendees && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                    {nextEvent.attendees} participants
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          
-          <div className="flex-1">
-            <h4 className="font-medium text-gray-900">Réunion équipe projet</h4>
-            <p className="text-sm text-gray-600 flex items-center space-x-1">
-              <Clock className="w-4 h-4" />
-              <span>Aujourd'hui à 14:30</span>
-            </p>
+        ) : (
+          <div className="text-center py-4">
+            <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-500 text-sm">Aucun événement prévu aujourd'hui</p>
+            <button
+              onClick={openCalendar}
+              className="text-blue-500 text-sm font-medium mt-2 hover:text-blue-600 transition-colors"
+            >
+              Planifier un événement
+            </button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

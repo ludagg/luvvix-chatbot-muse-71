@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, MicOff, Plus, Zap, Brain, Globe, Cloud, Users, FileText, Settings, Sparkles } from 'lucide-react';
+import { Send, Mic, MicOff, Plus, Zap, Brain, Globe, Cloud, Users, FileText, Settings, Sparkles, Calendar, BarChart3, Translate, Home, Bot } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
@@ -18,7 +18,7 @@ const MobileAssistant = () => {
     {
       id: '1',
       type: 'assistant',
-      content: 'Bonjour ! Je suis votre assistant IA LuvviX. Je peux vous aider avec tout dans l\'écosystème : créer des documents, gérer vos fichiers cloud, traduire du contenu, consulter la météo, et bien plus encore. Comment puis-je vous aider aujourd\'hui ?',
+      content: 'Bonjour ! Je suis votre assistant IA LuvviX. Je peux vous aider avec tout dans l\'écosystème : créer des documents, gérer vos fichiers cloud, traduire du contenu, consulter la météo, gérer votre calendrier, créer des formulaires, et bien plus encore. Comment puis-je vous aider aujourd\'hui ?',
       timestamp: new Date()
     }
   ]);
@@ -44,17 +44,31 @@ const MobileAssistant = () => {
       description: 'Workflows et automatisation'
     },
     {
+      id: 'calendar',
+      name: 'Calendrier',
+      icon: <Calendar className="w-5 h-5" />,
+      color: 'from-green-500 to-emerald-600',
+      description: 'Gestion des événements'
+    },
+    {
+      id: 'forms',
+      name: 'Formulaires',
+      icon: <FileText className="w-5 h-5" />,
+      color: 'from-orange-500 to-red-600',
+      description: 'Création et gestion'
+    },
+    {
       id: 'translation',
       name: 'Traduction',
-      icon: <Globe className="w-5 h-5" />,
-      color: 'from-green-500 to-emerald-600',
+      icon: <Translate className="w-5 h-5" />,
+      color: 'from-rose-500 to-pink-600',
       description: 'Traduction multilingue'
     },
     {
       id: 'cloud',
       name: 'Gestion Cloud',
       icon: <Cloud className="w-5 h-5" />,
-      color: 'from-orange-500 to-red-600',
+      color: 'from-teal-500 to-cyan-600',
       description: 'Organiser vos fichiers'
     },
     {
@@ -65,23 +79,23 @@ const MobileAssistant = () => {
       description: 'Publications et groupes'
     },
     {
-      id: 'content',
-      name: 'Création Contenu',
-      icon: <FileText className="w-5 h-5" />,
+      id: 'analytics',
+      name: 'Analytics',
+      icon: <BarChart3 className="w-5 h-5" />,
       color: 'from-violet-500 to-purple-600',
-      description: 'Rédaction et édition'
+      description: 'Analyse de données'
     }
   ];
 
   const quickActions = [
-    'Créer un document',
-    'Traduire ce texte',
-    'Consulter la météo',
-    'Organiser mes fichiers',
-    'Créer une publication',
-    'Chercher des groupes',
-    'Programmer un rappel',
-    'Analyser des données'
+    { text: 'Créer un événement', mode: 'calendar', icon: <Calendar className="w-4 h-4" /> },
+    { text: 'Nouveau formulaire', mode: 'forms', icon: <FileText className="w-4 h-4" /> },
+    { text: 'Traduire ce texte', mode: 'translation', icon: <Translate className="w-4 h-4" /> },
+    { text: 'Consulter la météo', mode: 'general', icon: <Cloud className="w-4 h-4" /> },
+    { text: 'Organiser mes fichiers', mode: 'cloud', icon: <Cloud className="w-4 h-4" /> },
+    { text: 'Créer une publication', mode: 'social', icon: <Users className="w-4 h-4" /> },
+    { text: 'Analyser des données', mode: 'analytics', icon: <BarChart3 className="w-4 h-4" /> },
+    { text: 'Programmer un rappel', mode: 'calendar', icon: <Calendar className="w-4 h-4" /> }
   ];
 
   const scrollToBottom = () => {
@@ -103,33 +117,63 @@ const MobileAssistant = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputText;
     setInputText('');
     setIsLoading(true);
 
-    // Simuler une réponse de l'IA
-    setTimeout(() => {
-      const assistantMessage: Message = {
+    try {
+      // Appel à l'IA Gemini avec contexte du mode sélectionné
+      const response = await fetch('https://qlhovvqcwjdbirmekdoy.supabase.co/functions/v1/gemini-chat-response', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsaG92dnFjd2pkYmlybWVrZG95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwOTEyOTUsImV4cCI6MjA1OTY2NzI5NX0.jqR7F_bdl-11Hl6SP0tkdrg4V2o76V66fL6xj8zghUI`
+        },
+        body: JSON.stringify({
+          message: currentInput,
+          context: getContextForMode(selectedMode),
+          temperature: 0.7
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.response) {
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant',
+          content: data.response,
+          timestamp: new Date(),
+          actions: getActionButtons(currentInput, selectedMode)
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      }
+    } catch (error) {
+      console.error('Erreur IA:', error);
+      const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: getAIResponse(inputText, selectedMode),
-        timestamp: new Date(),
-        actions: getActionButtons(inputText, selectedMode)
+        content: 'Désolé, je rencontre une difficulté technique. Pouvez-vous réessayer ?',
+        timestamp: new Date()
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
-  const getAIResponse = (input: string, mode: string) => {
-    const responses = {
-      general: `Je comprends votre demande "${input}". Voici ce que je peux faire pour vous aider avec l'écosystème LuvviX.`,
-      productivity: `Pour optimiser votre productivité avec "${input}", je peux créer un workflow automatisé ou vous suggérer des raccourcis.`,
-      translation: `Je peux traduire "${input}" dans la langue de votre choix. Dans quelle langue souhaitez-vous la traduction ?`,
-      cloud: `Pour gérer "${input}" dans votre cloud, je peux organiser vos fichiers ou créer une nouvelle structure.`,
-      social: `Concernant "${input}", je peux vous aider à créer du contenu pour vos réseaux sociaux ou trouver des groupes pertinents.`,
-      content: `Pour créer du contenu sur "${input}", je peux rédiger un article, une présentation ou tout autre format que vous souhaitez.`
+  const getContextForMode = (mode: string) => {
+    const contexts = {
+      general: 'Tu es un assistant IA général pour LuvviX OS. Tu peux aider avec toutes les fonctionnalités de l\'écosystème.',
+      productivity: 'Tu es spécialisé dans l\'optimisation de la productivité avec LuvviX. Tu peux créer des workflows automatisés.',
+      calendar: 'Tu es un assistant calendrier intelligent. Tu peux créer, modifier et gérer des événements dans LuvviX Calendar.',
+      forms: 'Tu es spécialisé dans la création et gestion de formulaires avec LuvviX Forms. Tu peux optimiser les questions et analyser les réponses.',
+      translation: 'Tu es un assistant de traduction avec LuvviX Translate. Tu peux traduire, détecter les langues et améliorer les traductions.',
+      cloud: 'Tu es spécialisé dans la gestion de fichiers avec LuvviX Cloud. Tu peux organiser, partager et synchroniser des fichiers.',
+      social: 'Tu es un assistant pour LuvviX Center, le réseau social. Tu peux créer des publications, gérer des groupes et connecter des utilisateurs.',
+      analytics: 'Tu es spécialisé dans l\'analyse de données avec LuvviX Analytics. Tu peux interpréter des données et créer des rapports.'
     };
-    return responses[mode as keyof typeof responses] || responses.general;
+    return contexts[mode as keyof typeof contexts] || contexts.general;
   };
 
   const getActionButtons = (input: string, mode: string) => {
@@ -142,8 +186,16 @@ const MobileAssistant = () => {
         { label: 'Créer Workflow', action: 'create_workflow' },
         { label: 'Ouvrir Forms', action: 'navigate_forms' }
       ],
+      calendar: [
+        { label: 'Ouvrir Calendar', action: 'navigate_calendar' },
+        { label: 'Créer Événement', action: 'create_event' }
+      ],
+      forms: [
+        { label: 'Ouvrir Forms', action: 'navigate_forms' },
+        { label: 'Nouveau Formulaire', action: 'create_form' }
+      ],
       translation: [
-        { label: 'LuvviX Translate', action: 'open_translate' },
+        { label: 'Ouvrir Translate', action: 'navigate_translate' },
         { label: 'Traduire maintenant', action: 'translate_now' }
       ],
       cloud: [
@@ -154,23 +206,38 @@ const MobileAssistant = () => {
         { label: 'LuvviX Center', action: 'navigate_center' },
         { label: 'Créer Publication', action: 'create_post' }
       ],
-      content: [
-        { label: 'LuvviX Docs', action: 'navigate_docs' },
-        { label: 'Nouveau Document', action: 'create_document' }
+      analytics: [
+        { label: 'Ouvrir Analytics', action: 'navigate_analytics' },
+        { label: 'Nouveau Rapport', action: 'create_report' }
       ]
     };
     return actions[mode as keyof typeof actions] || actions.general;
   };
 
   const handleActionClick = (action: string) => {
-    toast({
-      title: "Action exécutée",
-      description: `Action: ${action}`,
-    });
+    const navigationActions = {
+      navigate_services: () => window.dispatchEvent(new CustomEvent('navigate-to-services')),
+      navigate_calendar: () => window.dispatchEvent(new CustomEvent('navigate-to-calendar')),
+      navigate_forms: () => window.dispatchEvent(new CustomEvent('navigate-to-forms')),
+      navigate_translate: () => window.dispatchEvent(new CustomEvent('navigate-to-translate')),
+      navigate_cloud: () => window.dispatchEvent(new CustomEvent('navigate-to-cloud')),
+      navigate_center: () => window.dispatchEvent(new CustomEvent('navigate-to-center')),
+      navigate_analytics: () => window.dispatchEvent(new CustomEvent('navigate-to-analytics'))
+    };
+
+    if (navigationActions[action as keyof typeof navigationActions]) {
+      navigationActions[action as keyof typeof navigationActions]();
+    } else {
+      toast({
+        title: "Action exécutée",
+        description: `Action: ${action}`,
+      });
+    }
   };
 
-  const handleQuickAction = (action: string) => {
-    setInputText(action);
+  const handleQuickAction = (action: any) => {
+    setSelectedMode(action.mode);
+    setInputText(action.text);
   };
 
   const toggleVoiceRecording = () => {
@@ -183,15 +250,42 @@ const MobileAssistant = () => {
     }
   };
 
+  const getModeInfo = () => {
+    return assistantModes.find(mode => mode.id === selectedMode);
+  };
+
   return (
-    <div className="flex-1 flex flex-col bg-gray-50 pb-20">
-      {/* Header avec modes */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-xl font-bold text-gray-900">Assistant IA</h1>
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 pb-20">
+      {/* Header avec design moderne */}
+      <div className="bg-white border-b border-gray-200 p-4 pt-12">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
+              <Bot className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Assistant IA</h1>
+              <p className="text-sm text-gray-600">Propulsé par Gemini 1.5 Flash</p>
+            </div>
+          </div>
           <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm text-green-600 font-medium">En ligne</span>
+            <div className="flex items-center space-x-1 bg-green-50 px-2 py-1 rounded-full">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-green-600 font-medium">En ligne</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Mode sélectionné */}
+        <div className="mb-4">
+          <div className={`bg-gradient-to-r ${getModeInfo()?.color} p-4 rounded-2xl text-white`}>
+            <div className="flex items-center space-x-3">
+              {getModeInfo()?.icon}
+              <div>
+                <h3 className="font-semibold">{getModeInfo()?.name}</h3>
+                <p className="text-sm opacity-90">{getModeInfo()?.description}</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -201,9 +295,9 @@ const MobileAssistant = () => {
             <button
               key={mode.id}
               onClick={() => setSelectedMode(mode.id)}
-              className={`flex-shrink-0 px-3 py-2 rounded-xl text-sm font-medium transition-all flex items-center space-x-2 ${
+              className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center space-x-2 ${
                 selectedMode === mode.id
-                  ? `bg-gradient-to-r ${mode.color} text-white shadow-lg`
+                  ? `bg-gradient-to-r ${mode.color} text-white shadow-lg scale-105`
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -214,7 +308,7 @@ const MobileAssistant = () => {
         </div>
       </div>
 
-      {/* Zone de messages */}
+      {/* Zone de messages avec design amélioré */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div
@@ -222,21 +316,30 @@ const MobileAssistant = () => {
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[80%] rounded-2xl p-4 ${
+              className={`max-w-[85%] rounded-3xl p-4 ${
                 message.type === 'user'
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
                   : 'bg-white text-gray-900 shadow-sm border border-gray-100'
               }`}
             >
+              {message.type === 'assistant' && (
+                <div className="flex items-center space-x-2 mb-2">
+                  <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <Sparkles className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-xs font-medium text-gray-600">LuvviX IA</span>
+                </div>
+              )}
+              
               <p className="text-sm leading-relaxed">{message.content}</p>
               
               {message.actions && (
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-4 flex flex-wrap gap-2">
                   {message.actions.map((action, index) => (
                     <button
                       key={index}
                       onClick={() => handleActionClick(action.action)}
-                      className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-medium hover:bg-blue-100 transition-colors"
+                      className="px-3 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-medium hover:bg-blue-100 transition-colors border border-blue-100"
                     >
                       {action.label}
                     </button>
@@ -244,8 +347,8 @@ const MobileAssistant = () => {
                 </div>
               )}
               
-              <p className="text-xs opacity-70 mt-2">
-                {message.timestamp.toLocaleTimeString()}
+              <p className="text-xs opacity-70 mt-3">
+                {message.timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
               </p>
             </div>
           </div>
@@ -253,12 +356,18 @@ const MobileAssistant = () => {
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-3xl p-4 shadow-sm border border-gray-100 max-w-[85%]">
+              <div className="flex items-center space-x-2 mb-2">
+                <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <Sparkles className="w-3 h-3 text-white" />
+                </div>
+                <span className="text-xs font-medium text-gray-600">LuvviX IA</span>
+              </div>
               <div className="flex items-center space-x-2">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
                 <span className="text-sm text-gray-500">L'assistant réfléchit...</span>
               </div>
@@ -269,42 +378,46 @@ const MobileAssistant = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Actions rapides */}
+      {/* Actions rapides avec design amélioré */}
       <div className="bg-white border-t border-gray-200 p-4">
         <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Actions rapides</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+            <Zap className="w-4 h-4 mr-2 text-yellow-500" />
+            Actions rapides
+          </h3>
           <div className="flex space-x-2 overflow-x-auto">
             {quickActions.map((action, index) => (
               <button
                 key={index}
                 onClick={() => handleQuickAction(action)}
-                className="flex-shrink-0 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs hover:bg-gray-200 transition-colors"
+                className="flex-shrink-0 flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-700 rounded-2xl text-xs hover:from-gray-100 hover:to-gray-200 transition-all border border-gray-200"
               >
-                {action}
+                {action.icon}
+                <span>{action.text}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Zone de saisie */}
+        {/* Zone de saisie améliorée */}
         <div className="flex items-center space-x-3">
           <div className="flex-1 relative">
             <input
               type="text"
-              placeholder={`Demandez quelque chose en mode ${assistantModes.find(m => m.id === selectedMode)?.name}...`}
+              placeholder={`Demandez quelque chose en mode ${getModeInfo()?.name}...`}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              className="w-full px-4 py-3 bg-gray-100 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm"
+              className="w-full px-4 py-4 bg-gray-50 border-0 rounded-3xl focus:ring-2 focus:ring-purple-500 focus:bg-white transition-all text-sm shadow-inner"
             />
           </div>
           
           <button
             onClick={toggleVoiceRecording}
-            className={`p-3 rounded-2xl transition-all ${
+            className={`p-4 rounded-3xl transition-all shadow-lg ${
               isListening 
-                ? 'bg-red-500 text-white' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' 
+                : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 hover:from-gray-200 hover:to-gray-300'
             }`}
           >
             {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -313,7 +426,7 @@ const MobileAssistant = () => {
           <button
             onClick={handleSendMessage}
             disabled={!inputText.trim() || isLoading}
-            className="p-3 bg-blue-500 text-white rounded-2xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="p-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-3xl hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
           >
             <Send className="w-5 h-5" />
           </button>

@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, MicOff, Plus, Zap, Brain, Globe, Cloud, Users, FileText, Settings, Sparkles, Calendar, Map, Calculator, BookOpen, Palette, Code, BarChart3, MessageCircle, Bot } from 'lucide-react';
+import { Send, Mic, MicOff, Plus, Zap, Brain, Globe, Cloud, Users, FileText, Settings, Sparkles, Calendar, Map, Calculator, BookOpen, Palette, Code, BarChart3, MessageCircle, Bot, Bell, Monitor } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 

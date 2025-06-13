@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ArrowLeft, Camera, User, Mail, Phone, MapPin, Calendar, Edit3, Save, X } from 'lucide-react';
+import { ArrowLeft, Camera, User, Mail, Phone, MapPin, Calendar, Edit3, Save, X, Globe } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 

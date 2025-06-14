@@ -437,8 +437,13 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
             <span className="text-sm font-medium">{post.comments_count}</span>
           </button>
           
-          <button className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors">
+          {/* Bouton partager avec logique de partage réelle */}
+          <button
+            onClick={() => sharePost(post.id)}
+            className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors"
+          >
             <Share className="w-5 h-5" />
+            <span className="text-sm font-medium">Partager</span>
           </button>
         </div>
       </div>
@@ -448,7 +453,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         <div className="mt-4 border-t border-gray-100 pt-4">
           {/* Nouveau commentaire */}
           <div className="flex items-center space-x-3 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-xs">
                 {user?.email?.[0]?.toUpperCase() || 'U'}
               </span>
@@ -585,6 +590,24 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
       </div>
     </div>
   );
+
+  // Nouvelle action pour partager un post (copie le lien et toast)
+  const sharePost = async (postId: string) => {
+    const fakeUrl = `${window.location.origin}/center/post/${postId}`;
+    try {
+      await navigator.clipboard.writeText(fakeUrl);
+      toast({
+        title: "Lien copié",
+        description: "Le lien du post a été copié dans le presse-papier !",
+      });
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de copier le lien",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Nouvelle fonction de gestion d'upload d'images
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -747,7 +770,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                     </div>
                     <button
                       onClick={createPost}
-                      disabled={!newPost.trim() || isNaN(user?.id)}
+                      disabled={!newPost.trim() || !user?.id}
                       className="px-6 py-2 bg-blue-500 text-white rounded-full font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Publier

@@ -41,10 +41,17 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
 
   const fetchStories = async () => {
     setLoading(true);
-    if (!user) return;
+    if (!user) {
+      console.log('StoryManager: Aucun utilisateur connecté');
+      setLoading(false);
+      return;
+    }
+
+    console.log('StoryManager: Début du chargement des stories pour l\'utilisateur:', user.id);
 
     try {
       // Récupérer les amis de l'utilisateur
+      console.log('StoryManager: Récupération des amitiés...');
       const { data: friendships, error: friendError } = await supabase
         .from('center_friendships')
         .select('requester_id, addressee_id')
@@ -61,10 +68,14 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
         f.requester_id === user.id ? f.addressee_id : f.requester_id
       );
       
+      console.log('StoryManager: IDs des amis trouvés:', friendIds);
+      
       // Ajouter l'utilisateur actuel pour toujours récupérer ses propres stories
       const allowedUserIds = [...new Set([...friendIds, user.id])];
+      console.log('StoryManager: IDs autorisés pour les stories:', allowedUserIds);
 
       // Récupérer les stories des amis et de l'utilisateur seulement
+      console.log('StoryManager: Récupération des stories...');
       const { data: storiesData, error: storiesError } = await supabase
         .from('center_stories')
         .select(`
@@ -77,9 +88,15 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
 
       if (storiesError) throw storiesError;
 
+      console.log('StoryManager: Stories récupérées:', storiesData?.length || 0, 'stories trouvées');
+      console.log('StoryManager: Détails des stories:', storiesData);
+
       // Séparer mes stories des autres
       const myStories = (storiesData || []).filter(story => story.user_id === user.id);
       const otherStories = (storiesData || []).filter(story => story.user_id !== user.id);
+
+      console.log('StoryManager: Mes stories:', myStories.length);
+      console.log('StoryManager: Stories des autres:', otherStories.length);
 
       setUserStories(myStories);
       setStories(otherStories);
@@ -174,6 +191,13 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
         </div>
       )}
       <div className="flex items-center space-x-3 p-4 overflow-x-auto bg-white border-b border-gray-200">
+        {/* Debug info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-xs text-gray-500 mb-2">
+            Debug: {userStories.length} story(s) utilisateur, {stories.length} story(s) amis
+          </div>
+        )}
+
         {/* Mes stories (plusieurs possibles) */}
         {userStories.length > 0 ? (
           userStories.map((story) => (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Clock, Users, MapPin, Bell, ChevronLeft, ChevronRight, Search, Filter, Sparkles, Trash2, Edit3, CheckCircle, X } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths, isValid } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { useCalendar } from '@/hooks/use-calendar';
@@ -41,6 +41,21 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
   const monthEnd = endOfMonth(currentDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
+  // Fonction utilitaire pour valider et formater les dates
+  const formatEventDate = (dateString: string, formatString: string) => {
+    if (!dateString) return 'Date invalide';
+    const date = new Date(dateString);
+    if (!isValid(date)) return 'Date invalide';
+    return format(date, formatString, { locale: fr });
+  };
+
+  const formatEventTime = (dateString: string, formatString: string) => {
+    if (!dateString) return '--:--';
+    const date = new Date(dateString);
+    if (!isValid(date)) return '--:--';
+    return format(date, formatString);
+  };
+
   const getEventsForDateWithHolidays = (date: Date) => {
     const dayEvents = getEventsForDate(date);
     const holiday = isHoliday(date);
@@ -77,7 +92,13 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
       filtered = searchEvents(searchQuery);
     }
     
-    return filtered.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.start_time);
+      const dateB = new Date(b.start_time);
+      if (!isValid(dateA)) return 1;
+      if (!isValid(dateB)) return -1;
+      return dateA.getTime() - dateB.getTime();
+    });
   };
 
   const generateAIEventSuggestion = async () => {
@@ -247,7 +268,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                     </h4>
                     <p className="text-sm text-gray-600 flex items-center mt-1">
                       <Clock className="w-4 h-4 mr-1" />
-                      {format(new Date(event.start_time), 'HH:mm')} - {format(new Date(event.end_time), 'HH:mm')}
+                      {formatEventTime(event.start_time, 'HH:mm')} - {formatEventTime(event.end_time, 'HH:mm')}
                     </p>
                     {event.location && (
                       <p className="text-sm text-gray-600 flex items-center mt-1">
@@ -301,7 +322,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium text-blue-900">{event.title}</h4>
                     <span className="text-xs text-blue-600">
-                      {format(new Date(event.start_time), 'dd/MM HH:mm')}
+                      {formatEventDate(event.start_time, 'dd/MM HH:mm')}
                     </span>
                   </div>
                 </div>
@@ -336,7 +357,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                       </h4>
                       <p className="text-sm text-gray-600 flex items-center mt-1">
                         <Clock className="w-4 h-4 mr-1" />
-                        {format(new Date(event.start_time), 'dd/MM - HH:mm')} - {format(new Date(event.end_time), 'HH:mm')}
+                        {formatEventDate(event.start_time, 'dd/MM - HH:mm')} - {formatEventTime(event.end_time, 'HH:mm')}
                       </p>
                       {event.attendees && event.attendees.length > 0 && (
                         <p className="text-sm text-gray-600 flex items-center mt-1">
@@ -537,7 +558,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                 <h4 className="font-medium text-gray-700 mb-1">Horaires</h4>
                 <div className="flex items-center text-gray-600">
                   <Clock className="w-4 h-4 mr-2" />
-                  <span>{format(new Date(selectedEvent.start_time), 'dd/MM/yyyy HH:mm')} - {format(new Date(selectedEvent.end_time), 'HH:mm')}</span>
+                  <span>{formatEventDate(selectedEvent.start_time, 'dd/MM/yyyy HH:mm')} - {formatEventTime(selectedEvent.end_time, 'HH:mm')}</span>
                 </div>
               </div>
               

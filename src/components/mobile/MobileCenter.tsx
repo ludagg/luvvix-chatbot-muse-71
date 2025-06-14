@@ -100,6 +100,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
   const fetchPosts = async () => {
     try {
+      console.log('Fetching posts...');
       const { data: postsData, error: postsError } = await supabase
         .from('center_posts')
         .select('*')
@@ -107,37 +108,54 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         .limit(20);
 
       if (postsError) throw postsError;
+      console.log('Posts data:', postsData);
 
       // Fetch user profiles separately for each post
       const postsWithProfiles = await Promise.all(
         (postsData || []).map(async (post) => {
+          console.log('Fetching profile for user_id:', post.user_id);
+          
           const { data: userProfile, error: profileError } = await supabase
             .from('user_profiles')
             .select('id, full_name, username, avatar_url')
             .eq('id', post.user_id)
             .single();
 
+          console.log('Profile data for', post.user_id, ':', userProfile);
+          console.log('Profile error:', profileError);
+
           if (profileError) {
             console.error('Erreur chargement profil:', profileError);
             // Return post with fallback user data
+            const fallbackProfile = {
+              id: post.user_id,
+              full_name: 'Utilisateur Inconnu',
+              username: `user_${post.user_id.slice(0, 8)}`,
+              avatar_url: ''
+            };
+            console.log('Using fallback profile:', fallbackProfile);
             return {
               ...post,
-              user_profiles: {
-                id: post.user_id,
-                full_name: 'Utilisateur',
-                username: 'utilisateur',
-                avatar_url: ''
-              }
+              user_profiles: fallbackProfile
             };
           }
 
+          const finalProfile = {
+            id: userProfile.id,
+            full_name: userProfile.full_name || 'Utilisateur Sans Nom',
+            username: userProfile.username || `user_${userProfile.id.slice(0, 8)}`,
+            avatar_url: userProfile.avatar_url || ''
+          };
+          console.log('Final profile:', finalProfile);
+
           return {
             ...post,
-            user_profiles: userProfile
+            user_profiles: finalProfile
           };
         })
       );
 
+      console.log('Posts with profiles:', postsWithProfiles);
       setPosts(postsWithProfiles);
     } catch (error) {
       console.error('Erreur chargement posts:', error);
@@ -587,22 +605,25 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
               </div>
             ) : (
               <div>
-                {posts.map((post) => (
-                  <TwitterPost
-                    key={post.id}
-                    post={post}
-                    isLiked={likedPosts.has(post.id)}
-                    isSaved={savedPosts.has(post.id)}
-                    userReaction={userReactions[post.id]}
-                    postReactions={postReactions[post.id]}
-                    onLike={() => toggleLike(post.id)}
-                    onComment={() => {}}
-                    onRetweet={() => {}}
-                    onShare={() => sharePost(post.id)}
-                    onSave={() => {}}
-                    onShowReactions={() => setShowReactionPicker(post.id)}
-                  />
-                ))}
+                {posts.map((post) => {
+                  console.log('Rendering post:', post.id, 'with user:', post.user_profiles);
+                  return (
+                    <TwitterPost
+                      key={post.id}
+                      post={post}
+                      isLiked={likedPosts.has(post.id)}
+                      isSaved={savedPosts.has(post.id)}
+                      userReaction={userReactions[post.id]}
+                      postReactions={postReactions[post.id]}
+                      onLike={() => toggleLike(post.id)}
+                      onComment={() => {}}
+                      onRetweet={() => {}}
+                      onShare={() => sharePost(post.id)}
+                      onSave={() => {}}
+                      onShowReactions={() => setShowReactionPicker(post.id)}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>

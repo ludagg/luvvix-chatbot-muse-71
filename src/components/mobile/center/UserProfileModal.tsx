@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, UserPlus, UserMinus, MessageCircle, MoreHorizontal, MapPin, Calendar, Users, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -52,7 +51,6 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
 
   useEffect(() => {
     if (userId) {
-      console.log('Loading profile for user ID:', userId);
       fetchUserProfile();
       fetchUserStats();
       fetchUserPosts();

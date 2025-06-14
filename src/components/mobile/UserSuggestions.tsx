@@ -40,7 +40,11 @@ const UserSuggestions = ({ users, onFollow, onDismiss, onUserClick }: UserSugges
             </button>
             <div 
               className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200 cursor-pointer"
-              onClick={() => onUserClick && onUserClick(user.id)}
+              onClick={() => {
+                if (onUserClick) {
+                  onUserClick(user.id);
+                }
+              }}
               tabIndex={0}
               role="button"
               aria-label={`Voir le profil de ${user.full_name}`}

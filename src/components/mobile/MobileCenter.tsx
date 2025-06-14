@@ -347,7 +347,11 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   };
 
   const handleUserClick = (userId: string) => {
-    console.log('Opening profile for user ID:', userId);
+    console.log('Ouverture du profil utilisateur :', userId);
+    toast({
+      title: "Ouverture du profil",
+      description: `Profil utilisateur ID : ${userId}`,
+    });
     setShowUserProfile(userId);
   };
 

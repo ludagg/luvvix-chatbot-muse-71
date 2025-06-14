@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Home, Grid3X3, Sparkles, Cloud, User, Users } from 'lucide-react';
+import { Home, Grid3X3, Sparkles, Cloud, User } from 'lucide-react';
 
 interface MobileBottomNavProps {
   activeView: string;
@@ -20,15 +20,15 @@ const MobileBottomNav = ({ activeView, setActiveView }: MobileBottomNavProps) =>
       icon: Grid3X3
     },
     {
-      id: 'center',
-      label: 'Center',
-      icon: Users
-    },
-    {
       id: 'assistant',
       label: 'Assistant',
       icon: Sparkles,
       isSpecial: true
+    },
+    {
+      id: 'cloud',
+      label: 'Cloud',
+      icon: Cloud
     },
     {
       id: 'profile',

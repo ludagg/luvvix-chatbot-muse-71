@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { 
@@ -37,7 +36,16 @@ const MobileServices = () => {
       bgColor: 'bg-gradient-to-br from-purple-500 to-indigo-600',
       badge: 'Populaire',
       category: 'ai',
-      url: '/ai-studio'
+      action: () => window.dispatchEvent(new CustomEvent('navigate-to-assistant'))
+    },
+    {
+      id: 'luvvix-center',
+      name: 'LuvviX Center',
+      description: 'Réseau social professionnel',
+      icon: <Users className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-rose-500 to-pink-600',
+      category: 'social',
+      action: () => window.dispatchEvent(new CustomEvent('navigate-to-center'))
     },
     {
       id: 'luvvix-translate',
@@ -46,7 +54,7 @@ const MobileServices = () => {
       icon: <Globe className="w-8 h-8" />,
       bgColor: 'bg-gradient-to-br from-green-500 to-emerald-600',
       category: 'productivity',
-      url: '/translate'
+      action: () => window.dispatchEvent(new CustomEvent('navigate-to-translate'))
     },
     {
       id: 'luvvix-weather',
@@ -55,7 +63,7 @@ const MobileServices = () => {
       icon: <Cloud className="w-8 h-8" />,
       bgColor: 'bg-gradient-to-br from-blue-500 to-cyan-600',
       category: 'lifestyle',
-      url: '/weather'
+      action: () => window.dispatchEvent(new CustomEvent('navigate-to-weather'))
     },
     {
       id: 'luvvix-forms',
@@ -64,7 +72,16 @@ const MobileServices = () => {
       icon: <FileText className="w-8 h-8" />,
       bgColor: 'bg-gradient-to-br from-orange-500 to-red-600',
       category: 'productivity',
-      url: '/forms'
+      action: () => window.dispatchEvent(new CustomEvent('navigate-to-forms'))
+    },
+    {
+      id: 'luvvix-calendar',
+      name: 'LuvviX Calendar',
+      description: 'Calendrier intelligent avec IA',
+      icon: <Calendar className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-violet-500 to-purple-600',
+      category: 'productivity',
+      action: () => window.dispatchEvent(new CustomEvent('navigate-to-calendar'))
     },
     {
       id: 'luvvix-learn',
@@ -113,15 +130,6 @@ const MobileServices = () => {
       url: '/analytics'
     },
     {
-      id: 'luvvix-center',
-      name: 'LuvviX Center',
-      description: 'Réseau social professionnel',
-      icon: <Users className="w-8 h-8" />,
-      bgColor: 'bg-gradient-to-br from-rose-500 to-pink-600',
-      category: 'social',
-      url: '/center'
-    },
-    {
       id: 'code-studio',
       name: 'Code Studio',
       description: 'Environnement de développement',
@@ -146,6 +154,7 @@ const MobileServices = () => {
     { id: 'ai', label: 'IA', icon: <Bot className="w-4 h-4" /> },
     { id: 'productivity', label: 'Productivité', icon: <Zap className="w-4 h-4" /> },
     { id: 'communication', label: 'Communication', icon: <MessageCircle className="w-4 h-4" /> },
+    { id: 'social', label: 'Social', icon: <Users className="w-4 h-4" /> },
     { id: 'education', label: 'Éducation', icon: <BookOpen className="w-4 h-4" /> },
     { id: 'development', label: 'Développement', icon: <Code className="w-4 h-4" /> }
   ];
@@ -158,10 +167,14 @@ const MobileServices = () => {
   });
 
   const handleServiceClick = (service: typeof services[0]) => {
-    toast({
-      title: service.name,
-      description: `Ouverture de ${service.description}`,
-    });
+    if (service.action) {
+      service.action();
+    } else {
+      toast({
+        title: service.name,
+        description: `Ouverture de ${service.description}`,
+      });
+    }
   };
 
   return (

@@ -6,14 +6,16 @@ import {
   Home, 
   MessageCircle, 
   User, 
-  Users, 
   Gamepad2, 
-  Menu
+  Users, 
+  Settings,
+  Menu,
+  X
 } from 'lucide-react';
 
 interface CenterMobileNavProps {
   activeView: string;
-  setActiveView: (view: any) => void;
+  setActiveView: (view: string) => void;
   isMenuOpen: boolean;
   setIsMenuOpen: (open: boolean) => void;
 }
@@ -25,46 +27,143 @@ const CenterMobileNav = ({
   setIsMenuOpen 
 }: CenterMobileNavProps) => {
   const navItems = [
-    { id: 'feed', icon: Home },
-    { id: 'messages', icon: MessageCircle, badge: 3 },
-    { id: 'groups', icon: Users },
-    { id: 'games', icon: Gamepad2 },
-    { id: 'profile', icon: User },
+    {
+      id: 'feed',
+      label: 'Accueil',
+      icon: Home,
+      badge: null
+    },
+    {
+      id: 'messages',
+      label: 'Messages',
+      icon: MessageCircle,
+      badge: 3
+    },
+    {
+      id: 'profile',
+      label: 'Profil',
+      icon: User,
+      badge: null
+    },
+    {
+      id: 'games',
+      label: 'Jeux',
+      icon: Gamepad2,
+      badge: null
+    },
+    {
+      id: 'groups',
+      label: 'Groupes',
+      icon: Users,
+      badge: 1
+    },
+    {
+      id: 'settings',
+      label: 'Paramètres',
+      icon: Settings,
+      badge: null
+    }
   ];
 
+  const handleNavClick = (viewId: string) => {
+    setActiveView(viewId);
+    setIsMenuOpen(false);
+  };
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50">
-      <div className="flex items-center justify-around p-2">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeView === item.id;
-          
-          return (
-            <Button
-              key={item.id}
-              variant="ghost"
-              size="sm"
-              className={`relative flex flex-col items-center p-2 ${
-                isActive 
-                  ? 'text-purple-600' 
-                  : 'text-gray-500'
-              }`}
-              onClick={() => setActiveView(item.id)}
-            >
-              <Icon className="h-6 w-6" />
-              {item.badge && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
-                >
-                  {item.badge}
-                </Badge>
-              )}
-            </Button>
-          );
-        })}
+    <>
+      {/* Mobile Menu Button */}
+      <div className="fixed top-20 right-4 z-50 lg:hidden">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="bg-white shadow-lg"
+        >
+          {isMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+        </Button>
       </div>
-    </div>
+
+      {/* Mobile Overlay */}
+      {isMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Navigation Menu */}
+      <div className={`
+        fixed top-0 right-0 h-full w-80 bg-white dark:bg-gray-800 shadow-xl z-50 
+        transform transition-transform duration-300 ease-in-out lg:hidden
+        ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}
+      `}>
+        <div className="p-6 pt-20">
+          <h2 className="text-xl font-bold mb-6 text-gray-900 dark:text-white">
+            LuvviX Center
+          </h2>
+          
+          <nav className="space-y-2">
+            {navItems.map((item) => {
+              const IconComponent = item.icon;
+              const isActive = activeView === item.id;
+              
+              return (
+                <Button
+                  key={item.id}
+                  variant={isActive ? "default" : "ghost"}
+                  className={`w-full justify-start gap-3 ${
+                    isActive ? 'bg-purple-600 text-white' : ''
+                  }`}
+                  onClick={() => handleNavClick(item.id)}
+                >
+                  <IconComponent className="h-5 w-5" />
+                  <span>{item.label}</span>
+                  {item.badge && (
+                    <Badge variant="secondary" className="ml-auto">
+                      {item.badge}
+                    </Badge>
+                  )}
+                </Button>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* Bottom Navigation for Mobile */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-2 lg:hidden">
+        <div className="flex items-center justify-around">
+          {navItems.slice(0, 4).map((item) => {
+            const IconComponent = item.icon;
+            const isActive = activeView === item.id;
+            
+            return (
+              <Button
+                key={item.id}
+                variant="ghost"
+                size="sm"
+                className={`flex flex-col items-center gap-1 relative ${
+                  isActive ? 'text-purple-600' : 'text-gray-500'
+                }`}
+                onClick={() => handleNavClick(item.id)}
+              >
+                <IconComponent className="h-5 w-5" />
+                <span className="text-xs">{item.label}</span>
+                {item.badge && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs"
+                  >
+                    {item.badge}
+                  </Badge>
+                )}
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+    </>
   );
 };
 

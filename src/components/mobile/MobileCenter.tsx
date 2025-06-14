@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, MoreVertical, Send, Camera, Image as ImageIcon, MapPin, Users, Bell } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, MoreVertical, Send, Camera, Image as ImageIcon, MapPin, Users, Bell, Play, UserPlus, UserCheck, Video } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -16,6 +16,7 @@ interface Post {
   user_id: string;
   content: string;
   media_urls?: string[];
+  video_url?: string;
   likes_count: number;
   comments_count: number;
   created_at: string;
@@ -39,20 +40,45 @@ interface Comment {
   };
 }
 
+interface UserProfile {
+  id: string;
+  username: string;
+  full_name: string;
+  avatar_url: string;
+  followers_count?: number;
+  following_count?: number;
+  is_following?: boolean;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  description: string;
+  members_count: number;
+  avatar_url?: string;
+  is_member: boolean;
+}
+
 const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'feed' | 'explore' | 'notifications'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'explore' | 'groups' | 'notifications'>('feed');
   const [posts, setPosts] = useState<Post[]>([]);
+  const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [newPost, setNewPost] = useState('');
   const [showComments, setShowComments] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [showVideoUpload, setShowVideoUpload] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
 
   useEffect(() => {
     fetchPosts();
     fetchLikedPosts();
+    fetchSuggestedUsers();
+    fetchGroups();
   }, []);
 
   const fetchPosts = async () => {
@@ -84,6 +110,52 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     }
   };
 
+  const fetchSuggestedUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('center_profiles')
+        .select('*')
+        .neq('id', user?.id)
+        .limit(5);
+
+      if (error) throw error;
+      setSuggestedUsers(data || []);
+    } catch (error) {
+      console.error('Erreur chargement utilisateurs:', error);
+    }
+  };
+
+  const fetchGroups = async () => {
+    try {
+      const mockGroups: Group[] = [
+        {
+          id: '1',
+          name: 'Développeurs JavaScript',
+          description: 'Communauté de développeurs passionnés',
+          members_count: 1247,
+          is_member: false
+        },
+        {
+          id: '2',
+          name: 'Design UI/UX',
+          description: 'Partage et discussions sur le design',
+          members_count: 892,
+          is_member: true
+        },
+        {
+          id: '3',
+          name: 'LuvviX Supporters',
+          description: 'Groupe officiel des utilisateurs LuvviX',
+          members_count: 3456,
+          is_member: false
+        }
+      ];
+      setGroups(mockGroups);
+    } catch (error) {
+      console.error('Erreur chargement groupes:', error);
+    }
+  };
+
   const fetchLikedPosts = async () => {
     if (!user) return;
     
@@ -104,17 +176,26 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     if (!newPost.trim() || !user) return;
 
     try {
+      const postData: any = {
+        user_id: user.id,
+        content: newPost,
+        media_urls: []
+      };
+
+      if (selectedVideo) {
+        // Simuler l'upload de vidéo
+        postData.video_url = `https://example.com/videos/${Date.now()}.mp4`;
+      }
+
       const { error } = await supabase
         .from('center_posts')
-        .insert({
-          user_id: user.id,
-          content: newPost,
-          media_urls: []
-        });
+        .insert(postData);
 
       if (error) throw error;
 
       setNewPost('');
+      setSelectedVideo(null);
+      setShowVideoUpload(false);
       fetchPosts();
       toast({
         title: "Post publié",
@@ -128,6 +209,68 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         variant: "destructive"
       });
     }
+  };
+
+  const toggleFollow = async (userId: string) => {
+    if (!user) return;
+
+    try {
+      // Vérifier si on suit déjà
+      const { data: existingFollow, error: checkError } = await supabase
+        .from('center_follows')
+        .select('id')
+        .eq('follower_id', user.id)
+        .eq('following_id', userId)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') throw checkError;
+
+      if (existingFollow) {
+        // Unfollow
+        const { error } = await supabase
+          .from('center_follows')
+          .delete()
+          .eq('follower_id', user.id)
+          .eq('following_id', userId);
+
+        if (error) throw error;
+        toast({ title: "Utilisateur non suivi" });
+      } else {
+        // Follow
+        const { error } = await supabase
+          .from('center_follows')
+          .insert({
+            follower_id: user.id,
+            following_id: userId
+          });
+
+        if (error) throw error;
+        toast({ title: "Utilisateur suivi" });
+      }
+
+      fetchSuggestedUsers();
+    } catch (error) {
+      console.error('Erreur toggle follow:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le suivi",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const joinGroup = async (groupId: string) => {
+    // Simuler rejoindre un groupe
+    setGroups(prev => prev.map(group => 
+      group.id === groupId 
+        ? { ...group, is_member: !group.is_member, members_count: group.is_member ? group.members_count - 1 : group.members_count + 1 }
+        : group
+    ));
+    
+    toast({
+      title: groups.find(g => g.id === groupId)?.is_member ? "Groupe quitté" : "Groupe rejoint",
+      description: "Action effectuée avec succès"
+    });
   };
 
   const toggleLike = async (postId: string) => {
@@ -161,7 +304,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         setLikedPosts(prev => new Set([...prev, postId]));
       }
 
-      // Mettre à jour le count localement
       setPosts(prev => prev.map(post => 
         post.id === postId 
           ? { ...post, likes_count: post.likes_count + (isLiked ? -1 : 1) }
@@ -211,7 +353,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
       setNewComment('');
       fetchComments(postId);
       
-      // Mettre à jour le count
       setPosts(prev => prev.map(post => 
         post.id === postId 
           ? { ...post, comments_count: post.comments_count + 1 }
@@ -250,6 +391,17 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
       {/* Contenu du post */}
       <div className="mb-3">
         <p className="text-gray-900 leading-relaxed">{post.content}</p>
+        
+        {/* Vidéo si présente */}
+        {post.video_url && (
+          <div className="mt-3 relative bg-black rounded-lg overflow-hidden">
+            <div className="aspect-video flex items-center justify-center">
+              <button className="w-16 h-16 bg-white bg-opacity-80 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all">
+                <Play className="w-8 h-8 text-gray-800 ml-1" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Actions */}
@@ -341,6 +493,92 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     </div>
   );
 
+  const renderExploreTab = () => (
+    <div className="p-4 space-y-6">
+      {/* Utilisateurs suggérés */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Utilisateurs suggérés</h3>
+        <div className="space-y-3">
+          {suggestedUsers.map((user) => (
+            <div key={user.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">
+                    {user.username?.[0]?.toUpperCase() || 'U'}
+                  </span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">{user.full_name}</h4>
+                  <p className="text-sm text-gray-500">@{user.username}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => toggleFollow(user.id)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors flex items-center space-x-2"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Suivre</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Tendances */}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Tendances</h3>
+        <div className="space-y-2">
+          {['#LuvviXDev', '#JavaScript', '#React', '#TypeScript', '#WebDev'].map((tag, index) => (
+            <div key={index} className="p-3 bg-white rounded-lg border border-gray-200">
+              <p className="font-semibold text-blue-600">{tag}</p>
+              <p className="text-sm text-gray-500">{Math.floor(Math.random() * 1000) + 100} posts</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderGroupsTab = () => (
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-gray-900">Groupes</h3>
+        <button className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors">
+          Créer un groupe
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        {groups.map((group) => (
+          <div key={group.id} className="p-4 bg-white rounded-lg border border-gray-200">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-start space-x-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
+                  <Users className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">{group.name}</h4>
+                  <p className="text-sm text-gray-600 mb-1">{group.description}</p>
+                  <p className="text-xs text-gray-500">{group.members_count} membres</p>
+                </div>
+              </div>
+              <button
+                onClick={() => joinGroup(group.id)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  group.is_member
+                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                }`}
+              >
+                {group.is_member ? 'Membre' : 'Rejoindre'}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
       {/* Header */}
@@ -365,8 +603,9 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
       {/* Navigation tabs */}
       <div className="flex bg-white border-b border-gray-200">
         {[
-          { id: 'feed', label: 'Fil d\'actualité' },
+          { id: 'feed', label: 'Fil' },
           { id: 'explore', label: 'Explorer' },
+          { id: 'groups', label: 'Groupes' },
           { id: 'notifications', label: 'Notifications' }
         ].map((tab) => (
           <button
@@ -403,6 +642,22 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                     className="w-full p-3 border border-gray-300 rounded-2xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={3}
                   />
+                  
+                  {selectedVideo && (
+                    <div className="mt-3 p-3 bg-gray-100 rounded-lg flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Video className="w-5 h-5 text-blue-500" />
+                        <span className="text-sm text-gray-700">{selectedVideo.name}</span>
+                      </div>
+                      <button
+                        onClick={() => setSelectedVideo(null)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center space-x-3">
                       <button className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors">
@@ -411,6 +666,19 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                       <button className="p-2 text-green-500 hover:bg-green-50 rounded-full transition-colors">
                         <ImageIcon className="w-5 h-5" />
                       </button>
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={(e) => setSelectedVideo(e.target.files?.[0] || null)}
+                        className="hidden"
+                        id="video-upload"
+                      />
+                      <label
+                        htmlFor="video-upload"
+                        className="p-2 text-purple-500 hover:bg-purple-50 rounded-full transition-colors cursor-pointer"
+                      >
+                        <Video className="w-5 h-5" />
+                      </label>
                       <button className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors">
                         <MapPin className="w-5 h-5" />
                       </button>
@@ -444,15 +712,8 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
           </div>
         )}
 
-        {activeTab === 'explore' && (
-          <div className="p-4">
-            <div className="text-center py-12">
-              <Search className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Explorer LuvviX Center</h3>
-              <p className="text-gray-500">Découvrez de nouveaux contenus et utilisateurs</p>
-            </div>
-          </div>
-        )}
+        {activeTab === 'explore' && renderExploreTab()}
+        {activeTab === 'groups' && renderGroupsTab()}
 
         {activeTab === 'notifications' && (
           <div className="p-4">

@@ -471,6 +471,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
               users={suggestedUsers}
               onFollow={(userId) => console.log('Following user:', userId)}
               onDismiss={(userId) => console.log('Dismissing user suggestion:', userId)}
+              onUserClick={handleUserClick}
             />
 
             <HashtagTrends

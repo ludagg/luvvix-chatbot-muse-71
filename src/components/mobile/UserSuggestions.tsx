@@ -16,9 +16,10 @@ interface UserSuggestionsProps {
   users: UserProfile[];
   onFollow: (userId: string) => void;
   onDismiss: (userId: string) => void;
+  onUserClick?: (userId: string) => void; // Ajout pour ouvrir un profil
 }
 
-const UserSuggestions = ({ users, onFollow, onDismiss }: UserSuggestionsProps) => {
+const UserSuggestions = ({ users, onFollow, onDismiss, onUserClick }: UserSuggestionsProps) => {
   if (users.length === 0) return null;
 
   return (
@@ -30,15 +31,20 @@ const UserSuggestions = ({ users, onFollow, onDismiss }: UserSuggestionsProps) =
       
       <div className="flex space-x-3 overflow-x-auto pb-2">
         {users.slice(0, 5).map((user) => (
-          <div key={user.id} className="flex-shrink-0 w-32">
-            <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200">
-              <button 
-                onClick={() => onDismiss(user.id)}
-                className="absolute top-1 right-1 p-1 text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-3 h-3" />
-              </button>
-              
+          <div key={user.id} className="flex-shrink-0 w-32 relative">
+            <button 
+              onClick={() => onDismiss(user.id)}
+              className="absolute top-1 right-1 p-1 text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-3 h-3" />
+            </button>
+            <div 
+              className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200 cursor-pointer"
+              onClick={() => onUserClick && onUserClick(user.id)}
+              tabIndex={0}
+              role="button"
+              aria-label={`Voir le profil de ${user.full_name}`}
+            >
               <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 p-0.5">
                 <div className="w-full h-full rounded-full bg-blue-500 flex items-center justify-center">
                   <span className="text-white font-bold text-sm">
@@ -55,7 +61,10 @@ const UserSuggestions = ({ users, onFollow, onDismiss }: UserSuggestionsProps) =
               </p>
               
               <button 
-                onClick={() => onFollow(user.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onFollow(user.id);
+                }}
                 className="w-full bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-600 transition-colors flex items-center justify-center space-x-1"
               >
                 <UserPlus className="w-3 h-3" />

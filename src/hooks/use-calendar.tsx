@@ -11,11 +11,12 @@ interface CalendarEvent {
   start_time: string;
   end_time: string;
   event_type: 'meeting' | 'task' | 'reminder' | 'personal';
-  location?: string;
-  attendees: string[];
-  color: string;
   priority: 'low' | 'medium' | 'high';
+  location?: string;
+  attendees?: string[];
+  color: string;
   completed: boolean;
+  user_id: string;
 }
 
 export const useCalendar = () => {
@@ -29,11 +30,11 @@ export const useCalendar = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('luvvix-calendar-api', {
-        body: {},
+        body: { action: 'getEvents' }
       });
 
       if (error) throw error;
-      setEvents(data || []);
+      setEvents(data?.events || []);
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
@@ -46,12 +47,15 @@ export const useCalendar = () => {
     }
   };
 
-  const createEvent = async (eventData: Omit<CalendarEvent, 'id'>) => {
+  const createEvent = async (eventData: Omit<CalendarEvent, 'id' | 'user_id'>) => {
     if (!user) return null;
 
     try {
       const { data, error } = await supabase.functions.invoke('luvvix-calendar-api', {
-        body: eventData,
+        body: { 
+          action: 'createEvent',
+          eventData
+        }
       });
 
       if (error) throw error;
@@ -59,10 +63,10 @@ export const useCalendar = () => {
       await fetchEvents();
       toast({
         title: "Événement créé",
-        description: "L'événement a été ajouté avec succès",
+        description: "L'événement a été ajouté à votre calendrier",
       });
       
-      return data;
+      return data?.event;
     } catch (error) {
       console.error('Error creating event:', error);
       toast({
@@ -75,11 +79,15 @@ export const useCalendar = () => {
   };
 
   const updateEvent = async (eventId: string, updates: Partial<CalendarEvent>) => {
-    if (!user) return null;
+    if (!user) return false;
 
     try {
       const { data, error } = await supabase.functions.invoke('luvvix-calendar-api', {
-        body: { ...updates, method: 'PUT', eventId },
+        body: { 
+          action: 'updateEvent',
+          eventId,
+          updates
+        }
       });
 
       if (error) throw error;
@@ -90,7 +98,7 @@ export const useCalendar = () => {
         description: "L'événement a été mis à jour",
       });
       
-      return data;
+      return true;
     } catch (error) {
       console.error('Error updating event:', error);
       toast({
@@ -98,7 +106,7 @@ export const useCalendar = () => {
         description: "Impossible de modifier l'événement",
         variant: "destructive"
       });
-      return null;
+      return false;
     }
   };
 
@@ -106,8 +114,11 @@ export const useCalendar = () => {
     if (!user) return false;
 
     try {
-      const { error } = await supabase.functions.invoke('luvvix-calendar-api', {
-        body: { method: 'DELETE', eventId },
+      const { data, error } = await supabase.functions.invoke('luvvix-calendar-api', {
+        body: { 
+          action: 'deleteEvent',
+          eventId
+        }
       });
 
       if (error) throw error;

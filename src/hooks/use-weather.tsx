@@ -1,49 +1,39 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
 interface WeatherData {
+  location: {
+    name: string;
+    region: string;
+    country: string;
+  };
   current: {
     temperature: number;
     condition: string;
     description: string;
-    icon: string;
+    feelsLike: number;
     humidity: number;
     windSpeed: number;
     windDirection: string;
-    visibility: number;
     uvIndex: number;
-    pressure: number;
-    feelsLike: number;
-  };
-  location: {
-    name: string;
-    country: string;
-    region: string;
-    coordinates: {
-      lat: number;
-      lon: number;
-    };
+    visibility: number;
   };
   forecast: Array<{
     date: string;
+    condition: string;
     maxTemp: number;
     minTemp: number;
-    condition: string;
-    icon: string;
-    humidity: number;
-    windSpeed: number;
     precipitation: number;
+    windSpeed: string;
   }>;
   hourly: Array<{
     time: string;
     temperature: number;
     condition: string;
-    icon: string;
     precipitation: number;
-    windSpeed: number;
+    windSpeed: string;
   }>;
   lastUpdated: string;
 }
@@ -53,22 +43,20 @@ export const useWeather = () => {
   const [loading, setLoading] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [loadingAI, setLoadingAI] = useState(false);
-  const { user } = useAuth();
 
-  const fetchWeather = async (lat?: number, lon?: number, city?: string) => {
+  const fetchWeather = async (lat?: number, lon?: number, location?: string) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (lat) params.append('lat', lat.toString());
-      if (lon) params.append('lon', lon.toString());
-      if (city) params.append('city', city);
-
-      const { data, error } = await supabase.functions.invoke('luvvix-weather-api/current', {
-        body: { lat, lon, city },
+      const { data, error } = await supabase.functions.invoke('luvvix-weather-api', {
+        body: { 
+          lat,
+          lon,
+          location: location || 'Paris'
+        }
       });
 
       if (error) throw error;
-      setWeatherData(data);
+      setWeatherData(data?.weather);
     } catch (error) {
       console.error('Error fetching weather:', error);
       toast({
@@ -82,21 +70,19 @@ export const useWeather = () => {
   };
 
   const generateAIAnalysis = async () => {
-    if (!weatherData || !user) return;
-    
+    if (!weatherData) return;
+
     setLoadingAI(true);
     try {
-      const { data, error } = await supabase.functions.invoke('luvvix-weather-api/ai-analysis', {
-        body: { weatherData: weatherData.current },
+      const { data, error } = await supabase.functions.invoke('luvvix-weather-api', {
+        body: { 
+          action: 'analyzeWeather',
+          weatherData
+        }
       });
 
       if (error) throw error;
-      setAiAnalysis(data.analysis);
-      
-      toast({
-        title: "Analyse IA terminée",
-        description: "L'IA a analysé les conditions météo",
-      });
+      setAiAnalysis(data?.analysis || '');
     } catch (error) {
       console.error('Error generating AI analysis:', error);
       toast({

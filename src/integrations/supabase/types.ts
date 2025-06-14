@@ -742,6 +742,45 @@ export type Database = {
         }
         Relationships: []
       }
+      brain_interactions: {
+        Row: {
+          actions_triggered: Json | null
+          brain_analysis: Json
+          confidence_score: number | null
+          created_at: string
+          data: Json
+          id: string
+          interaction_type: string
+          patterns_detected: Json | null
+          source_app: string
+          user_id: string
+        }
+        Insert: {
+          actions_triggered?: Json | null
+          brain_analysis?: Json
+          confidence_score?: number | null
+          created_at?: string
+          data?: Json
+          id?: string
+          interaction_type: string
+          patterns_detected?: Json | null
+          source_app: string
+          user_id: string
+        }
+        Update: {
+          actions_triggered?: Json | null
+          brain_analysis?: Json
+          confidence_score?: number | null
+          created_at?: string
+          data?: Json
+          id?: string
+          interaction_type?: string
+          patterns_detected?: Json | null
+          source_app?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       calendar_events: {
         Row: {
           all_day: boolean | null
@@ -3249,6 +3288,45 @@ export type Database = {
           lastName?: string | null
           profileImage?: string | null
           updatedAt?: string
+        }
+        Relationships: []
+      }
+      user_brain_knowledge: {
+        Row: {
+          behavioral_patterns: Json
+          created_at: string
+          ecosystem_usage: Json
+          id: string
+          interaction_history: Json
+          learning_profile: Json
+          predictions: Json
+          preferences: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          behavioral_patterns?: Json
+          created_at?: string
+          ecosystem_usage?: Json
+          id?: string
+          interaction_history?: Json
+          learning_profile?: Json
+          predictions?: Json
+          preferences?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          behavioral_patterns?: Json
+          created_at?: string
+          ecosystem_usage?: Json
+          id?: string
+          interaction_history?: Json
+          learning_profile?: Json
+          predictions?: Json
+          preferences?: Json
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

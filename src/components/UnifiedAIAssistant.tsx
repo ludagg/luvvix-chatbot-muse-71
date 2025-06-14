@@ -194,7 +194,7 @@ Que puis-je faire pour vous aujourd'hui ?`,
       let assistantContent = '';
       if (typeof response === 'string') {
         assistantContent = response;
-      } else if (response && typeof response === 'object' && 'message' in response) {
+      } else if (response && typeof response === 'object' && 'message' in response && (response as any).message) {
         assistantContent = (response as any).message;
       } else {
         assistantContent = "Je n'ai pas pu comprendre la réponse du cerveau IA.";

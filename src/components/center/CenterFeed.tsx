@@ -1,12 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import PostCreator from './PostCreator';
 import PostCard from './PostCard';
+import UserDiscovery from './UserDiscovery';
+import ActivityFeed from './ActivityFeed';
+import CommunityStats from './CommunityStats';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, RefreshCw, Users, Activity, BarChart3 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface Post {
@@ -30,6 +33,7 @@ const CenterFeed = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState('feed');
 
   const fetchPosts = async () => {
     try {
@@ -131,43 +135,87 @@ const CenterFeed = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-6">
-      {/* Post Creator */}
-      <PostCreator onPostCreated={handlePostCreated} />
+    <div className="max-w-6xl mx-auto p-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="feed" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Fil d'actualité
+          </TabsTrigger>
+          <TabsTrigger value="discover" className="gap-2">
+            <Users className="h-4 w-4" />
+            Découvrir
+          </TabsTrigger>
+          <TabsTrigger value="activity" className="gap-2">
+            <Activity className="h-4 w-4" />
+            Activité
+          </TabsTrigger>
+          <TabsTrigger value="stats" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Communauté
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Refresh Button */}
-      <div className="flex justify-center">
-        <Button
-          variant="outline"
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          Actualiser
-        </Button>
-      </div>
+        <TabsContent value="feed" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Post Creator */}
+              <PostCreator onPostCreated={handlePostCreated} />
 
-      {/* Posts Feed */}
-      <div className="space-y-4">
-        {posts.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400">
-                Aucun post à afficher. Soyez le premier à publier !
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          posts.map((post) => (
-            <PostCard
-              key={post.id}
-              post={post}
-              onUpdate={fetchPosts}
-            />
-          ))
-        )}
-      </div>
+              {/* Refresh Button */}
+              <div className="flex justify-center">
+                <Button
+                  variant="outline"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+                  Actualiser
+                </Button>
+              </div>
+
+              {/* Posts Feed */}
+              <div className="space-y-4">
+                {posts.length === 0 ? (
+                  <Card>
+                    <CardContent className="text-center py-12">
+                      <p className="text-gray-500 dark:text-gray-400">
+                        Aucun post à afficher. Soyez le premier à publier !
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  posts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      onUpdate={fetchPosts}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <CommunityStats />
+              <ActivityFeed />
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="discover">
+          <UserDiscovery />
+        </TabsContent>
+
+        <TabsContent value="activity">
+          <ActivityFeed />
+        </TabsContent>
+
+        <TabsContent value="stats">
+          <CommunityStats />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

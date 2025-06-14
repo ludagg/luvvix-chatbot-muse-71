@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import StoryPreviewModal from './StoryPreviewModal';
+import StoryLoader from './StoryLoader';
 
 interface Story {
   id: string;
@@ -31,12 +32,14 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
   const [userStories, setUserStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchStories();
   }, [user]);
 
   const fetchStories = async () => {
+    setLoading(true);
     if (!user) return;
 
     try {
@@ -86,6 +89,7 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
   const createStory = async (file: File) => {
     if (!user) return;
 
+    setUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}_${Date.now()}.${fileExt}`;
@@ -119,6 +123,8 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
     } catch (error) {
       console.error('Erreur création story:', error);
       toast.error('Erreur lors de la création de la story');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -151,19 +157,17 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center space-x-3 p-4 overflow-x-auto">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="flex-shrink-0">
-            <div className="w-16 h-16 bg-gray-200 rounded-full animate-pulse"></div>
-          </div>
-        ))}
-      </div>
-    );
+    return <StoryLoader text="Chargement des stories..." />;
   }
 
   return (
     <>
+      {/* Loader pendant upload story */}
+      {uploading && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
+          <StoryLoader text="Envoi en cours..." />
+        </div>
+      )}
       <div className="flex items-center space-x-3 p-4 overflow-x-auto bg-white border-b border-gray-200">
         {/* Mes stories (plusieurs possibles) */}
         {userStories.length > 0 ? (

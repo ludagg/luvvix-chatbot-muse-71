@@ -20,9 +20,11 @@ interface Post {
   comments_count: number;
   created_at: string;
   user_profiles?: {
-    full_name: string;
-    username: string;
-    avatar_url: string;
+    id: string;
+    full_name?: string;
+    username?: string;
+    avatar_url?: string;
+    email?: string; // Ajout si besoin
   };
 }
 
@@ -33,9 +35,11 @@ interface Comment {
   content: string;
   created_at: string;
   user_profiles?: {
-    full_name: string;
-    username: string;
-    avatar_url: string;
+    id: string;
+    full_name?: string;
+    username?: string;
+    avatar_url?: string;
+    email?: string; // Ajout si besoin
   };
 }
 
@@ -90,10 +94,12 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         .from('center_posts')
         .select(`
           *,
-          user_profiles!inner(
+          user_profiles: user_id (
+            id,
             full_name,
             username,
-            avatar_url
+            avatar_url,
+            email
           )
         `)
         .order('created_at', { ascending: false })
@@ -330,10 +336,12 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         .from('center_comments')
         .select(`
           *,
-          user_profiles!inner(
+          user_profiles: user_id (
+            id,
             full_name,
             username,
-            avatar_url
+            avatar_url,
+            email
           )
         `)
         .eq('post_id', postId)
@@ -384,8 +392,13 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
             </span>
           </div>
           <div>
-            <h4 className="font-semibold text-gray-900">{post.user_profiles?.full_name || 'Utilisateur'}</h4>
-            <p className="text-xs text-gray-500">@{post.user_profiles?.username}</p>
+            <h4 className="font-semibold text-gray-900">
+              {post.user_profiles?.full_name || 'Utilisateur inconnu'}
+            </h4>
+            <p className="text-xs text-gray-500">@{post.user_profiles?.username || "anonyme"}</p>
+            {post.user_profiles?.email && (
+              <p className="text-xs text-gray-400">{post.user_profiles.email}</p>
+            )}
           </div>
         </div>
         <div className="flex items-center space-x-2">
@@ -492,9 +505,12 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                 <div className="flex-1">
                   <div className="bg-gray-100 rounded-2xl px-3 py-2">
                     <h5 className="font-semibold text-sm text-gray-900">
-                      {comment.user_profiles?.full_name || 'Utilisateur'}
+                      {comment.user_profiles?.full_name || 'Utilisateur inconnu'}
                     </h5>
                     <p className="text-sm text-gray-700">{comment.content}</p>
+                    {comment.user_profiles?.email && (
+                      <p className="text-xs text-gray-400">{comment.user_profiles.email}</p>
+                    )}
                   </div>
                   <span className="text-xs text-gray-500 ml-3 mt-1">
                     {format(new Date(comment.created_at), 'dd MMM HH:mm', { locale: fr })}

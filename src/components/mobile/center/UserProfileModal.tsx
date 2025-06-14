@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, UserPlus, UserMinus, MessageCircle, MoreHorizontal, MapPin, Calendar, Users, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -59,44 +60,25 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
     // eslint-disable-next-line
   }, [userId]);
 
-  // Nouvelle fonction : on tente d'abord center_profiles, sinon fallback sur user_profiles
+  // Nouvelle version : ne prend que user_profiles !
   const fetchUserProfile = async () => {
     try {
-      // 1. Cherche dans center_profiles (pour bio/avatar/etc.)
-      const { data: center, error: errCenter } = await supabase
-        .from('center_profiles')
+      const { data, error } = await supabase
+        .from('user_profiles')
         .select('id, username, full_name, avatar_url, bio, created_at')
         .eq('id', userId)
         .maybeSingle();
 
-      if (center) {
-        setProfile(center);
-        return;
-      }
-
-      // 2. Fallback sur user_profiles juste au cas où (vieux profils)
-      const { data: basic, error: errUser } = await supabase
-        .from('user_profiles')
-        .select('id, username, full_name, created_at')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (basic) {
+      if (error || !data) {
         setProfile({
-          ...basic,
-          avatar_url: undefined,
-          bio: undefined,
+          id: userId,
+          username: `user_${userId.slice(0, 8)}`,
+          full_name: 'Utilisateur',
+          created_at: new Date().toISOString()
         });
         return;
       }
-
-      // Aucun profil trouvé
-      setProfile({
-        id: userId,
-        username: `user_${userId.slice(0, 8)}`,
-        full_name: 'Utilisateur',
-        created_at: new Date().toISOString()
-      });
+      setProfile(data);
     } catch (error) {
       setProfile({
         id: userId,
@@ -476,3 +458,4 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
 };
 
 export default UserProfileModal;
+

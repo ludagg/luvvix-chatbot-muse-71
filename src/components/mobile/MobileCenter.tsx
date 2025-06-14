@@ -693,7 +693,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         // Mock: filter posts from followed users
         return filtered.filter(post => Math.random() > 0.3);
       default:
-        return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
   };
 

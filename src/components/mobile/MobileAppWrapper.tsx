@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
@@ -147,6 +148,8 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
         return <MobileAssistant onBack={() => setActiveView('home')} />;
       case 'cloud':
         return <MobileCloud />;
+      case 'center':
+        return <MobileCenter onBack={() => setActiveView('home')} />;
       case 'profile':
         return <MobileProfile />;
       case 'settings':
@@ -161,8 +164,6 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
         return <MobileTranslate onBack={() => setActiveView('home')} />;
       case 'weather':
         return <MobileWeather onBack={() => setActiveView('home')} />;
-      case 'center':
-        return <MobileCenter onBack={() => setActiveView('home')} />;
       default:
         return <MobileHome />;
     }

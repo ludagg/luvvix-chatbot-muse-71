@@ -2,6 +2,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { neuralNetwork } from './luvvix-neural-network';
 import { orchestrator } from './luvvix-orchestrator';
 import { toast } from 'sonner';
+import { BrainLearning } from './learning/BrainLearning';
+import { BrainActions } from './actions/BrainActions';
 
 interface UserKnowledge {
   id: string;
@@ -63,17 +65,16 @@ class LuvviXBrain {
   // === APPRENTISSAGE CONTINU ===
   async learnFromInteraction(event: LearningEvent) {
     console.log('🧠 Brain Learning:', event.event_type, 'dans', event.app_context);
-    
-    // Ajouter à la queue d'apprentissage
-    this.learningQueue.push(event);
-    
-    // Enregistrer l'interaction immédiatement
+
+    // Charger connaissances actuelles
+    const knowledge = await this.loadUserKnowledge(event.userId);
+
+    // Analyse intelligente patterns & update
+    await BrainLearning.learnFromInteraction(event.userId, event, knowledge);
+
+    // Stockage Interaction enrichie
     await this.recordInteraction(event);
-    
-    // Mettre à jour les patterns en temps réel
-    await this.updateUserPatterns(event.userId, event);
-    
-    // Générer des prédictions si nécessaire
+    // Générer des prédictions si besoin
     if (this.shouldGeneratePredictions(event)) {
       await this.generateSmartPredictions(event.userId);
     }
@@ -132,30 +133,8 @@ class LuvviXBrain {
 
   // === ACTIONS INTELLIGENTES ===
   async executeSmartAction(userId: string, action: BrainAction): Promise<boolean> {
-    console.log('🧠 Brain Action:', action.type, '->', action.action);
-    
-    try {
-      switch (action.type) {
-        case 'calendar':
-          return await this.executeCalendarAction(userId, action);
-        case 'story':
-          return await this.executeStoryAction(userId, action);
-        case 'form':
-          return await this.executeFormAction(userId, action);
-        case 'notification':
-          return await this.executeNotificationAction(userId, action);
-        case 'automation':
-          return await this.executeAutomationAction(userId, action);
-        case 'recommendation':
-          return await this.executeRecommendationAction(userId, action);
-        default:
-          console.warn('🧠 Type d\'action non reconnu:', action.type);
-          return false;
-      }
-    } catch (error) {
-      console.error('❌ Erreur exécution action:', error);
-      return false;
-    }
+    // Passer par le module d’actions
+    return await BrainActions.execute(userId, action);
   }
 
   private async executeCalendarAction(userId: string, action: BrainAction): Promise<boolean> {

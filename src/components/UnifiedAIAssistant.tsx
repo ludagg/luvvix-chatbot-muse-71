@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -129,16 +128,19 @@ Que puis-je faire pour vous aujourd'hui ?`,
         { component: 'UnifiedAIAssistant' }
       );
 
+      // Ajout toast si action
+      if (typeof response === 'object' && response?.actionDone) {
+        toast.success("Action IA réalisée !");
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response,
+        content: typeof response === 'string' ? response : response.message,
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-
-      // Recharger les insights après l'interaction
       await loadUserInsights();
 
     } catch (error) {

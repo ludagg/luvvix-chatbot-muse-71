@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,8 +20,9 @@ import MobileCalendar from './MobileCalendar';
 import MobileForms from './MobileForms';
 import MobileTranslate from './MobileTranslate';
 import MobileWeather from './MobileWeather';
+import MobileCenter from './MobileCenter';
 
-type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search' | 'calendar' | 'forms' | 'translate' | 'weather';
+type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search' | 'calendar' | 'forms' | 'translate' | 'weather' | 'center';
 
 const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   const isMobile = useIsMobile();
@@ -94,11 +94,16 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
       setActiveView('weather');
     };
 
+    const handleNavigateToCenter = () => {
+      setActiveView('center');
+    };
+
     window.addEventListener('navigate-to-assistant', handleNavigateToAssistant);
     window.addEventListener('navigate-to-calendar', handleNavigateToCalendar);
     window.addEventListener('navigate-to-forms', handleNavigateToForms);
     window.addEventListener('navigate-to-translate', handleNavigateToTranslate);
     window.addEventListener('navigate-to-weather', handleNavigateToWeather);
+    window.addEventListener('navigate-to-center', handleNavigateToCenter);
 
     return () => {
       window.removeEventListener('navigate-to-assistant', handleNavigateToAssistant);
@@ -106,6 +111,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
       window.removeEventListener('navigate-to-forms', handleNavigateToForms);
       window.removeEventListener('navigate-to-translate', handleNavigateToTranslate);
       window.removeEventListener('navigate-to-weather', handleNavigateToWeather);
+      window.removeEventListener('navigate-to-center', handleNavigateToCenter);
     };
   }, []);
 
@@ -155,6 +161,8 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
         return <MobileTranslate onBack={() => setActiveView('home')} />;
       case 'weather':
         return <MobileWeather onBack={() => setActiveView('home')} />;
+      case 'center':
+        return <MobileCenter onBack={() => setActiveView('home')} />;
       default:
         return <MobileHome />;
     }
@@ -174,7 +182,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Ne pas afficher le header et la navigation pour les vues en plein écran
-  const isFullScreenView = ['calendar', 'forms', 'translate', 'weather'].includes(activeView);
+  const isFullScreenView = ['calendar', 'forms', 'translate', 'weather', 'center'].includes(activeView);
 
   if (isFullScreenView) {
     return (
@@ -227,7 +235,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
             className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
           >
             <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
           </button>

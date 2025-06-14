@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, Bell, Image as ImageIcon, MapPin, Users, Video, Feather, TrendingUp, Hash, Home, Mail, Camera, Bookmark, Settings, Moon, Sun } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,6 +12,9 @@ import UserSuggestions from './UserSuggestions';
 import NotificationCenter from './NotificationCenter';
 import HashtagTrends from './HashtagTrends';
 import SearchAdvanced from './SearchAdvanced';
+import MobileCenterMessaging from './MobileCenterMessaging';
+import MobileCenterGroups from './MobileCenterGroups';
+import VideoUploader from './VideoUploader';
 
 interface MobileCenterProps {
   onBack: () => void;
@@ -34,21 +38,6 @@ interface Post {
   };
 }
 
-interface Comment {
-  id: string;
-  post_id: string;
-  user_id: string;
-  content: string;
-  created_at: string;
-  user_profiles?: {
-    id: string;
-    full_name?: string;
-    username?: string;
-    avatar_url?: string;
-    email?: string;
-  };
-}
-
 interface UserProfile {
   id: string;
   username: string;
@@ -59,55 +48,25 @@ interface UserProfile {
   is_following?: boolean;
 }
 
-interface Group {
-  id: string;
-  name: string;
-  description: string;
-  members_count: number;
-  avatar_url?: string;
-  is_member: boolean;
-}
-
 const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'feed' | 'explore' | 'groups' | 'notifications' | 'search'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'explore' | 'groups' | 'notifications' | 'search' | 'messages'>('feed');
   const [showStoryViewer, setShowStoryViewer] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [showVideoUploader, setShowVideoUploader] = useState(false);
   
   const [posts, setPosts] = useState<Post[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [showComposer, setShowComposer] = useState(false);
   const [posting, setPosting] = useState(false);
 
-  const [newPost, setNewPost] = useState('');
-  const [showComments, setShowComments] = useState<string | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState('');
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
-  const [showVideoUpload, setShowVideoUpload] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
-  const [selectedImages, setSelectedImages] = useState<File[]>([]);
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [groupName, setGroupName] = useState('');
-  const [groupDescription, setGroupDescription] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
-  const [contentFilter, setContentFilter] = useState<'recent' | 'popular' | 'friends'>('recent');
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
   const [postReactions, setPostReactions] = useState<{[key: string]: {[key: string]: number}}>({});
   const [userReactions, setUserReactions] = useState<{[key: string]: string}>({});
-
-  const reactions = [
-    { emoji: '❤️', name: 'love', color: 'text-red-500' },
-    { emoji: '👍', name: 'like', color: 'text-blue-500' },
-    { emoji: '😂', name: 'laugh', color: 'text-yellow-500' },
-    { emoji: '😮', name: 'wow', color: 'text-orange-500' },
-    { emoji: '😢', name: 'sad', color: 'text-blue-400' },
-    { emoji: '😡', name: 'angry', color: 'text-red-600' }
-  ];
 
   const mockStories = [
     {
@@ -135,22 +94,10 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     { tag: 'WebDev', posts_count: 8934, trend_direction: 'up' as const, change_percentage: 12 }
   ];
 
-  const mockSuggestedUsers = [
-    {
-      id: '3',
-      username: 'designer_pro',
-      full_name: 'Pro Designer',
-      avatar_url: '',
-      followers_count: 1234,
-      is_following: false
-    }
-  ];
-
   useEffect(() => {
     fetchPosts();
     fetchLikedPosts();
     fetchSuggestedUsers();
-    fetchGroups();
   }, []);
 
   const fetchPosts = async () => {
@@ -193,40 +140,21 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         .limit(5);
 
       if (error) throw error;
-      setSuggestedUsers(data || []);
+      
+      // Transform data to match UserProfile interface
+      const transformedUsers: UserProfile[] = (data || []).map(profile => ({
+        id: profile.id,
+        username: profile.username || '',
+        full_name: profile.full_name || '',
+        avatar_url: profile.avatar_url || '',
+        followers_count: 0,
+        following_count: 0,
+        is_following: false
+      }));
+      
+      setSuggestedUsers(transformedUsers);
     } catch (error) {
       console.error('Erreur chargement utilisateurs:', error);
-    }
-  };
-
-  const fetchGroups = async () => {
-    try {
-      const mockGroups: Group[] = [
-        {
-          id: '1',
-          name: 'Développeurs JavaScript',
-          description: 'Communauté de développeurs passionnés',
-          members_count: 1247,
-          is_member: false
-        },
-        {
-          id: '2',
-          name: 'Design UI/UX',
-          description: 'Partage et discussions sur le design',
-          members_count: 892,
-          is_member: true
-        },
-        {
-          id: '3',
-          name: 'LuvviX Supporters',
-          description: 'Groupe officiel des utilisateurs LuvviX',
-          members_count: 3456,
-          is_member: false
-        }
-      ];
-      setGroups(mockGroups);
-    } catch (error) {
-      console.error('Erreur chargement groupes:', error);
     }
   };
 
@@ -246,7 +174,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     }
   };
 
-  const createPost = async (content: string, images: File[]) => {
+  const createPost = async (content: string, images: File[], video?: File) => {
     if (!content.trim() || !user) return;
     setPosting(true);
     try {
@@ -256,6 +184,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         media_urls: [],
       };
 
+      // Upload images
       if (images.length > 0) {
         const uploadResults = await Promise.all(images.map(async (img, index) => {
           const { data, error } = await supabase.storage
@@ -265,6 +194,15 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
           return supabase.storage.from('center-media').getPublicUrl(data.path).data.publicUrl;
         }));
         postData.media_urls = uploadResults;
+      }
+
+      // Upload video
+      if (video) {
+        const { data, error } = await supabase.storage
+          .from('center-media')
+          .upload(`videos/${user.id}_${Date.now()}_${video.name}`, video, { upsert: true });
+        if (error) throw error;
+        postData.video_url = supabase.storage.from('center-media').getPublicUrl(data.path).data.publicUrl;
       }
 
       const { error } = await supabase
@@ -348,7 +286,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   };
 
   const handleStoryUpload = async (file: File) => {
-    // Story upload logic
     console.log('Uploading story:', file);
     toast({
       title: "Story ajoutée",
@@ -356,8 +293,13 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     });
   };
 
+  const handleVideoUpload = (file: File) => {
+    setShowComposer(true);
+    setShowVideoUploader(false);
+    // Pass video to composer
+  };
+
   const handleReaction = async (postId: string, reaction: string) => {
-    // Reaction logic
     console.log('Adding reaction:', reaction, 'to post:', postId);
     setShowReactionPicker(null);
   };
@@ -387,12 +329,38 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     console.log('Clicked hashtag:', hashtag);
   };
 
+  // Show specific views
   if (showAdvancedSearch) {
     return (
       <SearchAdvanced
         onSearch={handleSearch}
         onClose={() => setShowAdvancedSearch(false)}
       />
+    );
+  }
+
+  if (activeTab === 'messages') {
+    return <MobileCenterMessaging onBack={() => setActiveTab('feed')} />;
+  }
+
+  if (activeTab === 'groups') {
+    return <MobileCenterGroups onBack={() => setActiveTab('feed')} />;
+  }
+
+  if (activeTab === 'notifications') {
+    return (
+      <div className="fixed inset-0 bg-white z-50">
+        <div className="p-4 border-b border-gray-200">
+          <button onClick={() => setActiveTab('feed')} className="p-2 hover:bg-gray-100 rounded-full">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </div>
+        <NotificationCenter
+          notifications={mockNotifications}
+          onMarkAsRead={handleMarkNotificationAsRead}
+          onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+        />
+      </div>
     );
   }
 
@@ -439,8 +407,8 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
           {[
             { key: 'feed', label: 'Fil', icon: Home },
             { key: 'explore', label: 'Explorer', icon: TrendingUp },
-            { key: 'groups', label: 'Groupes', icon: Users },
-            { key: 'notifications', label: 'Notifications', icon: Bell }
+            { key: 'messages', label: 'Messages', icon: Mail },
+            { key: 'groups', label: 'Groupes', icon: Users }
           ].map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -463,11 +431,10 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         </div>
       </div>
 
-      {/* Stories Bar améliorée */}
+      {/* Stories Bar */}
       {activeTab === 'feed' && (
         <div className={`border-b p-3 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
           <div className="flex items-center space-x-3 overflow-x-auto scrollbar-hide">
-            {/* Ajouter une story */}
             <div className="flex flex-col items-center flex-shrink-0">
               <input
                 type="file"
@@ -484,7 +451,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
               <span className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Votre story</span>
             </div>
             
-            {/* Stories existantes */}
             {mockStories.map((story, index) => (
               <div key={story.id} className="flex flex-col items-center flex-shrink-0">
                 <button
@@ -512,14 +478,12 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'feed' && (
           <div>
-            {/* User suggestions */}
             <UserSuggestions
-              users={mockSuggestedUsers}
+              users={suggestedUsers}
               onFollow={handleFollow}
               onDismiss={handleDismissUser}
             />
 
-            {/* Hashtag trends */}
             <HashtagTrends
               hashtags={mockHashtags}
               onHashtagClick={handleHashtagClick}
@@ -543,7 +507,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                 </span>
               </button>
               
-              {/* Actions rapides */}
               <div className={`flex items-center justify-around mt-3 pt-3 border-t ${
                 darkMode ? 'border-gray-700' : 'border-gray-100'
               }`}>
@@ -555,7 +518,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                   <span className="text-sm font-medium">Photo</span>
                 </button>
                 <button
-                  onClick={() => setShowComposer(true)}
+                  onClick={() => setShowVideoUploader(true)}
                   className="flex items-center space-x-2 text-blue-500 hover:bg-blue-50 px-3 py-2 rounded-full transition-colors"
                 >
                   <Video className="w-5 h-5" />
@@ -656,53 +619,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
             </div>
           </div>
         )}
-
-        {activeTab === 'groups' && (
-          <div className="p-4">
-            <h2 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Groupes</h2>
-            <div className="space-y-3">
-              {groups.map((group) => (
-                <div key={group.id} className={`p-3 rounded-lg border ${
-                  darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-                }`}>
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
-                        <Users className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {group.name}
-                        </h4>
-                        <p className={`text-xs mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {group.description}
-                        </p>
-                        <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
-                          {group.members_count} membres
-                        </p>
-                      </div>
-                    </div>
-                    <button className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                      group.is_member
-                        ? darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        : 'bg-blue-500 text-white hover:bg-blue-600'
-                    }`}>
-                      {group.is_member ? 'Membre' : 'Rejoindre'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'notifications' && (
-          <NotificationCenter
-            notifications={mockNotifications}
-            onMarkAsRead={handleMarkNotificationAsRead}
-            onMarkAllAsRead={handleMarkAllNotificationsAsRead}
-          />
-        )}
       </div>
 
       {/* Bouton flottant pour composer */}
@@ -719,6 +635,13 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
           onClose={() => setShowComposer(false)}
           onPost={createPost}
           isSubmitting={posting}
+        />
+      )}
+
+      {showVideoUploader && (
+        <VideoUploader
+          onVideoSelect={handleVideoUpload}
+          onClose={() => setShowVideoUploader(false)}
         />
       )}
 

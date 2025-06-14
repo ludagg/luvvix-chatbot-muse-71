@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, MoreVertical, Send, Camera, Image as ImageIcon, MapPin, Users, Bell, Play, UserPlus, UserCheck, Video } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -73,6 +72,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [showVideoUpload, setShowVideoUpload] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
   useEffect(() => {
     fetchPosts();
@@ -178,12 +178,18 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     try {
       const postData: any = {
         user_id: user.id,
-        content: newPost,
-        media_urls: []
+        content: newPost.trim(),
+        media_urls: [],
       };
 
+      // Simuler upload d'images (pour correspondre au backend actuel)
+      if (selectedImages.length > 0) {
+        postData.media_urls = selectedImages.map((_, index) =>
+          `https://example.com/images/${Date.now()}_${index}.jpg`
+        );
+      }
+
       if (selectedVideo) {
-        // Simuler l'upload de vidéo
         postData.video_url = `https://example.com/videos/${Date.now()}.mp4`;
       }
 
@@ -195,6 +201,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
       setNewPost('');
       setSelectedVideo(null);
+      setSelectedImages([]);
       setShowVideoUpload(false);
       fetchPosts();
       toast({
@@ -441,7 +448,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         <div className="mt-4 border-t border-gray-100 pt-4">
           {/* Nouveau commentaire */}
           <div className="flex items-center space-x-3 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-xs">
                 {user?.email?.[0]?.toUpperCase() || 'U'}
               </span>
@@ -469,7 +476,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
           <div className="space-y-3">
             {comments.map((comment) => (
               <div key={comment.id} className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-xs">
                     {comment.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
                   </span>
@@ -579,6 +586,25 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     </div>
   );
 
+  // Nouvelle fonction de gestion d'upload d'images
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length + selectedImages.length > 4) {
+      toast({
+        title: "Limite atteinte",
+        description: "Vous ne pouvez ajouter que 4 images maximum",
+        variant: "destructive"
+      });
+      return;
+    }
+    setSelectedImages(prev => [...prev, ...files]);
+  };
+
+  // Pour retirer une image
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
       {/* Header */}
@@ -629,11 +655,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
             {/* Créateur de post */}
             <div className="bg-white border-b border-gray-200 p-4">
               <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">
-                    {user?.email?.[0]?.toUpperCase() || 'U'}
-                  </span>
-                </div>
+                {/* ... avatar ... */}
                 <div className="flex-1">
                   <textarea
                     value={newPost}
@@ -642,7 +664,29 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                     className="w-full p-3 border border-gray-300 rounded-2xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={3}
                   />
-                  
+
+                  {/* Preview des images sélectionnées */}
+                  {selectedImages.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {selectedImages.map((img, idx) => (
+                        <div key={idx} className="relative w-20 h-20">
+                          <img
+                            src={URL.createObjectURL(img)}
+                            alt={`Aperçu ${idx + 1}`}
+                            className="w-20 h-20 object-cover rounded-lg border"
+                          />
+                          <button
+                            onClick={() => removeImage(idx)}
+                            className="absolute top-0 right-0 bg-black bg-opacity-60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-opacity-90"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Preview vidéo reste inchangée */}
                   {selectedVideo && (
                     <div className="mt-3 p-3 bg-gray-100 rounded-lg flex items-center justify-between">
                       <div className="flex items-center space-x-2">
@@ -657,35 +701,53 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                       </button>
                     </div>
                   )}
-                  
+
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center space-x-3">
-                      <button className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors">
-                        <Camera className="w-5 h-5" />
-                      </button>
-                      <button className="p-2 text-green-500 hover:bg-green-50 rounded-full transition-colors">
+                      {/* Ajout uploader image */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        id="image-upload-mobile"
+                        onChange={handleImageUpload}
+                        disabled={!!selectedVideo}
+                      />
+                      <label
+                        htmlFor="image-upload-mobile"
+                        className={`p-2 ${selectedVideo ? 'text-gray-400 cursor-not-allowed' : 'text-green-500 hover:bg-green-50'} rounded-full transition-colors cursor-pointer`}
+                      >
                         <ImageIcon className="w-5 h-5" />
-                      </button>
+                      </label>
+
+                      {/* Uploader vidéo existant */}
                       <input
                         type="file"
                         accept="video/*"
                         onChange={(e) => setSelectedVideo(e.target.files?.[0] || null)}
                         className="hidden"
                         id="video-upload"
+                        disabled={selectedImages.length > 0}
                       />
                       <label
                         htmlFor="video-upload"
-                        className="p-2 text-purple-500 hover:bg-purple-50 rounded-full transition-colors cursor-pointer"
+                        className={`p-2 ${selectedImages.length > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-purple-500 hover:bg-purple-50'} rounded-full transition-colors cursor-pointer`}
                       >
                         <Video className="w-5 h-5" />
                       </label>
+
+                      {/* Boutons caméra & map (conservés) */}
+                      <button className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors">
+                        <Camera className="w-5 h-5" />
+                      </button>
                       <button className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors">
                         <MapPin className="w-5 h-5" />
                       </button>
                     </div>
                     <button
                       onClick={createPost}
-                      disabled={!newPost.trim()}
+                      disabled={!newPost.trim() || isNaN(user?.id)}
                       className="px-6 py-2 bg-blue-500 text-white rounded-full font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Publier

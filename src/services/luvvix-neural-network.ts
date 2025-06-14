@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 interface CalendarEvent {
@@ -10,10 +9,12 @@ interface CalendarEvent {
 }
 
 export interface PredictionResult {
-  type: 'reminder' | 'recommendation' | 'workflow_automation' | 'app_suggestion' | 'productivity_tip' | 'content_recommendation';
+  type: 'reminder' | 'recommendation' | 'workflow_automation' | 'app_suggestion' | 'productivity_tip' | 'content_recommendation' | 'event_reminder';
   confidence: number;
   data: any;
   reasoning: string;
+  id?: string;
+  dismissed?: boolean;
 }
 
 interface UserInsights {
@@ -26,6 +27,7 @@ interface UserInsights {
 
 class LuvviXNeuralNetwork {
   private userDataCache: Map<string, any> = new Map();
+  private dismissedReminders: Map<string, Set<string>> = new Map();
 
   async loadUserData(userId: string): Promise<void> {
     try {
@@ -118,42 +120,96 @@ class LuvviXNeuralNetwork {
     const predictions: PredictionResult[] = [];
 
     try {
-      // Analyser les événements récents
+      // Charger les événements récents et à venir
       const { data: events } = await supabase
         .from('calendar_events')
         .select('*')
         .eq('user_id', userId)
-        .gte('start_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .gte('start_date', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()) // Depuis hier
+        .lte('start_date', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()) // Jusqu'à la semaine prochaine
         .order('start_date', { ascending: true });
 
-      if (events && events.length > 0) {
-        // Prédictions basées sur les rappels
-        const upcomingReminders = events.filter(event => 
-          event.event_type === 'reminder' && 
-          new Date(event.start_date) > new Date() &&
-          new Date(event.start_date) < new Date(Date.now() + 24 * 60 * 60 * 1000)
-        );
+      const dismissedForUser = this.dismissedReminders.get(userId) || new Set();
 
-        upcomingReminders.forEach(reminder => {
-          const timeUntil = Math.round((new Date(reminder.start_date).getTime() - Date.now()) / (1000 * 60 * 60));
+      if (events && events.length > 0) {
+        const now = new Date();
+        
+        events.forEach(event => {
+          const eventTime = new Date(event.start_date);
+          const timeDiff = eventTime.getTime() - now.getTime();
+          const minutesUntil = Math.floor(timeDiff / (1000 * 60));
           
-          predictions.push({
-            type: 'reminder',
-            confidence: 0.95,
-            data: {
-              event: reminder,
-              timeUntil: timeUntil,
-              tip: `Rappel: ${reminder.title} dans ${timeUntil}h`
-            },
-            reasoning: 'Rappel programmé à venir'
-          });
+          // Créer un ID unique pour ce rappel
+          const reminderId = `event_${event.id}_${eventTime.toISOString().split('T')[0]}`;
+          
+          // Vérifier si ce rappel a été marqué comme lu
+          if (dismissedForUser.has(reminderId)) {
+            return;
+          }
+
+          // Événements dans les 5 prochaines minutes ou qui ont commencé récemment (moins de 5 min de retard)
+          if (minutesUntil <= 5 && minutesUntil >= -5) {
+            let message = '';
+            let alertType = 'reminder';
+            
+            if (minutesUntil > 0) {
+              message = `Votre événement "${event.title}" commence dans ${minutesUntil} minute${minutesUntil > 1 ? 's' : ''}`;
+              alertType = 'upcoming';
+            } else if (minutesUntil === 0) {
+              message = `Votre événement "${event.title}" commence maintenant`;
+              alertType = 'now';
+            } else {
+              message = `Votre événement "${event.title}" a commencé il y a ${Math.abs(minutesUntil)} minute${Math.abs(minutesUntil) > 1 ? 's' : ''}`;
+              alertType = 'started';
+            }
+
+            predictions.push({
+              id: reminderId,
+              type: 'event_reminder',
+              confidence: 1.0,
+              data: {
+                event: event,
+                minutesUntil: minutesUntil,
+                tip: message,
+                alertType: alertType,
+                canDismiss: true
+              },
+              reasoning: 'Rappel d\'événement automatique',
+              dismissed: false
+            });
+          }
+          
+          // Événements dans les prochaines heures (pour information)
+          else if (minutesUntil > 5 && minutesUntil <= 120) {
+            const hoursUntil = Math.floor(minutesUntil / 60);
+            const remainingMinutes = minutesUntil % 60;
+            
+            let timeString = '';
+            if (hoursUntil > 0) {
+              timeString = `${hoursUntil}h${remainingMinutes > 0 ? ` ${remainingMinutes}min` : ''}`;
+            } else {
+              timeString = `${minutesUntil} minutes`;
+            }
+
+            predictions.push({
+              id: `info_${event.id}`,
+              type: 'recommendation',
+              confidence: 0.7,
+              data: {
+                event: event,
+                reason: `Événement à venir: "${event.title}" dans ${timeString}`,
+                suggestion: 'Préparez-vous pour votre événement'
+              },
+              reasoning: 'Information sur événement à venir'
+            });
+          }
         });
 
-        // Prédictions basées sur les tâches non terminées
+        // Analyser les tâches non terminées
         const incompleteTasks = events.filter(event => 
           event.event_type === 'task' && 
           !event.completed &&
-          new Date(event.start_date) < new Date()
+          new Date(event.start_date) < now
         );
 
         if (incompleteTasks.length > 0) {
@@ -162,19 +218,20 @@ class LuvviXNeuralNetwork {
             confidence: 0.8,
             data: {
               count: incompleteTasks.length,
-              reason: `Vous avez ${incompleteTasks.length} tâche(s) en retard`
+              reason: `Vous avez ${incompleteTasks.length} tâche(s) en retard`,
+              suggestion: 'Consultez votre calendrier pour rattraper le retard'
             },
             reasoning: 'Tâches non terminées détectées'
           });
         }
 
-        // Prédictions basées sur les patterns
-        const meetingsToday = events.filter(event => 
+        // Analyser la charge de travail du jour
+        const todayEvents = events.filter(event => 
           event.event_type === 'meeting' && 
-          new Date(event.start_date).toDateString() === new Date().toDateString()
+          new Date(event.start_date).toDateString() === now.toDateString()
         );
 
-        if (meetingsToday.length >= 3) {
+        if (todayEvents.length >= 3) {
           predictions.push({
             type: 'recommendation',
             confidence: 0.7,
@@ -193,8 +250,8 @@ class LuvviXNeuralNetwork {
           type: 'recommendation',
           confidence: 0.6,
           data: {
-            reason: 'Aucune activité récente détectée',
-            suggestion: 'Organisez votre semaine avec LuvviX Calendar'
+            reason: 'Aucun événement urgent détecté',
+            suggestion: 'Profitez-en pour planifier votre semaine avec LuvviX Calendar'
           },
           reasoning: 'Encouragement à utiliser le calendrier'
         });
@@ -208,13 +265,24 @@ class LuvviXNeuralNetwork {
         type: 'reminder',
         confidence: 0.5,
         data: {
-          tip: 'Pensez à planifier vos tâches importantes pour la semaine'
+          tip: 'Pensez à vérifier votre calendrier pour les événements à venir'
         },
         reasoning: 'Suggestion générale de productivité'
       });
     }
 
     return predictions;
+  }
+
+  dismissReminder(userId: string, reminderId: string): void {
+    if (!this.dismissedReminders.has(userId)) {
+      this.dismissedReminders.set(userId, new Set());
+    }
+    this.dismissedReminders.get(userId)!.add(reminderId);
+  }
+
+  clearDismissedReminders(userId: string): void {
+    this.dismissedReminders.delete(userId);
   }
 
   async analyzeUserBehavior(userId: string) {

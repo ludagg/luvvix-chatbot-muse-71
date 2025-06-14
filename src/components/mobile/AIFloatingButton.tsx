@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, X, MessageCircle, Lightbulb, TrendingUp } from 'lucide-react';
+import { AlertCircle, X, MessageCircle, Lightbulb, TrendingUp, Clock, CheckCircle, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { neuralNetwork } from '@/services/luvvix-neural-network';
+import type { PredictionResult } from '@/services/luvvix-neural-network';
 
 const AIFloatingButton = () => {
   const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<PredictionResult[]>([]);
   const [hasAlerts, setHasAlerts] = useState(true);
 
   useEffect(() => {
@@ -16,10 +17,22 @@ const AIFloatingButton = () => {
     }
   }, [user, isExpanded]);
 
+  // Actualiser les suggestions toutes les 30 secondes quand ouvert
+  useEffect(() => {
+    if (!user || !isExpanded) return;
+
+    const interval = setInterval(() => {
+      loadSuggestions();
+    }, 30000); // 30 secondes
+
+    return () => clearInterval(interval);
+  }, [user, isExpanded]);
+
   const loadSuggestions = async () => {
     if (!user) return;
     
     try {
+      await neuralNetwork.loadUserData(user.id);
       const predictions = await neuralNetwork.generatePredictions(user.id);
       setSuggestions(predictions);
       setHasAlerts(predictions.length > 0);
@@ -30,22 +43,20 @@ const AIFloatingButton = () => {
         {
           type: 'reminder',
           confidence: 0.9,
-          data: { tip: 'N\'oubliez pas de publier dans le groupe "LuvviX Developers" aujourd\'hui.' },
+          data: { tip: 'N\'oubliez pas de vérifier votre calendrier aujourd\'hui.' },
           reasoning: 'Rappel basé sur votre activité'
-        },
-        {
-          type: 'recommendation',
-          confidence: 0.8,
-          data: { app: 'LuvviX Weather', reason: 'Consultez la météo avant votre réunion de 14h' },
-          reasoning: 'Suggestion basée sur votre agenda'
         }
       ]);
       setHasAlerts(true);
     }
   };
 
-  const getSuggestionIcon = (type: string) => {
+  const getSuggestionIcon = (type: string, alertType?: string) => {
     switch (type) {
+      case 'event_reminder':
+        if (alertType === 'now') return <Clock className="w-5 h-5 text-red-500 animate-pulse" />;
+        if (alertType === 'started') return <Calendar className="w-5 h-5 text-orange-500" />;
+        return <Calendar className="w-5 h-5 text-blue-500" />;
       case 'recommendation':
         return <TrendingUp className="w-5 h-5 text-blue-500" />;
       case 'reminder':
@@ -55,8 +66,13 @@ const AIFloatingButton = () => {
     }
   };
 
-  const getSuggestionTitle = (type: string) => {
+  const getSuggestionTitle = (type: string, alertType?: string) => {
     switch (type) {
+      case 'event_reminder':
+        if (alertType === 'now') return 'Événement en cours';
+        if (alertType === 'started') return 'Événement commencé';
+        if (alertType === 'upcoming') return 'Événement imminent';
+        return 'Rappel d\'événement';
       case 'recommendation':
         return 'Recommandation';
       case 'reminder':
@@ -68,7 +84,39 @@ const AIFloatingButton = () => {
     }
   };
 
+  const getPriorityColor = (type: string, alertType?: string) => {
+    if (type === 'event_reminder') {
+      if (alertType === 'now') return 'border-red-500 bg-red-50';
+      if (alertType === 'started') return 'border-orange-500 bg-orange-50';
+      if (alertType === 'upcoming') return 'border-blue-500 bg-blue-50';
+    }
+    return 'border-gray-200 bg-gray-50';
+  };
+
+  const handleDismissReminder = (suggestion: PredictionResult) => {
+    if (suggestion.id && suggestion.type === 'event_reminder') {
+      neuralNetwork.dismissReminder(user!.id, suggestion.id);
+      setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
+      
+      // Actualiser le compteur d'alertes
+      setHasAlerts(suggestions.filter(s => s.id !== suggestion.id).length > 0);
+    }
+  };
+
+  const formatEventTime = (minutesUntil: number) => {
+    if (minutesUntil > 0) {
+      return `dans ${minutesUntil} min`;
+    } else if (minutesUntil === 0) {
+      return 'maintenant';
+    } else {
+      return `commencé il y a ${Math.abs(minutesUntil)} min`;
+    }
+  };
+
   if (!user) return null;
+
+  // Compter seulement les rappels non marqués comme lus
+  const unreadAlerts = suggestions.filter(s => !s.dismissed).length;
 
   return (
     <>
@@ -103,26 +151,60 @@ const AIFloatingButton = () => {
           <div className="p-4 space-y-3 max-h-64 overflow-y-auto">
             {suggestions.length > 0 ? (
               suggestions.map((suggestion, index) => (
-                <div key={index} className="p-3 bg-gray-50 rounded-xl">
+                <div 
+                  key={suggestion.id || index} 
+                  className={`p-3 rounded-xl border ${getPriorityColor(suggestion.type, suggestion.data?.alertType)}`}
+                >
                   <div className="flex items-start space-x-3">
-                    {getSuggestionIcon(suggestion.type)}
+                    {getSuggestionIcon(suggestion.type, suggestion.data?.alertType)}
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 text-sm">
-                        {getSuggestionTitle(suggestion.type)}
-                      </h4>
-                      <p className="text-gray-600 text-sm mt-1">
-                        {suggestion.data.tip || suggestion.data.reason || suggestion.reasoning}
-                      </p>
-                      <div className="flex items-center mt-2">
-                        <div className="w-full bg-gray-200 rounded-full h-1">
-                          <div 
-                            className="bg-orange-500 h-1 rounded-full"
-                            style={{ width: `${suggestion.confidence * 100}%` }}
-                          />
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 text-sm">
+                            {getSuggestionTitle(suggestion.type, suggestion.data?.alertType)}
+                          </h4>
+                          <p className="text-gray-600 text-sm mt-1">
+                            {suggestion.data.tip || suggestion.data.reason || suggestion.reasoning}
+                          </p>
+                          
+                          {/* Informations spéciales pour les événements */}
+                          {suggestion.type === 'event_reminder' && suggestion.data.event && (
+                            <div className="mt-2 text-xs text-gray-500">
+                              <div className="flex items-center space-x-2">
+                                <span>📅 {suggestion.data.event.title}</span>
+                              </div>
+                              <div className="flex items-center space-x-2 mt-1">
+                                <span>⏰ {formatEventTime(suggestion.data.minutesUntil)}</span>
+                                {suggestion.data.event.location && (
+                                  <span>📍 {suggestion.data.event.location}</span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center mt-2">
+                            <div className="w-full bg-gray-200 rounded-full h-1">
+                              <div 
+                                className="bg-orange-500 h-1 rounded-full"
+                                style={{ width: `${suggestion.confidence * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-gray-500 ml-2">
+                              {Math.round(suggestion.confidence * 100)}%
+                            </span>
+                          </div>
                         </div>
-                        <span className="text-xs text-gray-500 ml-2">
-                          {Math.round(suggestion.confidence * 100)}%
-                        </span>
+                        
+                        {/* Bouton pour marquer comme lu (seulement pour les rappels d'événements) */}
+                        {suggestion.type === 'event_reminder' && suggestion.data?.canDismiss && (
+                          <button
+                            onClick={() => handleDismissReminder(suggestion)}
+                            className="p-1 hover:bg-green-100 rounded-full ml-2 flex-shrink-0"
+                            title="Marquer comme lu"
+                          >
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -161,9 +243,9 @@ const AIFloatingButton = () => {
         }`}
       >
         <AlertCircle className="w-7 h-7 text-white" />
-        {hasAlerts && suggestions.length > 0 && !isExpanded && (
+        {hasAlerts && unreadAlerts > 0 && !isExpanded && (
           <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
-            <span className="text-white text-xs font-bold">{suggestions.length}</span>
+            <span className="text-white text-xs font-bold">{unreadAlerts}</span>
           </div>
         )}
       </button>

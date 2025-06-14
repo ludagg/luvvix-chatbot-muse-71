@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, UserPlus, UserMinus, MessageCircle, MoreHorizontal, MapPin, Calendar, Users, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -60,7 +59,6 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
     // eslint-disable-next-line
   }, [userId]);
 
-  // Nouvelle version : ne prend que user_profiles !
   const fetchUserProfile = async () => {
     try {
       const { data, error } = await supabase
@@ -69,7 +67,12 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
         .eq('id', userId)
         .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        console.error("Erreur SQL user_profiles:", error);
+      }
+
+      if (!data) {
+        console.warn("Aucune donnée user_profiles pour:", userId);
         setProfile({
           id: userId,
           username: `user_${userId.slice(0, 8)}`,
@@ -78,8 +81,11 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
         });
         return;
       }
+
+      console.log("Profil récupéré:", data);
       setProfile(data);
     } catch (error) {
+      console.error('Erreur suppresion profil:', error);
       setProfile({
         id: userId,
         username: `user_${userId.slice(0, 8)}`,
@@ -331,25 +337,31 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
         {/* Avatar et infos de base */}
         <div className="flex items-start space-x-4 mb-4">
           <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-2xl">
-              {profile.username?.[0]?.toUpperCase() || 'U'}
-            </span>
+            {profile.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt="avatar"
+                className="w-full h-full object-cover rounded-full"
+              />
+            ) : (
+              <span className="text-white font-bold text-2xl">
+                {profile.username?.[0]?.toUpperCase() || 'U'}
+              </span>
+            )}
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-bold text-gray-900">
               {profile.full_name || 'Utilisateur'}
             </h2>
-            <p className="text-gray-600">@{profile.username}</p>
+            <p className="text-gray-600">@{profile.username || `user_${profile.id?.slice(0, 8)}`}</p>
             <p className="text-gray-500 text-sm mt-1">
-              Membre depuis {new Date(profile.created_at).toLocaleDateString()}
+              Membre depuis {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : '...'}
             </p>
           </div>
         </div>
 
         {/* Bio */}
-        {profile.bio && (
-          <p className="text-gray-700 mb-4">{profile.bio}</p>
-        )}
+        <p className="text-gray-700 mb-4">{profile.bio || <span className="text-gray-400">Pas de bio</span>}</p>
 
         {/* Stats */}
         <div className="flex items-center space-x-6 mb-4">
@@ -458,4 +470,3 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
 };
 
 export default UserProfileModal;
-

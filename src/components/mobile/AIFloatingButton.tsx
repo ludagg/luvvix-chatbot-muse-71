@@ -9,7 +9,7 @@ const AIFloatingButton = () => {
   const { user } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
   const [suggestions, setSuggestions] = useState<PredictionResult[]>([]);
-  const [hasAlerts, setHasAlerts] = useState(true);
+  const [hasAlerts, setHasAlerts] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
@@ -29,7 +29,7 @@ const AIFloatingButton = () => {
       setHasAlerts(predictions.length > 0);
       setLastUpdate(new Date());
       
-      console.log('Suggestions chargées:', predictions);
+      console.log('Suggestions chargées automatiquement:', predictions);
     } catch (error) {
       console.error('Erreur chargement suggestions IA:', error);
       // Suggestions par défaut
@@ -47,35 +47,67 @@ const AIFloatingButton = () => {
     }
   }, [user]);
 
-  // Chargement initial et quand l'utilisateur clique
+  // Chargement automatique dès que l'utilisateur est connecté
   useEffect(() => {
-    if (user && isExpanded) {
-      loadSuggestions(true); // Force refresh when expanded
+    if (user) {
+      console.log('Utilisateur connecté, chargement des rappels...');
+      loadSuggestions(true);
     }
-  }, [user, isExpanded, loadSuggestions]);
+  }, [user, loadSuggestions]);
 
-  // Actualiser automatiquement toutes les 30 secondes quand ouvert
+  // Actualiser automatiquement toutes les 30 secondes
   useEffect(() => {
-    if (!user || !isExpanded) return;
+    if (!user) return;
 
     const interval = setInterval(() => {
-      loadSuggestions(false); // Refresh sans forcer le rechargement des données
-    }, 30000);
+      console.log('Actualisation automatique des rappels...');
+      loadSuggestions(false);
+    }, 30000); // 30 secondes
 
     return () => clearInterval(interval);
-  }, [user, isExpanded, loadSuggestions]);
+  }, [user, loadSuggestions]);
 
-  // Actualiser quand on revient sur la page
+  // Actualiser quand on revient sur la page (focus)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && user && isExpanded) {
+      if (!document.hidden && user) {
+        console.log('Page redevenue visible, actualisation des rappels...');
+        loadSuggestions(true);
+      }
+    };
+
+    const handleFocus = () => {
+      if (user) {
+        console.log('Application refocusée, actualisation des rappels...');
         loadSuggestions(true);
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user, isExpanded, loadSuggestions]);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user, loadSuggestions]);
+
+  // Actualiser quand l'application se charge complètement
+  useEffect(() => {
+    const handleLoad = () => {
+      if (user) {
+        console.log('Application chargée, actualisation des rappels...');
+        setTimeout(() => loadSuggestions(true), 1000); // Délai pour s'assurer que tout est chargé
+      }
+    };
+
+    if (document.readyState === 'complete') {
+      handleLoad();
+    } else {
+      window.addEventListener('load', handleLoad);
+      return () => window.removeEventListener('load', handleLoad);
+    }
+  }, [user, loadSuggestions]);
 
   const getSuggestionIcon = (type: string, alertType?: string) => {
     switch (type) {
@@ -145,7 +177,7 @@ const AIFloatingButton = () => {
 
   const handleButtonClick = () => {
     setIsExpanded(!isExpanded);
-    // Force refresh when opening
+    // Force refresh when opening pour s'assurer d'avoir les dernières données
     if (!isExpanded && user) {
       loadSuggestions(true);
     }

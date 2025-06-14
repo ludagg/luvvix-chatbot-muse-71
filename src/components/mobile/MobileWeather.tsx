@@ -4,131 +4,19 @@ import { ArrowLeft, MapPin, Wind, Droplets, Eye, Sun, Moon, Cloud, CloudRain, Za
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
-
-interface WeatherData {
-  current: {
-    temperature: number;
-    condition: string;
-    description: string;
-    icon: string;
-    humidity: number;
-    windSpeed: number;
-    windDirection: string;
-    visibility: number;
-    uvIndex: number;
-    pressure: number;
-    feelsLike: number;
-  };
-  location: {
-    name: string;
-    country: string;
-    region: string;
-    coordinates: {
-      lat: number;
-      lon: number;
-    };
-  };
-  forecast: DayForecast[];
-  hourly: HourlyForecast[];
-  lastUpdated: Date;
-}
-
-interface DayForecast {
-  date: Date;
-  maxTemp: number;
-  minTemp: number;
-  condition: string;
-  icon: string;
-  humidity: number;
-  windSpeed: number;
-  precipitation: number;
-}
-
-interface HourlyForecast {
-  time: Date;
-  temperature: number;
-  condition: string;
-  icon: string;
-  precipitation: number;
-  windSpeed: number;
-}
+import { useWeather } from '@/hooks/use-weather';
 
 interface MobileWeatherProps {
   onBack: () => void;
 }
 
 const MobileWeather = ({ onBack }: MobileWeatherProps) => {
-  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'current' | 'forecast' | 'hourly' | 'details'>('current');
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
   const [searchLocation, setSearchLocation] = useState('');
-  const [aiAnalysis, setAiAnalysis] = useState<string>('');
-  const [loadingAI, setLoadingAI] = useState(false);
 
-  // Simuler la récupération des données météo
-  const fetchWeatherData = async (lat?: number, lon?: number, city?: string) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Simuler un délai d'API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const mockWeatherData: WeatherData = {
-        current: {
-          temperature: Math.round(15 + Math.random() * 20),
-          condition: 'Ensoleillé',
-          description: 'Ciel dégagé avec quelques nuages épars',
-          icon: '☀️',
-          humidity: Math.round(40 + Math.random() * 40),
-          windSpeed: Math.round(5 + Math.random() * 15),
-          windDirection: 'NE',
-          visibility: Math.round(8 + Math.random() * 7),
-          uvIndex: Math.round(1 + Math.random() * 10),
-          pressure: Math.round(1000 + Math.random() * 40),
-          feelsLike: Math.round(15 + Math.random() * 20)
-        },
-        location: {
-          name: city || 'Paris',
-          country: 'France',
-          region: 'Île-de-France',
-          coordinates: { lat: lat || 48.8566, lon: lon || 2.3522 }
-        },
-        forecast: Array.from({ length: 7 }, (_, i) => ({
-          date: new Date(Date.now() + i * 24 * 60 * 60 * 1000),
-          maxTemp: Math.round(18 + Math.random() * 15),
-          minTemp: Math.round(8 + Math.random() * 10),
-          condition: ['Ensoleillé', 'Nuageux', 'Pluvieux', 'Orageux'][Math.floor(Math.random() * 4)],
-          icon: ['☀️', '☁️', '🌧️', '⛈️'][Math.floor(Math.random() * 4)],
-          humidity: Math.round(40 + Math.random() * 40),
-          windSpeed: Math.round(5 + Math.random() * 15),
-          precipitation: Math.round(Math.random() * 20)
-        })),
-        hourly: Array.from({ length: 24 }, (_, i) => ({
-          time: new Date(Date.now() + i * 60 * 60 * 1000),
-          temperature: Math.round(15 + Math.random() * 10),
-          condition: ['Ensoleillé', 'Nuageux', 'Pluvieux'][Math.floor(Math.random() * 3)],
-          icon: ['☀️', '☁️', '🌧️'][Math.floor(Math.random() * 3)],
-          precipitation: Math.round(Math.random() * 15),
-          windSpeed: Math.round(5 + Math.random() * 10)
-        })),
-        lastUpdated: new Date()
-      };
-      
-      setWeatherData(mockWeatherData);
-    } catch (err) {
-      setError('Impossible de récupérer les données météo');
-      toast({
-        title: "Erreur météo",
-        description: "Impossible de récupérer les données météo",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { weatherData, loading, aiAnalysis, loadingAI, fetchWeather, generateAIAnalysis } = useWeather();
 
   // Géolocalisation
   const getCurrentLocation = () => {
@@ -136,11 +24,11 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          fetchWeatherData(latitude, longitude);
+          fetchWeather(latitude, longitude);
         },
         (error) => {
           console.error('Erreur géolocalisation:', error);
-          fetchWeatherData(); // Utiliser Paris par défaut
+          fetchWeather(undefined, undefined, 'Paris');
           toast({
             title: "Géolocalisation",
             description: "Impossible d'obtenir votre position, utilisation de Paris par défaut",
@@ -148,41 +36,7 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
         }
       );
     } else {
-      fetchWeatherData(); // Utiliser Paris par défaut
-    }
-  };
-
-  // Analyse IA de la météo
-  const generateAIAnalysis = async () => {
-    if (!weatherData) return;
-    
-    setLoadingAI(true);
-    try {
-      // Simuler un appel à l'IA Gemini
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const analyses = [
-        `Conditions météo excellentes pour ${weatherData.location.name} ! La température de ${weatherData.current.temperature}°C est idéale pour les activités extérieures. Le vent faible (${weatherData.current.windSpeed} km/h) rend la journée très agréable.`,
-        `Attention aux conditions changeantes ! L'humidité élevée (${weatherData.current.humidity}%) pourrait annoncer de la pluie. Prévoyez un parapluie si vous sortez.`,
-        `Parfait pour une journée en terrasse ! Les conditions actuelles sont optimales avec un indice UV de ${weatherData.current.uvIndex}. N'oubliez pas la crème solaire.`,
-        `Journée mitigée à prévoir. La température ressentie (${weatherData.current.feelsLike}°C) est différente de la température réelle. Adaptez votre tenue en conséquence.`
-      ];
-      
-      const randomAnalysis = analyses[Math.floor(Math.random() * analyses.length)];
-      setAiAnalysis(randomAnalysis);
-      
-      toast({
-        title: "Analyse IA terminée",
-        description: "L'IA a analysé les conditions météo",
-      });
-    } catch (error) {
-      toast({
-        title: "Erreur IA",
-        description: "Impossible de générer l'analyse météo",
-        variant: "destructive"
-      });
-    } finally {
-      setLoadingAI(false);
+      fetchWeather(undefined, undefined, 'Paris');
     }
   };
 
@@ -190,7 +44,7 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
     if (useCurrentLocation) {
       getCurrentLocation();
     } else {
-      fetchWeatherData();
+      fetchWeather(undefined, undefined, 'Paris');
     }
   }, [useCurrentLocation]);
 
@@ -232,7 +86,7 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
             <div className="text-right">
               <div className="text-4xl mb-2">{getWeatherIcon(weatherData.current.condition)}</div>
               <button
-                onClick={() => fetchWeatherData()}
+                onClick={() => fetchWeather()}
                 className="p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition-colors"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -254,7 +108,7 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
             </div>
             <div className="text-right text-sm text-blue-100">
               <p>Mise à jour</p>
-              <p>{format(weatherData.lastUpdated, 'HH:mm')}</p>
+              <p>{format(new Date(weatherData.lastUpdated), 'HH:mm')}</p>
             </div>
           </div>
         </div>
@@ -352,7 +206,7 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
                 <div className="text-2xl">{getWeatherIcon(day.condition)}</div>
                 <div>
                   <p className="font-medium">
-                    {index === 0 ? 'Aujourd\'hui' : format(day.date, 'EEEE', { locale: fr })}
+                    {index === 0 ? 'Aujourd\'hui' : format(new Date(day.date), 'EEEE', { locale: fr })}
                   </p>
                   <p className="text-sm text-gray-600">{day.condition}</p>
                 </div>
@@ -395,7 +249,7 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
                 <div className="flex items-center space-x-3">
                   <span className="text-lg">{getWeatherIcon(hour.condition)}</span>
                   <div>
-                    <p className="font-medium">{format(hour.time, 'HH:mm')}</p>
+                    <p className="font-medium">{format(new Date(hour.time), 'HH:mm')}</p>
                     <p className="text-sm text-gray-600">{hour.condition}</p>
                   </div>
                 </div>
@@ -444,7 +298,7 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
           <button
             onClick={() => {
               setError(null);
-              fetchWeatherData();
+              fetchWeather();
             }}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
           >

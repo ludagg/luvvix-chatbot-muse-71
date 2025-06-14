@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Camera, User, Mail, Phone, MapPin, Calendar, Edit3, Save, X, Globe } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProfilePageProps {
   onBack: () => void;
@@ -26,28 +27,66 @@ const ProfilePage = ({ onBack }: ProfilePageProps) => {
   });
 
   const [originalData, setOriginalData] = useState(profileData);
+  const [stats, setStats] = useState({
+    servicesUsed: 0,
+    translationsCount: 0,
+    eventsCreated: 0,
+    memberSince: '',
+    score: 4.8
+  });
+
+  useEffect(() => {
+    if (user) {
+      fetchUserStats();
+    }
+  }, [user]);
+
+  const fetchUserStats = async () => {
+    if (!user) return;
+
+    try {
+      // Récupérer les statistiques de l'utilisateur
+      const [translationsResponse, eventsResponse] = await Promise.all([
+        supabase.from('translations').select('id').eq('user_id', user.id),
+        supabase.from('calendar_events').select('id').eq('user_id', user.id)
+      ]);
+
+      const memberSince = user.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long'
+      }) : 'Récemment';
+
+      setStats({
+        servicesUsed: 8, // Nombre fixe basé sur les services disponibles
+        translationsCount: translationsResponse.data?.length || 0,
+        eventsCreated: eventsResponse.data?.length || 0,
+        memberSince,
+        score: 4.8
+      });
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Simuler une sauvegarde réelle avec l'API Supabase
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Ici, on ferait un appel à l'API pour mettre à jour les métadonnées utilisateur
-      // await supabase.auth.updateUser({
-      //   data: {
-      //     full_name: profileData.fullName,
-      //     username: profileData.username,
-      //     phone: profileData.phone,
-      //     location: profileData.location,
-      //     bio: profileData.bio,
-      //     website: profileData.website,
-      //     birth_date: profileData.birthDate,
-      //     gender: profileData.gender,
-      //     occupation: profileData.occupation
-      //   }
-      // });
-      
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          full_name: profileData.fullName,
+          username: profileData.username,
+          phone: profileData.phone,
+          location: profileData.location,
+          bio: profileData.bio,
+          website: profileData.website,
+          birth_date: profileData.birthDate,
+          gender: profileData.gender,
+          occupation: profileData.occupation
+        }
+      });
+
+      if (error) throw error;
+
       setOriginalData(profileData);
       setIsEditing(false);
       toast({
@@ -55,6 +94,7 @@ const ProfilePage = ({ onBack }: ProfilePageProps) => {
         description: "Vos informations ont été sauvegardées avec succès",
       });
     } catch (error) {
+      console.error('Error updating profile:', error);
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder les modifications",
@@ -80,6 +120,48 @@ const ProfilePage = ({ onBack }: ProfilePageProps) => {
   const validateForm = () => {
     return profileData.fullName.trim() !== '' && profileData.email.trim() !== '';
   };
+
+  const recentActivity = [
+    {
+      icon: "🤖",
+      title: "Assistant IA utilisé",
+      time: "Il y a 2h",
+      description: "Génération de contenu"
+    },
+    {
+      icon: "🌤️",
+      title: "Météo consultée",
+      time: "Il y a 4h",
+      description: user?.user_metadata?.location || "Paris, France"
+    },
+    {
+      icon: "📰",
+      title: "Traduction effectuée",
+      time: "Hier",
+      description: `${stats.translationsCount} traductions`
+    }
+  ];
+
+  const achievements = [
+    {
+      icon: "🏆",
+      title: "Explorateur",
+      description: "Premier service utilisé",
+      unlocked: true
+    },
+    {
+      icon: "🚀",
+      title: "Power User",
+      description: "10 services utilisés",
+      unlocked: stats.servicesUsed >= 5
+    },
+    {
+      icon: "⭐",
+      title: "Expert LuvviX",
+      description: "Tous les services maîtrisés",
+      unlocked: stats.servicesUsed >= 10
+    }
+  ];
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
@@ -137,10 +219,58 @@ const ProfilePage = ({ onBack }: ProfilePageProps) => {
           </div>
         </div>
 
-        {/* Informations */}
-        <div className="p-4 space-y-6">
+        {/* Statistiques */}
+        <div className="p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistiques</h3>
+          <div className="grid grid-cols-1 gap-4 mb-6">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Événements créés</p>
+                    <p className="text-sm text-gray-600">{stats.eventsCreated} événements</p>
+                  </div>
+                </div>
+                <p className="text-xl font-bold text-gray-900">{stats.eventsCreated}</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Traductions</p>
+                    <p className="text-sm text-gray-600">{stats.translationsCount} textes traduits</p>
+                  </div>
+                </div>
+                <p className="text-xl font-bold text-gray-900">{stats.translationsCount}</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                    <User className="w-5 h-5 text-purple-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Membre depuis</p>
+                    <p className="text-sm text-gray-600">{stats.memberSince}</p>
+                  </div>
+                </div>
+                <p className="text-xl font-bold text-gray-900">{stats.score}/5</p>
+              </div>
+            </div>
+          </div>
+
           {/* Informations personnelles */}
-          <div>
+          <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations personnelles</h3>
             <div className="space-y-4">
               <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
@@ -207,131 +337,63 @@ const ProfilePage = ({ onBack }: ProfilePageProps) => {
                   )}
                 </div>
               </div>
-
-              {/* Informations supplémentaires */}
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
-                <Calendar className="w-5 h-5 text-gray-500" />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500">Date de naissance</p>
-                  {isEditing ? (
-                    <input
-                      type="date"
-                      value={profileData.birthDate}
-                      onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                      className="w-full bg-transparent border-0 p-0 text-gray-900 font-medium focus:ring-0 focus:outline-none"
-                    />
-                  ) : (
-                    <p className="text-gray-900 font-medium">
-                      {profileData.birthDate ? new Date(profileData.birthDate).toLocaleDateString() : 'Non renseigné'}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
-                <User className="w-5 h-5 text-gray-500" />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500">Genre</p>
-                  {isEditing ? (
-                    <select
-                      value={profileData.gender}
-                      onChange={(e) => handleInputChange('gender', e.target.value)}
-                      className="w-full bg-transparent border-0 p-0 text-gray-900 font-medium focus:ring-0 focus:outline-none"
-                    >
-                      <option value="">Sélectionner</option>
-                      <option value="homme">Homme</option>
-                      <option value="femme">Femme</option>
-                      <option value="autre">Autre</option>
-                      <option value="non-specifie">Préfère ne pas dire</option>
-                    </select>
-                  ) : (
-                    <p className="text-gray-900 font-medium">{profileData.gender || 'Non renseigné'}</p>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
 
-          {/* Bio */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">À propos</h3>
-            <div className="p-3 bg-gray-50 rounded-xl">
-              {isEditing ? (
-                <textarea
-                  value={profileData.bio}
-                  onChange={(e) => handleInputChange('bio', e.target.value)}
-                  className="w-full bg-transparent border-0 p-0 text-gray-900 resize-none focus:ring-0 focus:outline-none"
-                  placeholder="Parlez-nous de vous..."
-                  rows={4}
-                  maxLength={500}
-                />
-              ) : (
-                <p className="text-gray-900">{profileData.bio || 'Aucune description disponible'}</p>
-              )}
-              {isEditing && (
-                <p className="text-xs text-gray-400 mt-2">{profileData.bio.length}/500 caractères</p>
-              )}
+          {/* Activité récente */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Activité récente</h3>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              {recentActivity.map((activity, index) => (
+                <div key={index} className="p-4 border-b border-gray-50 last:border-b-0">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-lg">
+                      {activity.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{activity.title}</h4>
+                      <p className="text-sm text-gray-600">{activity.description}</p>
+                      <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Informations professionnelles */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations professionnelles</h3>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
-                <User className="w-5 h-5 text-gray-500" />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500">Profession</p>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={profileData.occupation}
-                      onChange={(e) => handleInputChange('occupation', e.target.value)}
-                      className="w-full bg-transparent border-0 p-0 text-gray-900 font-medium focus:ring-0 focus:outline-none"
-                      placeholder="Votre profession"
-                    />
-                  ) : (
-                    <p className="text-gray-900 font-medium">{profileData.occupation || 'Non renseigné'}</p>
-                  )}
+          {/* Achievements */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Succès</h3>
+            <div className="space-y-3">
+              {achievements.map((achievement, index) => (
+                <div 
+                  key={index} 
+                  className={`bg-white rounded-2xl p-4 shadow-sm border border-gray-100 ${
+                    !achievement.unlocked ? 'opacity-60' : ''
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${
+                      achievement.unlocked 
+                        ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
+                        : 'bg-gray-100'
+                    }`}>
+                      {achievement.icon}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900">{achievement.title}</h4>
+                      <p className="text-sm text-gray-600">{achievement.description}</p>
+                    </div>
+                    {achievement.unlocked && (
+                      <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                        </svg>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl">
-                <Globe className="w-5 h-5 text-gray-500" />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500">Site web</p>
-                  {isEditing ? (
-                    <input
-                      type="url"
-                      value={profileData.website}
-                      onChange={(e) => handleInputChange('website', e.target.value)}
-                      className="w-full bg-transparent border-0 p-0 text-gray-900 font-medium focus:ring-0 focus:outline-none"
-                      placeholder="https://votre-site.com"
-                    />
-                  ) : (
-                    <p className="text-gray-900 font-medium">{profileData.website || 'Non renseigné'}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Statistiques */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistiques d'utilisation</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-xl">
-                <p className="text-2xl font-bold text-blue-600">42</p>
-                <p className="text-sm text-blue-700">Services utilisés</p>
-              </div>
-              <div className="text-center p-4 bg-green-50 rounded-xl">
-                <p className="text-2xl font-bold text-green-600">156</p>
-                <p className="text-sm text-green-700">Heures économisées</p>
-              </div>
-              <div className="text-center p-4 bg-purple-50 rounded-xl">
-                <p className="text-2xl font-bold text-purple-600">9.2</p>
-                <p className="text-sm text-purple-700">Score productivité</p>
-              </div>
+              ))}
             </div>
           </div>
 

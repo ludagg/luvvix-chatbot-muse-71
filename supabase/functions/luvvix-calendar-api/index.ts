@@ -33,59 +33,14 @@ serve(async (req) => {
 
     const url = new URL(req.url);
     const method = req.method;
+    const body = method !== 'GET' ? await req.json() : null;
 
-    if (method === 'POST' && url.pathname.endsWith('/translate')) {
-      const { text, from, to } = await req.json();
-      
-      // Utiliser l'API Gemini pour la traduction
-      const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
-      if (!geminiApiKey) {
-        throw new Error('Gemini API key not configured');
-      }
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Translate this text from ${from} to ${to}: "${text}". Return only the translation, no explanation.`
-            }]
-          }]
-        })
-      });
-
-      const geminiData = await response.json();
-      const translatedText = geminiData.candidates[0]?.content?.parts[0]?.text || text;
-
-      // Sauvegarder dans la base de données
-      await supabaseClient
-        .from('translations')
-        .insert([{
-          user_id: user.id,
-          source_text: text,
-          translated_text: translatedText,
-          source_language: from,
-          target_language: to,
-        }]);
-
-      return new Response(JSON.stringify({ 
-        translatedText,
-        detectedLanguage: from === 'auto' ? 'en' : null 
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (method === 'GET' && url.pathname.endsWith('/history')) {
+    if (method === 'GET' && url.pathname.endsWith('/events')) {
       const { data, error } = await supabaseClient
-        .from('translations')
+        .from('calendar_events')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .order('start_time', { ascending: true });
 
       if (error) throw error;
 
@@ -94,14 +49,54 @@ serve(async (req) => {
       });
     }
 
-    if (method === 'PUT' && url.pathname.includes('/favorite/')) {
-      const translationId = url.pathname.split('/').pop();
-      const { isFavorite } = await req.json();
+    if (method === 'POST' && url.pathname.endsWith('/events')) {
+      const { data, error } = await supabaseClient
+        .from('calendar_events')
+        .insert([{
+          ...body,
+          user_id: user.id,
+          start_time: new Date(body.start_time).toISOString(),
+          end_time: new Date(body.end_time).toISOString(),
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (method === 'PUT' && url.pathname.includes('/events/')) {
+      const eventId = url.pathname.split('/').pop();
       
       const { data, error } = await supabaseClient
-        .from('translations')
-        .update({ is_favorite: isFavorite })
-        .eq('id', translationId)
+        .from('calendar_events')
+        .update({
+          ...body,
+          start_time: body.start_time ? new Date(body.start_time).toISOString() : undefined,
+          end_time: body.end_time ? new Date(body.end_time).toISOString() : undefined,
+        })
+        .eq('id', eventId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (method === 'DELETE' && url.pathname.includes('/events/')) {
+      const eventId = url.pathname.split('/').pop();
+      
+      const { error } = await supabaseClient
+        .from('calendar_events')
+        .delete()
+        .eq('id', eventId)
         .eq('user_id', user.id);
 
       if (error) throw error;
@@ -117,7 +112,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Translate API error:', error);
+    console.error('Calendar API error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

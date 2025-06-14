@@ -2,16 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Globe, ArrowUpDown, Copy, Share2, Volume2, Bookmark, History, Sparkles, Languages, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-
-interface Translation {
-  id: string;
-  sourceText: string;
-  translatedText: string;
-  sourceLang: string;
-  targetLang: string;
-  timestamp: Date;
-  isFavorite: boolean;
-}
+import { useTranslations } from '@/hooks/use-translations';
 
 interface Language {
   code: string;
@@ -28,12 +19,11 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
   const [translatedText, setTranslatedText] = useState('');
   const [sourceLang, setSourceLang] = useState('auto');
   const [targetLang, setTargetLang] = useState('fr');
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [translationHistory, setTranslationHistory] = useState<Translation[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [favorites, setFavorites] = useState<Translation[]>([]);
   const [showFavorites, setShowFavorites] = useState(false);
   const [detectedLanguage, setDetectedLanguage] = useState<string>('');
+
+  const { history, loading, translateText, toggleFavorite } = useTranslations();
 
   const languages: Language[] = [
     { code: 'auto', name: 'Détection automatique', flag: '🌐' },
@@ -58,88 +48,15 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
     { code: 'pl', name: 'Polonais', flag: '🇵🇱' }
   ];
 
-  // Charger l'historique et les favoris depuis le localStorage
-  useEffect(() => {
-    const savedHistory = localStorage.getItem('luvvix_translation_history');
-    if (savedHistory) {
-      const parsed = JSON.parse(savedHistory);
-      setTranslationHistory(parsed.map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })));
-    }
-    
-    const savedFavorites = localStorage.getItem('luvvix_translation_favorites');
-    if (savedFavorites) {
-      const parsed = JSON.parse(savedFavorites);
-      setFavorites(parsed.map((t: any) => ({ ...t, timestamp: new Date(t.timestamp) })));
-    }
-  }, []);
-
-  // Sauvegarder l'historique et les favoris
-  useEffect(() => {
-    localStorage.setItem('luvvix_translation_history', JSON.stringify(translationHistory));
-  }, [translationHistory]);
-
-  useEffect(() => {
-    localStorage.setItem('luvvix_translation_favorites', JSON.stringify(favorites));
-  }, [favorites]);
-
   const translateWithAI = async (text: string, fromLang: string, toLang: string) => {
     if (!text.trim()) return;
     
-    setIsTranslating(true);
-    try {
-      // Simuler un appel à l'API Gemini pour la traduction
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simulations de traductions pour démonstration
-      const translations: { [key: string]: string } = {
-        'hello world': 'bonjour le monde',
-        'how are you': 'comment allez-vous',
-        'good morning': 'bonjour',
-        'thank you': 'merci',
-        'goodbye': 'au revoir',
-        'yes': 'oui',
-        'no': 'non',
-        'please': 's\'il vous plaît',
-        'excuse me': 'excusez-moi',
-        'i love you': 'je t\'aime'
-      };
-      
-      const lowerText = text.toLowerCase();
-      const result = translations[lowerText] || `Traduction de: "${text}"`;
-      
-      setTranslatedText(result);
-      
-      // Détection de langue simulée
-      if (fromLang === 'auto') {
-        const detectedLang = ['en', 'es', 'de', 'it'][Math.floor(Math.random() * 4)];
-        setDetectedLanguage(detectedLang);
+    const result = await translateText(text, fromLang, toLang);
+    if (result) {
+      setTranslatedText(result.translatedText);
+      if (result.detectedLanguage) {
+        setDetectedLanguage(result.detectedLanguage);
       }
-      
-      // Ajouter à l'historique
-      const newTranslation: Translation = {
-        id: Date.now().toString(),
-        sourceText: text,
-        translatedText: result,
-        sourceLang: fromLang === 'auto' ? (detectedLanguage || 'en') : fromLang,
-        targetLang: toLang,
-        timestamp: new Date(),
-        isFavorite: false
-      };
-      
-      setTranslationHistory(prev => [newTranslation, ...prev.slice(0, 49)]); // Garder 50 dernières traductions
-      
-      toast({
-        title: "Traduction terminée",
-        description: "Le texte a été traduit avec succès",
-      });
-    } catch (error) {
-      toast({
-        title: "Erreur de traduction",
-        description: "Impossible de traduire le texte",
-        variant: "destructive"
-      });
-    } finally {
-      setIsTranslating(false);
     }
   };
 
@@ -163,8 +80,8 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
     });
   };
 
-  const shareTranslation = (translation: Translation) => {
-    const text = `${translation.sourceText} → ${translation.translatedText}`;
+  const shareTranslation = (sourceText: string, translatedText: string) => {
+    const text = `${sourceText} → ${translatedText}`;
     if (navigator.share) {
       navigator.share({
         title: 'Traduction LuvviX',
@@ -175,34 +92,16 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
     }
   };
 
-  const toggleFavorite = (translationId: string) => {
-    const translation = translationHistory.find(t => t.id === translationId);
-    if (!translation) return;
-    
-    const updatedTranslation = { ...translation, isFavorite: !translation.isFavorite };
-    
-    if (updatedTranslation.isFavorite) {
-      setFavorites(prev => [updatedTranslation, ...prev]);
-    } else {
-      setFavorites(prev => prev.filter(f => f.id !== translationId));
-    }
-    
-    setTranslationHistory(prev => 
-      prev.map(t => t.id === translationId ? updatedTranslation : t)
-    );
-  };
-
-  const useTranslationFromHistory = (translation: Translation) => {
-    setSourceText(translation.sourceText);
-    setTranslatedText(translation.translatedText);
-    setSourceLang(translation.sourceLang);
-    setTargetLang(translation.targetLang);
+  const useTranslationFromHistory = (translation: any) => {
+    setSourceText(translation.source_text);
+    setTranslatedText(translation.translated_text);
+    setSourceLang(translation.source_language);
+    setTargetLang(translation.target_language);
     setShowHistory(false);
     setShowFavorites(false);
   };
 
   const clearHistory = () => {
-    setTranslationHistory([]);
     toast({
       title: "Historique effacé",
       description: "L'historique des traductions a été supprimé",
@@ -303,10 +202,10 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
       {/* Bouton de traduction */}
       <button
         onClick={() => translateWithAI(sourceText, sourceLang, targetLang)}
-        disabled={!sourceText.trim() || isTranslating}
+        disabled={!sourceText.trim() || loading}
         className="w-full py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
       >
-        {isTranslating ? (
+        {loading ? (
           <>
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
             <span>Traduction en cours...</span>
@@ -334,15 +233,7 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
                 <Copy className="w-4 h-4" />
               </button>
               <button
-                onClick={() => shareTranslation({
-                  id: '',
-                  sourceText,
-                  translatedText,
-                  sourceLang,
-                  targetLang,
-                  timestamp: new Date(),
-                  isFavorite: false
-                })}
+                onClick={() => shareTranslation(sourceText, translatedText)}
                 className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
               >
                 <Share2 className="w-4 h-4" />
@@ -389,7 +280,7 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
     </div>
   );
 
-  const renderHistoryList = (translations: Translation[], title: string, emptyMessage: string) => (
+  const renderHistoryList = (translations: any[], title: string, emptyMessage: string) => (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-900">{title} ({translations.length})</h3>
@@ -420,23 +311,23 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-1">
                     <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                      {getLanguageFlag(translation.sourceLang)} → {getLanguageFlag(translation.targetLang)}
+                      {getLanguageFlag(translation.source_language)} → {getLanguageFlag(translation.target_language)}
                     </span>
                     <span className="text-xs text-gray-500">
-                      {translation.timestamp.toLocaleDateString()} {translation.timestamp.toLocaleTimeString()}
+                      {new Date(translation.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-900 font-medium mb-1">{translation.sourceText}</p>
-                  <p className="text-sm text-blue-700">{translation.translatedText}</p>
+                  <p className="text-sm text-gray-900 font-medium mb-1">{translation.source_text}</p>
+                  <p className="text-sm text-blue-700">{translation.translated_text}</p>
                 </div>
                 <div className="flex items-center space-x-1">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleFavorite(translation.id);
+                      toggleFavorite(translation.id, !translation.is_favorite);
                     }}
                     className={`p-1 rounded-full transition-colors ${
-                      translation.isFavorite
+                      translation.is_favorite
                         ? 'text-yellow-500 hover:text-yellow-600'
                         : 'text-gray-400 hover:text-yellow-500'
                     }`}
@@ -446,7 +337,7 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      copyToClipboard(translation.translatedText);
+                      copyToClipboard(translation.translated_text);
                     }}
                     className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
                   >
@@ -460,6 +351,8 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
       )}
     </div>
   );
+
+  const favorites = history.filter(t => t.is_favorite);
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
@@ -511,8 +404,7 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          <Languages className="w-5 h-5 mx-auto mb-1" />
-          <span className="text-sm">Traduire</span>
+          Traduction
         </button>
         <button
           onClick={() => {
@@ -525,8 +417,7 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          <History className="w-5 h-5 mx-auto mb-1" />
-          <span className="text-sm">Historique</span>
+          Historique
         </button>
         <button
           onClick={() => {
@@ -539,15 +430,14 @@ const MobileTranslate = ({ onBack }: MobileTranslateProps) => {
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          <Bookmark className="w-5 h-5 mx-auto mb-1" />
-          <span className="text-sm">Favoris</span>
+          Favoris
         </button>
       </div>
 
       {/* Contenu */}
       <div className="flex-1 overflow-auto p-4">
         {!showHistory && !showFavorites && renderTranslationInterface()}
-        {showHistory && renderHistoryList(translationHistory, 'Historique des traductions', 'Aucune traduction dans l\'historique')}
+        {showHistory && renderHistoryList(history, 'Historique des traductions', 'Aucune traduction dans l\'historique')}
         {showFavorites && renderHistoryList(favorites, 'Traductions favorites', 'Aucune traduction favorite')}
       </div>
     </div>

@@ -4,20 +4,7 @@ import { Calendar, Plus, Clock, Users, MapPin, Bell, ChevronLeft, ChevronRight, 
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  description?: string;
-  startTime: Date;
-  endTime: Date;
-  type: 'meeting' | 'task' | 'reminder' | 'personal';
-  attendees?: string[];
-  location?: string;
-  color: string;
-  priority: 'low' | 'medium' | 'high';
-  completed?: boolean;
-}
+import { useCalendar } from '@/hooks/use-calendar';
 
 interface MobileCalendarProps {
   onBack: () => void;
@@ -26,77 +13,27 @@ interface MobileCalendarProps {
 const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [view, setView] = useState<'month' | 'day' | 'agenda'>('month');
   const [showAddEvent, setShowAddEvent] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
 
-  // Simuler des événements
-  useEffect(() => {
-    const mockEvents: CalendarEvent[] = [
-      {
-        id: '1',
-        title: 'Réunion équipe projet',
-        description: 'Réunion hebdomadaire de suivi du projet',
-        startTime: new Date(2024, 5, 13, 14, 30),
-        endTime: new Date(2024, 5, 13, 15, 30),
-        type: 'meeting',
-        attendees: ['Alice', 'Bob', 'Charlie'],
-        location: 'Salle de conférence A',
-        color: 'bg-blue-500',
-        priority: 'high'
-      },
-      {
-        id: '2',
-        title: 'Révision cours IA',
-        description: 'Réviser les concepts d\'apprentissage automatique',
-        startTime: new Date(2024, 5, 13, 18, 0),
-        endTime: new Date(2024, 5, 13, 19, 0),
-        type: 'task',
-        color: 'bg-green-500',
-        priority: 'medium'
-      },
-      {
-        id: '3',
-        title: 'Présentation client',
-        description: 'Présentation du prototype au client',
-        startTime: new Date(2024, 5, 14, 10, 0),
-        endTime: new Date(2024, 5, 14, 11, 30),
-        type: 'meeting',
-        attendees: ['Client A', 'Manager'],
-        location: 'Bureau client',
-        color: 'bg-purple-500',
-        priority: 'high'
-      },
-      {
-        id: '4',
-        title: 'Appel médecin',
-        description: 'Prendre rendez-vous chez le médecin',
-        startTime: new Date(2024, 5, 15, 15, 0),
-        endTime: new Date(2024, 5, 15, 15, 30),
-        type: 'reminder',
-        color: 'bg-orange-500',
-        priority: 'medium'
-      }
-    ];
-    setEvents(mockEvents);
-  }, []);
+  const { events, loading, createEvent, updateEvent, deleteEvent } = useCalendar();
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const getEventsForDate = (date: Date) => {
-    return events.filter(event => isSameDay(event.startTime, date));
+    return events.filter(event => isSameDay(new Date(event.start_time), date));
   };
 
   const getFilteredEvents = () => {
     let filtered = events;
     
     if (filterType !== 'all') {
-      filtered = filtered.filter(event => event.type === filterType);
+      filtered = filtered.filter(event => event.event_type === filterType);
     }
     
     if (searchQuery) {
@@ -106,66 +43,42 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
       );
     }
     
-    return filtered.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+    return filtered.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
   };
 
   const generateAIEventSuggestion = async () => {
-    try {
-      // Simuler un appel à l'IA Gemini
-      const suggestions = [
-        {
-          title: 'Révision quotidienne',
-          type: 'task',
-          time: '09:00',
-          description: 'Réviser les notes de la veille'
-        },
-        {
-          title: 'Pause créative',
-          type: 'personal',
-          time: '15:00',
-          description: 'Temps de réflexion et brainstorming'
-        },
-        {
-          title: 'Exercice physique',
-          type: 'personal',
-          time: '18:30',
-          description: 'Séance de sport pour rester en forme'
-        }
-      ];
-      
-      const suggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
-      toast({
-        title: "Suggestion IA",
-        description: `L'IA suggère: "${suggestion.title}" à ${suggestion.time}`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de générer une suggestion",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const completeTask = (eventId: string) => {
-    setEvents(events.map(event => 
-      event.id === eventId 
-        ? { ...event, completed: !event.completed }
-        : event
-    ));
+    const suggestions = [
+      {
+        title: 'Révision quotidienne',
+        event_type: 'task',
+        description: 'Réviser les notes de la veille'
+      },
+      {
+        title: 'Pause créative',
+        event_type: 'personal',
+        description: 'Temps de réflexion et brainstorming'
+      },
+      {
+        title: 'Exercice physique',
+        event_type: 'personal',
+        description: 'Séance de sport pour rester en forme'
+      }
+    ];
+    
+    const suggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
     toast({
-      title: "Tâche mise à jour",
-      description: "Le statut de la tâche a été modifié",
+      title: "Suggestion IA",
+      description: `L'IA suggère: "${suggestion.title}"`,
     });
   };
 
-  const deleteEvent = (eventId: string) => {
-    setEvents(events.filter(event => event.id !== eventId));
+  const completeTask = async (eventId: string, completed: boolean) => {
+    await updateEvent(eventId, { completed: !completed });
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    await deleteEvent(eventId);
     setSelectedEvent(null);
-    toast({
-      title: "Événement supprimé",
-      description: "L'événement a été supprimé avec succès",
-    });
   };
 
   const renderMonthView = () => (
@@ -235,14 +148,15 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
               <div
                 key={event.id}
                 onClick={() => setSelectedEvent(event)}
-                className={`p-4 rounded-xl border-l-4 ${event.color} bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow`}
+                className={`p-4 rounded-xl border-l-4 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow`}
+                style={{ borderLeftColor: event.color }}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">{event.title}</h4>
                     <p className="text-sm text-gray-600 flex items-center mt-1">
                       <Clock className="w-4 h-4 mr-1" />
-                      {format(event.startTime, 'HH:mm')} - {format(event.endTime, 'HH:mm')}
+                      {format(new Date(event.start_time), 'HH:mm')} - {format(new Date(event.end_time), 'HH:mm')}
                     </p>
                     {event.location && (
                       <p className="text-sm text-gray-600 flex items-center mt-1">
@@ -251,11 +165,11 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                       </p>
                     )}
                   </div>
-                  {event.type === 'task' && (
+                  {event.event_type === 'task' && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        completeTask(event.id);
+                        completeTask(event.id, event.completed);
                       }}
                       className={`p-1 rounded-full ${
                         event.completed ? 'text-green-600' : 'text-gray-400'
@@ -288,14 +202,15 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
             <div
               key={event.id}
               onClick={() => setSelectedEvent(event)}
-              className={`p-4 rounded-xl border-l-4 ${event.color} bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow`}
+              className={`p-4 rounded-xl border-l-4 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow`}
+              style={{ borderLeftColor: event.color }}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <h4 className="font-medium text-gray-900">{event.title}</h4>
                   <p className="text-sm text-gray-600 flex items-center mt-1">
                     <Clock className="w-4 h-4 mr-1" />
-                    {format(event.startTime, 'dd/MM - HH:mm')} - {format(event.endTime, 'HH:mm')}
+                    {format(new Date(event.start_time), 'dd/MM - HH:mm')} - {format(new Date(event.end_time), 'HH:mm')}
                   </p>
                   {event.attendees && event.attendees.length > 0 && (
                     <p className="text-sm text-gray-600 flex items-center mt-1">
@@ -434,9 +349,17 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
 
       {/* Contenu principal */}
       <div className="flex-1 overflow-auto p-4">
-        {view === 'month' && renderMonthView()}
-        {view === 'day' && renderDayView()}
-        {view === 'agenda' && renderAgendaView()}
+        {loading ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        ) : (
+          <>
+            {view === 'month' && renderMonthView()}
+            {view === 'day' && renderDayView()}
+            {view === 'agenda' && renderAgendaView()}
+          </>
+        )}
       </div>
 
       {/* Modal détails événement */}
@@ -453,7 +376,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                   <Edit3 className="w-5 h-5" />
                 </button>
                 <button
-                  onClick={() => deleteEvent(selectedEvent.id)}
+                  onClick={() => handleDeleteEvent(selectedEvent.id)}
                   className="p-2 text-red-600 hover:bg-red-100 rounded-full"
                 >
                   <Trash2 className="w-5 h-5" />
@@ -474,7 +397,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
               
               <div className="flex items-center text-gray-600">
                 <Clock className="w-4 h-4 mr-2" />
-                <span>{format(selectedEvent.startTime, 'dd/MM/yyyy HH:mm')} - {format(selectedEvent.endTime, 'HH:mm')}</span>
+                <span>{format(new Date(selectedEvent.start_time), 'dd/MM/yyyy HH:mm')} - {format(new Date(selectedEvent.end_time), 'HH:mm')}</span>
               </div>
               
               {selectedEvent.location && (
@@ -501,10 +424,10 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                             selectedEvent.priority === 'medium' ? 'Moyenne' : 'Faible'}
                 </span>
                 
-                {selectedEvent.type === 'task' && (
+                {selectedEvent.event_type === 'task' && (
                   <button
                     onClick={() => {
-                      completeTask(selectedEvent.id);
+                      completeTask(selectedEvent.id, selectedEvent.completed);
                       setSelectedEvent(null);
                     }}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${

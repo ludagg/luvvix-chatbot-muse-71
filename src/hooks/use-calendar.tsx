@@ -1,0 +1,147 @@
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
+
+interface CalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  start_time: string;
+  end_time: string;
+  event_type: 'meeting' | 'task' | 'reminder' | 'personal';
+  location?: string;
+  attendees: string[];
+  color: string;
+  priority: 'low' | 'medium' | 'high';
+  completed: boolean;
+}
+
+export const useCalendar = () => {
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  const fetchEvents = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('luvvix-calendar-api', {
+        body: {},
+      });
+
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les événements",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createEvent = async (eventData: Omit<CalendarEvent, 'id'>) => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('luvvix-calendar-api', {
+        body: eventData,
+      });
+
+      if (error) throw error;
+      
+      await fetchEvents();
+      toast({
+        title: "Événement créé",
+        description: "L'événement a été ajouté avec succès",
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error creating event:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer l'événement",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
+  const updateEvent = async (eventId: string, updates: Partial<CalendarEvent>) => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('luvvix-calendar-api', {
+        body: { ...updates, method: 'PUT', eventId },
+      });
+
+      if (error) throw error;
+      
+      await fetchEvents();
+      toast({
+        title: "Événement modifié",
+        description: "L'événement a été mis à jour",
+      });
+      
+      return data;
+    } catch (error) {
+      console.error('Error updating event:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier l'événement",
+        variant: "destructive"
+      });
+      return null;
+    }
+  };
+
+  const deleteEvent = async (eventId: string) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase.functions.invoke('luvvix-calendar-api', {
+        body: { method: 'DELETE', eventId },
+      });
+
+      if (error) throw error;
+      
+      await fetchEvents();
+      toast({
+        title: "Événement supprimé",
+        description: "L'événement a été supprimé",
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'événement",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchEvents();
+    }
+  }, [user]);
+
+  return {
+    events,
+    loading,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+    refetch: fetchEvents,
+  };
+};

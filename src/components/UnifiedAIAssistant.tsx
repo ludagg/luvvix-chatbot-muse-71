@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -175,7 +174,7 @@ Que puis-je faire pour vous aujourd'hui ?`,
         { component: 'UnifiedAIAssistant', personality }
       );
 
-      // Correction stricte des erreurs TS :
+      // Correction stricte des erreurs TS - vérification complète de null
       if (!response) {
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
@@ -187,24 +186,15 @@ Que puis-je faire pour vous aujourd'hui ?`,
         return;
       }
 
-      // Correction TS18047 : toujours vérifier null avant de lire une propriété
-      if (
-        response &&
-        typeof response === 'object' &&
-        'actionDone' in response
-      ) {
+      // Correction TS18047 : vérification complète avant d'accéder aux propriétés
+      if (response && typeof response === 'object' && 'actionDone' in response) {
         toast.success("Action IA réalisée !");
       }
 
       let assistantContent = '';
       if (typeof response === 'string') {
         assistantContent = response;
-      } else if (
-        response &&
-        typeof response === 'object' &&
-        'message' in response &&
-        typeof (response as any).message === 'string'
-      ) {
+      } else if (response && typeof response === 'object' && 'message' in response) {
         assistantContent = (response as any).message;
       } else {
         assistantContent = "Je n'ai pas pu comprendre la réponse du cerveau IA.";

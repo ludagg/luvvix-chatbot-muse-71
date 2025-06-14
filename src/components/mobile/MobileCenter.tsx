@@ -73,6 +73,9 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const [showVideoUpload, setShowVideoUpload] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [groupDescription, setGroupDescription] = useState('');
 
   useEffect(() => {
     fetchPosts();
@@ -555,7 +558,10 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-gray-900">Groupes</h3>
-        <button className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors">
+        <button
+          className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors"
+          onClick={() => setShowCreateGroup(true)}
+        >
           Créer un groupe
         </button>
       </div>
@@ -571,7 +577,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                 <div>
                   <h4 className="font-semibold text-gray-900">{group.name}</h4>
                   <p className="text-sm text-gray-600 mb-1">{group.description}</p>
-                  <p className="text-xs text-gray-500">{group.members_count} membres</p>
+                  <p className="text-xs text-gray-500">{group.members_count} membre{group.members_count > 1 ? 's' : ''}</p>
                 </div>
               </div>
               <button
@@ -588,6 +594,47 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
           </div>
         ))}
       </div>
+
+      {/* Modale de création de groupe */}
+      {showCreateGroup && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xs mx-auto space-y-4">
+            <h4 className="text-lg font-semibold mb-2">Créer un groupe</h4>
+            <input
+              type="text"
+              className="w-full p-2 border rounded-lg mb-2 text-sm"
+              placeholder="Nom du groupe"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              maxLength={30}
+            />
+            <textarea
+              className="w-full p-2 border rounded-lg mb-2 text-sm resize-none"
+              placeholder="Description"
+              rows={2}
+              value={groupDescription}
+              onChange={(e) => setGroupDescription(e.target.value)}
+              maxLength={80}
+            />
+            <div className="flex justify-end space-x-3">
+              <button
+                className="px-4 py-1 bg-gray-200 rounded-lg text-gray-700"
+                onClick={() => setShowCreateGroup(false)}
+                type="button"
+              >
+                Annuler
+              </button>
+              <button
+                className="px-4 py-1 bg-blue-500 text-white rounded-lg"
+                onClick={handleCreateGroup}
+                type="button"
+              >
+                Créer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -626,6 +673,35 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   // Pour retirer une image
   const removeImage = (index: number) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCreateGroup = () => {
+    if (!groupName.trim() || !groupDescription.trim()) {
+      toast({
+        title: "Champs requis",
+        description: "Merci d'entrer un nom et une description",
+        variant: "destructive"
+      });
+      return;
+    }
+    // Ajoute le nouveau groupe en début de liste (local uniquement)
+    setGroups(prev => [
+      {
+        id: String(Date.now()),
+        name: groupName.trim(),
+        description: groupDescription.trim(),
+        members_count: 1,
+        is_member: true
+      },
+      ...prev
+    ]);
+    setShowCreateGroup(false);
+    setGroupName('');
+    setGroupDescription('');
+    toast({
+      title: "Groupe créé",
+      description: "Votre groupe a bien été créé !"
+    });
   };
 
   return (

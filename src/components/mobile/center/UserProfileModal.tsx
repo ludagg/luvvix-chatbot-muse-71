@@ -51,25 +51,49 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
   const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts');
 
   useEffect(() => {
-    fetchUserProfile();
-    fetchUserStats();
-    fetchUserPosts();
-    checkFriendshipStatus();
+    if (userId) {
+      console.log('Loading profile for user ID:', userId);
+      fetchUserProfile();
+      fetchUserStats();
+      fetchUserPosts();
+      checkFriendshipStatus();
+    }
   }, [userId]);
 
   const fetchUserProfile = async () => {
     try {
+      console.log('Fetching user profile for ID:', userId);
+      
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('*')
+        .select('id, username, full_name, avatar_url, bio, created_at')
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
-      setProfile(data);
+      console.log('Profile data:', data);
+      console.log('Profile error:', error);
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        // Fallback: create a basic profile from the user ID
+        setProfile({
+          id: userId,
+          username: `user_${userId.slice(0, 8)}`,
+          full_name: 'Utilisateur',
+          created_at: new Date().toISOString()
+        });
+      } else {
+        setProfile(data);
+      }
     } catch (error) {
-      console.error('Erreur chargement profil:', error);
-      toast.error('Impossible de charger le profil');
+      console.error('Error in fetchUserProfile:', error);
+      // Fallback profile
+      setProfile({
+        id: userId,
+        username: `user_${userId.slice(0, 8)}`,
+        full_name: 'Utilisateur',
+        created_at: new Date().toISOString()
+      });
     }
   };
 
@@ -90,12 +114,12 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
 
       setStats({
         posts_count: postsCount || 0,
-        followers_count: 0, // À implémenter si nécessaire
-        following_count: 0, // À implémenter si nécessaire
+        followers_count: 0,
+        following_count: 0,
         friends_count: friendsCount || 0
       });
     } catch (error) {
-      console.error('Erreur chargement statistiques:', error);
+      console.error('Error fetching stats:', error);
     }
   };
 
@@ -103,7 +127,7 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
     try {
       const { data, error } = await supabase
         .from('center_posts')
-        .select('*')
+        .select('id, content, media_urls, video_url, likes_count, comments_count, created_at')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -111,7 +135,7 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
       if (error) throw error;
       setUserPosts(data || []);
     } catch (error) {
-      console.error('Erreur chargement posts:', error);
+      console.error('Error fetching posts:', error);
     } finally {
       setLoading(false);
     }
@@ -141,7 +165,7 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
         }
       }
     } catch (error) {
-      console.error('Erreur vérification amitié:', error);
+      console.error('Error checking friendship:', error);
     }
   };
 
@@ -173,7 +197,7 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
       setFriendshipStatus('pending_sent');
       toast.success('Demande d\'amitié envoyée');
     } catch (error) {
-      console.error('Erreur envoi demande:', error);
+      console.error('Error sending friend request:', error);
       toast.error('Impossible d\'envoyer la demande');
     }
   };
@@ -194,7 +218,7 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
       toast.success('Demande d\'amitié acceptée');
       fetchUserStats();
     } catch (error) {
-      console.error('Erreur acceptation demande:', error);
+      console.error('Error accepting friend request:', error);
       toast.error('Impossible d\'accepter la demande');
     }
   };
@@ -214,7 +238,7 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
       toast.success('Ami retiré');
       fetchUserStats();
     } catch (error) {
-      console.error('Erreur suppression ami:', error);
+      console.error('Error removing friend:', error);
       toast.error('Impossible de retirer cet ami');
     }
   };
@@ -280,6 +304,23 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
     );
   }
 
+  if (!profile) {
+    return (
+      <div className="fixed inset-0 bg-white z-50 flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-lg font-bold">Profil</h1>
+          <div></div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-gray-500">Impossible de charger le profil</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
       {/* Header */}
@@ -299,22 +340,22 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
         <div className="flex items-start space-x-4 mb-4">
           <div className="w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
             <span className="text-white font-bold text-2xl">
-              {profile?.username?.[0]?.toUpperCase() || 'U'}
+              {profile.username?.[0]?.toUpperCase() || 'U'}
             </span>
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-bold text-gray-900">
-              {profile?.full_name || 'Utilisateur'}
+              {profile.full_name || 'Utilisateur'}
             </h2>
-            <p className="text-gray-600">@{profile?.username}</p>
+            <p className="text-gray-600">@{profile.username}</p>
             <p className="text-gray-500 text-sm mt-1">
-              Membre depuis {new Date(profile?.created_at || '').toLocaleDateString()}
+              Membre depuis {new Date(profile.created_at).toLocaleDateString()}
             </p>
           </div>
         </div>
 
         {/* Bio */}
-        {profile?.bio && (
+        {profile.bio && (
           <p className="text-gray-700 mb-4">{profile.bio}</p>
         )}
 
@@ -373,6 +414,18 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
                 {userPosts.map((post) => (
                   <div key={post.id} className="border border-gray-200 rounded-lg p-4">
                     <p className="text-gray-900 mb-3">{post.content}</p>
+                    {post.media_urls && post.media_urls.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        {post.media_urls.map((url, index) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt=""
+                            className="w-full h-32 object-cover rounded"
+                          />
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center space-x-4 text-gray-500 text-sm">
                       <div className="flex items-center space-x-1">
                         <Heart className="w-4 h-4" />
@@ -395,7 +448,7 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
               <div className="flex items-center space-x-3">
                 <Calendar className="w-5 h-5 text-gray-400" />
                 <span className="text-gray-700">
-                  Membre depuis {new Date(profile?.created_at || '').toLocaleDateString()}
+                  Membre depuis {new Date(profile.created_at).toLocaleDateString()}
                 </span>
               </div>
               <div className="flex items-center space-x-3">

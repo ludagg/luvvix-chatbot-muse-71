@@ -65,12 +65,22 @@ const TwitterPost = ({
     }
   };
 
+  const handleUserClick = () => {
+    console.log('User clicked for post:', post);
+    console.log('User profiles:', post.user_profiles);
+    console.log('User ID to navigate to:', post.user_profiles?.id || post.user_id);
+    
+    if (onUserClick) {
+      onUserClick();
+    }
+  };
+
   return (
     <div className="bg-white border-b border-gray-200 px-4 py-3">
       {/* Header */}
       <div className="flex items-start space-x-3">
         <button 
-          onClick={onUserClick}
+          onClick={handleUserClick}
           className="flex-shrink-0"
         >
           <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
@@ -83,7 +93,7 @@ const TwitterPost = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2">
             <button 
-              onClick={onUserClick}
+              onClick={handleUserClick}
               className="text-left"
             >
               <h4 className="font-bold text-gray-900 text-sm truncate hover:underline">
@@ -91,7 +101,7 @@ const TwitterPost = ({
               </h4>
             </button>
             <button 
-              onClick={onUserClick}
+              onClick={handleUserClick}
               className="text-gray-500 text-sm hover:underline"
             >
               @{post.user_profiles?.username || 'username'}

@@ -1,10 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Clock, Users, MapPin, Bell, ChevronLeft, ChevronRight, Search, Filter, Sparkles, Trash2, Edit3, CheckCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { useCalendar } from '@/hooks/use-calendar';
+import { useHolidays } from '@/hooks/use-holidays';
+import EventCreator from './EventCreator';
 
 interface MobileCalendarProps {
   onBack: () => void;
@@ -20,13 +21,33 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
   const [filterType, setFilterType] = useState<string>('all');
 
   const { events, loading, createEvent, updateEvent, deleteEvent } = useCalendar();
+  const { holidays, isHoliday } = useHolidays();
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
   const getEventsForDate = (date: Date) => {
-    return events.filter(event => isSameDay(new Date(event.start_time), date));
+    const dayEvents = events.filter(event => isSameDay(new Date(event.start_time), date));
+    const holiday = isHoliday(date);
+    
+    if (holiday) {
+      dayEvents.push({
+        id: `holiday-${holiday.date}`,
+        title: holiday.name,
+        description: 'Jour férié',
+        start_time: holiday.date + 'T00:00:00',
+        end_time: holiday.date + 'T23:59:59',
+        event_type: 'personal' as const,
+        priority: 'low' as const,
+        color: holiday.type === 'public' ? '#ef4444' : '#8b5cf6',
+        completed: false,
+        user_id: '',
+        isHoliday: true
+      });
+    }
+    
+    return dayEvents;
   };
 
   const getFilteredEvents = () => {
@@ -93,6 +114,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
         const dayEvents = getEventsForDate(day);
         const isSelected = isSameDay(day, selectedDate);
         const isTodayDate = isToday(day);
+        const holiday = isHoliday(day);
         
         return (
           <button
@@ -103,15 +125,24 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                 ? 'bg-blue-500 text-white' 
                 : isTodayDate 
                 ? 'bg-blue-100 text-blue-700 font-semibold'
+                : holiday
+                ? 'bg-red-50 text-red-700'
                 : 'hover:bg-gray-100'
             } rounded-lg transition-colors`}
           >
             <div>{format(day, 'd')}</div>
             {dayEvents.length > 0 && (
-              <div className="flex justify-center mt-1">
-                <div className={`w-2 h-2 rounded-full ${
-                  isSelected ? 'bg-white' : 'bg-blue-500'
-                }`} />
+              <div className="flex justify-center mt-1 space-x-1">
+                {dayEvents.slice(0, 3).map((event, idx) => (
+                  <div 
+                    key={idx}
+                    className={`w-1.5 h-1.5 rounded-full`}
+                    style={{ backgroundColor: event.color }}
+                  />
+                ))}
+                {dayEvents.length > 3 && (
+                  <div className="text-xs">+{dayEvents.length - 3}</div>
+                )}
               </div>
             )}
           </button>
@@ -147,13 +178,16 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
             {dayEvents.map(event => (
               <div
                 key={event.id}
-                onClick={() => setSelectedEvent(event)}
-                className={`p-4 rounded-xl border-l-4 bg-white shadow-sm cursor-pointer hover:shadow-md transition-shadow`}
+                onClick={() => !event.isHoliday && setSelectedEvent(event)}
+                className={`p-4 rounded-xl border-l-4 bg-white shadow-sm ${!event.isHoliday ? 'cursor-pointer hover:shadow-md' : ''} transition-shadow`}
                 style={{ borderLeftColor: event.color }}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{event.title}</h4>
+                    <h4 className="font-medium text-gray-900 flex items-center">
+                      {event.title}
+                      {event.isHoliday && <span className="ml-2 text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">Jour férié</span>}
+                    </h4>
                     <p className="text-sm text-gray-600 flex items-center mt-1">
                       <Clock className="w-4 h-4 mr-1" />
                       {format(new Date(event.start_time), 'HH:mm')} - {format(new Date(event.end_time), 'HH:mm')}
@@ -165,7 +199,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                       </p>
                     )}
                   </div>
-                  {event.event_type === 'task' && (
+                  {event.event_type === 'task' && !event.isHoliday && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -361,6 +395,13 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
           </>
         )}
       </div>
+
+      {/* Event Creator */}
+      <EventCreator 
+        isOpen={showAddEvent}
+        onClose={() => setShowAddEvent(false)}
+        selectedDate={selectedDate}
+      />
 
       {/* Modal détails événement */}
       {selectedEvent && (

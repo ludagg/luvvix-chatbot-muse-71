@@ -1,33 +1,24 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
-interface AutomationRule {
-  id: string;
-  name: string;
-  description: string;
-  trigger: {
-    type: 'time' | 'event' | 'condition';
-    data: any;
-  };
-  actions: Array<{
-    app: string;
-    action: string;
-    params: any;
-  }>;
-  active: boolean;
-  user_id: string;
+interface AutomationInsight {
+  efficiency_score: number;
+  automation_opportunities: string[];
+  current_automations: number;
+  potential_automations: number;
+  time_saved_per_week: number;
 }
 
-interface CrossAppData {
-  source_app: string;
-  target_app: string;
-  data: any;
-  timestamp: string;
+interface WorkflowSuggestion {
+  type: 'email_to_calendar' | 'form_to_notification' | 'calendar_to_reminder' | 'ai_content_generation';
+  description: string;
+  estimated_time_saved: number;
+  complexity: 'easy' | 'medium' | 'advanced';
+  steps: string[];
 }
 
 class LuvviXOrchestrator {
   private static instance: LuvviXOrchestrator;
-  private automationRules: Map<string, AutomationRule[]> = new Map();
-  private activeWorkflows: Map<string, any> = new Map();
 
   static getInstance(): LuvviXOrchestrator {
     if (!LuvviXOrchestrator.instance) {
@@ -36,341 +27,251 @@ class LuvviXOrchestrator {
     return LuvviXOrchestrator.instance;
   }
 
-  async setupIntelligentAutomations(userId: string) {
-    console.log('Setting up intelligent automations for user:', userId);
-    
-    // Exemple d'automatisations intelligentes
-    const defaultAutomations: Omit<AutomationRule, 'id'>[] = [
-      {
-        name: 'Email to Cloud Backup',
-        description: 'Automatically save email attachments to cloud storage',
-        trigger: {
-          type: 'event',
-          data: { app: 'Mail', action: 'attachment_received' }
-        },
-        actions: [
-          {
-            app: 'Cloud',
-            action: 'save_file',
-            params: { folder: 'Email Attachments' }
-          }
-        ],
-        active: true,
-        user_id: userId
-      },
-      {
-        name: 'News to Learn Integration',
-        description: 'Create learning content from interesting news articles',
-        trigger: {
-          type: 'event',
-          data: { app: 'News', action: 'article_bookmarked' }
-        },
-        actions: [
-          {
-            app: 'Learn',
-            action: 'create_course_material',
-            params: { category: 'Current Events' }
-          }
-        ],
-        active: true,
-        user_id: userId
-      },
-      {
-        name: 'Weather-based Workflow',
-        description: 'Adjust daily planning based on weather conditions',
-        trigger: {
-          type: 'time',
-          data: { hour: 7, minute: 0 }
-        },
-        actions: [
-          {
-            app: 'Weather',
-            action: 'get_forecast',
-            params: {}
-          },
-          {
-            app: 'AI Studio',
-            action: 'suggest_activities',
-            params: { based_on: 'weather' }
-          }
-        ],
-        active: true,
-        user_id: userId
-      }
-    ];
-
-    // Stocker les automatisations
-    for (const automation of defaultAutomations) {
-      await this.createAutomation(automation);
-    }
-
-    return defaultAutomations;
-  }
-
-  async createAutomation(automation: Omit<AutomationRule, 'id'>) {
+  async getAutomationInsights(userId: string): Promise<AutomationInsight> {
     try {
-      const { data, error } = await supabase
-        .from('ecosystem_automations')
-        .insert({
-          user_id: automation.user_id,
-          name: automation.name,
-          description: automation.description,
-          trigger_config: automation.trigger,
-          actions_config: automation.actions,
-          is_active: automation.active
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const automationRule: AutomationRule = {
-        id: data.id,
-        ...automation
-      };
-
-      // Ajouter à la map locale
-      const userAutomations = this.automationRules.get(automation.user_id) || [];
-      userAutomations.push(automationRule);
-      this.automationRules.set(automation.user_id, userAutomations);
-
-      return automationRule;
-    } catch (error) {
-      console.error('Failed to create automation:', error);
-      return null;
-    }
-  }
-
-  async getActiveAutomations(userId: string) {
-    try {
-      const { data, error } = await supabase
-        .from('ecosystem_automations')
+      // Analyser les interactions de l'utilisateur pour détecter les patterns d'automatisation
+      const { data: interactions } = await supabase
+        .from('ecosystem_interactions')
         .select('*')
         .eq('user_id', userId)
-        .eq('is_active', true);
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-      if (error) throw error;
+      if (!interactions) {
+        return this.getDefaultInsights();
+      }
 
-      return data?.map(automation => ({
-        id: automation.id,
-        name: automation.name,
-        description: automation.description,
-        active: automation.is_active,
-        executions: automation.execution_count || 0,
-        efficiency: Math.random() * 100 // Placeholder pour l'efficacité
-      })) || [];
+      // Calculer les métriques d'efficacité
+      const appUsage = this.analyzeAppUsage(interactions);
+      const repetitivePatterns = this.detectRepetitivePatterns(interactions);
+      const efficiencyScore = this.calculateEfficiencyScore(appUsage, repetitivePatterns);
+
+      return {
+        efficiency_score: efficiencyScore,
+        automation_opportunities: this.generateAutomationOpportunities(repetitivePatterns),
+        current_automations: this.countCurrentAutomations(interactions),
+        potential_automations: repetitivePatterns.length,
+        time_saved_per_week: this.estimateTimeSavings(repetitivePatterns)
+      };
     } catch (error) {
-      console.error('Failed to get automations:', error);
-      return [];
+      console.error('Erreur lors de l\'analyse des automatisations:', error);
+      return this.getDefaultInsights();
     }
   }
 
-  async executeWorkflow(userId: string, triggerData: any) {
-    const userAutomations = this.automationRules.get(userId) || [];
-    
-    for (const automation of userAutomations) {
-      if (!automation.active) continue;
+  async suggestWorkflows(userId: string): Promise<WorkflowSuggestion[]> {
+    const insights = await this.getAutomationInsights(userId);
+    const suggestions: WorkflowSuggestion[] = [];
 
-      const shouldTrigger = this.evaluateTrigger(automation.trigger, triggerData);
-      
-      if (shouldTrigger) {
-        console.log(`Executing automation: ${automation.name}`);
-        await this.executeActions(automation.actions, triggerData);
-        
-        // Incrémenter le compteur d'exécutions
-        await this.incrementExecutionCount(automation.id);
-      }
-    }
-  }
-
-  private evaluateTrigger(trigger: any, data: any): boolean {
-    switch (trigger.type) {
-      case 'event':
-        return data.app === trigger.data.app && data.action === trigger.data.action;
-      case 'time':
-        const now = new Date();
-        return now.getHours() === trigger.data.hour && now.getMinutes() === trigger.data.minute;
-      case 'condition':
-        // Évaluation de conditions plus complexes
-        return this.evaluateCondition(trigger.data, data);
-      default:
-        return false;
-    }
-  }
-
-  private evaluateCondition(condition: any, data: any): boolean {
-    // Logique d'évaluation de conditions personnalisées
-    return true; // Placeholder
-  }
-
-  private async executeActions(actions: any[], triggerData: any) {
-    for (const action of actions) {
-      try {
-        await this.executeAction(action, triggerData);
-      } catch (error) {
-        console.error(`Failed to execute action in ${action.app}:`, error);
-      }
-    }
-  }
-
-  private async executeAction(action: any, triggerData: any) {
-    console.log(`Executing action: ${action.action} in ${action.app}`);
-    
-    // Ici, on peut intégrer avec les APIs des différentes apps
-    switch (action.app) {
-      case 'Cloud':
-        return await this.executeCloudAction(action, triggerData);
-      case 'Mail':
-        return await this.executeMailAction(action, triggerData);
-      case 'Learn':
-        return await this.executeLearnAction(action, triggerData);
-      default:
-        console.log(`Action executed: ${action.action} with params:`, action.params);
-    }
-  }
-
-  private async executeCloudAction(action: any, triggerData: any) {
-    // Intégration avec LuvviX Cloud
-    console.log('Cloud action executed:', action);
-  }
-
-  private async executeMailAction(action: any, triggerData: any) {
-    // Intégration avec LuvviX Mail
-    console.log('Mail action executed:', action);
-  }
-
-  private async executeLearnAction(action: any, triggerData: any) {
-    // Intégration avec LuvviX Learn
-    console.log('Learn action executed:', action);
-  }
-
-  private async incrementExecutionCount(automationId: string) {
-    try {
-      await supabase.rpc('increment_automation_executions', {
-        automation_id: automationId
+    // Suggérer des workflows basés sur les patterns détectés
+    if (insights.efficiency_score < 70) {
+      suggestions.push({
+        type: 'email_to_calendar',
+        description: 'Automatiser la création d\'événements à partir des emails',
+        estimated_time_saved: 30,
+        complexity: 'medium',
+        steps: [
+          'Analyser les emails entrants',
+          'Détecter les dates et heures',
+          'Créer automatiquement les événements',
+          'Envoyer une confirmation'
+        ]
       });
-    } catch (error) {
-      console.error('Failed to increment execution count:', error);
+
+      suggestions.push({
+        type: 'form_to_notification',
+        description: 'Notifications automatiques lors de soumissions de formulaires',
+        estimated_time_saved: 15,
+        complexity: 'easy',
+        steps: [
+          'Configurer les triggers de formulaire',
+          'Définir les destinataires',
+          'Personnaliser les messages',
+          'Activer les notifications'
+        ]
+      });
     }
+
+    if (insights.potential_automations > 3) {
+      suggestions.push({
+        type: 'calendar_to_reminder',
+        description: 'Rappels intelligents basés sur votre calendrier',
+        estimated_time_saved: 20,
+        complexity: 'easy',
+        steps: [
+          'Analyser les événements du calendrier',
+          'Créer des rappels automatiques',
+          'Optimiser les délais de rappel',
+          'Personnaliser selon les préférences'
+        ]
+      });
+    }
+
+    suggestions.push({
+      type: 'ai_content_generation',
+      description: 'Génération automatique de contenu avec l\'IA',
+      estimated_time_saved: 60,
+      complexity: 'advanced',
+      steps: [
+        'Définir les modèles de contenu',
+        'Configurer l\'IA générative',
+        'Automatiser la publication',
+        'Révision et validation automatiques'
+      ]
+    });
+
+    return suggestions;
   }
 
-  async syncDataBetweenApps(sourceApp: string, targetApp: string, data: any, userId: string) {
-    const crossAppData: CrossAppData = {
-      source_app: sourceApp,
-      target_app: targetApp,
-      data: data,
-      timestamp: new Date().toISOString()
-    };
-
-    try {
-      await supabase
-        .from('ecosystem_cross_app_data')
-        .insert({
-          user_id: userId,
-          source_app: sourceApp,
-          target_app: targetApp,
-          data: data,
-          sync_status: 'pending'
-        });
-
-      // Déclencher la synchronisation
-      await this.processCrossAppSync(crossAppData, userId);
-    } catch (error) {
-      console.error('Failed to sync data between apps:', error);
-    }
-  }
-
-  private async processCrossAppSync(syncData: CrossAppData, userId: string) {
-    console.log(`Syncing data from ${syncData.source_app} to ${syncData.target_app}`);
+  private analyzeAppUsage(interactions: any[]): Record<string, number> {
+    const usage: Record<string, number> = {};
     
-    // Logique de synchronisation entre applications
-    switch (`${syncData.source_app}->${syncData.target_app}`) {
-      case 'Mail->Cloud':
-        await this.syncMailToCloud(syncData.data);
-        break;
-      case 'News->Learn':
-        await this.syncNewsToLearn(syncData.data);
-        break;
-      case 'Forms->Analytics':
-        await this.syncFormsToAnalytics(syncData.data);
-        break;
-      default:
-        console.log('Generic sync executed for:', syncData);
+    interactions.forEach(interaction => {
+      const app = interaction.source_app || 'Unknown';
+      usage[app] = (usage[app] || 0) + 1;
+    });
+
+    return usage;
+  }
+
+  private detectRepetitivePatterns(interactions: any[]): any[] {
+    const patterns: any[] = [];
+    const actionSequences: Record<string, number> = {};
+
+    // Détecter les séquences d'actions répétitives
+    for (let i = 0; i < interactions.length - 1; i++) {
+      const current = interactions[i];
+      const next = interactions[i + 1];
+      
+      const sequence = `${current.source_app}->${next.source_app}`;
+      actionSequences[sequence] = (actionSequences[sequence] || 0) + 1;
     }
+
+    // Identifier les patterns qui se répètent souvent
+    Object.entries(actionSequences).forEach(([sequence, count]) => {
+      if (count >= 3) { // Au moins 3 occurrences
+        patterns.push({
+          sequence,
+          frequency: count,
+          automation_potential: count > 5 ? 'high' : 'medium'
+        });
+      }
+    });
+
+    return patterns;
   }
 
-  private async syncMailToCloud(data: any) {
-    console.log('Syncing mail attachments to cloud:', data);
+  private calculateEfficiencyScore(appUsage: Record<string, number>, patterns: any[]): number {
+    const totalInteractions = Object.values(appUsage).reduce((sum, count) => sum + count, 0);
+    const repetitiveActions = patterns.reduce((sum, pattern) => sum + pattern.frequency, 0);
+    
+    // Score basé sur le ratio d'actions répétitives vs actions uniques
+    const repetitiveRatio = repetitiveActions / Math.max(totalInteractions, 1);
+    const baseScore = Math.max(30, 100 - (repetitiveRatio * 100));
+    
+    // Bonus pour la diversité d'utilisation des apps
+    const appDiversity = Object.keys(appUsage).length;
+    const diversityBonus = Math.min(20, appDiversity * 2);
+    
+    return Math.min(100, Math.floor(baseScore + diversityBonus));
   }
 
-  private async syncNewsToLearn(data: any) {
-    console.log('Creating learning content from news:', data);
+  private generateAutomationOpportunities(patterns: any[]): string[] {
+    const opportunities: string[] = [];
+
+    patterns.forEach(pattern => {
+      const [sourceApp, targetApp] = pattern.sequence.split('->');
+      
+      if (sourceApp === 'Mail' && targetApp === 'Calendar') {
+        opportunities.push('Automatiser la création d\'événements depuis les emails');
+      } else if (sourceApp === 'Forms' && targetApp === 'Mail') {
+        opportunities.push('Automatiser l\'envoi d\'emails de confirmation pour les formulaires');
+      } else if (sourceApp === 'Calendar' && targetApp === 'LuvviX Assistant') {
+        opportunities.push('Créer des rappels intelligents avant les événements');
+      } else if (pattern.frequency > 5) {
+        opportunities.push(`Automatiser le workflow ${sourceApp} → ${targetApp}`);
+      }
+    });
+
+    // Ajouter des opportunités génériques si pas assez de patterns spécifiques
+    if (opportunities.length < 3) {
+      opportunities.push(
+        'Synchronisation automatique entre applications',
+        'Notifications intelligentes basées sur l\'activité',
+        'Génération automatique de rapports',
+        'Archivage automatique des anciens contenus'
+      );
+    }
+
+    return opportunities.slice(0, 5); // Maximum 5 opportunités
   }
 
-  private async syncFormsToAnalytics(data: any) {
-    console.log('Syncing form responses to analytics:', data);
+  private countCurrentAutomations(interactions: any[]): number {
+    // Compter les interactions qui semblent automatisées
+    let automatedCount = 0;
+    
+    interactions.forEach(interaction => {
+      if (interaction.metadata?.automated === true || 
+          interaction.interaction_type.includes('auto') ||
+          interaction.source_app === 'LuvviX Orchestrator') {
+        automatedCount++;
+      }
+    });
+
+    return automatedCount;
   }
 
-  async getAutomationInsights(userId: string) {
+  private estimateTimeSavings(patterns: any[]): number {
+    let totalSavings = 0;
+
+    patterns.forEach(pattern => {
+      // Estimer le temps économisé par pattern (en minutes par semaine)
+      const timeSavedPerAction = 2; // 2 minutes par action automatisée
+      const actionsPerWeek = pattern.frequency * 0.5; // Estimation conservative
+      totalSavings += timeSavedPerAction * actionsPerWeek;
+    });
+
+    return Math.floor(totalSavings);
+  }
+
+  private getDefaultInsights(): AutomationInsight {
+    return {
+      efficiency_score: 65,
+      automation_opportunities: [
+        'Synchronisation automatique entre applications',
+        'Notifications intelligentes',
+        'Génération automatique de contenu'
+      ],
+      current_automations: 0,
+      potential_automations: 3,
+      time_saved_per_week: 45
+    };
+  }
+
+  async createWorkflow(userId: string, workflowType: string, config: any): Promise<boolean> {
     try {
-      const { data, error } = await supabase
-        .from('ecosystem_automations')
-        .select('*')
-        .eq('user_id', userId);
+      // Enregistrer la configuration du workflow
+      await supabase.from('ecosystem_interactions').insert({
+        user_id: userId,
+        interaction_type: 'workflow_creation',
+        source_app: 'LuvviX Orchestrator',
+        data: { workflowType, config },
+        metadata: { automated: true }
+      });
 
-      if (error) throw error;
-
-      const totalAutomations = data?.length || 0;
-      const activeAutomations = data?.filter(a => a.is_active).length || 0;
-      const totalExecutions = data?.reduce((sum, a) => sum + (a.execution_count || 0), 0) || 0;
-
-      return {
-        total_automations: totalAutomations,
-        active_automations: activeAutomations,
-        total_executions: totalExecutions,
-        efficiency_score: totalExecutions > 0 ? Math.round((activeAutomations / totalAutomations) * 100) : 0
-      };
+      return true;
     } catch (error) {
-      console.error('Failed to get automation insights:', error);
-      return {
-        total_automations: 0,
-        active_automations: 0,
-        total_executions: 0,
-        efficiency_score: 0
-      };
+      console.error('Erreur lors de la création du workflow:', error);
+      return false;
     }
   }
 
-  async getWorkflowInsights(userId: string) {
-    try {
-      const { data, error } = await supabase
-        .from('ecosystem_automations')
-        .select('*')
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      const totalAutomations = data?.length || 0;
-      const activeAutomations = data?.filter(a => a.is_active).length || 0;
-      const totalExecutions = data?.reduce((sum, a) => sum + (a.execution_count || 0), 0) || 0;
-
-      return {
-        total_automations: totalAutomations,
-        active_automations: activeAutomations,
-        total_executions: totalExecutions,
-        efficiency_score: totalExecutions > 0 ? Math.round((activeAutomations / totalAutomations) * 100) : 0
-      };
-    } catch (error) {
-      console.error('Failed to get workflow insights:', error);
-      return {
-        total_automations: 0,
-        active_automations: 0,
-        total_executions: 0,
-        efficiency_score: 0
-      };
-    }
+  async executeWorkflow(workflowId: string, triggerData: any): Promise<any> {
+    // Logique d'exécution des workflows
+    // À implémenter selon les besoins spécifiques
+    console.log('Exécution du workflow:', workflowId, triggerData);
+    return { success: true };
   }
 }
 
 export const orchestrator = LuvviXOrchestrator.getInstance();
-export type { AutomationRule, CrossAppData };

@@ -1,518 +1,314 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, Wind, Droplets, Eye, Sun, Moon, Cloud, CloudRain, Zap, Snowflake, RefreshCw, Sparkles, Calendar, Clock } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { ArrowLeft, MapPin, Thermometer, Wind, Droplets, Eye, Settings, RefreshCw, Bell } from 'lucide-react';
+import { useWeatherService } from '@/hooks/use-weather-service';
+import { useAINotifications } from '@/hooks/use-ai-notifications';
 import { toast } from '@/hooks/use-toast';
-
-interface WeatherData {
-  current: {
-    temperature: number;
-    condition: string;
-    description: string;
-    icon: string;
-    humidity: number;
-    windSpeed: number;
-    windDirection: string;
-    visibility: number;
-    uvIndex: number;
-    pressure: number;
-    feelsLike: number;
-  };
-  location: {
-    name: string;
-    country: string;
-    region: string;
-    coordinates: {
-      lat: number;
-      lon: number;
-    };
-  };
-  forecast: DayForecast[];
-  hourly: HourlyForecast[];
-  lastUpdated: Date;
-}
-
-interface DayForecast {
-  date: Date;
-  maxTemp: number;
-  minTemp: number;
-  condition: string;
-  icon: string;
-  humidity: number;
-  windSpeed: number;
-  precipitation: number;
-}
-
-interface HourlyForecast {
-  time: Date;
-  temperature: number;
-  condition: string;
-  icon: string;
-  precipitation: number;
-  windSpeed: number;
-}
 
 interface MobileWeatherProps {
   onBack: () => void;
 }
 
 const MobileWeather = ({ onBack }: MobileWeatherProps) => {
-  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<'current' | 'forecast' | 'hourly' | 'details'>('current');
-  const [useCurrentLocation, setUseCurrentLocation] = useState(true);
+  const { weatherData, loading, preferences, fetchWeather, updatePreferences } = useWeatherService();
+  const { generateSmartNotification } = useAINotifications();
+  const [showSettings, setShowSettings] = useState(false);
   const [searchLocation, setSearchLocation] = useState('');
-  const [aiAnalysis, setAiAnalysis] = useState<string>('');
-  const [loadingAI, setLoadingAI] = useState(false);
-
-  // Simuler la récupération des données météo
-  const fetchWeatherData = async (lat?: number, lon?: number, city?: string) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Simuler un délai d'API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const mockWeatherData: WeatherData = {
-        current: {
-          temperature: Math.round(15 + Math.random() * 20),
-          condition: 'Ensoleillé',
-          description: 'Ciel dégagé avec quelques nuages épars',
-          icon: '☀️',
-          humidity: Math.round(40 + Math.random() * 40),
-          windSpeed: Math.round(5 + Math.random() * 15),
-          windDirection: 'NE',
-          visibility: Math.round(8 + Math.random() * 7),
-          uvIndex: Math.round(1 + Math.random() * 10),
-          pressure: Math.round(1000 + Math.random() * 40),
-          feelsLike: Math.round(15 + Math.random() * 20)
-        },
-        location: {
-          name: city || 'Paris',
-          country: 'France',
-          region: 'Île-de-France',
-          coordinates: { lat: lat || 48.8566, lon: lon || 2.3522 }
-        },
-        forecast: Array.from({ length: 7 }, (_, i) => ({
-          date: new Date(Date.now() + i * 24 * 60 * 60 * 1000),
-          maxTemp: Math.round(18 + Math.random() * 15),
-          minTemp: Math.round(8 + Math.random() * 10),
-          condition: ['Ensoleillé', 'Nuageux', 'Pluvieux', 'Orageux'][Math.floor(Math.random() * 4)],
-          icon: ['☀️', '☁️', '🌧️', '⛈️'][Math.floor(Math.random() * 4)],
-          humidity: Math.round(40 + Math.random() * 40),
-          windSpeed: Math.round(5 + Math.random() * 15),
-          precipitation: Math.round(Math.random() * 20)
-        })),
-        hourly: Array.from({ length: 24 }, (_, i) => ({
-          time: new Date(Date.now() + i * 60 * 60 * 1000),
-          temperature: Math.round(15 + Math.random() * 10),
-          condition: ['Ensoleillé', 'Nuageux', 'Pluvieux'][Math.floor(Math.random() * 3)],
-          icon: ['☀️', '☁️', '🌧️'][Math.floor(Math.random() * 3)],
-          precipitation: Math.round(Math.random() * 15),
-          windSpeed: Math.round(5 + Math.random() * 10)
-        })),
-        lastUpdated: new Date()
-      };
-      
-      setWeatherData(mockWeatherData);
-    } catch (err) {
-      setError('Impossible de récupérer les données météo');
-      toast({
-        title: "Erreur météo",
-        description: "Impossible de récupérer les données météo",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Géolocalisation
-  const getCurrentLocation = () => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          fetchWeatherData(latitude, longitude);
-        },
-        (error) => {
-          console.error('Erreur géolocalisation:', error);
-          fetchWeatherData(); // Utiliser Paris par défaut
-          toast({
-            title: "Géolocalisation",
-            description: "Impossible d'obtenir votre position, utilisation de Paris par défaut",
-          });
-        }
-      );
-    } else {
-      fetchWeatherData(); // Utiliser Paris par défaut
-    }
-  };
-
-  // Analyse IA de la météo
-  const generateAIAnalysis = async () => {
-    if (!weatherData) return;
-    
-    setLoadingAI(true);
-    try {
-      // Simuler un appel à l'IA Gemini
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const analyses = [
-        `Conditions météo excellentes pour ${weatherData.location.name} ! La température de ${weatherData.current.temperature}°C est idéale pour les activités extérieures. Le vent faible (${weatherData.current.windSpeed} km/h) rend la journée très agréable.`,
-        `Attention aux conditions changeantes ! L'humidité élevée (${weatherData.current.humidity}%) pourrait annoncer de la pluie. Prévoyez un parapluie si vous sortez.`,
-        `Parfait pour une journée en terrasse ! Les conditions actuelles sont optimales avec un indice UV de ${weatherData.current.uvIndex}. N'oubliez pas la crème solaire.`,
-        `Journée mitigée à prévoir. La température ressentie (${weatherData.current.feelsLike}°C) est différente de la température réelle. Adaptez votre tenue en conséquence.`
-      ];
-      
-      const randomAnalysis = analyses[Math.floor(Math.random() * analyses.length)];
-      setAiAnalysis(randomAnalysis);
-      
-      toast({
-        title: "Analyse IA terminée",
-        description: "L'IA a analysé les conditions météo",
-      });
-    } catch (error) {
-      toast({
-        title: "Erreur IA",
-        description: "Impossible de générer l'analyse météo",
-        variant: "destructive"
-      });
-    } finally {
-      setLoadingAI(false);
-    }
-  };
 
   useEffect(() => {
-    if (useCurrentLocation) {
-      getCurrentLocation();
-    } else {
-      fetchWeatherData();
-    }
-  }, [useCurrentLocation]);
+    fetchWeather();
+  }, []);
 
-  const getWeatherIcon = (condition: string) => {
-    const icons: { [key: string]: string } = {
-      'Ensoleillé': '☀️',
-      'Nuageux': '☁️',
-      'Partiellement nuageux': '⛅',
-      'Pluvieux': '🌧️',
-      'Orageux': '⛈️',
-      'Neigeux': '❄️',
-      'Brumeux': '🌫️'
+  const getWeatherIcon = (code: number) => {
+    const icons: { [key: number]: string } = {
+      0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
+      45: '🌫️', 48: '🌫️',
+      51: '🌦️', 53: '🌦️', 55: '🌦️',
+      61: '🌧️', 63: '🌧️', 65: '🌧️',
+      71: '🌨️', 73: '🌨️', 75: '🌨️',
+      95: '⛈️', 96: '⛈️', 99: '⛈️'
     };
-    return icons[condition] || '🌤️';
+    return icons[code] || '🌤️';
   };
 
-  const getUVLevel = (uvIndex: number) => {
-    if (uvIndex <= 2) return { level: 'Faible', color: 'text-green-600' };
-    if (uvIndex <= 5) return { level: 'Modéré', color: 'text-yellow-600' };
-    if (uvIndex <= 7) return { level: 'Élevé', color: 'text-orange-600' };
-    if (uvIndex <= 10) return { level: 'Très élevé', color: 'text-red-600' };
-    return { level: 'Extrême', color: 'text-purple-600' };
+  const getWeatherDescription = (code: number) => {
+    const descriptions: { [key: number]: string } = {
+      0: 'Ciel dégagé',
+      1: 'Principalement dégagé',
+      2: 'Partiellement nuageux',
+      3: 'Couvert',
+      45: 'Brouillard',
+      48: 'Brouillard givrant',
+      51: 'Bruine légère',
+      53: 'Bruine modérée',
+      55: 'Bruine dense',
+      61: 'Pluie légère',
+      63: 'Pluie modérée',
+      65: 'Pluie forte',
+      71: 'Neige légère',
+      73: 'Neige modérée',
+      75: 'Neige forte',
+      95: 'Orage',
+      96: 'Orage avec grêle légère',
+      99: 'Orage avec grêle forte'
+    };
+    return descriptions[code] || 'Conditions inconnues';
   };
 
-  const renderCurrentWeather = () => {
-    if (!weatherData) return null;
-
-    const uvLevel = getUVLevel(weatherData.current.uvIndex);
-
-    return (
-      <div className="space-y-6">
-        {/* Conditions actuelles */}
-        <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl p-6 text-white">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-2xl font-bold">{weatherData.location.name}</h2>
-              <p className="text-blue-100 text-sm">{weatherData.location.region}, {weatherData.location.country}</p>
-            </div>
-            <div className="text-right">
-              <div className="text-4xl mb-2">{getWeatherIcon(weatherData.current.condition)}</div>
-              <button
-                onClick={() => fetchWeatherData()}
-                className="p-2 bg-white bg-opacity-20 rounded-full hover:bg-opacity-30 transition-colors"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-          </div>
-          
-          <div className="flex items-end space-x-4 mb-4">
-            <div className="text-5xl font-light">{weatherData.current.temperature}°C</div>
-            <div className="text-lg text-blue-100">
-              Ressenti {weatherData.current.feelsLike}°C
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-lg font-medium">{weatherData.current.condition}</p>
-              <p className="text-blue-100 text-sm">{weatherData.current.description}</p>
-            </div>
-            <div className="text-right text-sm text-blue-100">
-              <p>Mise à jour</p>
-              <p>{format(weatherData.lastUpdated, 'HH:mm')}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Détails météo */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Droplets className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Humidité</p>
-                <p className="text-lg font-semibold">{weatherData.current.humidity}%</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <Wind className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Vent</p>
-                <p className="text-lg font-semibold">{weatherData.current.windSpeed} km/h</p>
-                <p className="text-xs text-gray-500">{weatherData.current.windDirection}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                <Sun className="w-5 h-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">UV Index</p>
-                <p className="text-lg font-semibold">{weatherData.current.uvIndex}</p>
-                <p className={`text-xs font-medium ${uvLevel.color}`}>{uvLevel.level}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                <Eye className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Visibilité</p>
-                <p className="text-lg font-semibold">{weatherData.current.visibility} km</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Analyse IA */}
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="w-5 h-5 text-purple-600" />
-              <h3 className="font-medium text-purple-900">Analyse IA</h3>
-            </div>
-            <button
-              onClick={generateAIAnalysis}
-              disabled={loadingAI}
-              className="px-3 py-1 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600 disabled:opacity-50 transition-colors"
-            >
-              {loadingAI ? 'Analyse...' : 'Analyser'}
-            </button>
-          </div>
-          
-          {aiAnalysis ? (
-            <p className="text-purple-800 text-sm leading-relaxed">{aiAnalysis}</p>
-          ) : (
-            <p className="text-purple-600 text-sm">Cliquez sur "Analyser" pour obtenir une analyse IA des conditions météo actuelles.</p>
-          )}
-        </div>
-      </div>
-    );
+  const handleLocationSearch = async () => {
+    if (searchLocation.trim()) {
+      await fetchWeather(searchLocation);
+      setSearchLocation('');
+    }
   };
 
-  const renderForecast = () => {
-    if (!weatherData) return null;
+  const handleGenerateWeatherAlert = async () => {
+    if (!weatherData) return;
 
-    return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Prévisions 7 jours</h3>
-        
-        {weatherData.forecast.map((day, index) => (
-          <div key={index} className="bg-white rounded-xl p-4 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="text-2xl">{getWeatherIcon(day.condition)}</div>
-                <div>
-                  <p className="font-medium">
-                    {index === 0 ? 'Aujourd\'hui' : format(day.date, 'EEEE', { locale: fr })}
-                  </p>
-                  <p className="text-sm text-gray-600">{day.condition}</p>
-                </div>
-              </div>
-              
-              <div className="text-right">
-                <div className="flex items-center space-x-2">
-                  <span className="text-lg font-semibold">{day.maxTemp}°</span>
-                  <span className="text-gray-500">{day.minTemp}°</span>
-                </div>
-                <div className="flex items-center space-x-3 text-sm text-gray-500 mt-1">
-                  <span className="flex items-center space-x-1">
-                    <Droplets className="w-3 h-3" />
-                    <span>{day.precipitation}%</span>
-                  </span>
-                  <span className="flex items-center space-x-1">
-                    <Wind className="w-3 h-3" />
-                    <span>{day.windSpeed}</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
+    const context = `Météo actuelle: ${weatherData.current.temperature_2m}°C, ${getWeatherDescription(weatherData.current.weather_code)} à ${weatherData.location.name}. Vent: ${weatherData.current.wind_speed_10m} km/h, Humidité: ${weatherData.current.relative_humidity_2m}%`;
+    
+    await generateSmartNotification(context, 'weather');
+    toast({
+      title: "Alerte météo générée",
+      description: "Une notification intelligente a été créée",
+    });
   };
 
-  const renderHourlyForecast = () => {
-    if (!weatherData) return null;
-
-    return (
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Prévisions horaires</h3>
-        
-        <div className="space-y-3">
-          {weatherData.hourly.slice(0, 12).map((hour, index) => (
-            <div key={index} className="bg-white rounded-xl p-3 border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <span className="text-lg">{getWeatherIcon(hour.condition)}</span>
-                  <div>
-                    <p className="font-medium">{format(hour.time, 'HH:mm')}</p>
-                    <p className="text-sm text-gray-600">{hour.condition}</p>
-                  </div>
-                </div>
-                
-                <div className="text-right">
-                  <p className="text-lg font-semibold">{hour.temperature}°C</p>
-                  <div className="flex items-center space-x-2 text-sm text-gray-500">
-                    <span className="flex items-center space-x-1">
-                      <Droplets className="w-3 h-3" />
-                      <span>{hour.precipitation}%</span>
-                    </span>
-                    <span className="flex items-center space-x-1">
-                      <Wind className="w-3 h-3" />
-                      <span>{hour.windSpeed}</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+  const formatTemperature = (temp: number) => {
+    if (preferences.temperature_unit === 'fahrenheit') {
+      return `${Math.round((temp * 9/5) + 32)}°F`;
+    }
+    return `${Math.round(temp)}°C`;
   };
 
-  if (loading) {
+  if (loading && !weatherData) {
     return (
       <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-600">Chargement des données météo...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
-        <div className="text-center p-4">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Cloud className="w-8 h-8 text-red-600" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Erreur météo</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={() => {
-              setError(null);
-              fetchWeatherData();
-            }}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+  return (
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-400 via-blue-500 to-blue-600 z-50 flex flex-col text-white">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4">
+        <button onClick={onBack} className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full">
+          <ArrowLeft className="w-6 h-6" />
+        </button>
+        <h1 className="text-lg font-bold">LuvviX Météo</h1>
+        <div className="flex space-x-2">
+          <button 
+            onClick={() => fetchWeather()}
+            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full"
+            disabled={loading}
           >
-            Réessayer
+            <RefreshCw className={`w-6 h-6 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button 
+            onClick={() => setShowSettings(true)}
+            className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full"
+          >
+            <Settings className="w-6 h-6" />
           </button>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full">
-            <ArrowLeft className="w-6 h-6 text-gray-600" />
-          </button>
-          <h1 className="text-xl font-bold text-gray-900">LuvviX Météo</h1>
-        </div>
-        
-        <div className="flex items-center space-x-2">
+      {/* Search */}
+      <div className="px-4 mb-6">
+        <div className="flex space-x-2">
+          <input
+            type="text"
+            value={searchLocation}
+            onChange={(e) => setSearchLocation(e.target.value)}
+            placeholder="Rechercher une ville..."
+            className="flex-1 px-4 py-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border-0 focus:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
+            onKeyPress={(e) => e.key === 'Enter' && handleLocationSearch()}
+          />
           <button
-            onClick={() => setUseCurrentLocation(!useCurrentLocation)}
-            className={`p-2 rounded-full transition-colors ${
-              useCurrentLocation ? 'bg-blue-100 text-blue-600' : 'text-gray-600 hover:bg-gray-100'
-            }`}
+            onClick={handleLocationSearch}
+            className="px-6 py-3 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-colors"
           >
             <MapPin className="w-5 h-5" />
           </button>
-          <button
-            onClick={generateAIAnalysis}
-            disabled={loadingAI}
-            className="p-2 bg-purple-100 text-purple-600 rounded-full hover:bg-purple-200 transition-colors"
-          >
-            <Sparkles className="w-5 h-5" />
-          </button>
         </div>
       </div>
 
-      {/* Navigation tabs */}
-      <div className="flex bg-gray-50 border-b border-gray-200">
-        {[
-          { key: 'current', label: 'Actuel', icon: Sun },
-          { key: 'forecast', label: 'Prévisions', icon: Calendar },
-          { key: 'hourly', label: 'Horaire', icon: Clock }
-        ].map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            onClick={() => setView(key as any)}
-            className={`flex-1 py-3 text-center font-medium transition-colors ${
-              view === key
-                ? 'bg-white text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Icon className="w-5 h-5 mx-auto mb-1" />
-            <span className="text-sm">{label}</span>
-          </button>
-        ))}
-      </div>
+      {weatherData ? (
+        <div className="flex-1 overflow-auto px-4">
+          {/* Current Weather */}
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center mb-2">
+              <MapPin className="w-5 h-5 mr-2" />
+              <h2 className="text-xl font-semibold">{weatherData.location.name}</h2>
+            </div>
+            
+            <div className="text-6xl mb-4">
+              {getWeatherIcon(weatherData.current.weather_code)}
+            </div>
+            
+            <div className="text-5xl font-light mb-2">
+              {formatTemperature(weatherData.current.temperature_2m)}
+            </div>
+            
+            <p className="text-xl text-blue-100">
+              {getWeatherDescription(weatherData.current.weather_code)}
+            </p>
+          </div>
 
-      {/* Contenu */}
-      <div className="flex-1 overflow-auto p-4">
-        {view === 'current' && renderCurrentWeather()}
-        {view === 'forecast' && renderForecast()}
-        {view === 'hourly' && renderHourlyForecast()}
-      </div>
+          {/* Weather Details */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="bg-white bg-opacity-20 rounded-2xl p-4 text-center">
+              <Wind className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm text-blue-100">Vent</p>
+              <p className="text-lg font-semibold">{weatherData.current.wind_speed_10m} km/h</p>
+            </div>
+            
+            <div className="bg-white bg-opacity-20 rounded-2xl p-4 text-center">
+              <Droplets className="w-8 h-8 mx-auto mb-2" />
+              <p className="text-sm text-blue-100">Humidité</p>
+              <p className="text-lg font-semibold">{weatherData.current.relative_humidity_2m}%</p>
+            </div>
+          </div>
+
+          {/* Forecast */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold mb-4">Prévisions 7 jours</h3>
+            <div className="space-y-3">
+              {weatherData.daily.weather_code.slice(0, 7).map((code, index) => (
+                <div key={index} className="flex items-center justify-between bg-white bg-opacity-20 rounded-xl p-4">
+                  <div className="flex items-center">
+                    <span className="text-2xl mr-3">{getWeatherIcon(code)}</span>
+                    <div>
+                      <p className="font-medium">
+                        {index === 0 ? "Aujourd'hui" : 
+                         index === 1 ? "Demain" : 
+                         new Date(Date.now() + index * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR', { weekday: 'long' })}
+                      </p>
+                      <p className="text-sm text-blue-100">{getWeatherDescription(code)}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">
+                      {formatTemperature(weatherData.daily.temperature_2m_max[index])}
+                    </p>
+                    <p className="text-sm text-blue-100">
+                      {formatTemperature(weatherData.daily.temperature_2m_min[index])}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* AI Weather Alert Button */}
+          <div className="pb-8">
+            <button
+              onClick={handleGenerateWeatherAlert}
+              className="w-full bg-white bg-opacity-20 rounded-xl p-4 flex items-center justify-center space-x-2 hover:bg-opacity-30 transition-colors"
+            >
+              <Bell className="w-5 h-5" />
+              <span>Générer une alerte météo IA</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-6xl mb-4">🌤️</div>
+            <p className="text-xl text-blue-100">Aucune donnée météo disponible</p>
+            <button
+              onClick={() => fetchWeather()}
+              className="mt-4 px-6 py-3 bg-white bg-opacity-20 rounded-lg hover:bg-opacity-30 transition-colors"
+            >
+              Actualiser
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-60 flex items-end">
+          <div className="bg-white w-full rounded-t-3xl max-h-[70vh] overflow-auto text-gray-900">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold">Paramètres météo</h2>
+                <button 
+                  onClick={() => setShowSettings(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ville par défaut
+                  </label>
+                  <input
+                    type="text"
+                    value={preferences.default_location}
+                    onChange={(e) => updatePreferences({ default_location: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Paris, France"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Unité de température
+                  </label>
+                  <select
+                    value={preferences.temperature_unit}
+                    onChange={(e) => updatePreferences({ temperature_unit: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="celsius">Celsius (°C)</option>
+                    <option value="fahrenheit">Fahrenheit (°F)</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">Utiliser ma position</p>
+                    <p className="text-sm text-gray-600">Détecter automatiquement votre localisation</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={preferences.use_current_location}
+                      onChange={(e) => updatePreferences({ use_current_location: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">Notifications météo</p>
+                    <p className="text-sm text-gray-600">Recevoir des alertes météo importantes</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={preferences.notification_enabled}
+                      onChange={(e) => updatePreferences({ notification_enabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

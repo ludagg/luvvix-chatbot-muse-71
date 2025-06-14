@@ -742,6 +742,63 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_events: {
+        Row: {
+          all_day: boolean | null
+          attendees: Json | null
+          color: string | null
+          completed: boolean | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          event_type: string | null
+          id: string
+          location: string | null
+          priority: string | null
+          recurrence_rule: string | null
+          start_date: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          all_day?: boolean | null
+          attendees?: Json | null
+          color?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          event_type?: string | null
+          id?: string
+          location?: string | null
+          priority?: string | null
+          recurrence_rule?: string | null
+          start_date: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          all_day?: boolean | null
+          attendees?: Json | null
+          color?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          event_type?: string | null
+          id?: string
+          location?: string | null
+          priority?: string | null
+          recurrence_rule?: string | null
+          start_date?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       center_chat_messages: {
         Row: {
           content: string | null

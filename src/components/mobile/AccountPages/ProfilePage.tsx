@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Camera, User, Mail, Phone, MapPin, Calendar, Edit3, Save, X, Globe } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
 interface ProfilePageProps {
@@ -30,31 +31,45 @@ const ProfilePage = ({ onBack }: ProfilePageProps) => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Simuler une sauvegarde réelle avec l'API Supabase
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Ici, on ferait un appel à l'API pour mettre à jour les métadonnées utilisateur
-      // await supabase.auth.updateUser({
-      //   data: {
-      //     full_name: profileData.fullName,
-      //     username: profileData.username,
-      //     phone: profileData.phone,
-      //     location: profileData.location,
-      //     bio: profileData.bio,
-      //     website: profileData.website,
-      //     birth_date: profileData.birthDate,
-      //     gender: profileData.gender,
-      //     occupation: profileData.occupation
-      //   }
-      // });
-      
+      // Mettre à jour les métadonnées utilisateur dans Supabase Auth
+      const { error: authError } = await supabase.auth.updateUser({
+        data: {
+          full_name: profileData.fullName,
+          username: profileData.username,
+          phone: profileData.phone,
+          location: profileData.location,
+          bio: profileData.bio,
+          website: profileData.website,
+          birth_date: profileData.birthDate,
+          gender: profileData.gender,
+          occupation: profileData.occupation
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Mettre à jour le profil utilisateur dans la table user_profiles si elle existe
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .upsert({
+          id: user?.id,
+          full_name: profileData.fullName,
+          username: profileData.username
+        });
+
+      // Ignorer l'erreur si la table n'existe pas
+      if (profileError && !profileError.message.includes('relation "user_profiles" does not exist')) {
+        throw profileError;
+      }
+
       setOriginalData(profileData);
       setIsEditing(false);
       toast({
         title: "Profil mis à jour",
         description: "Vos informations ont été sauvegardées avec succès",
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder les modifications",
@@ -321,16 +336,16 @@ const ProfilePage = ({ onBack }: ProfilePageProps) => {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistiques d'utilisation</h3>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 bg-blue-50 rounded-xl">
-                <p className="text-2xl font-bold text-blue-600">42</p>
+                <p className="text-2xl font-bold text-blue-600">8</p>
                 <p className="text-sm text-blue-700">Services utilisés</p>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-xl">
-                <p className="text-2xl font-bold text-green-600">156</p>
-                <p className="text-sm text-green-700">Heures économisées</p>
+                <p className="text-2xl font-bold text-green-600">42</p>
+                <p className="text-sm text-green-700">Actions réalisées</p>
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-xl">
-                <p className="text-2xl font-bold text-purple-600">9.2</p>
-                <p className="text-sm text-purple-700">Score productivité</p>
+                <p className="text-2xl font-bold text-purple-600">94%</p>
+                <p className="text-sm text-purple-700">Score de satisfaction</p>
               </div>
             </div>
           </div>

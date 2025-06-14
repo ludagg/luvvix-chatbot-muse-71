@@ -17,6 +17,7 @@ interface CalendarEvent {
   color: string;
   completed: boolean;
   user_id: string;
+  isHoliday?: boolean;
 }
 
 export const useCalendar = () => {

@@ -1,5 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { neuralNetwork, PredictionResult } from './luvvix-neural-network';
+import { neuralNetwork, type PredictionResult } from './luvvix-neural-network';
 import { orchestrator } from './luvvix-orchestrator';
 
 interface PredictiveInsight {

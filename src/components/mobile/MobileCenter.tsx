@@ -8,12 +8,13 @@ import TwitterComposer from './TwitterComposer';
 import StoryViewer from './StoryViewer';
 import ReactionPicker from './ReactionPicker';
 import UserSuggestions from './UserSuggestions';
-import NotificationCenter from './NotificationCenter';
 import HashtagTrends from './HashtagTrends';
 import SearchAdvanced from './SearchAdvanced';
 import MobileCenterMessaging from './MobileCenterMessaging';
-import MobileCenterGroups from './MobileCenterGroups';
 import VideoUploader from './VideoUploader';
+import StoryManager from './center/StoryManager';
+import NotificationManager from './center/NotificationManager';
+import GroupManager from './center/GroupManager';
 
 interface MobileCenterProps {
   onBack: () => void;
@@ -65,27 +66,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
   const [postReactions, setPostReactions] = useState<{[key: string]: {[key: string]: number}}>({});
   const [userReactions, setUserReactions] = useState<{[key: string]: string}>({});
-
-  const mockStories = [
-    {
-      id: '1',
-      user: { id: '1', username: 'dev_jane', full_name: 'Jane Developer', avatar_url: '' },
-      media_url: '/placeholder.svg',
-      media_type: 'image' as const,
-      created_at: new Date().toISOString(),
-      duration: 5000
-    }
-  ];
-
-  const mockNotifications = [
-    {
-      id: '1',
-      type: 'like' as const,
-      user: { id: '2', username: 'tech_user', full_name: 'Tech User', avatar_url: '' },
-      created_at: new Date().toISOString(),
-      is_read: false
-    }
-  ];
 
   const mockHashtags = [
     { tag: 'ReactJS', posts_count: 15420, trend_direction: 'up' as const, change_percentage: 25 },
@@ -323,14 +303,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     }
   };
 
-  const handleStoryUpload = async (file: File) => {
-    console.log('Uploading story:', file);
-    toast({
-      title: "Story ajoutée",
-      description: "Votre story a été publiée avec succès"
-    });
-  };
-
   const handleVideoUpload = (file: File) => {
     setShowComposer(true);
     setShowVideoUploader(false);
@@ -355,14 +327,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     console.log('Dismissing user suggestion:', userId);
   };
 
-  const handleMarkNotificationAsRead = (id: string) => {
-    console.log('Marking notification as read:', id);
-  };
-
-  const handleMarkAllNotificationsAsRead = () => {
-    console.log('Marking all notifications as read');
-  };
-
   const handleHashtagClick = (hashtag: string) => {
     console.log('Clicked hashtag:', hashtag);
   };
@@ -382,24 +346,11 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   }
 
   if (activeTab === 'groups') {
-    return <MobileCenterGroups onBack={() => setActiveTab('feed')} />;
+    return <GroupManager onBack={() => setActiveTab('feed')} />;
   }
 
   if (activeTab === 'notifications') {
-    return (
-      <div className="fixed inset-0 bg-white z-50">
-        <div className="p-4 border-b border-gray-200">
-          <button onClick={() => setActiveTab('feed')} className="p-2 hover:bg-gray-100 rounded-full">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-        </div>
-        <NotificationCenter
-          notifications={mockNotifications}
-          onMarkAsRead={handleMarkNotificationAsRead}
-          onMarkAllAsRead={handleMarkAllNotificationsAsRead}
-        />
-      </div>
-    );
+    return <NotificationManager onClose={() => setActiveTab('feed')} />;
   }
 
   return (
@@ -471,45 +422,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
       {/* Stories Bar */}
       {activeTab === 'feed' && (
-        <div className={`border-b p-3 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <div className="flex items-center space-x-3 overflow-x-auto scrollbar-hide">
-            <div className="flex flex-col items-center flex-shrink-0">
-              <input
-                type="file"
-                accept="image/*,video/*"
-                onChange={(e) => e.target.files?.[0] && handleStoryUpload(e.target.files[0])}
-                className="hidden"
-                id="story-upload"
-              />
-              <label htmlFor="story-upload" className={`w-14 h-14 rounded-full border-2 border-dashed flex items-center justify-center cursor-pointer ${
-                darkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-100'
-              }`}>
-                <Camera className={`w-6 h-6 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-              </label>
-              <span className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Votre story</span>
-            </div>
-            
-            {mockStories.map((story, index) => (
-              <div key={story.id} className="flex flex-col items-center flex-shrink-0">
-                <button
-                  onClick={() => setShowStoryViewer(true)}
-                  className="w-14 h-14 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 p-0.5"
-                >
-                  <div className={`w-full h-full rounded-full flex items-center justify-center ${
-                    darkMode ? 'bg-gray-800' : 'bg-blue-500'
-                  }`}>
-                    <span className="text-white font-bold text-sm">
-                      {story.user.username[0].toUpperCase()}
-                    </span>
-                  </div>
-                </button>
-                <span className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {story.user.username}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <StoryManager onStoryView={(storyId) => console.log('Viewed story:', storyId)} />
       )}
 
       {/* Contenu principal */}
@@ -688,7 +601,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
       {showStoryViewer && (
         <StoryViewer
-          stories={mockStories}
+          stories={[]}
           initialIndex={0}
           onClose={() => setShowStoryViewer(false)}
         />

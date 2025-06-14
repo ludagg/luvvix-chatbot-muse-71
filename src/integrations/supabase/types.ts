@@ -1184,6 +1184,121 @@ export type Database = {
         }
         Relationships: []
       }
+      center_group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string | null
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string | null
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string | null
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "center_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      center_group_posts: {
+        Row: {
+          comments_count: number | null
+          content: string
+          created_at: string | null
+          group_id: string
+          id: string
+          likes_count: number | null
+          media_urls: string[] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          comments_count?: number | null
+          content: string
+          created_at?: string | null
+          group_id: string
+          id?: string
+          likes_count?: number | null
+          media_urls?: string[] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          comments_count?: number | null
+          content?: string
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          likes_count?: number | null
+          media_urls?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_group_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "center_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      center_groups: {
+        Row: {
+          avatar_url: string | null
+          banner_url: string | null
+          created_at: string | null
+          creator_id: string
+          description: string | null
+          id: string
+          is_private: boolean | null
+          members_count: number | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          banner_url?: string | null
+          created_at?: string | null
+          creator_id: string
+          description?: string | null
+          id?: string
+          is_private?: boolean | null
+          members_count?: number | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          banner_url?: string | null
+          created_at?: string | null
+          creator_id?: string
+          description?: string | null
+          id?: string
+          is_private?: boolean | null
+          members_count?: number | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       center_likes: {
         Row: {
           created_at: string | null
@@ -1254,6 +1369,42 @@ export type Database = {
           },
         ]
       }
+      center_notifications: {
+        Row: {
+          actor_id: string | null
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          is_read: boolean | null
+          message: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       center_posts: {
         Row: {
           comments_count: number | null
@@ -1264,6 +1415,7 @@ export type Database = {
           media_urls: string[] | null
           updated_at: string | null
           user_id: string
+          video_url: string | null
         }
         Insert: {
           comments_count?: number | null
@@ -1274,6 +1426,7 @@ export type Database = {
           media_urls?: string[] | null
           updated_at?: string | null
           user_id: string
+          video_url?: string | null
         }
         Update: {
           comments_count?: number | null
@@ -1284,6 +1437,7 @@ export type Database = {
           media_urls?: string[] | null
           updated_at?: string | null
           user_id?: string
+          video_url?: string | null
         }
         Relationships: []
       }
@@ -1322,6 +1476,68 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      center_stories: {
+        Row: {
+          caption: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          media_type: string
+          media_url: string
+          user_id: string
+          views_count: number | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          media_type: string
+          media_url: string
+          user_id: string
+          views_count?: number | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          media_type?: string
+          media_url?: string
+          user_id?: string
+          views_count?: number | null
+        }
+        Relationships: []
+      }
+      center_story_views: {
+        Row: {
+          id: string
+          story_id: string
+          viewed_at: string | null
+          viewer_id: string
+        }
+        Insert: {
+          id?: string
+          story_id: string
+          viewed_at?: string | null
+          viewer_id: string
+        }
+        Update: {
+          id?: string
+          story_id?: string
+          viewed_at?: string | null
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_story_views_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "center_stories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       certificates: {
         Row: {

@@ -33,7 +33,6 @@ interface Post {
     full_name?: string;
     username?: string;
     avatar_url?: string;
-    email?: string;
   };
 }
 
@@ -114,15 +113,21 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         (postsData || []).map(async (post) => {
           const { data: userProfile, error: profileError } = await supabase
             .from('user_profiles')
-            .select('id, full_name, username, avatar_url, email')
+            .select('id, full_name, username, avatar_url')
             .eq('id', post.user_id)
             .single();
 
           if (profileError) {
             console.error('Erreur chargement profil:', profileError);
+            // Return post with fallback user data
             return {
               ...post,
-              user_profiles: null
+              user_profiles: {
+                id: post.user_id,
+                full_name: 'Utilisateur',
+                username: 'utilisateur',
+                avatar_url: ''
+              }
             };
           }
 
@@ -159,8 +164,8 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
       // Transform data to match UserProfile interface
       const transformedUsers: UserProfile[] = (data || []).map(profile => ({
         id: profile.id,
-        username: profile.username || '',
-        full_name: profile.full_name || '',
+        username: profile.username || `user_${profile.id.slice(0, 8)}`,
+        full_name: profile.full_name || 'Utilisateur',
         avatar_url: profile.avatar_url || '',
         followers_count: 0,
         following_count: 0,

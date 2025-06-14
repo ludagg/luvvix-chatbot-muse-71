@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, MoreVertical, Send, Camera, Image as ImageIcon, MapPin, Users, Bell, Play, UserPlus, UserCheck, Video, Grid3X3, List, Filter, Bookmark, BookmarkCheck, Flag, Smile, ThumbsUp, Laugh, Frown, AngryIcon, Feather, TrendingUp, Hash } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, MoreVertical, Send, Camera, Image as ImageIcon, MapPin, Users, Bell, Play, UserPlus, UserCheck, Video, Grid3X3, List, Filter, Bookmark, BookmarkCheck, Flag, Smile, ThumbsUp, Laugh, Frown, AngryIcon, Feather, TrendingUp, Hash, Home, Mail } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';

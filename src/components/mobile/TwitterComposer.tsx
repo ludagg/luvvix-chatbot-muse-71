@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Image as ImageIcon, MapPin, Smile, Calendar, Poll } from 'lucide-react';
+import { X, Image as ImageIcon, MapPin, Smile, Calendar, BarChart3 } from 'lucide-react';
 
 interface TwitterComposerProps {
   onClose: () => void;
@@ -115,7 +115,7 @@ const TwitterComposer = ({ onClose, onPost, isSubmitting }: TwitterComposerProps
                   </label>
                   
                   <button className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors">
-                    <Poll className="w-5 h-5" />
+                    <BarChart3 className="w-5 h-5" />
                   </button>
                   
                   <button className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors">

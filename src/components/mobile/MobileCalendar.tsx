@@ -85,21 +85,21 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
     const suggestions = [
       {
         title: 'Révision quotidienne',
-        event_type: 'task',
+        event_type: 'task' as const,
         description: 'Réviser les notes de la veille',
         start_time: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
         end_time: new Date(now.getTime() + 90 * 60 * 1000).toISOString()
       },
       {
         title: 'Pause créative',
-        event_type: 'personal',
+        event_type: 'personal' as const,
         description: 'Temps de réflexion et brainstorming',
         start_time: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
         end_time: new Date(now.getTime() + 2.5 * 60 * 60 * 1000).toISOString()
       },
       {
         title: 'Exercice physique',
-        event_type: 'personal',
+        event_type: 'personal' as const,
         description: 'Séance de sport pour rester en forme',
         start_time: new Date(now.getTime() + 3 * 60 * 60 * 1000).toISOString(),
         end_time: new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString()
@@ -108,13 +108,17 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
     
     const suggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
     
-    // Créer automatiquement l'événement suggéré
-    const created = await createEvent({
+    // Créer l'objet avec toutes les propriétés requises
+    const eventData = {
       ...suggestion,
-      priority: 'medium',
+      priority: 'medium' as const,
       color: '',
-      completed: false
-    });
+      completed: false,
+      start_date: suggestion.start_time.split('T')[0],
+      end_date: suggestion.end_time.split('T')[0]
+    };
+    
+    const created = await createEvent(eventData);
     
     if (created) {
       toast({

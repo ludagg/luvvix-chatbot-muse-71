@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Calendar, Clock, MapPin, Users, Bell, Palette } from 'lucide-react';
 import { useCalendar } from '@/hooks/use-calendar';
@@ -40,7 +39,14 @@ const EventCreator = ({ isOpen, onClose, selectedDate }: EventCreatorProps) => {
       return;
     }
 
-    const success = await createEvent(formData);
+    // Créer l'objet avec toutes les propriétés requises
+    const eventData = {
+      ...formData,
+      start_date: formData.start_time.split('T')[0],
+      end_date: formData.end_time ? formData.end_time.split('T')[0] : formData.start_time.split('T')[0]
+    };
+
+    const success = await createEvent(eventData);
     if (success) {
       onClose();
       setFormData({

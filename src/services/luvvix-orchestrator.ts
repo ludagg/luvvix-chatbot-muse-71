@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 interface AutomationInsight {
@@ -15,6 +14,17 @@ interface WorkflowSuggestion {
   estimated_time_saved: number;
   complexity: 'easy' | 'medium' | 'advanced';
   steps: string[];
+}
+
+interface ActiveAutomation {
+  id: string;
+  name: string;
+  description: string;
+  active: boolean;
+  executions: number;
+  efficiency: number;
+  type: string;
+  created_at: Date;
 }
 
 class LuvviXOrchestrator {
@@ -121,6 +131,70 @@ class LuvviXOrchestrator {
     });
 
     return suggestions;
+  }
+
+  async getActiveAutomations(userId: string): Promise<ActiveAutomation[]> {
+    try {
+      // Récupérer les automatisations actives depuis la base de données
+      const { data: automations } = await supabase
+        .from('ecosystem_interactions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('interaction_type', 'workflow_creation')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (!automations || automations.length === 0) {
+        // Retourner des automatisations par défaut pour démonstration
+        return [
+          {
+            id: 'auto_1',
+            name: 'Synchronisation Email → Calendrier',
+            description: 'Création automatique d\'événements depuis les emails',
+            active: true,
+            executions: 12,
+            efficiency: 85,
+            type: 'email_to_calendar',
+            created_at: new Date()
+          },
+          {
+            id: 'auto_2',
+            name: 'Notifications Formulaires',
+            description: 'Envoi automatique de notifications pour les soumissions',
+            active: true,
+            executions: 8,
+            efficiency: 92,
+            type: 'form_to_notification',
+            created_at: new Date()
+          },
+          {
+            id: 'auto_3',
+            name: 'Rappels Intelligents',
+            description: 'Création automatique de rappels basés sur l\'agenda',
+            active: false,
+            executions: 0,
+            efficiency: 0,
+            type: 'calendar_to_reminder',
+            created_at: new Date()
+          }
+        ];
+      }
+
+      // Transformer les données en format ActiveAutomation
+      return automations.map(automation => ({
+        id: automation.id,
+        name: automation.data?.workflowType || 'Automatisation',
+        description: automation.data?.config?.description || 'Automatisation personnalisée',
+        active: automation.metadata?.active || false,
+        executions: automation.metadata?.executions || 0,
+        efficiency: automation.metadata?.efficiency || 0,
+        type: automation.data?.workflowType || 'unknown',
+        created_at: new Date(automation.created_at)
+      }));
+    } catch (error) {
+      console.error('Erreur lors de la récupération des automatisations:', error);
+      return [];
+    }
   }
 
   private analyzeAppUsage(interactions: any[]): Record<string, number> {

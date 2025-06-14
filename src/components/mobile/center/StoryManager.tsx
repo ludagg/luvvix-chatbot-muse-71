@@ -39,13 +39,31 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
     if (!user) return;
 
     try {
-      // Récupérer toutes les stories actives
+      // Récupérer les amis de l'utilisateur
+      const { data: friendships, error: friendError } = await supabase
+        .from('center_friendships')
+        .select('requester_id, addressee_id')
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+        .eq('status', 'accepted');
+
+      if (friendError) throw friendError;
+
+      // Extraire les IDs des amis
+      const friendIds = (friendships || []).map(f => 
+        f.requester_id === user.id ? f.addressee_id : f.requester_id
+      );
+      
+      // Ajouter l'utilisateur actuel
+      const allowedUserIds = [...friendIds, user.id];
+
+      // Récupérer les stories des amis et de l'utilisateur seulement
       const { data: storiesData, error: storiesError } = await supabase
         .from('center_stories')
         .select(`
           *,
           user_profiles(username, full_name, avatar_url)
         `)
+        .in('user_id', allowedUserIds)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
@@ -181,7 +199,7 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
         </p>
       </div>
 
-      {/* Stories des autres */}
+      {/* Stories des amis seulement */}
       {stories.map((story) => (
         <div key={story.id} className="flex-shrink-0 text-center">
           <button
@@ -217,7 +235,7 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
 
       {stories.length === 0 && userStories.length === 0 && (
         <div className="flex-1 text-center py-4">
-          <p className="text-gray-500 text-sm">Aucune story disponible</p>
+          <p className="text-gray-500 text-sm">Aucune story d'amis disponible</p>
         </div>
       )}
     </div>

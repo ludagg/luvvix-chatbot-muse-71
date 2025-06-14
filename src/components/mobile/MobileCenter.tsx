@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, Bell, Image as ImageIcon, MapPin, Users, Video, Feather, TrendingUp, Hash, Home, Mail, Camera, Bookmark, Settings, Moon, Sun } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, Bell, Image as ImageIcon, MapPin, Users, Video, Feather, TrendingUp, Hash, Home, Mail, Camera, Bookmark, Settings, Moon, Sun, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -15,6 +16,9 @@ import VideoUploader from './VideoUploader';
 import StoryManager from './center/StoryManager';
 import NotificationManager from './center/NotificationManager';
 import GroupManager from './center/GroupManager';
+import CommentsModal from './center/CommentsModal';
+import FriendshipManager from './center/FriendshipManager';
+import MessagingManager from './center/MessagingManager';
 
 interface MobileCenterProps {
   onBack: () => void;
@@ -49,12 +53,13 @@ interface UserProfile {
 
 const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'feed' | 'explore' | 'groups' | 'notifications' | 'search' | 'messages'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'explore' | 'groups' | 'notifications' | 'search' | 'messages' | 'friends'>('feed');
   const [showStoryViewer, setShowStoryViewer] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [showVideoUploader, setShowVideoUploader] = useState(false);
+  const [showCommentsModal, setShowCommentsModal] = useState<string | null>(null);
   
   const [posts, setPosts] = useState<Post[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
@@ -79,45 +84,59 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   }, []);
 
   const fetchPosts = async () => {
+    if (!user) return;
+
     try {
-      console.log('Fetching posts...');
+      console.log('Fetching posts with friendship filtering...');
+      
+      // Récupérer les amis de l'utilisateur
+      const { data: friendships, error: friendError } = await supabase
+        .from('center_friendships')
+        .select('requester_id, addressee_id')
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+        .eq('status', 'accepted');
+
+      if (friendError) throw friendError;
+
+      // Extraire les IDs des amis
+      const friendIds = (friendships || []).map(f => 
+        f.requester_id === user.id ? f.addressee_id : f.requester_id
+      );
+      
+      // Ajouter l'utilisateur actuel pour voir ses propres posts
+      const allowedUserIds = [...friendIds, user.id];
+
+      console.log('Allowed user IDs:', allowedUserIds);
+
+      // Récupérer les posts des amis et de l'utilisateur
       const { data: postsData, error: postsError } = await supabase
         .from('center_posts')
         .select('*')
+        .in('user_id', allowedUserIds)
         .order('created_at', { ascending: false })
         .limit(20);
 
       if (postsError) throw postsError;
       console.log('Posts data:', postsData);
 
-      // Fetch user profiles separately for each post
+      // Récupérer les profils utilisateur
       const postsWithProfiles = await Promise.all(
         (postsData || []).map(async (post) => {
-          console.log('Fetching profile for user_id:', post.user_id);
-          
           const { data: userProfile, error: profileError } = await supabase
             .from('user_profiles')
             .select('id, full_name, username, avatar_url')
             .eq('id', post.user_id)
             .single();
 
-          console.log('Profile data for', post.user_id, ':', userProfile);
-          console.log('Profile error:', profileError);
-
           if (profileError) {
             console.error('Erreur chargement profil:', profileError);
-            // Return post with fallback user data
             const fallbackProfile = {
               id: post.user_id,
               full_name: 'Utilisateur Inconnu',
               username: `user_${post.user_id.slice(0, 8)}`,
               avatar_url: ''
             };
-            console.log('Using fallback profile:', fallbackProfile);
-            return {
-              ...post,
-              user_profiles: fallbackProfile
-            };
+            return { ...post, user_profiles: fallbackProfile };
           }
 
           const finalProfile = {
@@ -126,12 +145,8 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
             username: userProfile.username || `user_${userProfile.id.slice(0, 8)}`,
             avatar_url: userProfile.avatar_url || ''
           };
-          console.log('Final profile:', finalProfile);
 
-          return {
-            ...post,
-            user_profiles: finalProfile
-          };
+          return { ...post, user_profiles: finalProfile };
         })
       );
 
@@ -159,7 +174,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
       if (error) throw error;
       
-      // Transform data to match UserProfile interface
       const transformedUsers: UserProfile[] = (data || []).map(profile => ({
         id: profile.id,
         username: profile.username || `user_${profile.id.slice(0, 8)}`,
@@ -335,14 +349,14 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   if (showAdvancedSearch) {
     return (
       <SearchAdvanced
-        onSearch={handleSearch}
+        onSearch={(query, filters) => console.log('Searching:', query, 'with filters:', filters)}
         onClose={() => setShowAdvancedSearch(false)}
       />
     );
   }
 
   if (activeTab === 'messages') {
-    return <MobileCenterMessaging onBack={() => setActiveTab('feed')} />;
+    return <MessagingManager onClose={() => setActiveTab('feed')} />;
   }
 
   if (activeTab === 'groups') {
@@ -351,6 +365,14 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
   if (activeTab === 'notifications') {
     return <NotificationManager onClose={() => setActiveTab('feed')} />;
+  }
+
+  if (activeTab === 'friends') {
+    return <FriendshipManager onClose={() => setActiveTab('feed')} />;
+  }
+
+  if (showCommentsModal) {
+    return <CommentsModal postId={showCommentsModal} onClose={() => setShowCommentsModal(null)} />;
   }
 
   return (
@@ -381,6 +403,12 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
             >
               <Bell className="w-5 h-5" />
               <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+            </button>
+            <button 
+              onClick={() => setActiveTab('friends')}
+              className={`p-2 hover:bg-gray-100 rounded-full ${darkMode ? 'hover:bg-gray-800 text-gray-300' : ''}`}
+            >
+              <UserPlus className="w-5 h-5" />
             </button>
             <button 
               onClick={() => setDarkMode(!darkMode)}
@@ -420,7 +448,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         </div>
       </div>
 
-      {/* Stories Bar */}
+      {/* Stories Bar - only show for friends */}
       {activeTab === 'feed' && (
         <StoryManager onStoryView={(storyId) => console.log('Viewed story:', storyId)} />
       )}
@@ -431,13 +459,13 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
           <div>
             <UserSuggestions
               users={suggestedUsers}
-              onFollow={handleFollow}
-              onDismiss={handleDismissUser}
+              onFollow={(userId) => console.log('Following user:', userId)}
+              onDismiss={(userId) => console.log('Dismissing user suggestion:', userId)}
             />
 
             <HashtagTrends
               hashtags={mockHashtags}
-              onHashtagClick={handleHashtagClick}
+              onHashtagClick={(hashtag) => console.log('Clicked hashtag:', hashtag)}
             />
 
             {/* Zone de composition rapide */}
@@ -507,36 +535,33 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                   Aucun post à afficher
                 </h3>
                 <p className={`mb-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Soyez le premier à publier !
+                  Connectez-vous avec des amis pour voir leurs posts !
                 </p>
                 <button 
-                  onClick={() => setShowComposer(true)}
+                  onClick={() => setActiveTab('friends')}
                   className="bg-blue-500 text-white px-6 py-2 rounded-full font-medium hover:bg-blue-600 transition-colors"
                 >
-                  Créer un post
+                  Trouver des amis
                 </button>
               </div>
             ) : (
               <div>
-                {posts.map((post) => {
-                  console.log('Rendering post:', post.id, 'with user:', post.user_profiles);
-                  return (
-                    <TwitterPost
-                      key={post.id}
-                      post={post}
-                      isLiked={likedPosts.has(post.id)}
-                      isSaved={savedPosts.has(post.id)}
-                      userReaction={userReactions[post.id]}
-                      postReactions={postReactions[post.id]}
-                      onLike={() => toggleLike(post.id)}
-                      onComment={() => {}}
-                      onRetweet={() => {}}
-                      onShare={() => sharePost(post.id)}
-                      onSave={() => {}}
-                      onShowReactions={() => setShowReactionPicker(post.id)}
-                    />
-                  );
-                })}
+                {posts.map((post) => (
+                  <TwitterPost
+                    key={post.id}
+                    post={post}
+                    isLiked={likedPosts.has(post.id)}
+                    isSaved={savedPosts.has(post.id)}
+                    userReaction={userReactions[post.id]}
+                    postReactions={postReactions[post.id]}
+                    onLike={() => toggleLike(post.id)}
+                    onComment={() => setShowCommentsModal(post.id)}
+                    onRetweet={() => {}}
+                    onShare={() => sharePost(post.id)}
+                    onSave={() => {}}
+                    onShowReactions={() => setShowReactionPicker(post.id)}
+                  />
+                ))}
               </div>
             )}
           </div>

@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { AlertCircle, X, MessageCircle, Lightbulb, TrendingUp, Clock, CheckCircle, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AlertCircle, X, MessageCircle, Lightbulb, TrendingUp, Clock, CheckCircle, Calendar, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { neuralNetwork } from '@/services/luvvix-neural-network';
 import type { PredictionResult } from '@/services/luvvix-neural-network';
@@ -10,32 +10,26 @@ const AIFloatingButton = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [suggestions, setSuggestions] = useState<PredictionResult[]>([]);
   const [hasAlerts, setHasAlerts] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
-  useEffect(() => {
-    if (user && isExpanded) {
-      loadSuggestions();
-    }
-  }, [user, isExpanded]);
-
-  // Actualiser les suggestions toutes les 30 secondes quand ouvert
-  useEffect(() => {
-    if (!user || !isExpanded) return;
-
-    const interval = setInterval(() => {
-      loadSuggestions();
-    }, 30000); // 30 secondes
-
-    return () => clearInterval(interval);
-  }, [user, isExpanded]);
-
-  const loadSuggestions = async () => {
+  const loadSuggestions = useCallback(async (forceRefresh = false) => {
     if (!user) return;
     
     try {
-      await neuralNetwork.loadUserData(user.id);
+      setIsRefreshing(true);
+      
+      // Charger les données utilisateur si nécessaire
+      if (forceRefresh) {
+        await neuralNetwork.loadUserData(user.id);
+      }
+      
       const predictions = await neuralNetwork.generatePredictions(user.id);
       setSuggestions(predictions);
       setHasAlerts(predictions.length > 0);
+      setLastUpdate(new Date());
+      
+      console.log('Suggestions chargées:', predictions);
     } catch (error) {
       console.error('Erreur chargement suggestions IA:', error);
       // Suggestions par défaut
@@ -43,19 +37,51 @@ const AIFloatingButton = () => {
         {
           type: 'reminder',
           confidence: 0.9,
-          data: { tip: 'N\'oubliez pas de vérifier votre calendrier aujourd\'hui.' },
+          data: { tip: 'Vérifiez votre calendrier pour les événements à venir.' },
           reasoning: 'Rappel basé sur votre activité'
         }
       ]);
       setHasAlerts(true);
+    } finally {
+      setIsRefreshing(false);
     }
-  };
+  }, [user]);
+
+  // Chargement initial et quand l'utilisateur clique
+  useEffect(() => {
+    if (user && isExpanded) {
+      loadSuggestions(true); // Force refresh when expanded
+    }
+  }, [user, isExpanded, loadSuggestions]);
+
+  // Actualiser automatiquement toutes les 30 secondes quand ouvert
+  useEffect(() => {
+    if (!user || !isExpanded) return;
+
+    const interval = setInterval(() => {
+      loadSuggestions(false); // Refresh sans forcer le rechargement des données
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [user, isExpanded, loadSuggestions]);
+
+  // Actualiser quand on revient sur la page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user && isExpanded) {
+        loadSuggestions(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user, isExpanded, loadSuggestions]);
 
   const getSuggestionIcon = (type: string, alertType?: string) => {
     switch (type) {
       case 'event_reminder':
         if (alertType === 'now') return <Clock className="w-5 h-5 text-red-500 animate-pulse" />;
-        if (alertType === 'started') return <Calendar className="w-5 h-5 text-orange-500" />;
+        if (alertType === 'started') return <Calendar className="w-5 h-5 text-orange-500 animate-bounce" />;
         return <Calendar className="w-5 h-5 text-blue-500" />;
       case 'recommendation':
         return <TrendingUp className="w-5 h-5 text-blue-500" />;
@@ -69,9 +95,9 @@ const AIFloatingButton = () => {
   const getSuggestionTitle = (type: string, alertType?: string) => {
     switch (type) {
       case 'event_reminder':
-        if (alertType === 'now') return 'Événement en cours';
+        if (alertType === 'now') return 'Événement en cours !';
         if (alertType === 'started') return 'Événement commencé';
-        if (alertType === 'upcoming') return 'Événement imminent';
+        if (alertType === 'upcoming') return 'Événement dans 5 min';
         return 'Rappel d\'événement';
       case 'recommendation':
         return 'Recommandation';
@@ -86,20 +112,24 @@ const AIFloatingButton = () => {
 
   const getPriorityColor = (type: string, alertType?: string) => {
     if (type === 'event_reminder') {
-      if (alertType === 'now') return 'border-red-500 bg-red-50';
-      if (alertType === 'started') return 'border-orange-500 bg-orange-50';
-      if (alertType === 'upcoming') return 'border-blue-500 bg-blue-50';
+      if (alertType === 'now') return 'border-red-500 bg-red-50 shadow-red-200 shadow-lg';
+      if (alertType === 'started') return 'border-orange-500 bg-orange-50 shadow-orange-200 shadow-lg';
+      if (alertType === 'upcoming') return 'border-blue-500 bg-blue-50 shadow-blue-200 shadow-lg';
     }
     return 'border-gray-200 bg-gray-50';
   };
 
-  const handleDismissReminder = (suggestion: PredictionResult) => {
+  const handleDismissReminder = async (suggestion: PredictionResult) => {
     if (suggestion.id && suggestion.type === 'event_reminder') {
       neuralNetwork.dismissReminder(user!.id, suggestion.id);
       setSuggestions(prev => prev.filter(s => s.id !== suggestion.id));
       
       // Actualiser le compteur d'alertes
-      setHasAlerts(suggestions.filter(s => s.id !== suggestion.id).length > 0);
+      const remainingSuggestions = suggestions.filter(s => s.id !== suggestion.id);
+      setHasAlerts(remainingSuggestions.length > 0);
+      
+      // Recharger après 1 seconde pour vérifier s'il y a de nouveaux rappels
+      setTimeout(() => loadSuggestions(true), 1000);
     }
   };
 
@@ -113,10 +143,22 @@ const AIFloatingButton = () => {
     }
   };
 
+  const handleButtonClick = () => {
+    setIsExpanded(!isExpanded);
+    // Force refresh when opening
+    if (!isExpanded && user) {
+      loadSuggestions(true);
+    }
+  };
+
   if (!user) return null;
 
   // Compter seulement les rappels non marqués comme lus
   const unreadAlerts = suggestions.filter(s => !s.dismissed).length;
+  const hasUrgentAlerts = suggestions.some(s => 
+    s.type === 'event_reminder' && 
+    (s.data?.alertType === 'now' || s.data?.alertType === 'started')
+  );
 
   return (
     <>
@@ -137,23 +179,43 @@ const AIFloatingButton = () => {
                 <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
                   <AlertCircle className="w-4 h-4 text-white" />
                 </div>
-                <h3 className="font-semibold text-gray-900">Alertes & Rappels</h3>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Alertes & Rappels</h3>
+                  <p className="text-xs text-gray-500">
+                    Mis à jour: {lastUpdate.toLocaleTimeString()}
+                  </p>
+                </div>
               </div>
-              <button
-                onClick={() => setIsExpanded(false)}
-                className="p-1 hover:bg-gray-100 rounded-full"
-              >
-                <X className="w-4 h-4 text-gray-500" />
-              </button>
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => loadSuggestions(true)}
+                  disabled={isRefreshing}
+                  className="p-1 hover:bg-gray-100 rounded-full"
+                  title="Actualiser"
+                >
+                  <RefreshCw className={`w-4 h-4 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </button>
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  className="p-1 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="p-4 space-y-3 max-h-64 overflow-y-auto">
-            {suggestions.length > 0 ? (
+            {isRefreshing && suggestions.length === 0 ? (
+              <div className="text-center py-4">
+                <RefreshCw className="w-6 h-6 text-gray-400 mx-auto mb-2 animate-spin" />
+                <p className="text-gray-500 text-sm">Chargement des alertes...</p>
+              </div>
+            ) : suggestions.length > 0 ? (
               suggestions.map((suggestion, index) => (
                 <div 
                   key={suggestion.id || index} 
-                  className={`p-3 rounded-xl border ${getPriorityColor(suggestion.type, suggestion.data?.alertType)}`}
+                  className={`p-3 rounded-xl border transition-all ${getPriorityColor(suggestion.type, suggestion.data?.alertType)}`}
                 >
                   <div className="flex items-start space-x-3">
                     {getSuggestionIcon(suggestion.type, suggestion.data?.alertType)}
@@ -185,7 +247,7 @@ const AIFloatingButton = () => {
                           <div className="flex items-center mt-2">
                             <div className="w-full bg-gray-200 rounded-full h-1">
                               <div 
-                                className="bg-orange-500 h-1 rounded-full"
+                                className="bg-orange-500 h-1 rounded-full transition-all"
                                 style={{ width: `${suggestion.confidence * 100}%` }}
                               />
                             </div>
@@ -195,11 +257,11 @@ const AIFloatingButton = () => {
                           </div>
                         </div>
                         
-                        {/* Bouton pour marquer comme lu (seulement pour les rappels d'événements) */}
+                        {/* Bouton pour marquer comme lu */}
                         {suggestion.type === 'event_reminder' && suggestion.data?.canDismiss && (
                           <button
                             onClick={() => handleDismissReminder(suggestion)}
-                            className="p-1 hover:bg-green-100 rounded-full ml-2 flex-shrink-0"
+                            className="p-1 hover:bg-green-100 rounded-full ml-2 flex-shrink-0 transition-colors"
                             title="Marquer comme lu"
                           >
                             <CheckCircle className="w-4 h-4 text-green-600" />
@@ -215,6 +277,9 @@ const AIFloatingButton = () => {
                 <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-2" />
                 <p className="text-gray-500 text-sm">
                   Aucune alerte pour le moment
+                </p>
+                <p className="text-gray-400 text-xs mt-1">
+                  Les rappels d'événements apparaîtront ici
                 </p>
               </div>
             )}
@@ -235,14 +300,14 @@ const AIFloatingButton = () => {
         </div>
       )}
 
-      {/* Bouton flottant - positionné au-dessus de la navigation */}
+      {/* Bouton flottant avec animation améliorée */}
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={handleButtonClick}
         className={`fixed bottom-24 right-4 w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-full shadow-2xl flex items-center justify-center z-50 transition-all duration-300 ${
           isExpanded ? 'scale-110 shadow-orange-500/25' : 'hover:scale-105'
-        }`}
+        } ${hasUrgentAlerts ? 'animate-pulse' : ''}`}
       >
-        <AlertCircle className="w-7 h-7 text-white" />
+        <AlertCircle className={`w-7 h-7 text-white ${hasUrgentAlerts ? 'animate-bounce' : ''}`} />
         {hasAlerts && unreadAlerts > 0 && !isExpanded && (
           <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center animate-pulse">
             <span className="text-white text-xs font-bold">{unreadAlerts}</span>

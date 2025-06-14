@@ -16,7 +16,7 @@ interface UserSuggestionsProps {
   users: UserProfile[];
   onFollow: (userId: string) => void;
   onDismiss: (userId: string) => void;
-  onUserClick?: (userId: string) => void; // Ajout pour ouvrir un profil
+  onUserClick?: (userId: string) => void;
 }
 
 const UserSuggestions = ({ users, onFollow, onDismiss, onUserClick }: UserSuggestionsProps) => {
@@ -50,18 +50,26 @@ const UserSuggestions = ({ users, onFollow, onDismiss, onUserClick }: UserSugges
               aria-label={`Voir le profil de ${user.full_name}`}
             >
               <div className="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 p-0.5">
-                <div className="w-full h-full rounded-full bg-blue-500 flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">
-                    {user.username?.[0]?.toUpperCase() || 'U'}
-                  </span>
-                </div>
+                {user.avatar_url ? (
+                  <img 
+                    src={user.avatar_url} 
+                    alt={user.full_name}
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-blue-500 flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">
+                      {user.full_name?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                )}
               </div>
               
               <h4 className="font-semibold text-sm text-gray-900 truncate">
-                {user.full_name}
+                {user.full_name || 'Utilisateur'}
               </h4>
               <p className="text-xs text-gray-500 mb-2 truncate">
-                @{user.username}
+                @{user.username || 'utilisateur'}
               </p>
               
               <button 

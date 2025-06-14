@@ -88,7 +88,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     if (!user) return;
 
     try {
-      console.log('Fetching posts with friendship filtering...');
+      console.log('Fetching posts with improved user data...');
       
       // Récupérer les amis de l'utilisateur
       const { data: friendships, error: friendError } = await supabase
@@ -97,7 +97,10 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
         .eq('status', 'accepted');
 
-      if (friendError) throw friendError;
+      if (friendError) {
+        console.error('Erreur récupération amitiés:', friendError);
+        // Continuer sans amis si erreur
+      }
 
       // Extraire les IDs des amis
       const friendIds = (friendships || []).map(f => 
@@ -120,34 +123,44 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
       if (postsError) throw postsError;
       console.log('Posts data:', postsData);
 
-      // Récupérer les profils utilisateur
+      // Récupérer les profils utilisateur avec gestion d'erreur améliorée
       const postsWithProfiles = await Promise.all(
         (postsData || []).map(async (post) => {
-          const { data: userProfile, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('id, full_name, username, avatar_url')
-            .eq('id', post.user_id)
-            .single();
+          try {
+            const { data: userProfile, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('id, full_name, username, avatar_url')
+              .eq('id', post.user_id)
+              .maybeSingle();
 
-          if (profileError) {
-            console.error('Erreur chargement profil:', profileError);
+            if (profileError) {
+              console.error('Erreur chargement profil pour', post.user_id, ':', profileError);
+            }
+
+            // Créer un profil par défaut si aucune donnée ou erreur
             const fallbackProfile = {
               id: post.user_id,
-              full_name: 'Utilisateur Inconnu',
-              username: `user_${post.user_id.slice(0, 8)}`,
-              avatar_url: ''
+              full_name: userProfile?.full_name || 'Utilisateur',
+              username: userProfile?.username || `user_${post.user_id.slice(0, 8)}`,
+              avatar_url: userProfile?.avatar_url || ''
             };
+
+            console.log('Profil final pour', post.user_id, ':', fallbackProfile);
+
             return { ...post, user_profiles: fallbackProfile };
+          } catch (error) {
+            console.error('Erreur traitement profil:', error);
+            // Profil de secours en cas d'erreur
+            return { 
+              ...post, 
+              user_profiles: {
+                id: post.user_id,
+                full_name: 'Utilisateur',
+                username: `user_${post.user_id.slice(0, 8)}`,
+                avatar_url: ''
+              }
+            };
           }
-
-          const finalProfile = {
-            id: userProfile.id,
-            full_name: userProfile.full_name || 'Utilisateur Sans Nom',
-            username: userProfile.username || `user_${userProfile.id.slice(0, 8)}`,
-            avatar_url: userProfile.avatar_url || ''
-          };
-
-          return { ...post, user_profiles: finalProfile };
         })
       );
 
@@ -166,14 +179,19 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   };
 
   const fetchSuggestedUsers = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
-        .neq('id', user?.id)
+        .neq('id', user.id)
         .limit(5);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur chargement utilisateurs suggérés:', error);
+        return;
+      }
       
       const transformedUsers: UserProfile[] = (data || []).map(profile => ({
         id: profile.id,
@@ -185,6 +203,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         is_following: false
       }));
       
+      console.log('Utilisateurs suggérés transformés:', transformedUsers);
       setSuggestedUsers(transformedUsers);
     } catch (error) {
       console.error('Erreur chargement utilisateurs:', error);
@@ -348,10 +367,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
   const handleUserClick = (userId: string) => {
     console.log('Ouverture du profil utilisateur :', userId);
-    toast({
-      title: "Ouverture du profil",
-      description: `Profil utilisateur ID : ${userId}`,
-    });
     setShowUserProfile(userId);
   };
 

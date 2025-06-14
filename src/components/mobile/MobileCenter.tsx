@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, Bell, Image as ImageIcon, MapPin, Users, Video, Feather, TrendingUp, Hash, Home, Mail, Camera, Bookmark, Settings, Moon, Sun } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -134,7 +133,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const fetchSuggestedUsers = async () => {
     try {
       const { data, error } = await supabase
-        .from('center_profiles')
+        .from('user_profiles')
         .select('*')
         .neq('id', user?.id)
         .limit(5);

@@ -186,7 +186,12 @@ Que puis-je faire pour vous aujourd'hui ?`,
         return;
       }
 
-      if (typeof response === 'object' && response !== null && 'actionDone' in response) {
+      // Correction TS18047 : toujours vérifier null avant de lire une propriété
+      if (
+        response &&
+        typeof response === 'object' &&
+        'actionDone' in response
+      ) {
         toast.success("Action IA réalisée !");
       }
 
@@ -194,8 +199,8 @@ Que puis-je faire pour vous aujourd'hui ?`,
       if (typeof response === 'string') {
         assistantContent = response;
       } else if (
+        response &&
         typeof response === 'object' &&
-        response !== null &&
         'message' in response &&
         typeof (response as any).message === 'string'
       ) {

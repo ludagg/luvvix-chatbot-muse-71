@@ -3,14 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { fetchLatestNews } from '@/services/news-service';
-import { NewsItem } from '@/types/news';
 import { useNotifications } from '@/hooks/use-notifications';
+import { useCalendar } from '@/hooks/use-calendar';
+import { useWeather } from '@/hooks/use-weather';
+import { useForms } from '@/hooks/use-forms';
+import { useTranslations } from '@/hooks/use-translations';
 import { toast } from '@/hooks/use-toast';
 import { 
   Sparkles, 
   Cloud, 
-  Newspaper, 
   Globe, 
   Calendar, 
   TrendingUp,
@@ -18,137 +19,40 @@ import {
   Clock,
   Zap,
   Users,
-  MessageCircle,
-  Share2,
-  Heart,
-  Camera,
-  Mail,
   FileText,
   BarChart3,
   CalendarDays,
-  Bell
+  Bell,
+  Languages,
+  FormInput
 } from 'lucide-react';
-
-interface WeatherData {
-  temperature: number;
-  condition: string;
-  location: string;
-  icon: string;
-}
-
-interface CalendarEvent {
-  id: string;
-  title: string;
-  time: string;
-  type: 'meeting' | 'task' | 'reminder';
-  attendees?: number;
-}
 
 const MobileHome = () => {
   const { user } = useAuth();
   const { notificationsEnabled, requestPermission } = useNotifications();
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loadingWeather, setLoadingWeather] = useState(true);
-  const [loadingNews, setLoadingNews] = useState(true);
-  const [nextEvent, setNextEvent] = useState<CalendarEvent | null>(null);
-  const [showWeatherPage, setShowWeatherPage] = useState(false);
-  const [showNewsPage, setShowNewsPage] = useState(false);
+  const { events } = useCalendar();
+  const { weatherData, fetchWeather } = useWeather();
+  const { forms } = useForms();
+  const { history } = useTranslations();
   const currentTime = new Date();
   
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Alex';
 
-  // Load next calendar event
+  // Charger les données météo au démarrage
   useEffect(() => {
-    const loadNextEvent = () => {
-      // Simuler un événement à venir
-      const events: CalendarEvent[] = [
-        {
-          id: '1',
-          title: 'Réunion équipe projet',
-          time: '14:30',
-          type: 'meeting',
-          attendees: 5
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          fetchWeather(latitude, longitude);
         },
-        {
-          id: '2', 
-          title: 'Présentation client',
-          time: '16:00',
-          type: 'meeting',
-          attendees: 3
-        },
-        {
-          id: '3',
-          title: 'Rappel: Révision cours',
-          time: '18:00',
-          type: 'reminder'
+        () => {
+          fetchWeather(undefined, undefined, 'Paris');
         }
-      ];
-      
-      setNextEvent(events[0]);
-    };
-    
-    loadNextEvent();
-  }, []);
-
-  // Charger la météo avec géolocalisation
-  useEffect(() => {
-    const loadWeather = async () => {
-      try {
-        if ('geolocation' in navigator) {
-          navigator.geolocation.getCurrentPosition(
-            async (position) => {
-              const { latitude, longitude } = position.coords;
-              
-              // En production, utiliser une vraie API météo
-              setWeather({
-                temperature: Math.round(15 + Math.random() * 20),
-                condition: 'Ensoleillé',
-                location: 'Paris',
-                icon: '☀️'
-              });
-            },
-            (error) => {
-              console.error('Erreur géolocalisation:', error);
-              setWeather({
-                temperature: 22,
-                condition: 'Ensoleillé',
-                location: 'Paris',
-                icon: '☀️'
-              });
-            }
-          );
-        }
-      } catch (error) {
-        console.error('Erreur météo:', error);
-        setWeather({
-          temperature: 22,
-          condition: 'Ensoleillé',
-          location: 'Paris',
-          icon: '☀️'
-        });
-      } finally {
-        setLoadingWeather(false);
-      }
-    };
-
-    loadWeather();
-  }, []);
-
-  // Charger les actualités
-  useEffect(() => {
-    const loadNews = async () => {
-      try {
-        const newsItems = await fetchLatestNews('all', 'fr', '');
-        setNews(newsItems.slice(0, 3));
-      } catch (error) {
-        console.error('Erreur actualités:', error);
-      } finally {
-        setLoadingNews(false);
-      }
-    };
-
-    loadNews();
+      );
+    } else {
+      fetchWeather(undefined, undefined, 'Paris');
+    }
   }, []);
 
   // Demander les permissions de notification
@@ -194,7 +98,7 @@ const MobileHome = () => {
     {
       id: 'forms',
       title: 'Formulaires',
-      icon: <FileText className="w-6 h-6" />,
+      icon: <FormInput className="w-6 h-6" />,
       bgColor: 'bg-gradient-to-br from-orange-500 to-red-500',
       action: () => {
         const event = new CustomEvent('navigate-to-forms');
@@ -207,7 +111,7 @@ const MobileHome = () => {
     {
       id: 'translate',
       name: 'Translate',
-      icon: <Globe className="w-5 h-5" />,
+      icon: <Languages className="w-5 h-5" />,
       bgColor: 'bg-gradient-to-br from-indigo-500 to-purple-500',
       action: () => {
         const event = new CustomEvent('navigate-to-translate');
@@ -215,24 +119,30 @@ const MobileHome = () => {
       }
     },
     {
-      id: 'center',
-      name: 'Center',
-      icon: <Users className="w-5 h-5" />,
-      bgColor: 'bg-gradient-to-br from-rose-500 to-pink-500',
-      action: () => toast({ title: "LuvviX Center", description: "Réseau social professionnel" })
+      id: 'forms',
+      name: 'Forms',
+      icon: <FileText className="w-5 h-5" />,
+      bgColor: 'bg-gradient-to-br from-orange-500 to-red-500',
+      action: () => {
+        const event = new CustomEvent('navigate-to-forms');
+        window.dispatchEvent(event);
+      }
     },
     {
-      id: 'mail',
-      name: 'Mail',
-      icon: <Mail className="w-5 h-5" />,
-      bgColor: 'bg-gradient-to-br from-blue-500 to-indigo-500',
-      action: () => toast({ title: "LuvviX Mail", description: "Messagerie intelligente" })
+      id: 'calendar',
+      name: 'Calendar',
+      icon: <Calendar className="w-5 h-5" />,
+      bgColor: 'bg-gradient-to-br from-green-500 to-emerald-500',
+      action: () => {
+        const event = new CustomEvent('navigate-to-calendar');
+        window.dispatchEvent(event);
+      }
     },
     {
       id: 'analytics',
       name: 'Analytics',
       icon: <BarChart3 className="w-5 h-5" />,
-      bgColor: 'bg-gradient-to-br from-orange-500 to-red-500',
+      bgColor: 'bg-gradient-to-br from-blue-500 to-indigo-500',
       action: () => toast({ title: "LuvviX Analytics", description: "Analyse de données avancée" })
     }
   ];
@@ -244,30 +154,16 @@ const MobileHome = () => {
     return 'Bonsoir';
   };
 
-  const openCalendar = () => {
-    const event = new CustomEvent('navigate-to-calendar');
-    window.dispatchEvent(event);
+  // Prochain événement du calendrier
+  const nextEvent = events?.find(event => new Date(event.start_time) > new Date()) || null;
+
+  // Statistiques réelles
+  const stats = {
+    activeServices: 4,
+    totalForms: forms?.length || 0,
+    totalTranslations: history?.length || 0,
+    totalEvents: events?.length || 0
   };
-
-  // Import des composants de pages
-  const MobileWeatherPage = React.lazy(() => import('./MobileWeatherPage'));
-  const MobileNewsPage = React.lazy(() => import('./MobileNewsPage'));
-
-  if (showWeatherPage) {
-    return (
-      <React.Suspense fallback={<div>Chargement...</div>}>
-        <MobileWeatherPage onBack={() => setShowWeatherPage(false)} />
-      </React.Suspense>
-    );
-  }
-
-  if (showNewsPage) {
-    return (
-      <React.Suspense fallback={<div>Chargement...</div>}>
-        <MobileNewsPage onBack={() => setShowNewsPage(false)} />
-      </React.Suspense>
-    );
-  }
 
   return (
     <div className="flex-1 overflow-auto p-4 pb-20">
@@ -284,16 +180,16 @@ const MobileHome = () => {
             </p>
           </div>
           
-          {weather && !loadingWeather && (
+          {weatherData && (
             <div className="text-right">
               <div className="flex items-center space-x-2 mb-1">
-                <span className="text-2xl">{weather.icon}</span>
-                <span className="text-2xl font-light">{weather.temperature}°C</span>
+                <span className="text-2xl">{weatherData.current.icon}</span>
+                <span className="text-2xl font-light">{weatherData.current.temperature}°C</span>
               </div>
-              <p className="text-sm text-blue-100">{weather.condition}</p>
+              <p className="text-sm text-blue-100">{weatherData.current.condition}</p>
               <p className="text-xs text-blue-200 flex items-center justify-end">
                 <MapPin className="w-3 h-3 mr-1" />
-                {weather.location}
+                {weatherData.location.name}
               </p>
             </div>
           )}
@@ -354,76 +250,39 @@ const MobileHome = () => {
         </div>
       </div>
 
-      {/* Statistiques rapides */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      {/* Statistiques réelles */}
+      <div className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
           <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
             <TrendingUp className="w-4 h-4 text-green-600" />
           </div>
-          <p className="text-xl font-bold text-gray-900">12</p>
+          <p className="text-xl font-bold text-gray-900">{stats.activeServices}</p>
           <p className="text-xs text-gray-600">Services actifs</p>
         </div>
         
         <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
           <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-            <Users className="w-4 h-4 text-blue-600" />
+            <FileText className="w-4 h-4 text-blue-600" />
           </div>
-          <p className="text-xl font-bold text-gray-900">2.4M</p>
-          <p className="text-xs text-gray-600">Utilisateurs</p>
+          <p className="text-xl font-bold text-gray-900">{stats.totalForms}</p>
+          <p className="text-xs text-gray-600">Formulaires</p>
         </div>
         
         <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
           <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-2">
-            <Sparkles className="w-4 h-4 text-purple-600" />
+            <Globe className="w-4 h-4 text-purple-600" />
           </div>
-          <p className="text-xl font-bold text-gray-900">99.9%</p>
-          <p className="text-xs text-gray-600">Uptime</p>
-        </div>
-      </div>
-
-      {/* Actualités en bref */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-            <Newspaper className="w-5 h-5 mr-2 text-red-500" />
-            Actualités
-          </h3>
-          <button 
-            onClick={() => setShowNewsPage(true)}
-            className="text-blue-500 text-sm font-medium"
-          >
-            Voir tout →
-          </button>
+          <p className="text-xl font-bold text-gray-900">{stats.totalTranslations}</p>
+          <p className="text-xs text-gray-600">Traductions</p>
         </div>
         
-        {loadingNews ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                <div className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              </div>
-            ))}
+        <div className="bg-white rounded-2xl p-4 text-center shadow-sm border border-gray-100">
+          <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+            <Calendar className="w-4 h-4 text-orange-600" />
           </div>
-        ) : (
-          <div className="space-y-3">
-            {news.map((item, index) => (
-              <div key={item.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                <h4 className="font-medium text-gray-900 text-sm mb-1 line-clamp-2">
-                  {item.title}
-                </h4>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-gray-600">{item.source}</p>
-                  <p className="text-xs text-gray-500">
-                    {format(new Date(item.publishedAt), 'HH:mm')}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+          <p className="text-xl font-bold text-gray-900">{stats.totalEvents}</p>
+          <p className="text-xs text-gray-600">Événements</p>
+        </div>
       </div>
 
       {/* Notifications si désactivées */}
@@ -455,21 +314,20 @@ const MobileHome = () => {
             Prochain événement
           </h3>
           <button
-            onClick={openCalendar}
+            onClick={() => {
+              const event = new CustomEvent('navigate-to-calendar');
+              window.dispatchEvent(event);
+            }}
             className="text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
           >
-            Consulter mon calendrier →
+            Voir le calendrier →
           </button>
         </div>
         
         {nextEvent ? (
           <div className="flex items-start space-x-3">
             <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-              {nextEvent.type === 'meeting' ? (
-                <Users className="w-5 h-5 text-blue-600" />
-              ) : (
-                <Bell className="w-5 h-5 text-blue-600" />
-              )}
+              <Calendar className="w-5 h-5 text-blue-600" />
             </div>
             
             <div className="flex-1">
@@ -477,11 +335,11 @@ const MobileHome = () => {
               <div className="flex items-center justify-between mt-1">
                 <p className="text-sm text-gray-600 flex items-center space-x-1">
                   <Clock className="w-4 h-4" />
-                  <span>Aujourd'hui à {nextEvent.time}</span>
+                  <span>{format(new Date(nextEvent.start_time), 'dd/MM à HH:mm')}</span>
                 </p>
-                {nextEvent.attendees && (
+                {nextEvent.attendees && nextEvent.attendees.length > 0 && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                    {nextEvent.attendees} participants
+                    {nextEvent.attendees.length} participants
                   </span>
                 )}
               </div>
@@ -490,9 +348,12 @@ const MobileHome = () => {
         ) : (
           <div className="text-center py-4">
             <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500 text-sm">Aucun événement prévu aujourd'hui</p>
+            <p className="text-gray-500 text-sm">Aucun événement prévu</p>
             <button
-              onClick={openCalendar}
+              onClick={() => {
+                const event = new CustomEvent('navigate-to-calendar');
+                window.dispatchEvent(event);
+              }}
               className="text-blue-500 text-sm font-medium mt-2 hover:text-blue-600 transition-colors"
             >
               Planifier un événement

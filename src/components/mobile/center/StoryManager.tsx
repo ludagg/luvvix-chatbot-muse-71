@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Camera, Play } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import StoryPreviewModal from './StoryPreviewModal';
 
 interface Story {
   id: string;
@@ -30,6 +30,7 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
   const [stories, setStories] = useState<Story[]>([]);
   const [userStories, setUserStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchStories();
@@ -124,8 +125,13 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      createStory(file);
+      setPreviewFile(file);
     }
+  };
+
+  const handlePublishStory = async (file: File) => {
+    setPreviewFile(null);
+    await createStory(file);
   };
 
   const viewStory = async (storyId: string) => {
@@ -157,30 +163,37 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
   }
 
   return (
-    <div className="flex items-center space-x-3 p-4 overflow-x-auto bg-white border-b border-gray-200">
-      {/* Ma story / Créer une story */}
-      <div className="flex-shrink-0 text-center">
+    <>
+      <div className="flex items-center space-x-3 p-4 overflow-x-auto bg-white border-b border-gray-200">
+        {/* Mes stories (plusieurs possibles) */}
         {userStories.length > 0 ? (
-          <button
-            onClick={() => viewStory(userStories[0].id)}
-            className="relative"
-          >
-            <div className="w-16 h-16 rounded-full border-2 border-blue-500 p-0.5">
-              <div className="w-full h-full rounded-full bg-gray-200 overflow-hidden">
-                {userStories[0].media_type === 'video' ? (
-                  <div className="w-full h-full bg-black flex items-center justify-center">
-                    <Play className="w-6 h-6 text-white" />
+          userStories.map((story) => (
+            <div key={story.id} className="flex-shrink-0 text-center">
+              <button
+                onClick={() => viewStory(story.id)}
+                className="relative"
+              >
+                <div className="w-16 h-16 rounded-full border-2 border-blue-500 p-0.5">
+                  <div className="w-full h-full rounded-full bg-gray-200 overflow-hidden">
+                    {story.media_type === 'video' ? (
+                      <div className="w-full h-full bg-black flex items-center justify-center">
+                        <Play className="w-6 h-6 text-white" />
+                      </div>
+                    ) : (
+                      <img
+                        src={story.media_url}
+                        alt="Ma story"
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                   </div>
-                ) : (
-                  <img 
-                    src={userStories[0].media_url} 
-                    alt="Ma story"
-                    className="w-full h-full object-cover"
-                  />
-                )}
-              </div>
+                </div>
+              </button>
+              <p className="text-xs mt-1 text-gray-600 truncate max-w-16">
+                {new Date(story.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
             </div>
-          </button>
+          ))
         ) : (
           <label className="relative cursor-pointer">
             <input
@@ -194,51 +207,72 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
             </div>
           </label>
         )}
-        <p className="text-xs mt-1 text-gray-600">
-          {userStories.length > 0 ? 'Ma story' : 'Ajouter'}
-        </p>
-      </div>
 
-      {/* Stories des amis seulement */}
-      {stories.map((story) => (
-        <div key={story.id} className="flex-shrink-0 text-center">
-          <button
-            onClick={() => viewStory(story.id)}
-            className="relative"
-          >
-            <div className="w-16 h-16 rounded-full border-2 border-gray-300 p-0.5">
-              <div className="w-full h-full rounded-full bg-gray-200 overflow-hidden">
-                {story.media_type === 'video' ? (
-                  <div className="w-full h-full bg-black flex items-center justify-center relative">
-                    <Play className="w-6 h-6 text-white" />
-                    <img 
-                      src={story.media_url} 
-                      alt="Story"
-                      className="w-full h-full object-cover absolute inset-0"
-                    />
-                  </div>
-                ) : (
-                  <img 
-                    src={story.media_url} 
-                    alt="Story"
-                    className="w-full h-full object-cover"
-                  />
-                )}
-              </div>
+        {/* Ajouter un bouton en plus pour nouvelle story quand l'utilisateur en a déjà */}
+        {userStories.length > 0 && (
+          <label className="flex-shrink-0 text-center cursor-pointer">
+            <input
+              type="file"
+              accept="image/*,video/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <div className="w-16 h-16 rounded-full border-2 border-dashed border-blue-400 flex items-center justify-center bg-gray-50">
+              <Plus className="w-6 h-6 text-blue-400" />
             </div>
-          </button>
-          <p className="text-xs mt-1 text-gray-600 truncate max-w-16">
-            {story.user_profiles?.username || 'Utilisateur'}
-          </p>
-        </div>
-      ))}
+            <p className="text-xs mt-1 text-blue-500">Ajouter</p>
+          </label>
+        )}
 
-      {stories.length === 0 && userStories.length === 0 && (
-        <div className="flex-1 text-center py-4">
-          <p className="text-gray-500 text-sm">Aucune story d'amis disponible</p>
-        </div>
+        {/* Stories des amis */}
+        {stories.map((story) => (
+          <div key={story.id} className="flex-shrink-0 text-center">
+            <button
+              onClick={() => viewStory(story.id)}
+              className="relative"
+            >
+              <div className="w-16 h-16 rounded-full border-2 border-gray-300 p-0.5">
+                <div className="w-full h-full rounded-full bg-gray-200 overflow-hidden">
+                  {story.media_type === 'video' ? (
+                    <div className="w-full h-full bg-black flex items-center justify-center relative">
+                      <Play className="w-6 h-6 text-white" />
+                      <img
+                        src={story.media_url}
+                        alt="Story"
+                        className="w-full h-full object-cover absolute inset-0"
+                      />
+                    </div>
+                  ) : (
+                    <img
+                      src={story.media_url}
+                      alt="Story"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </div>
+              </div>
+            </button>
+            <p className="text-xs mt-1 text-gray-600 truncate max-w-16">
+              {story.user_profiles?.username || 'Utilisateur'}
+            </p>
+          </div>
+        ))}
+
+        {stories.length === 0 && userStories.length === 0 && (
+          <div className="flex-1 text-center py-4">
+            <p className="text-gray-500 text-sm">Aucune story d'amis disponible</p>
+          </div>
+        )}
+      </div>
+      {/* Aperçu Modal */}
+      {previewFile && (
+        <StoryPreviewModal
+          file={previewFile}
+          onPublish={handlePublishStory}
+          onCancel={() => setPreviewFile(null)}
+        />
       )}
-    </div>
+    </>
   );
 };
 

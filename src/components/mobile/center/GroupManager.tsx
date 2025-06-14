@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, Plus, Users, Settings, MessageCircle, Lock, Globe } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import GroupDetail from './GroupDetail';
 
 interface Group {
@@ -128,21 +129,13 @@ const GroupManager = ({ onBack }: GroupManagerProps) => {
 
       if (memberError) throw memberError;
 
-      toast({
-        title: "Groupe créé",
-        description: "Votre groupe a été créé avec succès"
-      });
-
+      toast.success('Groupe créé avec succès');
       setShowCreateForm(false);
       setNewGroup({ name: '', description: '', is_private: false });
       fetchGroups();
     } catch (error) {
       console.error('Erreur création groupe:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de créer le groupe",
-        variant: "destructive"
-      });
+      toast.error('Impossible de créer le groupe');
     }
   };
 
@@ -160,19 +153,11 @@ const GroupManager = ({ onBack }: GroupManagerProps) => {
 
       if (error) throw error;
 
-      toast({
-        title: "Groupe rejoint",
-        description: "Vous avez rejoint le groupe avec succès"
-      });
-
+      toast.success('Vous avez rejoint le groupe');
       fetchGroups();
     } catch (error) {
       console.error('Erreur rejoindre groupe:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de rejoindre le groupe",
-        variant: "destructive"
-      });
+      toast.error('Impossible de rejoindre le groupe');
     }
   };
 
@@ -188,19 +173,11 @@ const GroupManager = ({ onBack }: GroupManagerProps) => {
 
       if (error) throw error;
 
-      toast({
-        title: "Groupe quitté",
-        description: "Vous avez quitté le groupe"
-      });
-
+      toast.success('Vous avez quitté le groupe');
       fetchGroups();
     } catch (error) {
       console.error('Erreur quitter groupe:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de quitter le groupe",
-        variant: "destructive"
-      });
+      toast.error('Impossible de quitter le groupe');
     }
   };
 

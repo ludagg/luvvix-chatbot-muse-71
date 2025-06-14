@@ -1,11 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Camera, Play, Eye, X } from 'lucide-react';
+import { Plus, Camera, Play } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface Story {
   id: string;
@@ -18,33 +16,47 @@ interface Story {
   expires_at: string;
   user_profiles?: {
     username: string;
-    full_name: string;
+    full_name?: string;
     avatar_url?: string;
   };
 }
 
 interface StoryManagerProps {
-  onStoryView?: (storyId: string) => void;
+  onStoryView: (storyId: string) => void;
 }
 
 const StoryManager = ({ onStoryView }: StoryManagerProps) => {
   const { user } = useAuth();
   const [stories, setStories] = useState<Story[]>([]);
+  const [userStories, setUserStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    fetchStories();
+  }, [user]);
+
   const fetchStories = async () => {
+    if (!user) return;
+
     try {
-      const { data, error } = await supabase
+      // Récupérer toutes les stories actives
+      const { data: storiesData, error: storiesError } = await supabase
         .from('center_stories')
         .select(`
           *,
-          user_profiles!inner(username, full_name, avatar_url)
+          user_profiles(username, full_name, avatar_url)
         `)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setStories(data || []);
+      if (storiesError) throw storiesError;
+
+      // Séparer mes stories des autres
+      const myStories = (storiesData || []).filter(story => story.user_id === user.id);
+      const otherStories = (storiesData || []).filter(story => story.user_id !== user.id);
+
+      setUserStories(myStories);
+      setStories(otherStories);
     } catch (error) {
       console.error('Erreur chargement stories:', error);
     } finally {
@@ -52,137 +64,162 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
     }
   };
 
-  const uploadStory = async (file: File, caption?: string) => {
+  const createStory = async (file: File) => {
     if (!user) return;
 
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-      
+      const filePath = `stories/${fileName}`;
+
+      // Upload du fichier
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('center-media')
-        .upload(`stories/${fileName}`, file);
+        .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
+      // Récupérer l'URL publique
       const { data: { publicUrl } } = supabase.storage
         .from('center-media')
-        .getPublicUrl(uploadData.path);
+        .getPublicUrl(filePath);
 
-      const mediaType = file.type.startsWith('video/') ? 'video' : 'image';
-
-      const { error: insertError } = await supabase
+      // Créer la story
+      const { error: storyError } = await supabase
         .from('center_stories')
         .insert({
           user_id: user.id,
           media_url: publicUrl,
-          media_type: mediaType,
-          caption: caption || null
+          media_type: file.type.startsWith('video/') ? 'video' : 'image'
         });
 
-      if (insertError) throw insertError;
+      if (storyError) throw storyError;
 
-      toast({
-        title: "Story publiée",
-        description: "Votre story a été publiée avec succès"
-      });
-
+      toast.success('Story publiée avec succès !');
       fetchStories();
     } catch (error) {
-      console.error('Erreur upload story:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de publier la story",
-        variant: "destructive"
-      });
+      console.error('Erreur création story:', error);
+      toast.error('Erreur lors de la création de la story');
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      createStory(file);
     }
   };
 
   const viewStory = async (storyId: string) => {
-    if (!user) return;
-
     try {
-      // Enregistrer la vue
+      // Ajouter une vue
       await supabase
         .from('center_story_views')
         .insert({
           story_id: storyId,
-          viewer_id: user.id
+          viewer_id: user?.id
         });
 
-      onStoryView?.(storyId);
+      onStoryView(storyId);
     } catch (error) {
-      // Ne pas afficher d'erreur si l'utilisateur a déjà vu la story
-      console.log('Vue story déjà enregistrée');
+      console.error('Erreur vue story:', error);
     }
   };
 
-  useEffect(() => {
-    fetchStories();
-  }, []);
-
   if (loading) {
     return (
-      <div className="flex items-center space-x-3 p-3">
-        <div className="animate-pulse w-14 h-14 bg-gray-200 rounded-full"></div>
-        <div className="animate-pulse w-14 h-14 bg-gray-200 rounded-full"></div>
-        <div className="animate-pulse w-14 h-14 bg-gray-200 rounded-full"></div>
+      <div className="flex items-center space-x-3 p-4 overflow-x-auto">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex-shrink-0">
+            <div className="w-16 h-16 bg-gray-200 rounded-full animate-pulse"></div>
+          </div>
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="border-b border-gray-200 p-3">
-      <div className="flex items-center space-x-3 overflow-x-auto scrollbar-hide">
-        {/* Bouton d'ajout de story */}
-        <div className="flex flex-col items-center flex-shrink-0">
-          <input
-            type="file"
-            accept="image/*,video/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) uploadStory(file);
-            }}
-            className="hidden"
-            id="story-upload"
-          />
-          <label htmlFor="story-upload" className="w-14 h-14 rounded-full border-2 border-dashed border-gray-300 bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors">
-            <Camera className="w-6 h-6 text-gray-500" />
+    <div className="flex items-center space-x-3 p-4 overflow-x-auto bg-white border-b border-gray-200">
+      {/* Ma story / Créer une story */}
+      <div className="flex-shrink-0 text-center">
+        {userStories.length > 0 ? (
+          <button
+            onClick={() => viewStory(userStories[0].id)}
+            className="relative"
+          >
+            <div className="w-16 h-16 rounded-full border-2 border-blue-500 p-0.5">
+              <div className="w-full h-full rounded-full bg-gray-200 overflow-hidden">
+                {userStories[0].media_type === 'video' ? (
+                  <div className="w-full h-full bg-black flex items-center justify-center">
+                    <Play className="w-6 h-6 text-white" />
+                  </div>
+                ) : (
+                  <img 
+                    src={userStories[0].media_url} 
+                    alt="Ma story"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+              </div>
+            </div>
+          </button>
+        ) : (
+          <label className="relative cursor-pointer">
+            <input
+              type="file"
+              accept="image/*,video/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <div className="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50">
+              <Plus className="w-6 h-6 text-gray-400" />
+            </div>
           </label>
-          <span className="text-xs mt-1 text-gray-600">Votre story</span>
-        </div>
+        )}
+        <p className="text-xs mt-1 text-gray-600">
+          {userStories.length > 0 ? 'Ma story' : 'Ajouter'}
+        </p>
+      </div>
 
-        {/* Stories existantes */}
-        {stories.map((story) => (
-          <div key={story.id} className="flex flex-col items-center flex-shrink-0">
-            <button
-              onClick={() => viewStory(story.id)}
-              className="w-14 h-14 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 p-0.5 relative"
-            >
-              <div className="w-full h-full rounded-full overflow-hidden bg-white p-0.5">
+      {/* Stories des autres */}
+      {stories.map((story) => (
+        <div key={story.id} className="flex-shrink-0 text-center">
+          <button
+            onClick={() => viewStory(story.id)}
+            className="relative"
+          >
+            <div className="w-16 h-16 rounded-full border-2 border-gray-300 p-0.5">
+              <div className="w-full h-full rounded-full bg-gray-200 overflow-hidden">
                 {story.media_type === 'video' ? (
-                  <div className="w-full h-full bg-black rounded-full flex items-center justify-center relative">
-                    <Play className="w-4 h-4 text-white" />
+                  <div className="w-full h-full bg-black flex items-center justify-center relative">
+                    <Play className="w-6 h-6 text-white" />
+                    <img 
+                      src={story.media_url} 
+                      alt="Story"
+                      className="w-full h-full object-cover absolute inset-0"
+                    />
                   </div>
                 ) : (
                   <img 
                     src={story.media_url} 
                     alt="Story"
-                    className="w-full h-full rounded-full object-cover"
+                    className="w-full h-full object-cover"
                   />
                 )}
               </div>
-              <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1">
-                <Eye className="w-3 h-3 text-gray-600" />
-                <span className="text-xs text-gray-600">{story.views_count}</span>
-              </div>
-            </button>
-            <span className="text-xs mt-1 text-gray-600 truncate w-16 text-center">
-              {story.user_profiles?.username || 'User'}
-            </span>
-          </div>
-        ))}
-      </div>
+            </div>
+          </button>
+          <p className="text-xs mt-1 text-gray-600 truncate max-w-16">
+            {story.user_profiles?.username || 'Utilisateur'}
+          </p>
+        </div>
+      ))}
+
+      {stories.length === 0 && userStories.length === 0 && (
+        <div className="flex-1 text-center py-4">
+          <p className="text-gray-500 text-sm">Aucune story disponible</p>
+        </div>
+      )}
     </div>
   );
 };

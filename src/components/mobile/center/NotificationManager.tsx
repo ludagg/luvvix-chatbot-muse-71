@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Bell, Heart, MessageCircle, UserPlus, Users, Eye, X } from 'lucide-react';
+import { ArrowLeft, Bell, Heart, MessageCircle, Users, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
+
+interface NotificationManagerProps {
+  onClose: () => void;
+}
 
 interface Notification {
   id: string;
@@ -19,20 +20,19 @@ interface Notification {
   created_at: string;
   actor_profile?: {
     username: string;
-    full_name: string;
+    full_name?: string;
     avatar_url?: string;
   };
-}
-
-interface NotificationManagerProps {
-  onClose: () => void;
 }
 
 const NotificationManager = ({ onClose }: NotificationManagerProps) => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [user]);
 
   const fetchNotifications = async () => {
     if (!user) return;
@@ -42,7 +42,7 @@ const NotificationManager = ({ onClose }: NotificationManagerProps) => {
         .from('center_notifications')
         .select(`
           *,
-          actor_profile:user_profiles!center_notifications_actor_id_fkey(username, full_name, avatar_url)
+          actor_profile:user_profiles!actor_id(username, full_name, avatar_url)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
@@ -67,195 +67,167 @@ const NotificationManager = ({ onClose }: NotificationManagerProps) => {
       if (error) throw error;
 
       setNotifications(prev => 
-        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
+        prev.map(notif => 
+          notif.id === notificationId 
+            ? { ...notif, is_read: true }
+            : notif
+        )
       );
     } catch (error) {
-      console.error('Erreur marquage notification:', error);
+      console.error('Erreur marquage lecture:', error);
     }
   };
 
   const markAllAsRead = async () => {
-    if (!user) return;
-
     try {
       const { error } = await supabase
         .from('center_notifications')
         .update({ is_read: true })
-        .eq('user_id', user.id)
+        .eq('user_id', user?.id)
         .eq('is_read', false);
 
       if (error) throw error;
 
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-      
-      toast({
-        title: "Notifications marquées comme lues",
-        description: "Toutes vos notifications ont été marquées comme lues"
-      });
+      setNotifications(prev => 
+        prev.map(notif => ({ ...notif, is_read: true }))
+      );
     } catch (error) {
-      console.error('Erreur marquage notifications:', error);
+      console.error('Erreur marquage toutes lues:', error);
     }
   };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'like': return <Heart className="w-5 h-5 text-red-500" />;
-      case 'comment': return <MessageCircle className="w-5 h-5 text-blue-500" />;
-      case 'follow': return <UserPlus className="w-5 h-5 text-green-500" />;
-      case 'group_invite': 
-      case 'group_join': return <Users className="w-5 h-5 text-purple-500" />;
-      case 'story_view': return <Eye className="w-5 h-5 text-orange-500" />;
-      default: return <Bell className="w-5 h-5 text-gray-500" />;
+      case 'like':
+        return <Heart className="w-5 h-5 text-red-500" />;
+      case 'comment':
+        return <MessageCircle className="w-5 h-5 text-blue-500" />;
+      case 'follow':
+        return <Users className="w-5 h-5 text-green-500" />;
+      case 'group_invite':
+      case 'group_join':
+        return <Users className="w-5 h-5 text-purple-500" />;
+      case 'story_view':
+        return <Bell className="w-5 h-5 text-orange-500" />;
+      default:
+        return <Bell className="w-5 h-5 text-gray-500" />;
     }
   };
 
-  const getNotificationText = (notification: Notification) => {
-    const actorName = notification.actor_profile?.full_name || 'Quelqu\'un';
-    
+  const getNotificationMessage = (notification: Notification) => {
+    const actorName = notification.actor_profile?.full_name || 
+                    notification.actor_profile?.username || 
+                    'Quelqu\'un';
+
     switch (notification.type) {
       case 'like':
-        return `${actorName} a aimé votre post`;
+        return `${actorName} a aimé votre publication`;
       case 'comment':
-        return `${actorName} a commenté votre post`;
+        return `${actorName} a commenté votre publication`;
       case 'follow':
-        return `${actorName} vous suit maintenant`;
+        return `${actorName} a commencé à vous suivre`;
       case 'group_invite':
         return `${actorName} vous a invité à rejoindre un groupe`;
       case 'group_join':
         return `${actorName} a rejoint votre groupe`;
       case 'story_view':
         return `${actorName} a vu votre story`;
+      case 'mention':
+        return `${actorName} vous a mentionné`;
       default:
         return notification.message || 'Nouvelle notification';
     }
   };
 
-  useEffect(() => {
-    fetchNotifications();
-
-    // Real-time notifications
-    const channel = supabase
-      .channel('notifications')
-      .on('postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'center_notifications',
-          filter: `user_id=eq.${user?.id}`
-        },
-        () => {
-          fetchNotifications();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user]);
-
-  const filteredNotifications = filter === 'unread' 
-    ? notifications.filter(n => !n.is_read)
-    : notifications;
-
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
-    <div className="fixed inset-0 bg-white z-50">
+    <div className="fixed inset-0 bg-white z-50 flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
-              <X className="w-5 h-5" />
-            </button>
-            <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center space-x-3">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold">Notifications</h1>
+            {unreadCount > 0 && (
+              <p className="text-sm text-gray-500">{unreadCount} non lue{unreadCount > 1 ? 's' : ''}</p>
+            )}
           </div>
-          {unreadCount > 0 && (
-            <button 
-              onClick={markAllAsRead}
-              className="text-blue-500 text-sm font-medium"
-            >
-              Tout marquer comme lu
-            </button>
-          )}
         </div>
-        
-        {/* Filter tabs */}
-        <div className="flex space-x-4">
+        {unreadCount > 0 && (
           <button
-            onClick={() => setFilter('all')}
-            className={`pb-2 border-b-2 font-medium text-sm transition-colors ${
-              filter === 'all'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500'
-            }`}
+            onClick={markAllAsRead}
+            className="text-blue-600 text-sm font-medium hover:text-blue-800"
           >
-            Toutes ({notifications.length})
+            Tout marquer comme lu
           </button>
-          <button
-            onClick={() => setFilter('unread')}
-            className={`pb-2 border-b-2 font-medium text-sm transition-colors relative ${
-              filter === 'unread'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500'
-            }`}
-          >
-            Non lues ({unreadCount})
-          </button>
-        </div>
+        )}
       </div>
 
-      {/* Notifications list */}
+      {/* Notifications List */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
-        ) : filteredNotifications.length === 0 ? (
+        ) : notifications.length === 0 ? (
           <div className="text-center py-12 px-4">
-            <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-              <Bell className="w-8 h-8 text-gray-400" />
+            <div className="w-20 h-20 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <Bell className="w-10 h-10 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">
-              {filter === 'unread' ? 'Aucune nouvelle notification' : 'Aucune notification'}
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              Aucune notification
             </h3>
             <p className="text-gray-500 text-sm">
-              {filter === 'unread' 
-                ? 'Toutes vos notifications sont à jour !' 
-                : 'Vous recevrez ici toutes vos notifications'}
+              Vous n'avez aucune notification pour le moment
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
-            {filteredNotifications.map((notification) => (
-              <div 
+          <div className="divide-y divide-gray-200">
+            {notifications.map((notification) => (
+              <div
                 key={notification.id}
-                className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
-                  !notification.is_read ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                }`}
                 onClick={() => !notification.is_read && markAsRead(notification.id)}
+                className={`p-4 hover:bg-gray-50 cursor-pointer ${
+                  !notification.is_read ? 'bg-blue-50' : ''
+                }`}
               >
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0">
-                    {getNotificationIcon(notification.type)}
+                    {notification.actor_profile ? (
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">
+                          {notification.actor_profile.username?.[0]?.toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">
-                      {getNotificationText(notification)}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formatDistanceToNow(new Date(notification.created_at), { 
-                        addSuffix: true, 
-                        locale: fr 
-                      })}
-                    </p>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className={`text-sm ${!notification.is_read ? 'font-semibold' : ''}`}>
+                          {getNotificationMessage(notification)}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(notification.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 ml-2">
+                        {getNotificationIcon(notification.type)}
+                        {!notification.is_read && (
+                          <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  
-                  {!notification.is_read && (
-                    <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
-                  )}
                 </div>
               </div>
             ))}

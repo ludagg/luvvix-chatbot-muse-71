@@ -1,25 +1,27 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Settings, Users, MessageCircle, Plus, MoreVertical, Crown, Shield, User } from 'lucide-react';
+import { ArrowLeft, Plus, Send, Users, Settings, MoreHorizontal } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+
+interface GroupDetailProps {
+  groupId: string;
+  onBack: () => void;
+}
 
 interface Group {
   id: string;
   name: string;
   description?: string;
-  avatar_url?: string;
-  banner_url?: string;
-  creator_id: string;
-  is_private: boolean;
   members_count: number;
-  created_at: string;
+  is_private: boolean;
   user_role?: 'admin' | 'moderator' | 'member';
 }
 
 interface GroupPost {
   id: string;
+  user_id: string;
   content: string;
   media_urls?: string[];
   likes_count: number;
@@ -27,44 +29,41 @@ interface GroupPost {
   created_at: string;
   user_profiles?: {
     username: string;
-    full_name: string;
+    full_name?: string;
     avatar_url?: string;
   };
 }
 
-interface GroupMember {
+interface Member {
   id: string;
+  user_id: string;
   role: 'admin' | 'moderator' | 'member';
   joined_at: string;
   user_profiles?: {
     username: string;
-    full_name: string;
+    full_name?: string;
     avatar_url?: string;
   };
-}
-
-interface GroupDetailProps {
-  groupId: string;
-  onBack: () => void;
 }
 
 const GroupDetail = ({ groupId, onBack }: GroupDetailProps) => {
   const { user } = useAuth();
   const [group, setGroup] = useState<Group | null>(null);
   const [posts, setPosts] = useState<GroupPost[]>([]);
-  const [members, setMembers] = useState<GroupMember[]>([]);
-  const [activeTab, setActiveTab] = useState<'posts' | 'members' | 'settings'>('posts');
-  const [loading, setLoading] = useState(true);
-  const [showComposer, setShowComposer] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [activeTab, setActiveTab] = useState<'posts' | 'members'>('posts');
   const [newPost, setNewPost] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [posting, setPosting] = useState(false);
 
   useEffect(() => {
     fetchGroupData();
+    fetchPosts();
+    fetchMembers();
   }, [groupId]);
 
   const fetchGroupData = async () => {
     try {
-      // Récupérer les infos du groupe
       const { data: groupData, error: groupError } = await supabase
         .from('center_groups')
         .select('*')
@@ -85,48 +84,54 @@ const GroupDetail = ({ groupId, onBack }: GroupDetailProps) => {
         ...groupData,
         user_role: memberData?.role
       });
+    } catch (error) {
+      console.error('Erreur chargement groupe:', error);
+      toast.error('Impossible de charger le groupe');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Récupérer les posts du groupe
-      const { data: postsData, error: postsError } = await supabase
+  const fetchPosts = async () => {
+    try {
+      const { data, error } = await supabase
         .from('center_group_posts')
         .select(`
           *,
-          user_profiles!inner(username, full_name, avatar_url)
+          user_profiles(username, full_name, avatar_url)
         `)
         .eq('group_id', groupId)
         .order('created_at', { ascending: false });
 
-      if (postsError) throw postsError;
-      setPosts(postsData || []);
+      if (error) throw error;
+      setPosts(data || []);
+    } catch (error) {
+      console.error('Erreur chargement posts:', error);
+    }
+  };
 
-      // Récupérer les membres du groupe
-      const { data: membersData, error: membersError } = await supabase
+  const fetchMembers = async () => {
+    try {
+      const { data, error } = await supabase
         .from('center_group_members')
         .select(`
           *,
-          user_profiles!inner(username, full_name, avatar_url)
+          user_profiles(username, full_name, avatar_url)
         `)
         .eq('group_id', groupId)
         .order('joined_at', { ascending: true });
 
-      if (membersError) throw membersError;
-      setMembers(membersData || []);
-
+      if (error) throw error;
+      setMembers(data || []);
     } catch (error) {
-      console.error('Erreur chargement groupe:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les données du groupe",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+      console.error('Erreur chargement membres:', error);
     }
   };
 
   const createPost = async () => {
     if (!newPost.trim() || !user) return;
 
+    setPosting(true);
     try {
       const { error } = await supabase
         .from('center_group_posts')
@@ -139,54 +144,54 @@ const GroupDetail = ({ groupId, onBack }: GroupDetailProps) => {
       if (error) throw error;
 
       setNewPost('');
-      setShowComposer(false);
-      fetchGroupData();
-      
-      toast({
-        title: "Post publié",
-        description: "Votre post a été publié dans le groupe"
-      });
+      fetchPosts();
+      toast.success('Post publié dans le groupe');
     } catch (error) {
       console.error('Erreur création post:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de publier le post",
-        variant: "destructive"
-      });
+      toast.error('Impossible de publier le post');
+    } finally {
+      setPosting(false);
     }
   };
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'admin': return <Crown className="w-4 h-4 text-yellow-500" />;
-      case 'moderator': return <Shield className="w-4 h-4 text-blue-500" />;
-      default: return <User className="w-4 h-4 text-gray-500" />;
+  const changeMemberRole = async (memberId: string, newRole: 'admin' | 'moderator' | 'member') => {
+    try {
+      const { error } = await supabase
+        .from('center_group_members')
+        .update({ role: newRole })
+        .eq('id', memberId);
+
+      if (error) throw error;
+
+      fetchMembers();
+      toast.success('Rôle modifié avec succès');
+    } catch (error) {
+      console.error('Erreur modification rôle:', error);
+      toast.error('Impossible de modifier le rôle');
     }
   };
 
-  const getRoleText = (role: string) => {
-    switch (role) {
-      case 'admin': return 'Admin';
-      case 'moderator': return 'Modérateur';
-      default: return 'Membre';
+  const removeMember = async (memberId: string) => {
+    try {
+      const { error } = await supabase
+        .from('center_group_members')
+        .delete()
+        .eq('id', memberId);
+
+      if (error) throw error;
+
+      fetchMembers();
+      toast.success('Membre retiré du groupe');
+    } catch (error) {
+      console.error('Erreur retrait membre:', error);
+      toast.error('Impossible de retirer le membre');
     }
   };
 
-  if (loading) {
+  if (loading || !group) {
     return (
       <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (!group) {
-    return (
-      <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">Groupe introuvable</h3>
-          <button onClick={onBack} className="text-blue-500">Retour</button>
-        </div>
       </div>
     );
   }
@@ -200,41 +205,15 @@ const GroupDetail = ({ groupId, onBack }: GroupDetailProps) => {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">{group.name}</h1>
-            <p className="text-sm text-gray-500">{group.members_count} membre{group.members_count > 1 ? 's' : ''}</p>
+            <h1 className="text-lg font-bold">{group.name}</h1>
+            <p className="text-xs text-gray-500">{group.members_count} membres</p>
           </div>
         </div>
-        
         {(group.user_role === 'admin' || group.user_role === 'moderator') && (
-          <button 
-            onClick={() => setActiveTab('settings')}
-            className="p-2 hover:bg-gray-100 rounded-full"
-          >
+          <button className="p-2 hover:bg-gray-100 rounded-full">
             <Settings className="w-5 h-5" />
           </button>
         )}
-      </div>
-
-      {/* Banner */}
-      {group.banner_url && (
-        <div className="h-32 bg-gradient-to-r from-blue-500 to-purple-500">
-          <img src={group.banner_url} alt="Banner" className="w-full h-full object-cover" />
-        </div>
-      )}
-
-      {/* Group Info */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center space-x-3 mb-3">
-          <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-            <Users className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">{group.name}</h2>
-            {group.description && (
-              <p className="text-gray-600 text-sm">{group.description}</p>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Tabs */}
@@ -247,7 +226,7 @@ const GroupDetail = ({ groupId, onBack }: GroupDetailProps) => {
               : 'text-gray-600'
           }`}
         >
-          Posts
+          Publications
         </button>
         <button
           onClick={() => setActiveTab('members')}
@@ -259,28 +238,21 @@ const GroupDetail = ({ groupId, onBack }: GroupDetailProps) => {
         >
           Membres
         </button>
-        {(group.user_role === 'admin' || group.user_role === 'moderator') && (
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`flex-1 py-3 text-center font-medium ${
-              activeTab === 'settings'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600'
-            }`}
-          >
-            Paramètres
-          </button>
-        )}
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'posts' && (
           <div>
-            {/* Composer */}
+            {/* Post Creator */}
             <div className="p-4 border-b border-gray-200">
-              {showComposer ? (
-                <div className="space-y-3">
+              <div className="flex space-x-3">
+                <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-bold text-sm">
+                    {user?.email?.[0]?.toUpperCase() || 'U'}
+                  </span>
+                </div>
+                <div className="flex-1">
                   <textarea
                     value={newPost}
                     onChange={(e) => setNewPost(e.target.value)}
@@ -288,66 +260,54 @@ const GroupDetail = ({ groupId, onBack }: GroupDetailProps) => {
                     className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
                     rows={3}
                   />
-                  <div className="flex justify-end space-x-2">
-                    <button
-                      onClick={() => setShowComposer(false)}
-                      className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                    >
-                      Annuler
-                    </button>
+                  <div className="flex justify-end mt-2">
                     <button
                       onClick={createPost}
-                      disabled={!newPost.trim()}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                      disabled={!newPost.trim() || posting}
+                      className="flex items-center space-x-1 px-4 py-2 bg-blue-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Publier
+                      <Send className="w-4 h-4" />
+                      <span>{posting ? 'Publication...' : 'Publier'}</span>
                     </button>
                   </div>
                 </div>
-              ) : (
-                <button
-                  onClick={() => setShowComposer(true)}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-left text-gray-500 hover:bg-gray-50"
-                >
-                  Partagez quelque chose avec le groupe...
-                </button>
-              )}
+              </div>
             </div>
 
-            {/* Posts */}
-            <div className="divide-y divide-gray-200">
-              {posts.map((post) => (
-                <div key={post.id} className="p-4">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold text-gray-600">
-                        {post.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className="font-semibold text-gray-900">
-                          {post.user_profiles?.full_name || 'Utilisateur'}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {new Date(post.created_at).toLocaleDateString()}
+            {/* Posts List */}
+            <div className="space-y-4 p-4">
+              {posts.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Aucune publication dans ce groupe</p>
+                </div>
+              ) : (
+                posts.map((post) => (
+                  <div key={post.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-sm">
+                          {post.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
                         </span>
                       </div>
-                      <p className="text-gray-800 mb-3">{post.content}</p>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <button className="flex items-center space-x-1 hover:text-red-500">
-                          <span>❤️</span>
-                          <span>{post.likes_count}</span>
-                        </button>
-                        <button className="flex items-center space-x-1 hover:text-blue-500">
-                          <MessageCircle className="w-4 h-4" />
-                          <span>{post.comments_count}</span>
-                        </button>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h4 className="font-semibold text-sm">
+                            {post.user_profiles?.full_name || post.user_profiles?.username || 'Utilisateur'}
+                          </h4>
+                          <span className="text-xs text-gray-500">
+                            {new Date(post.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-gray-900 mt-1">{post.content}</p>
+                        <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                          <span>{post.likes_count} j'aime</span>
+                          <span>{post.comments_count} commentaires</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         )}
@@ -355,93 +315,45 @@ const GroupDetail = ({ groupId, onBack }: GroupDetailProps) => {
         {activeTab === 'members' && (
           <div className="p-4 space-y-3">
             {members.map((member) => (
-              <div key={member.id} className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg">
+              <div key={member.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-bold text-gray-600">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">
                       {member.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
                     </span>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900">
-                      {member.user_profiles?.full_name || 'Utilisateur'}
+                    <h4 className="font-semibold text-sm">
+                      {member.user_profiles?.full_name || member.user_profiles?.username || 'Utilisateur'}
                     </h4>
-                    <p className="text-sm text-gray-500">
-                      @{member.user_profiles?.username || 'user'}
-                    </p>
+                    <p className="text-xs text-gray-500 capitalize">{member.role}</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center space-x-1 px-2 py-1 bg-gray-100 rounded-full">
-                    {getRoleIcon(member.role)}
-                    <span className="text-xs font-medium">{getRoleText(member.role)}</span>
-                  </div>
-                  
-                  {(group.user_role === 'admin' && member.role !== 'admin') && (
-                    <button className="p-1 hover:bg-gray-100 rounded-full">
-                      <MoreVertical className="w-4 h-4" />
+                {(group.user_role === 'admin' && member.user_id !== user?.id) && (
+                  <div className="flex items-center space-x-2">
+                    <select
+                      value={member.role}
+                      onChange={(e) => changeMemberRole(member.id, e.target.value as any)}
+                      className="text-xs border border-gray-300 rounded px-2 py-1"
+                    >
+                      <option value="member">Membre</option>
+                      <option value="moderator">Modérateur</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <button
+                      onClick={() => removeMember(member.id)}
+                      className="text-red-600 hover:bg-red-50 p-1 rounded"
+                    >
+                      <MoreHorizontal className="w-4 h-4" />
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
-
-        {activeTab === 'settings' && (group.user_role === 'admin' || group.user_role === 'moderator') && (
-          <div className="p-4 space-y-4">
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Informations du groupe</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                  <input
-                    type="text"
-                    value={group.name}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    readOnly
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <textarea
-                    value={group.description || ''}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    rows={3}
-                    readOnly
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Paramètres de confidentialité</h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">Groupe privé</p>
-                  <p className="text-sm text-gray-500">
-                    {group.is_private ? 'Le groupe est privé' : 'Le groupe est public'}
-                  </p>
-                </div>
-                <div className={`w-12 h-6 rounded-full ${group.is_private ? 'bg-blue-500' : 'bg-gray-300'} relative`}>
-                  <div className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform ${group.is_private ? 'translate-x-6' : 'translate-x-0.5'}`}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
-
-      {/* FAB pour créer un post */}
-      {activeTab === 'posts' && (
-        <button
-          onClick={() => setShowComposer(true)}
-          className="fixed bottom-4 right-4 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors flex items-center justify-center"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-      )}
     </div>
   );
 };

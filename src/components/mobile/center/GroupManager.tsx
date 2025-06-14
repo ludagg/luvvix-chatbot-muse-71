@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, Plus, Users, Settings, MessageCircle, Lock, Globe } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import GroupDetail from './GroupDetail';
 
 interface Group {
   id: string;
@@ -31,6 +31,7 @@ const GroupManager = ({ onBack }: GroupManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'my' | 'discover'>('my');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [newGroup, setNewGroup] = useState({
     name: '',
     description: '',
@@ -211,6 +212,16 @@ const GroupManager = ({ onBack }: GroupManagerProps) => {
     group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     group.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Show group detail if a group is selected
+  if (selectedGroupId) {
+    return (
+      <GroupDetail 
+        groupId={selectedGroupId}
+        onBack={() => setSelectedGroupId(null)}
+      />
+    );
+  }
 
   if (showCreateForm) {
     return (
@@ -402,7 +413,10 @@ const GroupManager = ({ onBack }: GroupManagerProps) => {
                     <div className="flex items-center space-x-2 mt-3">
                       {group.is_member ? (
                         <>
-                          <button className="flex items-center space-x-1 px-3 py-1.5 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600">
+                          <button 
+                            onClick={() => setSelectedGroupId(group.id)}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600"
+                          >
                             <MessageCircle className="w-4 h-4" />
                             <span>Accéder</span>
                           </button>

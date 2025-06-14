@@ -72,7 +72,7 @@ const ExplorePage = () => {
       setSearchHistory(newHistory);
       localStorage.setItem('luvvix-search-history', JSON.stringify(newHistory));
 
-      // Recherche multimodale via SerpAPI
+      // Recherche multimodale
       const searchResults = await searchService.multiSearch(searchQuery);
       setResults(searchResults);
 
@@ -91,10 +91,10 @@ const ExplorePage = () => {
         }
       ]);
       
-      toast.success(t.common.success);
+      toast.success('Recherche terminée avec succès');
     } catch (error) {
       console.error('Erreur de recherche:', error);
-      toast.error(t.common.error);
+      toast.error('Erreur lors de la recherche');
     } finally {
       setIsSearching(false);
       setIsAiThinking(false);
@@ -158,16 +158,16 @@ const ExplorePage = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  {t.explore.title}
+                  Explorer
                 </h1>
-                <p className="text-sm text-gray-500">{t.explore.subtitle}</p>
+                <p className="text-sm text-gray-500">Recherche intelligente avec IA</p>
               </div>
             </div>
             
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-blue-100 text-blue-700">
                 <Brain className="w-3 h-3 mr-1" />
-                {t.explore.aiConnected}
+                IA Connectée
               </Badge>
               {user && (
                 <Badge variant="outline">
@@ -186,13 +186,13 @@ const ExplorePage = () => {
                 value={query}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder={t.explore.searchPlaceholder}
+                placeholder="Recherchez n'importe quoi..."
                 className="pl-12 pr-24 py-4 text-lg rounded-2xl border-2 border-gray-200 focus:border-blue-500 shadow-lg"
                 disabled={isSearching}
               />
               <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
                 <FileUploader onFileAnalyzed={(content) => {
-                  setQuery(`${t.explore.fileUploader.analyze}: ${content.substring(0, 100)}...`);
+                  setQuery(`Analyser: ${content.substring(0, 100)}...`);
                 }} />
                 <Button 
                   onClick={() => handleSearch()}
@@ -223,7 +223,7 @@ const ExplorePage = () => {
                   className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-200 z-50"
                 >
                   <div className="p-2">
-                    <p className="text-xs text-gray-500 px-3 py-2">{t.explore.suggestions}</p>
+                    <p className="text-xs text-gray-500 px-3 py-2">Suggestions</p>
                     {suggestions.map((suggestion, index) => (
                       <button
                         key={index}
@@ -246,7 +246,7 @@ const ExplorePage = () => {
                   className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-200 z-50"
                 >
                   <div className="p-2">
-                    <p className="text-xs text-gray-500 px-3 py-2">{t.explore.recentSearches}</p>
+                    <p className="text-xs text-gray-500 px-3 py-2">Recherches récentes</p>
                     {searchHistory.slice(0, 5).map((historyItem, index) => (
                       <button
                         key={index}
@@ -275,23 +275,23 @@ const ExplorePage = () => {
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                   <TabsList className="grid w-full grid-cols-5 bg-white rounded-xl border">
                     <TabsTrigger value="all" className="data-[state=active]:bg-blue-100">
-                      {t.explore.tabs.all} ({resultCounts.all})
+                      Tous ({resultCounts.all})
                     </TabsTrigger>
                     <TabsTrigger value="web" className="data-[state=active]:bg-blue-100">
                       <Globe className="w-4 h-4 mr-1" />
-                      {t.explore.tabs.web} ({resultCounts.web})
+                      Web ({resultCounts.web})
                     </TabsTrigger>
                     <TabsTrigger value="video" className="data-[state=active]:bg-blue-100">
                       <Video className="w-4 h-4 mr-1" />
-                      {t.explore.tabs.videos} ({resultCounts.video})
+                      Vidéos ({resultCounts.video})
                     </TabsTrigger>
                     <TabsTrigger value="image" className="data-[state=active]:bg-blue-100">
                       <Image className="w-4 h-4 mr-1" />
-                      {t.explore.tabs.images} ({resultCounts.image})
+                      Images ({resultCounts.image})
                     </TabsTrigger>
                     <TabsTrigger value="file" className="data-[state=active]:bg-blue-100">
                       <FileText className="w-4 h-4 mr-1" />
-                      {t.explore.tabs.files} ({resultCounts.file})
+                      Fichiers ({resultCounts.file})
                     </TabsTrigger>
                   </TabsList>
                   
@@ -312,17 +312,17 @@ const ExplorePage = () => {
                   <Search className="w-16 h-16 text-blue-600" />
                 </motion.div>
                 <h2 className="text-2xl font-bold text-gray-700 mb-2">
-                  {t.explore.startExploring}
+                  Commencez à explorer
                 </h2>
                 <p className="text-gray-500 mb-6">
-                  {t.explore.searchContent}
+                  Recherchez du contenu, des fichiers, des images et bien plus encore
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {[
-                    t.explore.examples.ai,
-                    t.explore.examples.tech,
-                    t.explore.examples.recipes,
-                    t.explore.examples.tutorials
+                    'Intelligence artificielle',
+                    'Développement web',
+                    'Recettes de cuisine',
+                    'Tutoriels vidéo'
                   ].map((example) => (
                     <button
                       key={example}

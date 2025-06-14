@@ -14,12 +14,17 @@ interface UserProfile {
 
 interface UserSuggestionsProps {
   users: UserProfile[];
-  onFollow: (userId: string) => void;
+  onFollow: (userId: string, isCurrentlyFollowing?: boolean) => void;
   onDismiss: (userId: string) => void;
   onUserClick?: (userId: string) => void;
 }
 
-const UserSuggestions = ({ users, onFollow, onDismiss, onUserClick }: UserSuggestionsProps) => {
+const UserSuggestions = ({
+  users,
+  onFollow,
+  onDismiss,
+  onUserClick
+}: UserSuggestionsProps) => {
   if (users.length === 0) return null;
 
   return (
@@ -75,12 +80,19 @@ const UserSuggestions = ({ users, onFollow, onDismiss, onUserClick }: UserSugges
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  onFollow(user.id);
+                  onFollow(user.id, user.is_following);
                 }}
-                className="w-full bg-blue-500 text-white px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-600 transition-colors flex items-center justify-center space-x-1"
+                className={[
+                  "w-full px-3 py-1 rounded-full text-xs font-medium flex items-center justify-center space-x-1 transition-colors",
+                  user.is_following 
+                    ? "bg-gray-200 text-gray-700 hover:bg-gray-300" 
+                    : "bg-blue-500 text-white hover:bg-blue-600"
+                ].join(" ")}
               >
                 <UserPlus className="w-3 h-3" />
-                <span>Suivre</span>
+                <span>
+                  {user.is_following ? "Suivi" : "Suivre"}
+                </span>
               </button>
             </div>
           </div>

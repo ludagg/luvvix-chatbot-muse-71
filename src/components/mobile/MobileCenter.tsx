@@ -61,7 +61,8 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const [showVideoUploader, setShowVideoUploader] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState<string | null>(null);
   const [showUserProfile, setShowUserProfile] = useState<string | null>(null);
-  
+  const [followers, setFollowers] = useState<Set<string>>(new Set());
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -180,30 +181,38 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
   const fetchSuggestedUsers = async () => {
     if (!user) return;
-    
+
     try {
-      const { data, error } = await supabase
+      // Récupérer tous les users sauf soi-même
+      const { data: profiles, error: userError } = await supabase
         .from('user_profiles')
         .select('*')
         .neq('id', user.id)
-        .limit(5);
+        .limit(10);
 
-      if (error) {
-        console.error('Erreur chargement utilisateurs suggérés:', error);
+      if (userError) {
+        console.error('Erreur chargement utilisateurs suggérés:', userError);
         return;
       }
-      
-      const transformedUsers: UserProfile[] = (data || []).map(profile => ({
-        id: profile.id,
+
+      // Vérifier ceux déjà suivis
+      const { data: followingData, error: followsErr } = await supabase
+        .from('center_follows')
+        .select('following_id')
+        .eq('follower_id', user.id);
+
+      const followingSet = new Set((followingData ?? []).map(f => f.following_id));
+
+      const transformedUsers: UserProfile[] = (profiles || []).map(profile => ({
+        ...profile,
         username: profile.username || `user_${profile.id.slice(0, 8)}`,
         full_name: profile.full_name || 'Utilisateur',
         avatar_url: profile.avatar_url || '',
         followers_count: 0,
         following_count: 0,
-        is_following: false
+        is_following: followingSet.has(profile.id)
       }));
-      
-      console.log('Utilisateurs suggérés transformés:', transformedUsers);
+
       setSuggestedUsers(transformedUsers);
     } catch (error) {
       console.error('Erreur chargement utilisateurs:', error);
@@ -353,8 +362,62 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     setShowAdvancedSearch(false);
   };
 
-  const handleFollow = (userId: string) => {
-    console.log('Following user:', userId);
+  const handleFollow = async (userId: string, isCurrentlyFollowing?: boolean) => {
+    if (!user) return;
+    // Désabonner
+    if (isCurrentlyFollowing) {
+      const { error } = await supabase
+        .from('center_follows')
+        .delete()
+        .eq('follower_id', user.id)
+        .eq('following_id', userId);
+
+      if (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'arrêter de suivre cet utilisateur",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setSuggestedUsers(prev =>
+        prev.map(u =>
+          u.id === userId ? { ...u, is_following: false } : u
+        )
+      );
+      toast({
+        title: "Abonnement supprimé",
+        description: "Vous ne suivez plus cet utilisateur"
+      });
+    } else {
+      // S'abonner
+      const { error } = await supabase
+        .from('center_follows')
+        .insert({
+          follower_id: user.id,
+          following_id: userId
+        });
+
+      if (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible de suivre cet utilisateur",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setSuggestedUsers(prev =>
+        prev.map(u =>
+          u.id === userId ? { ...u, is_following: true } : u
+        )
+      );
+      toast({
+        title: "Utilisateur suivi",
+        description: "Vous suivez maintenant cet utilisateur"
+      });
+    }
   };
 
   const handleDismissUser = (userId: string) => {
@@ -488,8 +551,8 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
           <div>
             <UserSuggestions
               users={suggestedUsers}
-              onFollow={(userId) => console.log('Following user:', userId)}
-              onDismiss={(userId) => console.log('Dismissing user suggestion:', userId)}
+              onFollow={handleFollow}
+              onDismiss={(userId) => setSuggestedUsers(prev => prev.filter(u => u.id !== userId))}
               onUserClick={handleUserClick}
             />
 
@@ -624,8 +687,15 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                       </p>
                     </div>
                   </button>
-                  <button className="px-4 py-1.5 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors">
-                    Suivre
+                  <button
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      user.is_following
+                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                    }`}
+                    onClick={() => handleFollow(user.id, user.is_following)}
+                  >
+                    {user.is_following ? 'Suivi' : 'Suivre'}
                   </button>
                 </div>
               ))}

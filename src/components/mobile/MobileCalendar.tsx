@@ -41,7 +41,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
   const monthEnd = endOfMonth(currentDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Fonction utilitaire pour valider et formater les dates
+  // Fonctions utilitaires pour valider et formater les dates
   const formatEventDate = (dateString: string, formatString: string) => {
     if (!dateString) return 'Date invalide';
     const date = new Date(dateString);
@@ -129,7 +129,6 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
     
     const suggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
     
-    // Créer l'objet avec toutes les propriétés requises
     const eventData = {
       ...suggestion,
       priority: 'medium' as const,
@@ -308,7 +307,6 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
     
     return (
       <div className="space-y-4">
-        {/* Événements à venir */}
         {upcomingEvents.length > 0 && (
           <div>
             <h3 className="text-sm font-medium text-gray-700 mb-2">Prochains événements</h3>
@@ -413,7 +411,6 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
 
       {/* Navigation et contrôles */}
       <div className="p-4 border-b border-gray-200">
-        {/* Vue et navigation de mois */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <button
@@ -441,7 +438,6 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
           </button>
         </div>
 
-        {/* Barre de recherche et filtres */}
         <div className="space-y-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -474,7 +470,6 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
           </div>
         </div>
 
-        {/* Sélecteur de vue */}
         <div className="flex mt-4 bg-gray-100 rounded-lg p-1">
           {[
             { key: 'month', label: 'Mois' },
@@ -511,14 +506,13 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
         )}
       </div>
 
-      {/* Event Creator */}
       <EventCreator 
         isOpen={showAddEvent}
         onClose={() => setShowAddEvent(false)}
         selectedDate={selectedDate}
       />
 
-      {/* Modal détails événement amélioré */}
+      {/* Modal détails événement */}
       {selectedEvent && showEventDetails && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-60 flex items-end">
           <div className="w-full bg-white rounded-t-3xl p-6 max-h-96 overflow-auto">

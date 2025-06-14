@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Clock, Users, MapPin, Bell, ChevronLeft, ChevronRight, Search, Filter, Sparkles, Trash2, Edit3, CheckCircle, X } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths, isValid } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths, isValid, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { useCalendar } from '@/hooks/use-calendar';
@@ -41,19 +42,60 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
   const monthEnd = endOfMonth(currentDate);
   const monthDays = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Fonctions utilitaires pour valider et formater les dates
-  const formatEventDate = (dateString: string, formatString: string) => {
-    if (!dateString) return 'Date invalide';
-    const date = new Date(dateString);
-    if (!isValid(date)) return 'Date invalide';
-    return format(date, formatString, { locale: fr });
+  // Fonctions utilitaires améliorées pour valider et formater les dates
+  const parseDate = (dateInput: string | Date | null | undefined): Date | null => {
+    if (!dateInput) return null;
+    
+    try {
+      // Si c'est déjà un objet Date
+      if (dateInput instanceof Date) {
+        return isValid(dateInput) ? dateInput : null;
+      }
+      
+      // Si c'est une string, essayer de la parser
+      const parsed = typeof dateInput === 'string' ? parseISO(dateInput) : new Date(dateInput);
+      return isValid(parsed) ? parsed : null;
+    } catch (error) {
+      console.warn('Erreur parsing date:', dateInput, error);
+      return null;
+    }
   };
 
-  const formatEventTime = (dateString: string, formatString: string) => {
-    if (!dateString) return '--:--';
-    const date = new Date(dateString);
-    if (!isValid(date)) return '--:--';
-    return format(date, formatString);
+  const formatEventDate = (dateInput: string | Date | null | undefined, formatString: string): string => {
+    const date = parseDate(dateInput);
+    if (!date) return 'Date invalide';
+    
+    try {
+      return format(date, formatString, { locale: fr });
+    } catch (error) {
+      console.warn('Erreur formatage date:', dateInput, error);
+      return 'Date invalide';
+    }
+  };
+
+  const formatEventTime = (dateInput: string | Date | null | undefined, formatString: string): string => {
+    const date = parseDate(dateInput);
+    if (!date) return '--:--';
+    
+    try {
+      return format(date, formatString);
+    } catch (error) {
+      console.warn('Erreur formatage heure:', dateInput, error);
+      return '--:--';
+    }
+  };
+
+  // Fonction pour extraire la date au format string pour les comparaisons
+  const getDateString = (dateInput: string | Date | null | undefined): string => {
+    const date = parseDate(dateInput);
+    if (!date) return '';
+    
+    try {
+      return format(date, 'yyyy-MM-dd');
+    } catch (error) {
+      console.warn('Erreur extraction date string:', dateInput, error);
+      return '';
+    }
   };
 
   const getEventsForDateWithHolidays = (date: Date) => {
@@ -93,10 +135,10 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
     }
     
     return filtered.sort((a, b) => {
-      const dateA = new Date(a.start_time);
-      const dateB = new Date(b.start_time);
-      if (!isValid(dateA)) return 1;
-      if (!isValid(dateB)) return -1;
+      const dateA = parseDate(a.start_time);
+      const dateB = parseDate(b.start_time);
+      if (!dateA) return 1;
+      if (!dateB) return -1;
       return dateA.getTime() - dateB.getTime();
     });
   };
@@ -134,8 +176,8 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
       priority: 'medium' as const,
       color: '',
       completed: false,
-      start_date: suggestion.start_time.split('T')[0],
-      end_date: suggestion.end_time.split('T')[0]
+      start_date: getDateString(suggestion.start_time),
+      end_date: getDateString(suggestion.end_time)
     };
     
     const created = await createEvent(eventData);

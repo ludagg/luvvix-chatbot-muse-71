@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,13 +23,25 @@ interface BrainInsight {
   icon: React.ReactNode;
 }
 
+const PERSONALITIES = [
+  { key: "expert", label: "Expert", description: "Réponses précises, concises et professionnelles." },
+  { key: "coach", label: "Coach", description: "Encouragements et motivation en priorité." },
+  { key: "secretary", label: "Secrétaire", description: "Organisation, mémoire et gestion du temps." },
+  { key: "friend", label: "Ami", description: "Tonalité amicale, légère, empathique." }
+];
+
+const MEMO_KEY = "luvvixBrainChatMemory"; // Clé de stockage local
+
 const UnifiedAIAssistant = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [insights, setInsights] = useState<BrainInsight[]>([]);
+  const [personality, setPersonality] = useState(PERSONALITIES[0].key);
+  const [lastUserInputTime, setLastUserInputTime] = useState<number>(Date.now());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const proActiveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -42,6 +53,30 @@ const UnifiedAIAssistant = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (!!proActiveTimeout.current) clearTimeout(proActiveTimeout.current);
+    if (!loading && messages.length > 0) {
+      proActiveTimeout.current = setTimeout(() => {
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg && lastMsg.role === "assistant" && !loading) {
+          // Sinon, ajouter un conseil ou recommandation IA
+          setMessages(prev => [
+            ...prev,
+            {
+              id: Date.now().toString(),
+              role: "assistant",
+              content: "💡 Conseil IA : souhaitez-vous découvrir de nouvelles astuces d'organisation ou d'automatisation ?",
+              timestamp: new Date()
+            }
+          ]);
+        }
+      }, 30000); // 30 secondes d'inactivité détectée
+    }
+    return () => {
+      if (!!proActiveTimeout.current) clearTimeout(proActiveTimeout.current);
+    };
+  }, [messages, loading]);
 
   const initializeAssistant = async () => {
     if (!user) return;
@@ -99,8 +134,16 @@ Que puis-je faire pour vous aujourd'hui ?`,
     }
   };
 
+  const buildPersonalityPrompt = () => {
+    const persona = PERSONALITIES.find(p => p.key === personality);
+    return persona
+      ? `[Personnalité IA sélectionnée : ${persona.label}. ${persona.description}]\n\n`
+      : "";
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || !user) return;
+    setLastUserInputTime(Date.now());
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -114,7 +157,6 @@ Que puis-je faire pour vous aujourd'hui ?`,
     setLoading(true);
 
     try {
-      // Traquer l'interaction
       await luvvixBrain.trackInteraction(
         user.id,
         'ai_conversation',
@@ -122,14 +164,17 @@ Que puis-je faire pour vous aujourd'hui ?`,
         { message: input }
       );
 
-      // Obtenir la réponse du cerveau
+      // === Personnalisation avancée du prompt
+      const personalizedPrompt = buildPersonalityPrompt() + input;
+
+      // Obtenir la réponse du cerveau (dans le code backend, injecter ce prompt)
       const response = await luvvixBrain.processConversation(
         user.id,
-        input,
-        { component: 'UnifiedAIAssistant' }
+        personalizedPrompt,
+        { component: 'UnifiedAIAssistant', personality }
       );
 
-      // Si la réponse n'existe pas, afficher un message d'erreur
+      // Correction stricte des erreurs TS :
       if (!response) {
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
@@ -141,7 +186,6 @@ Que puis-je faire pour vous aujourd'hui ?`,
         return;
       }
 
-      // Ajout toast si action (pour les renvois objets possédant actionDone)
       if (typeof response === 'object' && response !== null && 'actionDone' in response) {
         toast.success("Action IA réalisée !");
       }
@@ -149,10 +193,14 @@ Que puis-je faire pour vous aujourd'hui ?`,
       let assistantContent = '';
       if (typeof response === 'string') {
         assistantContent = response;
-      } else if (typeof response === 'object' && response !== null && 'message' in response && typeof (response as any).message === 'string') {
+      } else if (
+        typeof response === 'object' &&
+        response !== null &&
+        'message' in response &&
+        typeof (response as any).message === 'string'
+      ) {
         assistantContent = (response as any).message;
       } else {
-        // Cas inattendu
         assistantContent = "Je n'ai pas pu comprendre la réponse du cerveau IA.";
       }
 
@@ -165,18 +213,15 @@ Que puis-je faire pour vous aujourd'hui ?`,
 
       setMessages(prev => [...prev, assistantMessage]);
       await loadUserInsights();
-
     } catch (error) {
       console.error('Erreur conversation:', error);
       toast.error('Erreur lors de la communication avec l\'assistant');
-
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: 'Désolé, je rencontre un problème technique. Mes circuits neuronaux se reconnectent...',
         timestamp: new Date()
       };
-
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setLoading(false);
@@ -199,6 +244,31 @@ Que puis-je faire pour vous aujourd'hui ?`,
 
   return (
     <div className="space-y-4">
+      {/* Sélecteur de personnalité IA */}
+      <Card>
+        <CardHeader className="pb-1">
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-yellow-500" />
+            Personnalité de l’assistant IA
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          {PERSONALITIES.map(p => (
+            <Button
+              key={p.key}
+              size="sm"
+              variant={p.key === personality ? "default" : "outline"}
+              className={p.key === personality
+                ? "bg-purple-500 text-white shadow font-semibold"
+                : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"}
+              onClick={() => setPersonality(p.key)}
+            >
+              {p.label}
+            </Button>
+          ))}
+        </CardContent>
+      </Card>
+
       {/* Insights du Cerveau */}
       <Card>
         <CardHeader className="pb-3">

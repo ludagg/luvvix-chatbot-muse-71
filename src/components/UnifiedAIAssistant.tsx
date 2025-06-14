@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -174,7 +175,7 @@ Que puis-je faire pour vous aujourd'hui ?`,
         { component: 'UnifiedAIAssistant', personality }
       );
 
-      // Correction stricte des erreurs TS :
+      // Correction stricte des erreurs TS :
       if (!response) {
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
@@ -186,13 +187,13 @@ Que puis-je faire pour vous aujourd'hui ?`,
         return;
       }
 
-      // Correction TS18047 : toujours vérifier null avant de lire une propriété
+      // Correction TS18047 : toujours vérifier null avant de lire une propriété
       if (
         response &&
         typeof response === 'object' &&
         'actionDone' in response
       ) {
-        toast.success("Action IA réalisée !");
+        toast.success("Action IA réalisée !");
       }
 
       let assistantContent = '';
@@ -254,7 +255,7 @@ Que puis-je faire pour vous aujourd'hui ?`,
         <CardHeader className="pb-1">
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-yellow-500" />
-            Personnalité de l’assistant IA
+            Personnalité de l'assistant IA
           </CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">

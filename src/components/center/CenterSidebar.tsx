@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,9 +15,11 @@ import {
   TrendingUp
 } from 'lucide-react';
 
+type ActiveView = 'feed' | 'messages' | 'profile' | 'games' | 'groups' | 'settings' | 'notifications' | 'search' | 'trending';
+
 interface CenterSidebarProps {
-  activeView: string;
-  setActiveView: (view: string) => void;
+  activeView: ActiveView;
+  setActiveView: (view: ActiveView) => void;
 }
 
 const CenterSidebar = ({ activeView, setActiveView }: CenterSidebarProps) => {
@@ -26,31 +27,31 @@ const CenterSidebar = ({ activeView, setActiveView }: CenterSidebarProps) => {
 
   const mainNavItems = [
     {
-      id: 'feed',
+      id: 'feed' as ActiveView,
       label: 'Fil d\'actualité',
       icon: Home,
       badge: null
     },
     {
-      id: 'messages',
+      id: 'messages' as ActiveView,
       label: 'Messages',
       icon: MessageCircle,
       badge: 3
     },
     {
-      id: 'profile',
+      id: 'profile' as ActiveView,
       label: 'Mon Profil',
       icon: User,
       badge: null
     },
     {
-      id: 'games',
+      id: 'games' as ActiveView,
       label: 'Jeux',
       icon: Gamepad2,
       badge: null
     },
     {
-      id: 'groups',
+      id: 'groups' as ActiveView,
       label: 'Groupes',
       icon: Users,
       badge: 1
@@ -59,25 +60,25 @@ const CenterSidebar = ({ activeView, setActiveView }: CenterSidebarProps) => {
 
   const secondaryNavItems = [
     {
-      id: 'notifications',
+      id: 'notifications' as ActiveView,
       label: 'Notifications',
       icon: Bell,
       badge: 5
     },
     {
-      id: 'search',
+      id: 'search' as ActiveView,
       label: 'Recherche',
       icon: Search,
       badge: null
     },
     {
-      id: 'trending',
+      id: 'trending' as ActiveView,
       label: 'Tendances',
       icon: TrendingUp,
       badge: null
     },
     {
-      id: 'settings',
+      id: 'settings' as ActiveView,
       label: 'Paramètres',
       icon: Settings,
       badge: null

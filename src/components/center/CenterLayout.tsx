@@ -10,7 +10,7 @@ import CenterGames from './CenterGames';
 import CenterGroups from './CenterGroups';
 import CenterSettings from './CenterSettings';
 
-type ActiveView = 'feed' | 'messages' | 'profile' | 'games' | 'groups' | 'settings';
+type ActiveView = 'feed' | 'messages' | 'profile' | 'games' | 'groups' | 'settings' | 'notifications' | 'search' | 'trending';
 
 const CenterLayout = () => {
   const [activeView, setActiveView] = useState<ActiveView>('feed');
@@ -28,6 +28,10 @@ const CenterLayout = () => {
         return <CenterGroups />;
       case 'settings':
         return <CenterSettings />;
+      case 'notifications':
+      case 'search':
+      case 'trending':
+        return <div className="p-8 text-center text-gray-500">Section en développement</div>;
       default:
         return <CenterFeed />;
     }

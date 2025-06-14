@@ -13,9 +13,11 @@ import {
   X
 } from 'lucide-react';
 
+type ActiveView = 'feed' | 'messages' | 'profile' | 'games' | 'groups' | 'settings';
+
 interface CenterMobileNavProps {
-  activeView: string;
-  setActiveView: (view: string) => void;
+  activeView: ActiveView;
+  setActiveView: (view: ActiveView) => void;
   isMenuOpen: boolean;
   setIsMenuOpen: (open: boolean) => void;
 }
@@ -28,44 +30,44 @@ const CenterMobileNav = ({
 }: CenterMobileNavProps) => {
   const navItems = [
     {
-      id: 'feed',
+      id: 'feed' as ActiveView,
       label: 'Accueil',
       icon: Home,
       badge: null
     },
     {
-      id: 'messages',
+      id: 'messages' as ActiveView,
       label: 'Messages',
       icon: MessageCircle,
       badge: 3
     },
     {
-      id: 'profile',
+      id: 'profile' as ActiveView,
       label: 'Profil',
       icon: User,
       badge: null
     },
     {
-      id: 'games',
+      id: 'games' as ActiveView,
       label: 'Jeux',
       icon: Gamepad2,
       badge: null
     },
     {
-      id: 'groups',
+      id: 'groups' as ActiveView,
       label: 'Groupes',
       icon: Users,
       badge: 1
     },
     {
-      id: 'settings',
+      id: 'settings' as ActiveView,
       label: 'Paramètres',
       icon: Settings,
       badge: null
     }
   ];
 
-  const handleNavClick = (viewId: string) => {
+  const handleNavClick = (viewId: ActiveView) => {
     setActiveView(viewId);
     setIsMenuOpen(false);
   };

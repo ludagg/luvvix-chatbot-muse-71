@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Camera, Play } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -50,15 +51,18 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
         .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
         .eq('status', 'accepted');
 
-      if (friendError) throw friendError;
+      if (friendError) {
+        console.error("Erreur chargement des amitiés pour les stories:", friendError);
+        // On ne bloque pas, on essaiera au moins de charger les stories de l'utilisateur
+      }
 
       // Extraire les IDs des amis
       const friendIds = (friendships || []).map(f => 
         f.requester_id === user.id ? f.addressee_id : f.requester_id
       );
       
-      // Ajouter l'utilisateur actuel
-      const allowedUserIds = [...friendIds, user.id];
+      // Ajouter l'utilisateur actuel pour toujours récupérer ses propres stories
+      const allowedUserIds = [...new Set([...friendIds, user.id])];
 
       // Récupérer les stories des amis et de l'utilisateur seulement
       const { data: storiesData, error: storiesError } = await supabase
@@ -81,6 +85,7 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
       setStories(otherStories);
     } catch (error) {
       console.error('Erreur chargement stories:', error);
+      toast.error("Impossible de charger les stories.");
     } finally {
       setLoading(false);
     }

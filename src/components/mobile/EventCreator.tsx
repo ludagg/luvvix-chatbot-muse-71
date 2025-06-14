@@ -39,11 +39,18 @@ const EventCreator = ({ isOpen, onClose, selectedDate }: EventCreatorProps) => {
       return;
     }
 
-    // Créer l'objet avec toutes les propriétés requises
+    // Créer l'objet événement avec la structure correcte
     const eventData = {
-      ...formData,
-      start_date: formData.start_time.split('T')[0],
-      end_date: formData.end_time ? formData.end_time.split('T')[0] : formData.start_time.split('T')[0]
+      title: formData.title,
+      description: formData.description,
+      start_time: formData.start_time,
+      end_time: formData.end_time || formData.start_time,
+      event_type: formData.event_type,
+      priority: formData.priority,
+      location: formData.location,
+      attendees: formData.attendees,
+      color: formData.color,
+      completed: formData.completed
     };
 
     const success = await createEvent(eventData);

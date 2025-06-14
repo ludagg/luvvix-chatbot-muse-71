@@ -13,7 +13,7 @@ import {
   X
 } from 'lucide-react';
 
-type ActiveView = 'feed' | 'messages' | 'profile' | 'games' | 'groups' | 'settings';
+type ActiveView = 'feed' | 'messages' | 'profile' | 'games' | 'groups' | 'settings' | 'notifications' | 'search' | 'trending';
 
 interface CenterMobileNavProps {
   activeView: ActiveView;

@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, Bell, Image as ImageIcon, MapPin, Users, Video, Feather, TrendingUp, Hash, Home, Mail } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, Bell, Image as ImageIcon, MapPin, Users, Video, Feather, TrendingUp, Hash, Home, Mail, Camera, Bookmark, Settings, Moon, Sun } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import TwitterPost from './TwitterPost';
 import TwitterComposer from './TwitterComposer';
+import StoryViewer from './StoryViewer';
+import ReactionPicker from './ReactionPicker';
+import UserSuggestions from './UserSuggestions';
+import NotificationCenter from './NotificationCenter';
+import HashtagTrends from './HashtagTrends';
+import SearchAdvanced from './SearchAdvanced';
 
 interface MobileCenterProps {
   onBack: () => void;
@@ -64,7 +70,12 @@ interface Group {
 
 const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'feed' | 'explore' | 'groups' | 'notifications'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'explore' | 'groups' | 'notifications' | 'search'>('feed');
+  const [showStoryViewer, setShowStoryViewer] = useState(false);
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  
   const [posts, setPosts] = useState<Post[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
@@ -86,7 +97,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [contentFilter, setContentFilter] = useState<'recent' | 'popular' | 'friends'>('recent');
   const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
-  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [postReactions, setPostReactions] = useState<{[key: string]: {[key: string]: number}}>({});
   const [userReactions, setUserReactions] = useState<{[key: string]: string}>({});
 
@@ -99,14 +109,42 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     { emoji: '😡', name: 'angry', color: 'text-red-600' }
   ];
 
-  const [stories, setStories] = useState<{ 
-    id: string, 
-    user: UserProfile, 
-    media_url: string, 
-    created_at: string 
-  }[]>([]);
-  const [myStoryUpload, setMyStoryUpload] = useState<File | null>(null);
-  const [uploadingStory, setUploadingStory] = useState(false);
+  const mockStories = [
+    {
+      id: '1',
+      user: { id: '1', username: 'dev_jane', full_name: 'Jane Developer', avatar_url: '' },
+      media_url: '/placeholder.svg',
+      media_type: 'image' as const,
+      created_at: new Date().toISOString(),
+      duration: 5000
+    }
+  ];
+
+  const mockNotifications = [
+    {
+      id: '1',
+      type: 'like' as const,
+      user: { id: '2', username: 'tech_user', full_name: 'Tech User', avatar_url: '' },
+      created_at: new Date().toISOString(),
+      is_read: false
+    }
+  ];
+
+  const mockHashtags = [
+    { tag: 'ReactJS', posts_count: 15420, trend_direction: 'up' as const, change_percentage: 25 },
+    { tag: 'WebDev', posts_count: 8934, trend_direction: 'up' as const, change_percentage: 12 }
+  ];
+
+  const mockSuggestedUsers = [
+    {
+      id: '3',
+      username: 'designer_pro',
+      full_name: 'Pro Designer',
+      avatar_url: '',
+      followers_count: 1234,
+      is_following: false
+    }
+  ];
 
   useEffect(() => {
     fetchPosts();
@@ -309,131 +347,206 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     }
   };
 
+  const handleStoryUpload = async (file: File) => {
+    // Story upload logic
+    console.log('Uploading story:', file);
+    toast({
+      title: "Story ajoutée",
+      description: "Votre story a été publiée avec succès"
+    });
+  };
+
+  const handleReaction = async (postId: string, reaction: string) => {
+    // Reaction logic
+    console.log('Adding reaction:', reaction, 'to post:', postId);
+    setShowReactionPicker(null);
+  };
+
+  const handleSearch = (query: string, filters: any) => {
+    console.log('Searching:', query, 'with filters:', filters);
+    setShowAdvancedSearch(false);
+  };
+
+  const handleFollow = (userId: string) => {
+    console.log('Following user:', userId);
+  };
+
+  const handleDismissUser = (userId: string) => {
+    console.log('Dismissing user suggestion:', userId);
+  };
+
+  const handleMarkNotificationAsRead = (id: string) => {
+    console.log('Marking notification as read:', id);
+  };
+
+  const handleMarkAllNotificationsAsRead = () => {
+    console.log('Marking all notifications as read');
+  };
+
+  const handleHashtagClick = (hashtag: string) => {
+    console.log('Clicked hashtag:', hashtag);
+  };
+
+  if (showAdvancedSearch) {
+    return (
+      <SearchAdvanced
+        onSearch={handleSearch}
+        onClose={() => setShowAdvancedSearch(false)}
+      />
+    );
+  }
+
   return (
-    <div className="fixed inset-0 bg-white z-50 flex flex-col">
+    <div className={`fixed inset-0 z-50 flex flex-col ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
       {/* Header Mobile optimisé */}
-      <div className="sticky top-0 bg-white border-b border-gray-200 z-40">
+      <div className={`sticky top-0 border-b z-40 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center space-x-3">
-            <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full">
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            <button onClick={onBack} className={`p-2 hover:bg-gray-100 rounded-full ${darkMode ? 'hover:bg-gray-800 text-gray-300' : ''}`}>
+              <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">LuvviX</h1>
-              <p className="text-xs text-gray-500">Center</p>
+              <h1 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>LuvviX</h1>
+              <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Center</p>
             </div>
           </div>
           
           <div className="flex items-center space-x-2">
-            <button className="p-2 hover:bg-gray-100 rounded-full">
-              <Search className="w-5 h-5 text-gray-600" />
+            <button 
+              onClick={() => setShowAdvancedSearch(true)}
+              className={`p-2 hover:bg-gray-100 rounded-full ${darkMode ? 'hover:bg-gray-800 text-gray-300' : ''}`}
+            >
+              <Search className="w-5 h-5" />
             </button>
-            <button className="p-2 hover:bg-gray-100 rounded-full">
-              <Bell className="w-5 h-5 text-gray-600" />
+            <button 
+              onClick={() => setActiveTab('notifications')}
+              className={`p-2 hover:bg-gray-100 rounded-full relative ${darkMode ? 'hover:bg-gray-800 text-gray-300' : ''}`}
+            >
+              <Bell className="w-5 h-5" />
+              <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+            </button>
+            <button 
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 hover:bg-gray-100 rounded-full ${darkMode ? 'hover:bg-gray-800 text-gray-300' : ''}`}
+            >
+              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
           </div>
         </div>
 
-        {/* Filtres de contenu */}
-        <div className="flex border-t border-gray-200">
-          <button
-            onClick={() => setActiveTab('feed')}
-            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === 'feed'
-                ? 'text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Fil
-            {activeTab === 'feed' && (
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-blue-600 rounded-full"></div>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('explore')}
-            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === 'explore'
-                ? 'text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Explorer
-            {activeTab === 'explore' && (
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-blue-600 rounded-full"></div>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('groups')}
-            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === 'groups'
-                ? 'text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Groupes
-            {activeTab === 'groups' && (
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-blue-600 rounded-full"></div>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
-              activeTab === 'notifications'
-                ? 'text-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Notifications
-            {activeTab === 'notifications' && (
-              <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-blue-600 rounded-full"></div>
-            )}
-          </button>
+        {/* Navigation tabs */}
+        <div className={`flex border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          {[
+            { key: 'feed', label: 'Fil', icon: Home },
+            { key: 'explore', label: 'Explorer', icon: TrendingUp },
+            { key: 'groups', label: 'Groupes', icon: Users },
+            { key: 'notifications', label: 'Notifications', icon: Bell }
+          ].map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key as any)}
+              className={`flex-1 py-3 text-sm font-medium transition-colors relative flex flex-col items-center space-y-1 ${
+                activeTab === key
+                  ? darkMode ? 'text-blue-400' : 'text-blue-600'
+                  : darkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-xs">{label}</span>
+              {activeTab === key && (
+                <div className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 rounded-full ${
+                  darkMode ? 'bg-blue-400' : 'bg-blue-600'
+                }`}></div>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
       {/* Stories Bar améliorée */}
-      <div className="bg-white border-b border-gray-200 p-3">
-        <div className="flex items-center space-x-3 overflow-x-auto scrollbar-hide">
-          {/* Ajouter une story */}
-          <div className="flex flex-col items-center flex-shrink-0">
-            <div className="w-14 h-14 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center">
-              <Plus className="w-6 h-6 text-gray-500" />
+      {activeTab === 'feed' && (
+        <div className={`border-b p-3 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center space-x-3 overflow-x-auto scrollbar-hide">
+            {/* Ajouter une story */}
+            <div className="flex flex-col items-center flex-shrink-0">
+              <input
+                type="file"
+                accept="image/*,video/*"
+                onChange={(e) => e.target.files?.[0] && handleStoryUpload(e.target.files[0])}
+                className="hidden"
+                id="story-upload"
+              />
+              <label htmlFor="story-upload" className={`w-14 h-14 rounded-full border-2 border-dashed flex items-center justify-center cursor-pointer ${
+                darkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-300 bg-gray-100'
+              }`}>
+                <Camera className={`w-6 h-6 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+              </label>
+              <span className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Votre story</span>
             </div>
-            <span className="text-xs mt-1 text-gray-600">Story</span>
-          </div>
-          
-          {/* Story existante */}
-          <div className="flex flex-col items-center flex-shrink-0">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 p-0.5">
-              <div className="w-full h-full rounded-full bg-blue-500 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">J</span>
+            
+            {/* Stories existantes */}
+            {mockStories.map((story, index) => (
+              <div key={story.id} className="flex flex-col items-center flex-shrink-0">
+                <button
+                  onClick={() => setShowStoryViewer(true)}
+                  className="w-14 h-14 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 p-0.5"
+                >
+                  <div className={`w-full h-full rounded-full flex items-center justify-center ${
+                    darkMode ? 'bg-gray-800' : 'bg-blue-500'
+                  }`}>
+                    <span className="text-white font-bold text-sm">
+                      {story.user.username[0].toUpperCase()}
+                    </span>
+                  </div>
+                </button>
+                <span className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {story.user.username}
+                </span>
               </div>
-            </div>
-            <span className="text-xs mt-1 text-gray-600">dev_jane</span>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Contenu principal */}
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'feed' && (
           <div>
+            {/* User suggestions */}
+            <UserSuggestions
+              users={mockSuggestedUsers}
+              onFollow={handleFollow}
+              onDismiss={handleDismissUser}
+            />
+
+            {/* Hashtag trends */}
+            <HashtagTrends
+              hashtags={mockHashtags}
+              onHashtagClick={handleHashtagClick}
+            />
+
             {/* Zone de composition rapide */}
-            <div className="p-4 border-b border-gray-200 bg-white">
+            <div className={`p-4 border-b ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
               <button
                 onClick={() => setShowComposer(true)}
-                className="flex items-center space-x-3 w-full p-3 bg-gray-50 rounded-full text-left"
+                className={`flex items-center space-x-3 w-full p-3 rounded-full text-left ${
+                  darkMode ? 'bg-gray-800' : 'bg-gray-50'
+                }`}
               >
                 <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-white font-bold text-xs">
                     {user?.email?.[0]?.toUpperCase() || 'U'}
                   </span>
                 </div>
-                <span className="text-gray-500 flex-1">Quoi de neuf ?</span>
+                <span className={`flex-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Quoi de neuf ?
+                </span>
               </button>
               
               {/* Actions rapides */}
-              <div className="flex items-center justify-around mt-3 pt-3 border-t border-gray-100">
+              <div className={`flex items-center justify-around mt-3 pt-3 border-t ${
+                darkMode ? 'border-gray-700' : 'border-gray-100'
+              }`}>
                 <button
                   onClick={() => setShowComposer(true)}
                   className="flex items-center space-x-2 text-green-500 hover:bg-green-50 px-3 py-2 rounded-full transition-colors"
@@ -471,11 +584,17 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
               </div>
             ) : posts.length === 0 ? (
               <div className="text-center py-12 px-4">
-                <div className="w-20 h-20 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <Users className="w-10 h-10 text-gray-400" />
+                <div className={`w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center ${
+                  darkMode ? 'bg-gray-800' : 'bg-gray-100'
+                }`}>
+                  <Users className={`w-10 h-10 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Aucun post à afficher</h3>
-                <p className="text-gray-500 mb-4 text-sm">Soyez le premier à publier !</p>
+                <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Aucun post à afficher
+                </h3>
+                <p className={`mb-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Soyez le premier à publier !
+                </p>
                 <button 
                   onClick={() => setShowComposer(true)}
                   className="bg-blue-500 text-white px-6 py-2 rounded-full font-medium hover:bg-blue-600 transition-colors"
@@ -498,7 +617,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                     onRetweet={() => {}}
                     onShare={() => sharePost(post.id)}
                     onSave={() => {}}
-                    onShowReactions={() => {}}
+                    onShowReactions={() => setShowReactionPicker(post.id)}
                   />
                 ))}
               </div>
@@ -508,10 +627,12 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
         {activeTab === 'explore' && (
           <div className="p-4">
-            <h2 className="text-lg font-bold mb-4">Explorer</h2>
+            <h2 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Explorer</h2>
             <div className="space-y-3">
               {suggestedUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                <div key={user.id} className={`flex items-center justify-between p-3 rounded-lg border ${
+                  darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                }`}>
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-sm">
@@ -519,8 +640,12 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                       </span>
                     </div>
                     <div>
-                      <h4 className="font-bold text-gray-900 text-sm">{user.full_name}</h4>
-                      <p className="text-xs text-gray-500">@{user.username}</p>
+                      <h4 className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {user.full_name}
+                      </h4>
+                      <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        @{user.username}
+                      </p>
                     </div>
                   </div>
                   <button className="px-4 py-1.5 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors">
@@ -534,24 +659,32 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
         {activeTab === 'groups' && (
           <div className="p-4">
-            <h2 className="text-lg font-bold mb-4">Groupes</h2>
+            <h2 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Groupes</h2>
             <div className="space-y-3">
               {groups.map((group) => (
-                <div key={group.id} className="p-3 bg-white rounded-lg border border-gray-200">
+                <div key={group.id} className={`p-3 rounded-lg border ${
+                  darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                }`}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-start space-x-3">
                       <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
                         <Users className="w-5 h-5 text-white" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 text-sm">{group.name}</h4>
-                        <p className="text-xs text-gray-600 mb-1">{group.description}</p>
-                        <p className="text-xs text-gray-500">{group.members_count} membres</p>
+                        <h4 className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {group.name}
+                        </h4>
+                        <p className={`text-xs mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {group.description}
+                        </p>
+                        <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                          {group.members_count} membres
+                        </p>
                       </div>
                     </div>
                     <button className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                       group.is_member
-                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        ? darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                         : 'bg-blue-500 text-white hover:bg-blue-600'
                     }`}>
                       {group.is_member ? 'Membre' : 'Rejoindre'}
@@ -564,13 +697,11 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         )}
 
         {activeTab === 'notifications' && (
-          <div className="p-4">
-            <div className="text-center py-12">
-              <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Notifications</h3>
-              <p className="text-gray-500 text-sm">Aucune notification pour le moment</p>
-            </div>
-          </div>
+          <NotificationCenter
+            notifications={mockNotifications}
+            onMarkAsRead={handleMarkNotificationAsRead}
+            onMarkAllAsRead={handleMarkAllNotificationsAsRead}
+          />
         )}
       </div>
 
@@ -582,12 +713,28 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         <Feather className="w-6 h-6" />
       </button>
 
-      {/* Composer Modal */}
+      {/* Modals */}
       {showComposer && (
         <TwitterComposer
           onClose={() => setShowComposer(false)}
           onPost={createPost}
           isSubmitting={posting}
+        />
+      )}
+
+      {showStoryViewer && (
+        <StoryViewer
+          stories={mockStories}
+          initialIndex={0}
+          onClose={() => setShowStoryViewer(false)}
+        />
+      )}
+
+      {showReactionPicker && (
+        <ReactionPicker
+          onReact={(reaction) => handleReaction(showReactionPicker, reaction)}
+          onClose={() => setShowReactionPicker(null)}
+          position={{ x: 200, y: 400 }}
         />
       )}
     </div>

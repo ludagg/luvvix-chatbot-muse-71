@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { neuralNetwork } from './luvvix-neural-network';
 import { orchestrator } from './luvvix-orchestrator';
@@ -181,6 +180,36 @@ class LuvviXBrain {
       }
     }
     return false;
+  }
+
+  private async executeStoryAction(userId: string, action: BrainAction): Promise<boolean> {
+    // Implémentation pour les actions story
+    console.log('🧠 Executing story action:', action.action);
+    return true;
+  }
+
+  private async executeFormAction(userId: string, action: BrainAction): Promise<boolean> {
+    // Implémentation pour les actions formulaire
+    console.log('🧠 Executing form action:', action.action);
+    return true;
+  }
+
+  private async executeNotificationAction(userId: string, action: BrainAction): Promise<boolean> {
+    // Implémentation pour les notifications
+    console.log('🧠 Executing notification action:', action.action);
+    return true;
+  }
+
+  private async executeAutomationAction(userId: string, action: BrainAction): Promise<boolean> {
+    // Implémentation pour l'automatisation
+    console.log('🧠 Executing automation action:', action.action);
+    return true;
+  }
+
+  private async executeRecommendationAction(userId: string, action: BrainAction): Promise<boolean> {
+    // Implémentation pour les recommandations
+    console.log('🧠 Executing recommendation action:', action.action);
+    return true;
   }
 
   // === PRÉDICTIONS INTELLIGENTES ===

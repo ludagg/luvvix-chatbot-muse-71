@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, MoreVertical, Send, Camera, Image as ImageIcon, MapPin, Users, Bell, Play, UserPlus, UserCheck, Video, Grid3X3, List, Filter, Bookmark, BookmarkCheck, Flag, Smile, ThumbsUp, Laugh, Frown, AngryIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, MoreVertical, Send, Camera, Image as ImageIcon, MapPin, Users, Bell, Play, UserPlus, UserCheck, Video, Grid3X3, List, Filter, Bookmark, BookmarkCheck, Flag, Smile, ThumbsUp, Laugh, Frown, AngryIcon, Feather, TrendingUp, Hash } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import TwitterPost from './TwitterPost';
+import TwitterComposer from './TwitterComposer';
+import TwitterSidebar from './TwitterSidebar';
 
 interface MobileCenterProps {
   onBack: () => void;
@@ -86,6 +89,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const [postReactions, setPostReactions] = useState<{[key: string]: {[key: string]: number}}>({});
   const [userReactions, setUserReactions] = useState<{[key: string]: string}>({});
+  const [showComposer, setShowComposer] = useState(false);
 
   const reactions = [
     { emoji: '❤️', name: 'love', color: 'text-red-500' },
@@ -224,7 +228,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
           created_at: new Date().toISOString()
         }]
         : []),
-      // Mock story d’un autre user
+      // Mock story d'un autre user
       {
         id: 'u2',
         user: {
@@ -689,612 +693,418 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         // Mock: filter posts from followed users
         return filtered.filter(post => Math.random() > 0.3);
       default:
-        return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
-      {/* Header avec filtres */}
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex items-center space-x-3">
-          <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full">
-            <ArrowLeft className="w-6 h-6 text-gray-600" />
-          </button>
-          <h1 className="text-xl font-bold text-gray-900">LuvviX Center</h1>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          {/* Filtre de contenu */}
-          <select
-            value={contentFilter}
-            onChange={(e) => setContentFilter(e.target.value as any)}
-            className="text-sm border border-gray-300 rounded-lg px-2 py-1"
-          >
-            <option value="recent">Récent</option>
-            <option value="popular">Populaire</option>
-            <option value="friends">Amis</option>
-          </select>
-
-          {/* Mode d'affichage */}
-          <button
-            onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-            className="p-2 hover:bg-gray-100 rounded-full"
-          >
-            {viewMode === 'list' ? <Grid3X3 className="w-5 h-5" /> : <List className="w-5 h-5" />}
-          </button>
-
-          <button className="p-2 hover:bg-gray-100 rounded-full">
-            <Search className="w-6 h-6 text-gray-600" />
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-full">
-            <Bell className="w-6 h-6 text-gray-600" />
-          </button>
-        </div>
+    <div className="fixed inset-0 bg-white z-50 flex">
+      {/* Sidebar Desktop */}
+      <div className="hidden lg:block">
+        <TwitterSidebar 
+          activeTab={activeTab}
+          onTabChange={(tab) => setActiveTab(tab as any)}
+          onCompose={() => setShowComposer(true)}
+        />
       </div>
 
-      {/* Stories Bar */}
-      <div className="flex items-center bg-white border-b border-gray-200 p-3 overflow-x-auto no-scrollbar gap-4">
-        {/* Ajout story */}
-        <label
-          htmlFor="story-upload"
-          className="flex flex-col items-center justify-center cursor-pointer w-14 h-14 rounded-full bg-gradient-to-tr from-green-400 to-blue-400 text-white font-bold relative"
-        >
-          <span className="text-xl">+</span>
-          <input type="file" accept="image/*,video/*" id="story-upload" className="hidden" onChange={handleStoryUpload} disabled={uploadingStory} />
-          <span className="absolute bottom-0 left-0 text-[10px] px-1 bg-white bg-opacity-60 text-gray-700 rounded">
-            Story
-          </span>
-        </label>
-
-        {/* Ma propre story */}
-        {myStoryUpload && (
-          <div className="relative flex flex-col items-center">
-            <img src={URL.createObjectURL(myStoryUpload)} className="w-14 h-14 rounded-full object-cover border-2 border-blue-400" alt="ma story" />
-            <button onClick={removeMyStory} className="absolute -top-2 -right-2 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-xs">×</button>
-            <span className="text-xs mt-1">Moi</span>
-          </div>
-        )}
-        {/* Autres stories */}
-        {stories.filter(s => s.user.id !== user?.id).map((s, idx) => (
-          <div key={s.id+idx} className="flex flex-col items-center">
-            <img src={s.media_url} className="w-14 h-14 rounded-full object-cover border-2 border-gray-300" alt={s.user.full_name} />
-            <span className="text-xs mt-1">{s.user.username}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Navigation tabs */}
-      <div className="flex bg-white border-b border-gray-200">
-        {[
-          { id: 'feed', label: 'Fil' },
-          { id: 'explore', label: 'Explorer' },
-          { id: 'groups', label: 'Groupes' },
-          { id: 'notifications', label: 'Notifications' }
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`flex-1 py-3 text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Contenu principal */}
-      <div className="flex-1 overflow-auto">
-        {activeTab === 'feed' && (
-          <div>
-            {/* Créateur de post */}
-            <div className="bg-white border-b border-gray-200 p-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">
-                    {user?.email?.[0]?.toUpperCase() || 'U'}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <textarea
-                    value={newPost}
-                    onChange={(e) => setNewPost(e.target.value)}
-                    placeholder="Quoi de neuf ?"
-                    className="w-full p-3 border border-gray-300 rounded-2xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    rows={3}
-                    disabled={posting}
-                  />
-
-                  {/* Preview des images sélectionnées */}
-                  {selectedImages.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {selectedImages.map((img, idx) => (
-                        <div key={idx} className="relative w-20 h-20">
-                          <img
-                            src={URL.createObjectURL(img)}
-                            alt={`Aperçu ${idx + 1}`}
-                            className="w-20 h-20 object-cover rounded-lg border"
-                          />
-                          <button
-                            onClick={() => removeImage(idx)}
-                            className="absolute top-0 right-0 bg-black bg-opacity-60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-opacity-90"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Preview vidéo */}
-                  {selectedVideo && (
-                    <div className="mt-3 p-3 bg-gray-100 rounded-lg flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Video className="w-5 h-5 text-blue-500" />
-                        <span className="text-sm text-gray-700">{selectedVideo.name}</span>
-                      </div>
-                      <button
-                        onClick={() => setSelectedVideo(null)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center space-x-3">
-                      {/* Ajout uploader image */}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        id="image-upload-mobile"
-                        onChange={handleImageUpload}
-                        disabled={!!selectedVideo || posting}
-                      />
-                      <label
-                        htmlFor="image-upload-mobile"
-                        className={`p-2 ${selectedVideo ? 'text-gray-400 cursor-not-allowed' : 'text-green-500 hover:bg-green-50'} rounded-full transition-colors cursor-pointer`}
-                      >
-                        <ImageIcon className="w-5 h-5" />
-                      </label>
-
-                      {/* Uploader vidéo */}
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={(e) => setSelectedVideo(e.target.files?.[0] || null)}
-                        className="hidden"
-                        id="video-upload"
-                        disabled={selectedImages.length > 0 || posting}
-                      />
-                      <label
-                        htmlFor="video-upload"
-                        className={`p-2 ${selectedImages.length > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-purple-500 hover:bg-purple-50'} rounded-full transition-colors cursor-pointer`}
-                      >
-                        <Video className="w-5 h-5" />
-                      </label>
-
-                      {/* Boutons caméra & map */}
-                      <button className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors" disabled={posting}>
-                        <Camera className="w-5 h-5" />
-                      </button>
-                      <button className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors" disabled={posting}>
-                        <MapPin className="w-5 h-5" />
-                      </button>
-                    </div>
-                    <button
-                      onClick={createPost}
-                      disabled={!newPost.trim() || !user?.id || posting}
-                      className="px-6 py-2 bg-blue-500 text-white rounded-full font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {posting ? 'Publication...' : 'Publier'}
-                    </button>
-                  </div>
-                </div>
+      {/* Main Content */}
+      <div className="flex-1 lg:ml-64">
+        {/* Header Twitter Style */}
+        <div className="sticky top-0 bg-white bg-opacity-90 backdrop-blur-md border-b border-gray-200 z-40">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center space-x-4">
+              <button onClick={onBack} className="lg:hidden p-2 hover:bg-gray-100 rounded-full">
+                <ArrowLeft className="w-6 h-6 text-gray-600" />
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">
+                  {activeTab === 'feed' ? 'Accueil' : 
+                   activeTab === 'explore' ? 'Explorer' : 
+                   activeTab === 'notifications' ? 'Notifications' : 'Groupes'}
+                </h1>
+                {activeTab === 'feed' && (
+                  <p className="text-sm text-gray-500">{posts.length} Tweets</p>
+                )}
               </div>
             </div>
+            
+            <div className="flex items-center space-x-2">
+              <button className="p-2 hover:bg-gray-100 rounded-full lg:hidden">
+                <Search className="w-5 h-5 text-gray-600" />
+              </button>
+              <button 
+                onClick={() => setShowComposer(true)}
+                className="lg:hidden p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600"
+              >
+                <Feather className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
 
-            {/* Liste des posts */}
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          {/* Tabs pour mobile */}
+          <div className="flex lg:hidden border-t border-gray-200">
+            {[
+              { id: 'feed', label: 'Pour vous' },
+              { id: 'explore', label: 'Abonnements' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex-1 py-4 text-sm font-medium transition-colors relative ${
+                  activeTab === tab.id
+                    ? 'text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-blue-500 rounded-full"></div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Stories Bar */}
+        <div className="flex items-center bg-white border-b border-gray-200 p-4 overflow-x-auto scrollbar-hide">
+          <div className="flex space-x-4 min-w-max">
+            {/* Ajout story */}
+            <label
+              htmlFor="story-upload"
+              className="flex flex-col items-center cursor-pointer"
+            >
+              <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 p-0.5">
+                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-gray-600" />
+                </div>
               </div>
-            ) : posts.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">Aucun post à afficher</p>
-                <p className="text-gray-400 text-sm">Soyez le premier à publier !</p>
+              <span className="text-xs mt-1 text-gray-600">Votre story</span>
+              <input type="file" accept="image/*,video/*" id="story-upload" className="hidden" onChange={handleStoryUpload} disabled={uploadingStory} />
+            </label>
+
+            {/* Stories existantes */}
+            {stories.map((story, idx) => (
+              <div key={story.id + idx} className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 p-0.5">
+                  <img 
+                    src={story.media_url} 
+                    className="w-full h-full rounded-full object-cover" 
+                    alt={story.user.full_name} 
+                  />
+                </div>
+                <span className="text-xs mt-1 text-gray-600 truncate w-16 text-center">
+                  {story.user.username}
+                </span>
               </div>
-            ) : (
-              <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-2 p-2' : ''}>
-                {filterPosts().map((post) => (
-                  <div key={post.id} className={`bg-white border-b border-gray-200 ${viewMode === 'grid' ? 'rounded-lg overflow-hidden' : 'p-4'}`}>
-                    {/* Header du post */}
-                    <div className={`flex items-center justify-between ${viewMode === 'grid' ? 'p-3 pb-2' : 'mb-3'}`}>
+            ))}
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="pb-20 lg:pb-4">
+          {activeTab === 'feed' && (
+            <div>
+              {/* Quick compose sur desktop */}
+              <div className="hidden lg:block border-b border-gray-200 p-4">
+                <div className="flex space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">
+                      {user?.email?.[0]?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setShowComposer(true)}
+                    className="flex-1 text-left text-xl text-gray-500 bg-gray-50 hover:bg-gray-100 rounded-full px-4 py-3 transition-colors"
+                  >
+                    Quoi de neuf ?
+                  </button>
+                </div>
+              </div>
+
+              {/* Posts Feed */}
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+              ) : posts.length === 0 ? (
+                <div className="text-center py-12 px-4">
+                  <div className="w-32 h-32 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <Feather className="w-16 h-16 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Bienvenue sur LuvviX !</h3>
+                  <p className="text-gray-500 mb-4">Votre timeline est vide. Commencez à suivre des personnes pour voir leurs tweets.</p>
+                  <button 
+                    onClick={() => setActiveTab('explore')}
+                    className="bg-blue-500 text-white px-6 py-2 rounded-full font-medium hover:bg-blue-600 transition-colors"
+                  >
+                    Découvrir des personnes
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  {filterPosts().map((post) => (
+                    <TwitterPost
+                      key={post.id}
+                      post={post}
+                      isLiked={likedPosts.has(post.id)}
+                      isSaved={savedPosts.has(post.id)}
+                      userReaction={userReactions[post.id]}
+                      postReactions={postReactions[post.id]}
+                      onLike={() => toggleLike(post.id)}
+                      onComment={() => {
+                        setShowComments(showComments === post.id ? null : post.id);
+                        if (showComments !== post.id) {
+                          fetchComments(post.id);
+                        }
+                      }}
+                      onRetweet={() => {}}
+                      onShare={() => sharePost(post.id)}
+                      onSave={() => toggleSavePost(post.id)}
+                      onShowReactions={() => setShowReactionPicker(showReactionPicker === post.id ? null : post.id)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'explore' && (
+            <div className="p-4">
+              {/* Trending */}
+              <div className="mb-6">
+                <h2 className="text-xl font-bold mb-4 flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2" />
+                  Tendances pour vous
+                </h2>
+                <div className="space-y-3">
+                  {['#LuvviXDev', '#JavaScript', '#React', '#TypeScript', '#WebDev'].map((tag, index) => (
+                    <div key={index} className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors">
+                      <div className="flex items-center space-x-2">
+                        <Hash className="w-4 h-4 text-gray-500" />
+                        <span className="font-bold text-blue-600">{tag}</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">{Math.floor(Math.random() * 1000) + 100} Tweets</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Suggested Users */}
+              <div>
+                <h2 className="text-xl font-bold mb-4 flex items-center">
+                  <Users className="w-5 h-5 mr-2" />
+                  Suggestions pour vous
+                </h2>
+                <div className="space-y-3">
+                  {suggestedUsers.map((user) => (
+                    <div key={user.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
                       <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold text-sm">
-                            {post.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold">
+                            {user.username?.[0]?.toUpperCase() || 'U'}
                           </span>
                         </div>
                         <div>
-                          <h4 className="font-semibold text-gray-900">
-                            {post.user_profiles?.full_name || 'Utilisateur inconnu'}
-                          </h4>
-                          <p className="text-xs text-gray-500">@{post.user_profiles?.username || "anonyme"}</p>
+                          <h4 className="font-bold text-gray-900">{user.full_name}</h4>
+                          <p className="text-sm text-gray-500">@{user.username}</p>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-500">
-                          {format(new Date(post.created_at), 'dd MMM HH:mm', { locale: fr })}
-                        </span>
-                        
-                        {/* Menu actions */}
-                        <div className="relative">
-                          <button className="p-1 hover:bg-gray-100 rounded-full">
-                            <MoreVertical className="w-4 h-4 text-gray-500" />
-                          </button>
-                          {/* Dropdown menu (simplified for demo) */}
-                        </div>
-                      </div>
+                      <button
+                        onClick={() => toggleFollow(user.id)}
+                        className="px-4 py-1.5 bg-gray-900 text-white rounded-full text-sm font-medium hover:bg-gray-800 transition-colors"
+                      >
+                        Suivre
+                      </button>
                     </div>
-
-                    {/* Contenu du post avec mentions et hashtags */}
-                    <div className={`${viewMode === 'grid' ? 'px-3 pb-2' : 'mb-3'}`}>
-                      <div 
-                        className="text-gray-900 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: processPostContent(post.content) }}
-                      />
-                      
-                      {/* Vidéo si présente */}
-                      {post.video_url && (
-                        <div className="mt-3 relative bg-black rounded-lg overflow-hidden">
-                          <div className="aspect-video flex items-center justify-center">
-                            <button className="w-16 h-16 bg-white bg-opacity-80 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all">
-                              <Play className="w-8 h-8 text-gray-800 ml-1" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Images en grille si présentes */}
-                      {post.media_urls && post.media_urls.length > 0 && (
-                        <div className={`mt-3 grid gap-2 rounded-lg overflow-hidden ${
-                          post.media_urls.length === 1 ? 'grid-cols-1' :
-                          post.media_urls.length === 2 ? 'grid-cols-2' :
-                          post.media_urls.length === 3 ? 'grid-cols-2' : 'grid-cols-2'
-                        }`}>
-                          {post.media_urls.slice(0, 4).map((url, index) => (
-                            <div key={index} className={`relative ${
-                              post.media_urls.length === 3 && index === 0 ? 'row-span-2' : ''
-                            }`}>
-                              <img 
-                                src={url} 
-                                alt={`Image ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                              {post.media_urls.length > 4 && index === 3 && (
-                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                  <span className="text-white font-bold text-lg">+{post.media_urls.length - 4}</span>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Actions avec réactions avancées */}
-                    <div className={`flex items-center justify-between pt-3 border-t border-gray-100 ${viewMode === 'grid' ? 'px-3 pb-3' : ''}`}>
-                      <div className="flex items-center space-x-4">
-                        {/* Réactions */}
-                        <div className="relative">
-                          <button
-                            onClick={() => setShowReactionPicker(showReactionPicker === post.id ? null : post.id)}
-                            className={`flex items-center space-x-2 transition-colors ${
-                              userReactions[post.id] ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
-                            }`}
-                          >
-                            {userReactions[post.id] ? (
-                              <span className="text-lg">{reactions.find(r => r.name === userReactions[post.id])?.emoji}</span>
-                            ) : (
-                              <Heart className="w-5 h-5" />
-                            )}
-                            <span className="text-sm font-medium">
-                              {Object.values(postReactions[post.id] || {}).reduce((a, b) => a + b, 0) || post.likes_count}
-                            </span>
-                          </button>
-
-                          {/* Picker de réactions */}
-                          {showReactionPicker === post.id && (
-                            <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-full shadow-lg p-2 flex space-x-1 z-10">
-                              {reactions.map((reaction) => (
-                                <button
-                                  key={reaction.name}
-                                  onClick={() => addReaction(post.id, reaction.name)}
-                                  className="text-2xl hover:scale-125 transition-transform p-1"
-                                >
-                                  {reaction.emoji}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <button
-                          onClick={() => {
-                            setShowComments(showComments === post.id ? null : post.id);
-                            if (showComments !== post.id) {
-                              fetchComments(post.id);
-                            }
-                          }}
-                          className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
-                        >
-                          <MessageCircle className="w-5 h-5" />
-                          <span className="text-sm font-medium">{post.comments_count}</span>
-                        </button>
-                        
-                        <button
-                          onClick={() => sharePost(post.id)}
-                          className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors"
-                        >
-                          <Share className="w-5 h-5" />
-                          <span className="text-sm font-medium">Partager</span>
-                        </button>
-
-                        {/* Sauvegarde */}
-                        <button
-                          onClick={() => toggleSavePost(post.id)}
-                          className={`transition-colors ${
-                            savedPosts.has(post.id) ? 'text-yellow-500' : 'text-gray-500 hover:text-yellow-500'
-                          }`}
-                        >
-                          {savedPosts.has(post.id) ? (
-                            <BookmarkCheck className="w-5 h-5" />
-                          ) : (
-                            <Bookmark className="w-5 h-5" />
-                          )}
-                        </button>
-
-                        {/* Signalement */}
-                        <button
-                          onClick={() => reportPost(post.id, 'inappropriate')}
-                          className="text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <Flag className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Affichage des réactions populaires */}
-                    {postReactions[post.id] && Object.keys(postReactions[post.id]).length > 0 && (
-                      <div className={`flex items-center space-x-1 text-sm text-gray-500 ${viewMode === 'grid' ? 'px-3 pb-2' : 'mt-2'}`}>
-                        {Object.entries(postReactions[post.id])
-                          .sort(([,a], [,b]) => b - a)
-                          .slice(0, 3)
-                          .map(([reactionType, count]) => {
-                            const reaction = reactions.find(r => r.name === reactionType);
-                            return (
-                              <span key={reactionType} className="flex items-center space-x-1">
-                                <span>{reaction?.emoji}</span>
-                                <span>{count}</span>
-                              </span>
-                            );
-                          })}
-                      </div>
-                    )}
-
-                    {/* Section commentaires */}
-                    {showComments === post.id && (
-                      <div className="mt-4 border-t border-gray-100 pt-4">
-                        {/* Nouveau commentaire */}
-                        <div className="flex items-center space-x-3 mb-4">
-                          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-xs">
-                              {user?.email?.[0]?.toUpperCase() || 'U'}
-                            </span>
-                          </div>
-                          <div className="flex-1 flex items-center space-x-2">
-                            <input
-                              type="text"
-                              value={newComment}
-                              onChange={(e) => setNewComment(e.target.value)}
-                              placeholder="Ajouter un commentaire..."
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              onKeyPress={(e) => e.key === 'Enter' && addComment(post.id)}
-                            />
-                            <button
-                              onClick={() => addComment(post.id)}
-                              disabled={!newComment.trim()}
-                              className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                              <Send className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Liste des commentaires */}
-                        <div className="space-y-3">
-                          {comments.map((comment) => (
-                            <div key={comment.id} className="flex items-start space-x-3">
-                              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
-                                <span className="text-white font-bold text-xs">
-                                  {comment.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
-                                </span>
-                              </div>
-                              <div className="flex-1">
-                                <div className="bg-gray-100 rounded-2xl px-3 py-2">
-                                  <h5 className="font-semibold text-sm text-gray-900">
-                                    {comment.user_profiles?.full_name || 'Utilisateur inconnu'}
-                                  </h5>
-                                  <p className="text-sm text-gray-700">{comment.content}</p>
-                                  {comment.user_profiles?.email && (
-                                    <p className="text-xs text-gray-400">{comment.user_profiles.email}</p>
-                                  )}
-                                </div>
-                                <span className="text-xs text-gray-500 ml-3 mt-1">
-                                  {format(new Date(comment.created_at), 'dd MMM HH:mm', { locale: fr })}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
 
-        {activeTab === 'explore' && (
-          <div className="p-4 space-y-6">
-            {/* Utilisateurs suggérés */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Utilisateurs suggérés</h3>
+          {activeTab === 'groups' && (
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-gray-900">Groupes</h3>
+                <button
+                  className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors"
+                  onClick={() => setShowCreateGroup(true)}
+                >
+                  Créer un groupe
+                </button>
+              </div>
+
               <div className="space-y-3">
-                {suggestedUsers.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold">
-                          {user.username?.[0]?.toUpperCase() || 'U'}
-                        </span>
+                {groups.map((group) => (
+                  <div key={group.id} className="p-4 bg-white rounded-lg border border-gray-200">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start space-x-3">
+                        <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
+                          <Users className="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{group.name}</h4>
+                          <p className="text-sm text-gray-600 mb-1">{group.description}</p>
+                          <p className="text-xs text-gray-500">{group.members_count} membre{group.members_count > 1 ? 's' : ''}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900">{user.full_name}</h4>
-                        <p className="text-sm text-gray-500">@{user.username}</p>
-                      </div>
+                      <button
+                        onClick={() => joinGroup(group.id)}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                          group.is_member
+                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                        }`}
+                      >
+                        {group.is_member ? 'Membre' : 'Rejoindre'}
+                      </button>
                     </div>
-                    <button
-                      onClick={() => toggleFollow(user.id)}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors flex items-center space-x-2"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      <span>Suivre</span>
-                    </button>
                   </div>
                 ))}
               </div>
-            </div>
 
-            {/* Tendances */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Tendances</h3>
-              <div className="space-y-2">
-                {['#LuvviXDev', '#JavaScript', '#React', '#TypeScript', '#WebDev'].map((tag, index) => (
-                  <div key={index} className="p-3 bg-white rounded-lg border border-gray-200">
-                    <p className="font-semibold text-blue-600">{tag}</p>
-                    <p className="text-sm text-gray-500">{Math.floor(Math.random() * 1000) + 100} posts</p>
+              {/* Modale de création de groupe */}
+              {showCreateGroup && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+                  <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xs mx-auto space-y-4">
+                    <h4 className="text-lg font-semibold mb-2">Créer un groupe</h4>
+                    <input
+                      type="text"
+                      className="w-full p-2 border rounded-lg mb-2 text-sm"
+                      placeholder="Nom du groupe"
+                      value={groupName}
+                      onChange={(e) => setGroupName(e.target.value)}
+                      maxLength={30}
+                    />
+                    <textarea
+                      className="w-full p-2 border rounded-lg mb-2 text-sm resize-none"
+                      placeholder="Description"
+                      rows={2}
+                      value={groupDescription}
+                      onChange={(e) => setGroupDescription(e.target.value)}
+                      maxLength={80}
+                    />
+                    <div className="flex justify-end space-x-3">
+                      <button
+                        className="px-4 py-1 bg-gray-200 rounded-lg text-gray-700"
+                        onClick={() => setShowCreateGroup(false)}
+                        type="button"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        className="px-4 py-1 bg-blue-500 text-white rounded-lg"
+                        onClick={handleCreateGroup}
+                        type="button"
+                      >
+                        Créer
+                      </button>
+                    </div>
                   </div>
-                ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'notifications' && (
+            <div className="p-4">
+              <div className="text-center py-12">
+                <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">Notifications</h3>
+                <p className="text-gray-500">Aucune notification pour le moment</p>
               </div>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right Sidebar Desktop */}
+      <div className="hidden xl:block w-80 p-4 border-l border-gray-200">
+        <div className="sticky top-20">
+          {/* Search */}
+          <div className="relative mb-4">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Rechercher sur LuvviX"
+              className="w-full pl-12 pr-4 py-3 bg-gray-100 rounded-full border-0 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
-        )}
 
-        {activeTab === 'groups' && (
-          <div className="p-4 space-y-4">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Groupes</h3>
-              <button
-                className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors"
-                onClick={() => setShowCreateGroup(true)}
-              >
-                Créer un groupe
-              </button>
-            </div>
-
+          {/* Trending Widget */}
+          <div className="bg-gray-50 rounded-2xl p-4 mb-4">
+            <h3 className="text-xl font-bold mb-3">Tendances pour vous</h3>
             <div className="space-y-3">
-              {groups.map((group) => (
-                <div key={group.id} className="p-4 bg-white rounded-lg border border-gray-200">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
-                        <Users className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900">{group.name}</h4>
-                        <p className="text-sm text-gray-600 mb-1">{group.description}</p>
-                        <p className="text-xs text-gray-500">{group.members_count} membre{group.members_count > 1 ? 's' : ''}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => joinGroup(group.id)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                        group.is_member
-                          ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          : 'bg-blue-500 text-white hover:bg-blue-600'
-                      }`}
-                    >
-                      {group.is_member ? 'Membre' : 'Rejoindre'}
-                    </button>
-                  </div>
+              {['#LuvviXDev', '#JavaScript', '#React'].map((tag, index) => (
+                <div key={index} className="hover:bg-gray-100 p-2 rounded-lg cursor-pointer transition-colors">
+                  <p className="font-bold text-blue-600">{tag}</p>
+                  <p className="text-sm text-gray-500">{Math.floor(Math.random() * 100) + 10}K Tweets</p>
                 </div>
               ))}
             </div>
-
-            {/* Modale de création de groupe */}
-            {showCreateGroup && (
-              <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
-                <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xs mx-auto space-y-4">
-                  <h4 className="text-lg font-semibold mb-2">Créer un groupe</h4>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded-lg mb-2 text-sm"
-                    placeholder="Nom du groupe"
-                    value={groupName}
-                    onChange={(e) => setGroupName(e.target.value)}
-                    maxLength={30}
-                  />
-                  <textarea
-                    className="w-full p-2 border rounded-lg mb-2 text-sm resize-none"
-                    placeholder="Description"
-                    rows={2}
-                    value={groupDescription}
-                    onChange={(e) => setGroupDescription(e.target.value)}
-                    maxLength={80}
-                  />
-                  <div className="flex justify-end space-x-3">
-                    <button
-                      className="px-4 py-1 bg-gray-200 rounded-lg text-gray-700"
-                      onClick={() => setShowCreateGroup(false)}
-                      type="button"
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      className="px-4 py-1 bg-blue-500 text-white rounded-lg"
-                      onClick={handleCreateGroup}
-                      type="button"
-                    >
-                      Créer
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
-        )}
 
-        {activeTab === 'notifications' && (
-          <div className="p-4">
-            <div className="text-center py-12">
-              <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Notifications</h3>
-              <p className="text-gray-500">Aucune notification pour le moment</p>
+          {/* Qui suivre Widget */}
+          <div className="bg-gray-50 rounded-2xl p-4">
+            <h3 className="text-xl font-bold mb-3">Qui suivre</h3>
+            <div className="space-y-3">
+              {suggestedUsers.slice(0, 3).map((user) => (
+                <div key={user.id} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold text-xs">
+                        {user.username?.[0]?.toUpperCase() || 'U'}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm">{user.full_name}</p>
+                      <p className="text-xs text-gray-500">@{user.username}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => toggleFollow(user.id)}
+                    className="px-3 py-1 bg-gray-900 text-white rounded-full text-xs font-medium hover:bg-gray-800 transition-colors"
+                  >
+                    Suivre
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2">
+        <div className="flex justify-around">
+          {[
+            { id: 'feed', icon: Home },
+            { id: 'explore', icon: Search },
+            { id: 'notifications', icon: Bell },
+            { id: 'messages', icon: Mail }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`p-3 ${activeTab === tab.id ? 'text-blue-500' : 'text-gray-500'}`}
+            >
+              <tab.icon className="w-6 h-6" />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Twitter Composer Modal */}
+      {showComposer && (
+        <TwitterComposer
+          onClose={() => setShowComposer(false)}
+          onPost={async (content: string, images: File[]) => {
+            await createPost();
+          }}
+          isSubmitting={posting}
+        />
+      )}
     </div>
   );
 

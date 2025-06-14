@@ -183,7 +183,7 @@ const MobileHome = () => {
           {weatherData && (
             <div className="text-right">
               <div className="flex items-center space-x-2 mb-1">
-                <span className="text-2xl">{weatherData.current.icon}</span>
+                <Cloud className="w-6 h-6" />
                 <span className="text-2xl font-light">{weatherData.current.temperature}°C</span>
               </div>
               <p className="text-sm text-blue-100">{weatherData.current.condition}</p>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, Bell, Image as ImageIcon, MapPin, Users, Video, Feather, TrendingUp, Hash, Home, Mail, Camera, Bookmark, Settings, Moon, Sun, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,6 +18,7 @@ import GroupManager from './center/GroupManager';
 import CommentsModal from './center/CommentsModal';
 import FriendshipManager from './center/FriendshipManager';
 import MessagingManager from './center/MessagingManager';
+import UserProfileModal from './center/UserProfileModal';
 
 interface MobileCenterProps {
   onBack: () => void;
@@ -60,6 +60,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const [darkMode, setDarkMode] = useState(false);
   const [showVideoUploader, setShowVideoUploader] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState<string | null>(null);
+  const [showUserProfile, setShowUserProfile] = useState<string | null>(null);
   
   const [posts, setPosts] = useState<Post[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
@@ -103,12 +104,12 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         f.requester_id === user.id ? f.addressee_id : f.requester_id
       );
       
-      // Ajouter l'utilisateur actuel pour voir ses propres posts
+      // TOUJOURS inclure l'utilisateur actuel pour voir ses propres posts
       const allowedUserIds = [...friendIds, user.id];
 
       console.log('Allowed user IDs:', allowedUserIds);
 
-      // Récupérer les posts des amis et de l'utilisateur
+      // Récupérer les posts des amis ET de l'utilisateur
       const { data: postsData, error: postsError } = await supabase
         .from('center_posts')
         .select('*')
@@ -345,6 +346,10 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     console.log('Clicked hashtag:', hashtag);
   };
 
+  const handleUserClick = (userId: string) => {
+    setShowUserProfile(userId);
+  };
+
   // Show specific views
   if (showAdvancedSearch) {
     return (
@@ -373,6 +378,10 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
   if (showCommentsModal) {
     return <CommentsModal postId={showCommentsModal} onClose={() => setShowCommentsModal(null)} />;
+  }
+
+  if (showUserProfile) {
+    return <UserProfileModal userId={showUserProfile} onClose={() => setShowUserProfile(null)} />;
   }
 
   return (
@@ -560,6 +569,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                     onShare={() => sharePost(post.id)}
                     onSave={() => {}}
                     onShowReactions={() => setShowReactionPicker(post.id)}
+                    onUserClick={() => handleUserClick(post.user_profiles?.id || post.user_id)}
                   />
                 ))}
               </div>
@@ -575,7 +585,10 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                 <div key={user.id} className={`flex items-center justify-between p-3 rounded-lg border ${
                   darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
                 }`}>
-                  <div className="flex items-center space-x-3">
+                  <button 
+                    onClick={() => handleUserClick(user.id)}
+                    className="flex items-center space-x-3 flex-1 text-left"
+                  >
                     <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
                       <span className="text-white font-bold text-sm">
                         {user.username?.[0]?.toUpperCase() || 'U'}
@@ -589,7 +602,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                         @{user.username}
                       </p>
                     </div>
-                  </div>
+                  </button>
                   <button className="px-4 py-1.5 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors">
                     Suivre
                   </button>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -128,15 +129,37 @@ Que puis-je faire pour vous aujourd'hui ?`,
         { component: 'UnifiedAIAssistant' }
       );
 
-      // Ajout toast si action
-      if (typeof response === 'object' && response?.actionDone) {
+      // Si la réponse n'existe pas, afficher un message d'erreur
+      if (!response) {
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: 'Désolé, je rencontre un problème technique. (Aucune réponse générée...)',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, errorMessage]);
+        return;
+      }
+
+      // Ajout toast si action (pour les renvois objets possédant actionDone)
+      if (typeof response === 'object' && response !== null && 'actionDone' in response) {
         toast.success("Action IA réalisée !");
       }
 
+      let assistantContent = '';
+      if (typeof response === 'string') {
+        assistantContent = response;
+      } else if (typeof response === 'object' && response !== null && 'message' in response && typeof (response as any).message === 'string') {
+        assistantContent = (response as any).message;
+      } else {
+        // Cas inattendu
+        assistantContent = "Je n'ai pas pu comprendre la réponse du cerveau IA.";
+      }
+
       const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: (Date.now() + 2).toString(),
         role: 'assistant',
-        content: typeof response === 'string' ? response : response.message,
+        content: assistantContent,
         timestamp: new Date()
       };
 
@@ -146,14 +169,14 @@ Que puis-je faire pour vous aujourd'hui ?`,
     } catch (error) {
       console.error('Erreur conversation:', error);
       toast.error('Erreur lors de la communication avec l\'assistant');
-      
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: 'Désolé, je rencontre un problème technique. Mes circuits neuronaux se reconnectent...',
         timestamp: new Date()
       };
-      
+
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setLoading(false);

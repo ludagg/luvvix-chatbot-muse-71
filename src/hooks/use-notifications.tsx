@@ -10,6 +10,7 @@ interface NotificationPermission {
 
 export const useNotifications = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationsSupported, setNotificationsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>({
     granted: false,
     denied: false,
@@ -17,7 +18,10 @@ export const useNotifications = () => {
   });
 
   useEffect(() => {
-    if ('Notification' in window) {
+    const supported = 'Notification' in window;
+    setNotificationsSupported(supported);
+    
+    if (supported) {
       const currentPermission = Notification.permission;
       setPermission({
         granted: currentPermission === 'granted',
@@ -29,7 +33,7 @@ export const useNotifications = () => {
   }, []);
 
   const requestPermission = async () => {
-    if (!('Notification' in window)) {
+    if (!notificationsSupported) {
       toast({
         title: "Non supporté",
         description: "Les notifications ne sont pas supportées sur ce navigateur",
@@ -122,6 +126,7 @@ export const useNotifications = () => {
 
   return {
     notificationsEnabled,
+    notificationsSupported,
     permission,
     requestPermission,
     sendNotification,

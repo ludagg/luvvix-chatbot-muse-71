@@ -138,7 +138,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
       case 'services':
         return <MobileServices />;
       case 'assistant':
-        return <MobileAssistant />;
+        return <MobileAssistant onBack={() => setActiveView('home')} />;
       case 'cloud':
         return <MobileCloud />;
       case 'profile':

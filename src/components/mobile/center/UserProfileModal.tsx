@@ -56,36 +56,48 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
       fetchUserPosts();
       checkFriendshipStatus();
     }
+    // eslint-disable-next-line
   }, [userId]);
 
+  // Nouvelle fonction : on tente d'abord center_profiles, sinon fallback sur user_profiles
   const fetchUserProfile = async () => {
     try {
-      console.log('Fetching user profile for ID:', userId);
-      
-      const { data, error } = await supabase
-        .from('user_profiles')
+      // 1. Cherche dans center_profiles (pour bio/avatar/etc.)
+      const { data: center, error: errCenter } = await supabase
+        .from('center_profiles')
         .select('id, username, full_name, avatar_url, bio, created_at')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
-      console.log('Profile data:', data);
-      console.log('Profile error:', error);
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        // Fallback: create a basic profile from the user ID
-        setProfile({
-          id: userId,
-          username: `user_${userId.slice(0, 8)}`,
-          full_name: 'Utilisateur',
-          created_at: new Date().toISOString()
-        });
-      } else {
-        setProfile(data);
+      if (center) {
+        setProfile(center);
+        return;
       }
+
+      // 2. Fallback sur user_profiles juste au cas où (vieux profils)
+      const { data: basic, error: errUser } = await supabase
+        .from('user_profiles')
+        .select('id, username, full_name, created_at')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (basic) {
+        setProfile({
+          ...basic,
+          avatar_url: undefined,
+          bio: undefined,
+        });
+        return;
+      }
+
+      // Aucun profil trouvé
+      setProfile({
+        id: userId,
+        username: `user_${userId.slice(0, 8)}`,
+        full_name: 'Utilisateur',
+        created_at: new Date().toISOString()
+      });
     } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
-      // Fallback profile
       setProfile({
         id: userId,
         username: `user_${userId.slice(0, 8)}`,

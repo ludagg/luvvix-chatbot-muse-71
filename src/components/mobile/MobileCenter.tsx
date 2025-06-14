@@ -81,6 +81,16 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
 
+  // Stories State
+  const [stories, setStories] = useState<{ 
+    id: string, 
+    user: UserProfile, 
+    media_url: string, 
+    created_at: string 
+  }[]>([]);
+  const [myStoryUpload, setMyStoryUpload] = useState<File | null>(null);
+  const [uploadingStory, setUploadingStory] = useState(false);
+
   useEffect(() => {
     fetchPosts();
     fetchLikedPosts();
@@ -181,52 +191,89 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     }
   };
 
-  const createPost = async () => {
-    if (!newPost.trim() || !user) return;
+  // -------- STORY LOGIC -----------
+  // Mock for now: fetch all stories from current user and others (real: should use supabase)
+  useEffect(() => {
+    // Simule stories (à customiser backend plus tard)
+    setStories([
+      ...(myStoryUpload
+        ? [{
+          id: 'me',
+          user: {
+            id: user?.id ?? "me",
+            username: user?.user_metadata?.username ?? "Moi",
+            full_name: user?.user_metadata?.full_name ?? user?.email ?? "Moi",
+            avatar_url: "",
+          },
+          media_url: URL.createObjectURL(myStoryUpload),
+          created_at: new Date().toISOString()
+        }]
+        : []),
+      // Mock story d’un autre user
+      {
+        id: 'u2',
+        user: {
+          id: "u2",
+          username: "dev_jane",
+          full_name: "Jane Dev",
+          avatar_url: "",
+        },
+        media_url: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308",
+        created_at: new Date(Date.now() - 3600 * 1000).toISOString()
+      }
+    ]);
+  }, [myStoryUpload, user]);
 
+  // Upload d'une story
+  const handleStoryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingStory(true);
     try {
-      const postData: any = {
-        user_id: user.id,
-        content: newPost.trim(),
-        media_urls: [],
-      };
-
-      // Simuler upload d'images (pour correspondre au backend actuel)
-      if (selectedImages.length > 0) {
-        postData.media_urls = selectedImages.map((_, index) =>
-          `https://example.com/images/${Date.now()}_${index}.jpg`
-        );
-      }
-
-      if (selectedVideo) {
-        postData.video_url = `https://example.com/videos/${Date.now()}.mp4`;
-      }
-
-      const { error } = await supabase
-        .from('center_posts')
-        .insert(postData);
-
+      // Upload to supabase storage 
+      const { error, data } = await supabase.storage
+        .from('center-media')
+        .upload(`stories/${user.id}_${Date.now()}_${file.name}`, file, {
+          upsert: true,
+        });
       if (error) throw error;
 
-      setNewPost('');
-      setSelectedVideo(null);
-      setSelectedImages([]);
-      setShowVideoUpload(false);
-      fetchPosts();
+      // L'URL publique
+      const publicUrl = supabase.storage.from('center-media').getPublicUrl(data?.path ?? "").data.publicUrl;
+      setMyStoryUpload(file); // sets local preview/mock
+      setStories(prev => [
+        {
+          id: 'me_' + Date.now(),
+          user: {
+            id: user.id,
+            username: user.user_metadata?.username ?? user.email?.split('@')[0] ?? "Moi",
+            full_name: user.user_metadata?.full_name ?? user.email ?? "Moi",
+            avatar_url: "",
+          },
+          media_url: publicUrl,
+          created_at: new Date().toISOString()
+        },
+        ...prev.filter(s => s.user.id !== user.id)
+      ]);
       toast({
-        title: "Post publié",
-        description: "Votre post a été publié avec succès"
+        title: "Story publiée !",
+        description: "Votre story est visible pendant 24h."
       });
     } catch (error) {
-      console.error('Erreur création post:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de publier le post",
+        title: "Erreur story",
+        description: "Échec de l'upload.",
         variant: "destructive"
       });
+    } finally {
+      setUploadingStory(false);
     }
   };
 
+  // Efface sa propre story (mock/local)
+  const removeMyStory = () => setMyStoryUpload(null);
+
+  // --------- FOLLOW ---------
   const toggleFollow = async (userId: string) => {
     if (!user) return;
 
@@ -275,6 +322,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     }
   };
 
+  // --------- GROUPES ---------
   const joinGroup = async (groupId: string) => {
     // Simuler rejoindre un groupe
     setGroups(prev => prev.map(group => 
@@ -287,6 +335,67 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
       title: groups.find(g => g.id === groupId)?.is_member ? "Groupe quitté" : "Groupe rejoint",
       description: "Action effectuée avec succès"
     });
+  };
+
+  // --------- POSTS ---------
+  // Fix création post/loading
+  const [posting, setPosting] = useState(false);
+
+  const createPost = async () => {
+    if (!newPost.trim() || !user) return;
+    setPosting(true);
+    try {
+      const postData: any = {
+        user_id: user.id,
+        content: newPost.trim(),
+        media_urls: [],
+      };
+
+      // Upload image...
+      if (selectedImages.length > 0) {
+        // upload all images (demo: loop; prod: Promise.all)
+        const uploadResults = await Promise.all(selectedImages.map(async (img, index) => {
+          const { data, error } = await supabase.storage
+            .from('center-media')
+            .upload(`posts/${user.id}_${Date.now()}_${index}_${img.name}`, img, { upsert: true });
+          if (error) throw error;
+          return supabase.storage.from('center-media').getPublicUrl(data.path).data.publicUrl;
+        }));
+        postData.media_urls = uploadResults;
+      }
+
+      if (selectedVideo) {
+        const { data, error } = await supabase.storage
+          .from('center-media')
+          .upload(`posts/${user.id}_${Date.now()}_video_${selectedVideo.name}`, selectedVideo, { upsert: true });
+        if (error) throw error;
+        postData.video_url = supabase.storage.from('center-media').getPublicUrl(data.path).data.publicUrl;
+      }
+
+      const { error } = await supabase
+        .from('center_posts')
+        .insert(postData);
+
+      if (error) throw error;
+
+      setNewPost('');
+      setSelectedVideo(null);
+      setSelectedImages([]);
+      setShowVideoUpload(false);
+      fetchPosts();
+      toast({
+        title: "Post publié",
+        description: "Votre post a été publié avec succès"
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de publier le post",
+        variant: "destructive"
+      });
+    } finally {
+      setPosting(false);
+    }
   };
 
   const toggleLike = async (postId: string) => {
@@ -381,297 +490,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     }
   };
 
-  const renderPost = (post: Post) => (
-    <div key={post.id} className="bg-white border-b border-gray-200 p-4">
-      {/* Header du post */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-sm">
-              {post.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
-            </span>
-          </div>
-          <div>
-            <h4 className="font-semibold text-gray-900">
-              {post.user_profiles?.full_name || 'Utilisateur inconnu'}
-            </h4>
-            <p className="text-xs text-gray-500">@{post.user_profiles?.username || "anonyme"}</p>
-            {post.user_profiles?.email && (
-              <p className="text-xs text-gray-400">{post.user_profiles.email}</p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-xs text-gray-500">
-            {format(new Date(post.created_at), 'dd MMM HH:mm', { locale: fr })}
-          </span>
-          <button className="p-1 hover:bg-gray-100 rounded-full">
-            <MoreVertical className="w-4 h-4 text-gray-500" />
-          </button>
-        </div>
-      </div>
-
-      {/* Contenu du post */}
-      <div className="mb-3">
-        <p className="text-gray-900 leading-relaxed">{post.content}</p>
-        
-        {/* Vidéo si présente */}
-        {post.video_url && (
-          <div className="mt-3 relative bg-black rounded-lg overflow-hidden">
-            <div className="aspect-video flex items-center justify-center">
-              <button className="w-16 h-16 bg-white bg-opacity-80 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all">
-                <Play className="w-8 h-8 text-gray-800 ml-1" />
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-        <div className="flex items-center space-x-6">
-          <button
-            onClick={() => toggleLike(post.id)}
-            className={`flex items-center space-x-2 transition-colors ${
-              likedPosts.has(post.id) ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
-            }`}
-          >
-            <Heart className={`w-5 h-5 ${likedPosts.has(post.id) ? 'fill-current' : ''}`} />
-            <span className="text-sm font-medium">{post.likes_count}</span>
-          </button>
-          
-          <button
-            onClick={() => {
-              setShowComments(showComments === post.id ? null : post.id);
-              if (showComments !== post.id) {
-                fetchComments(post.id);
-              }
-            }}
-            className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
-          >
-            <MessageCircle className="w-5 h-5" />
-            <span className="text-sm font-medium">{post.comments_count}</span>
-          </button>
-          
-          {/* Bouton partager avec logique de partage réelle */}
-          <button
-            onClick={() => sharePost(post.id)}
-            className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors"
-          >
-            <Share className="w-5 h-5" />
-            <span className="text-sm font-medium">Partager</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Section commentaires */}
-      {showComments === post.id && (
-        <div className="mt-4 border-t border-gray-100 pt-4">
-          {/* Nouveau commentaire */}
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xs">
-                {user?.email?.[0]?.toUpperCase() || 'U'}
-              </span>
-            </div>
-            <div className="flex-1 flex items-center space-x-2">
-              <input
-                type="text"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Ajouter un commentaire..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                onKeyPress={(e) => e.key === 'Enter' && addComment(post.id)}
-              />
-              <button
-                onClick={() => addComment(post.id)}
-                disabled={!newComment.trim()}
-                className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Liste des commentaires */}
-          <div className="space-y-3">
-            {comments.map((comment) => (
-              <div key={comment.id} className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">
-                    {comment.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <div className="bg-gray-100 rounded-2xl px-3 py-2">
-                    <h5 className="font-semibold text-sm text-gray-900">
-                      {comment.user_profiles?.full_name || 'Utilisateur inconnu'}
-                    </h5>
-                    <p className="text-sm text-gray-700">{comment.content}</p>
-                    {comment.user_profiles?.email && (
-                      <p className="text-xs text-gray-400">{comment.user_profiles.email}</p>
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-500 ml-3 mt-1">
-                    {format(new Date(comment.created_at), 'dd MMM HH:mm', { locale: fr })}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const renderExploreTab = () => (
-    <div className="p-4 space-y-6">
-      {/* Utilisateurs suggérés */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Utilisateurs suggérés</h3>
-        <div className="space-y-3">
-          {suggestedUsers.map((user) => (
-            <div key={user.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold">
-                    {user.username?.[0]?.toUpperCase() || 'U'}
-                  </span>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">{user.full_name}</h4>
-                  <p className="text-sm text-gray-500">@{user.username}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => toggleFollow(user.id)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors flex items-center space-x-2"
-              >
-                <UserPlus className="w-4 h-4" />
-                <span>Suivre</span>
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Tendances */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Tendances</h3>
-        <div className="space-y-2">
-          {['#LuvviXDev', '#JavaScript', '#React', '#TypeScript', '#WebDev'].map((tag, index) => (
-            <div key={index} className="p-3 bg-white rounded-lg border border-gray-200">
-              <p className="font-semibold text-blue-600">{tag}</p>
-              <p className="text-sm text-gray-500">{Math.floor(Math.random() * 1000) + 100} posts</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderGroupsTab = () => (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Groupes</h3>
-        <button
-          className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors"
-          onClick={() => setShowCreateGroup(true)}
-        >
-          Créer un groupe
-        </button>
-      </div>
-
-      <div className="space-y-3">
-        {groups.map((group) => (
-          <div key={group.id} className="p-4 bg-white rounded-lg border border-gray-200">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-start space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
-                  <Users className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">{group.name}</h4>
-                  <p className="text-sm text-gray-600 mb-1">{group.description}</p>
-                  <p className="text-xs text-gray-500">{group.members_count} membre{group.members_count > 1 ? 's' : ''}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => joinGroup(group.id)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  group.is_member
-                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    : 'bg-blue-500 text-white hover:bg-blue-600'
-                }`}
-              >
-                {group.is_member ? 'Membre' : 'Rejoindre'}
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Modale de création de groupe */}
-      {showCreateGroup && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xs mx-auto space-y-4">
-            <h4 className="text-lg font-semibold mb-2">Créer un groupe</h4>
-            <input
-              type="text"
-              className="w-full p-2 border rounded-lg mb-2 text-sm"
-              placeholder="Nom du groupe"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              maxLength={30}
-            />
-            <textarea
-              className="w-full p-2 border rounded-lg mb-2 text-sm resize-none"
-              placeholder="Description"
-              rows={2}
-              value={groupDescription}
-              onChange={(e) => setGroupDescription(e.target.value)}
-              maxLength={80}
-            />
-            <div className="flex justify-end space-x-3">
-              <button
-                className="px-4 py-1 bg-gray-200 rounded-lg text-gray-700"
-                onClick={() => setShowCreateGroup(false)}
-                type="button"
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-1 bg-blue-500 text-white rounded-lg"
-                onClick={handleCreateGroup}
-                type="button"
-              >
-                Créer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  // Nouvelle action pour partager un post (copie le lien et toast)
-  const sharePost = async (postId: string) => {
-    const fakeUrl = `${window.location.origin}/center/post/${postId}`;
-    try {
-      await navigator.clipboard.writeText(fakeUrl);
-      toast({
-        title: "Lien copié",
-        description: "Le lien du post a été copié dans le presse-papier !",
-      });
-    } catch (err) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de copier le lien",
-        variant: "destructive",
-      });
-    }
-  };
-
   // Nouvelle fonction de gestion d'upload d'images
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -689,35 +507,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   // Pour retirer une image
   const removeImage = (index: number) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleCreateGroup = () => {
-    if (!groupName.trim() || !groupDescription.trim()) {
-      toast({
-        title: "Champs requis",
-        description: "Merci d'entrer un nom et une description",
-        variant: "destructive"
-      });
-      return;
-    }
-    // Ajoute le nouveau groupe en début de liste (local uniquement)
-    setGroups(prev => [
-      {
-        id: String(Date.now()),
-        name: groupName.trim(),
-        description: groupDescription.trim(),
-        members_count: 1,
-        is_member: true
-      },
-      ...prev
-    ]);
-    setShowCreateGroup(false);
-    setGroupName('');
-    setGroupDescription('');
-    toast({
-      title: "Groupe créé",
-      description: "Votre groupe a bien été créé !"
-    });
   };
 
   return (
@@ -739,6 +528,37 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
             <Bell className="w-6 h-6 text-gray-600" />
           </button>
         </div>
+      </div>
+
+      {/* Stories Bar */}
+      <div className="flex items-center bg-white border-b border-gray-200 p-3 overflow-x-auto no-scrollbar gap-4">
+        {/* Ajout story */}
+        <label
+          htmlFor="story-upload"
+          className="flex flex-col items-center justify-center cursor-pointer w-14 h-14 rounded-full bg-gradient-to-tr from-green-400 to-blue-400 text-white font-bold relative"
+        >
+          <span className="text-xl">+</span>
+          <input type="file" accept="image/*,video/*" id="story-upload" className="hidden" onChange={handleStoryUpload} disabled={uploadingStory} />
+          <span className="absolute bottom-0 left-0 text-[10px] px-1 bg-white bg-opacity-60 text-gray-700 rounded">
+            Story
+          </span>
+        </label>
+
+        {/* Ma propre story */}
+        {myStoryUpload && (
+          <div className="relative flex flex-col items-center">
+            <img src={URL.createObjectURL(myStoryUpload)} className="w-14 h-14 rounded-full object-cover border-2 border-blue-400" alt="ma story" />
+            <button onClick={removeMyStory} className="absolute -top-2 -right-2 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center font-bold text-xs">×</button>
+            <span className="text-xs mt-1">Moi</span>
+          </div>
+        )}
+        {/* Autres stories */}
+        {stories.filter(s => s.user.id !== user?.id).map((s, idx) => (
+          <div key={s.id+idx} className="flex flex-col items-center">
+            <img src={s.media_url} className="w-14 h-14 rounded-full object-cover border-2 border-gray-300" alt={s.user.full_name} />
+            <span className="text-xs mt-1">{s.user.username}</span>
+          </div>
+        ))}
       </div>
 
       {/* Navigation tabs */}
@@ -770,7 +590,11 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
             {/* Créateur de post */}
             <div className="bg-white border-b border-gray-200 p-4">
               <div className="flex items-start space-x-3">
-                {/* ... avatar ... */}
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">
+                    {user?.email?.[0]?.toUpperCase() || 'U'}
+                  </span>
+                </div>
                 <div className="flex-1">
                   <textarea
                     value={newPost}
@@ -778,6 +602,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                     placeholder="Quoi de neuf ?"
                     className="w-full p-3 border border-gray-300 rounded-2xl resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={3}
+                    disabled={posting}
                   />
 
                   {/* Preview des images sélectionnées */}
@@ -801,7 +626,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                     </div>
                   )}
 
-                  {/* Preview vidéo reste inchangée */}
+                  {/* Preview vidéo */}
                   {selectedVideo && (
                     <div className="mt-3 p-3 bg-gray-100 rounded-lg flex items-center justify-between">
                       <div className="flex items-center space-x-2">
@@ -827,7 +652,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                         className="hidden"
                         id="image-upload-mobile"
                         onChange={handleImageUpload}
-                        disabled={!!selectedVideo}
+                        disabled={!!selectedVideo || posting}
                       />
                       <label
                         htmlFor="image-upload-mobile"
@@ -836,14 +661,14 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                         <ImageIcon className="w-5 h-5" />
                       </label>
 
-                      {/* Uploader vidéo existant */}
+                      {/* Uploader vidéo */}
                       <input
                         type="file"
                         accept="video/*"
                         onChange={(e) => setSelectedVideo(e.target.files?.[0] || null)}
                         className="hidden"
                         id="video-upload"
-                        disabled={selectedImages.length > 0}
+                        disabled={selectedImages.length > 0 || posting}
                       />
                       <label
                         htmlFor="video-upload"
@@ -852,20 +677,20 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                         <Video className="w-5 h-5" />
                       </label>
 
-                      {/* Boutons caméra & map (conservés) */}
-                      <button className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors">
+                      {/* Boutons caméra & map */}
+                      <button className="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors" disabled={posting}>
                         <Camera className="w-5 h-5" />
                       </button>
-                      <button className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                      <button className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors" disabled={posting}>
                         <MapPin className="w-5 h-5" />
                       </button>
                     </div>
                     <button
                       onClick={createPost}
-                      disabled={!newPost.trim() || !user?.id}
+                      disabled={!newPost.trim() || !user?.id || posting}
                       className="px-6 py-2 bg-blue-500 text-white rounded-full font-medium hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      Publier
+                      {posting ? 'Publication...' : 'Publier'}
                     </button>
                   </div>
                 </div>
@@ -884,13 +709,281 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                 <p className="text-gray-400 text-sm">Soyez le premier à publier !</p>
               </div>
             ) : (
-              posts.map(renderPost)
+              posts.map((post) => (
+                <div key={post.id} className="bg-white border-b border-gray-200 p-4">
+                  {/* Header du post */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold text-sm">
+                          {post.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">
+                          {post.user_profiles?.full_name || 'Utilisateur inconnu'}
+                        </h4>
+                        <p className="text-xs text-gray-500">@{post.user_profiles?.username || "anonyme"}</p>
+                        {post.user_profiles?.email && (
+                          <p className="text-xs text-gray-400">{post.user_profiles.email}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-gray-500">
+                        {format(new Date(post.created_at), 'dd MMM HH:mm', { locale: fr })}
+                      </span>
+                      <button className="p-1 hover:bg-gray-100 rounded-full">
+                        <MoreVertical className="w-4 h-4 text-gray-500" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Contenu du post */}
+                  <div className="mb-3">
+                    <p className="text-gray-900 leading-relaxed">{post.content}</p>
+                    
+                    {/* Vidéo si présente */}
+                    {post.video_url && (
+                      <div className="mt-3 relative bg-black rounded-lg overflow-hidden">
+                        <div className="aspect-video flex items-center justify-center">
+                          <button className="w-16 h-16 bg-white bg-opacity-80 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all">
+                            <Play className="w-8 h-8 text-gray-800 ml-1" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="flex items-center space-x-6">
+                      <button
+                        onClick={() => toggleLike(post.id)}
+                        className={`flex items-center space-x-2 transition-colors ${
+                          likedPosts.has(post.id) ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                        }`}
+                      >
+                        <Heart className={`w-5 h-5 ${likedPosts.has(post.id) ? 'fill-current' : ''}`} />
+                        <span className="text-sm font-medium">{post.likes_count}</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          setShowComments(showComments === post.id ? null : post.id);
+                          if (showComments !== post.id) {
+                            fetchComments(post.id);
+                          }
+                        }}
+                        className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
+                      >
+                        <MessageCircle className="w-5 h-5" />
+                        <span className="text-sm font-medium">{post.comments_count}</span>
+                      </button>
+                      
+                      {/* Bouton partager avec logique de partage réelle */}
+                      <button
+                        onClick={() => sharePost(post.id)}
+                        className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors"
+                      >
+                        <Share className="w-5 h-5" />
+                        <span className="text-sm font-medium">Partager</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Section commentaires */}
+                  {showComments === post.id && (
+                    <div className="mt-4 border-t border-gray-100 pt-4">
+                      {/* Nouveau commentaire */}
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
+                          <span className="text-white font-bold text-xs">
+                            {user?.email?.[0]?.toUpperCase() || 'U'}
+                          </span>
+                        </div>
+                        <div className="flex-1 flex items-center space-x-2">
+                          <input
+                            type="text"
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            placeholder="Ajouter un commentaire..."
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            onKeyPress={(e) => e.key === 'Enter' && addComment(post.id)}
+                          />
+                          <button
+                            onClick={() => addComment(post.id)}
+                            disabled={!newComment.trim()}
+                            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Liste des commentaires */}
+                      <div className="space-y-3">
+                        {comments.map((comment) => (
+                          <div key={comment.id} className="flex items-start space-x-3">
+                            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
+                              <span className="text-white font-bold text-xs">
+                                {comment.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="bg-gray-100 rounded-2xl px-3 py-2">
+                                <h5 className="font-semibold text-sm text-gray-900">
+                                  {comment.user_profiles?.full_name || 'Utilisateur inconnu'}
+                                </h5>
+                                <p className="text-sm text-gray-700">{comment.content}</p>
+                                {comment.user_profiles?.email && (
+                                  <p className="text-xs text-gray-400">{comment.user_profiles.email}</p>
+                                )}
+                              </div>
+                              <span className="text-xs text-gray-500 ml-3 mt-1">
+                                {format(new Date(comment.created_at), 'dd MMM HH:mm', { locale: fr })}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
             )}
           </div>
         )}
 
-        {activeTab === 'explore' && renderExploreTab()}
-        {activeTab === 'groups' && renderGroupsTab()}
+        {activeTab === 'explore' && (
+          <div className="p-4 space-y-6">
+            {/* Utilisateurs suggérés */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Utilisateurs suggérés</h3>
+              <div className="space-y-3">
+                {suggestedUsers.map((user) => (
+                  <div key={user.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                        <span className="text-white font-bold">
+                          {user.username?.[0]?.toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{user.full_name}</h4>
+                        <p className="text-sm text-gray-500">@{user.username}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => toggleFollow(user.id)}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors flex items-center space-x-2"
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      <span>Suivre</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tendances */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Tendances</h3>
+              <div className="space-y-2">
+                {['#LuvviXDev', '#JavaScript', '#React', '#TypeScript', '#WebDev'].map((tag, index) => (
+                  <div key={index} className="p-3 bg-white rounded-lg border border-gray-200">
+                    <p className="font-semibold text-blue-600">{tag}</p>
+                    <p className="text-sm text-gray-500">{Math.floor(Math.random() * 1000) + 100} posts</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'groups' && (
+          <div className="p-4 space-y-4">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Groupes</h3>
+              <button
+                className="px-4 py-2 bg-blue-500 text-white rounded-full text-sm font-medium hover:bg-blue-600 transition-colors"
+                onClick={() => setShowCreateGroup(true)}
+              >
+                Créer un groupe
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {groups.map((group) => (
+                <div key={group.id} className="p-4 bg-white rounded-lg border border-gray-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
+                        <Users className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-gray-900">{group.name}</h4>
+                        <p className="text-sm text-gray-600 mb-1">{group.description}</p>
+                        <p className="text-xs text-gray-500">{group.members_count} membre{group.members_count > 1 ? 's' : ''}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => joinGroup(group.id)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        group.is_member
+                          ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          : 'bg-blue-500 text-white hover:bg-blue-600'
+                      }`}
+                    >
+                      {group.is_member ? 'Membre' : 'Rejoindre'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Modale de création de groupe */}
+            {showCreateGroup && (
+              <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+                <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-xs mx-auto space-y-4">
+                  <h4 className="text-lg font-semibold mb-2">Créer un groupe</h4>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded-lg mb-2 text-sm"
+                    placeholder="Nom du groupe"
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    maxLength={30}
+                  />
+                  <textarea
+                    className="w-full p-2 border rounded-lg mb-2 text-sm resize-none"
+                    placeholder="Description"
+                    rows={2}
+                    value={groupDescription}
+                    onChange={(e) => setGroupDescription(e.target.value)}
+                    maxLength={80}
+                  />
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      className="px-4 py-1 bg-gray-200 rounded-lg text-gray-700"
+                      onClick={() => setShowCreateGroup(false)}
+                      type="button"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      className="px-4 py-1 bg-blue-500 text-white rounded-lg"
+                      onClick={handleCreateGroup}
+                      type="button"
+                    >
+                      Créer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {activeTab === 'notifications' && (
           <div className="p-4">
@@ -904,6 +997,54 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
       </div>
     </div>
   );
+
+  // Nouvelle action pour partager un post (copie le lien et toast)
+  async function sharePost(postId: string) {
+    const fakeUrl = `${window.location.origin}/center/post/${postId}`;
+    try {
+      await navigator.clipboard.writeText(fakeUrl);
+      toast({
+        title: "Lien copié",
+        description: "Le lien du post a été copié dans le presse-papier !",
+      });
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de copier le lien",
+        variant: "destructive",
+      });
+    }
+  }
+
+  // Gestion création groupe
+  function handleCreateGroup() {
+    if (!groupName.trim() || !groupDescription.trim()) {
+      toast({
+        title: "Champs requis",
+        description: "Merci d'entrer un nom et une description",
+        variant: "destructive"
+      });
+      return;
+    }
+    // Ajoute le nouveau groupe en début de liste (local uniquement)
+    setGroups(prev => [
+      {
+        id: String(Date.now()),
+        name: groupName.trim(),
+        description: groupDescription.trim(),
+        members_count: 1,
+        is_member: true
+      },
+      ...prev
+    ]);
+    setShowCreateGroup(false);
+    setGroupName('');
+    setGroupDescription('');
+    toast({
+      title: "Groupe créé",
+      description: "Votre groupe a bien été créé !"
+    });
+  }
 };
 
 export default MobileCenter;

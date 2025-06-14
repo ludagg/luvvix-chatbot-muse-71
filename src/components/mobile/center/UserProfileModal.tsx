@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, UserPlus, UserMinus, MessageCircle, MoreHorizontal, MapPin, Calendar, Users, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 interface UserProfileModalProps {
   userId: string;
@@ -48,6 +48,7 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
   const [friendshipStatus, setFriendshipStatus] = useState<'none' | 'pending_sent' | 'pending_received' | 'friends'>('none');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts');
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -140,35 +141,47 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
   };
 
   const checkFriendshipStatus = async () => {
-    if (!user || user.id === userId) return;
+    if (!user || user.id === userId) {
+      setFriendshipStatus('none');
+      return;
+    }
 
     try {
       const { data, error } = await supabase
         .from('center_friendships')
-        .select('*')
+        .select('id, requester_id, addressee_id, status')
         .or(`and(requester_id.eq.${user.id},addressee_id.eq.${userId}),and(requester_id.eq.${userId},addressee_id.eq.${user.id})`)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
 
-      if (data) {
-        if (data.status === 'accepted') {
-          setFriendshipStatus('friends');
-        } else if (data.status === 'pending') {
-          if (data.requester_id === user.id) {
-            setFriendshipStatus('pending_sent');
-          } else {
-            setFriendshipStatus('pending_received');
-          }
+      if (!data) {
+        setFriendshipStatus('none');
+        return;
+      }
+
+      if (data.status === 'accepted') {
+        setFriendshipStatus('friends');
+      } else if (data.status === 'pending') {
+        if (data.requester_id === user.id) {
+          setFriendshipStatus('pending_sent');
+        } else {
+          setFriendshipStatus('pending_received');
         }
+      } else {
+        setFriendshipStatus('none');
       }
     } catch (error) {
+      setFriendshipStatus('none');
       console.error('Error checking friendship:', error);
     }
   };
 
   const sendFriendRequest = async () => {
     if (!user) return;
+    setActionLoading(true);
 
     try {
       const { error } = await supabase
@@ -181,27 +194,27 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
 
       if (error) throw error;
 
-      // Créer une notification
-      await supabase
-        .from('center_notifications')
-        .insert({
-          user_id: userId,
-          actor_id: user.id,
-          type: 'friend_request',
-          entity_type: 'user',
-          entity_id: user.id
-        });
-
+      // Notif optionnelle côté base (déjà en place côté UI mobile)
       setFriendshipStatus('pending_sent');
-      toast.success('Demande d\'amitié envoyée');
+      toast({
+        title: "Demande d'amitié envoyée",
+        description: "Votre demande a bien été envoyée."
+      });
     } catch (error) {
       console.error('Error sending friend request:', error);
-      toast.error('Impossible d\'envoyer la demande');
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer la demande.",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const acceptFriendRequest = async () => {
     if (!user) return;
+    setActionLoading(true);
 
     try {
       const { error } = await supabase
@@ -213,16 +226,26 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
       if (error) throw error;
 
       setFriendshipStatus('friends');
-      toast.success('Demande d\'amitié acceptée');
       fetchUserStats();
+      toast({
+        title: "Amitié acceptée",
+        description: "Vous êtes maintenant amis !"
+      });
     } catch (error) {
       console.error('Error accepting friend request:', error);
-      toast.error('Impossible d\'accepter la demande');
+      toast({
+        title: "Erreur",
+        description: "Impossible d'accepter la demande.",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const removeFriend = async () => {
     if (!user) return;
+    setActionLoading(true);
 
     try {
       const { error } = await supabase
@@ -233,11 +256,20 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
       if (error) throw error;
 
       setFriendshipStatus('none');
-      toast.success('Ami retiré');
       fetchUserStats();
+      toast({
+        title: "Ami retiré",
+        description: "Vous n'êtes plus amis avec cette personne."
+      });
     } catch (error) {
       console.error('Error removing friend:', error);
-      toast.error('Impossible de retirer cet ami');
+      toast({
+        title: "Erreur",
+        description: "Impossible de retirer cet ami.",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -249,7 +281,8 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
         return (
           <button
             onClick={sendFriendRequest}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-full font-medium"
+            disabled={actionLoading}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-full font-medium disabled:opacity-70"
           >
             <UserPlus className="w-4 h-4" />
             <span>Ajouter comme ami</span>
@@ -268,7 +301,8 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
         return (
           <button
             onClick={acceptFriendRequest}
-            className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-full font-medium"
+            disabled={actionLoading}
+            className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-full font-medium disabled:opacity-70"
           >
             <span>Accepter</span>
           </button>
@@ -282,7 +316,8 @@ const UserProfileModal = ({ userId, onClose }: UserProfileModalProps) => {
             </button>
             <button
               onClick={removeFriend}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-full font-medium"
+              disabled={actionLoading}
+              className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white rounded-full font-medium disabled:opacity-70"
             >
               <UserMinus className="w-4 h-4" />
               <span>Retirer</span>

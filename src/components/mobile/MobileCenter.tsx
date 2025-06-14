@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, MoreVertical, Send, Camera, Image as ImageIcon, MapPin, Users, Bell, Play, UserPlus, UserCheck, Video } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, MoreVertical, Send, Camera, Image as ImageIcon, MapPin, Users, Bell, Play, UserPlus, UserCheck, Video, Grid3X3, List, Filter, Bookmark, BookmarkCheck, Flag, Smile, ThumbsUp, Laugh, Frown, AngryIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -80,6 +80,21 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [contentFilter, setContentFilter] = useState<'recent' | 'popular' | 'friends'>('recent');
+  const [savedPosts, setSavedPosts] = useState<Set<string>>(new Set());
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const [postReactions, setPostReactions] = useState<{[key: string]: {[key: string]: number}}>({});
+  const [userReactions, setUserReactions] = useState<{[key: string]: string}>({});
+
+  const reactions = [
+    { emoji: '❤️', name: 'love', color: 'text-red-500' },
+    { emoji: '👍', name: 'like', color: 'text-blue-500' },
+    { emoji: '😂', name: 'laugh', color: 'text-yellow-500' },
+    { emoji: '😮', name: 'wow', color: 'text-orange-500' },
+    { emoji: '😢', name: 'sad', color: 'text-blue-400' },
+    { emoji: '😡', name: 'angry', color: 'text-red-600' }
+  ];
 
   // Stories State
   const [stories, setStories] = useState<{ 
@@ -509,9 +524,178 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const fetchSavedPosts = async () => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('center_saved_posts')
+        .select('post_id')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setSavedPosts(new Set(data?.map(save => save.post_id) || []));
+    } catch (error) {
+      console.error('Erreur chargement posts sauvegardés:', error);
+    }
+  };
+
+  const fetchPostReactions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('center_reactions')
+        .select('post_id, reaction_type, user_id')
+        .in('post_id', posts.map(p => p.id));
+
+      if (error) throw error;
+
+      const reactionsMap: {[key: string]: {[key: string]: number}} = {};
+      const userReactionsMap: {[key: string]: string} = {};
+
+      data?.forEach(reaction => {
+        if (!reactionsMap[reaction.post_id]) {
+          reactionsMap[reaction.post_id] = {};
+        }
+        reactionsMap[reaction.post_id][reaction.reaction_type] = 
+          (reactionsMap[reaction.post_id][reaction.reaction_type] || 0) + 1;
+
+        if (reaction.user_id === user?.id) {
+          userReactionsMap[reaction.post_id] = reaction.reaction_type;
+        }
+      });
+
+      setPostReactions(reactionsMap);
+      setUserReactions(userReactionsMap);
+    } catch (error) {
+      console.error('Erreur chargement réactions:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (posts.length > 0) {
+      fetchPostReactions();
+    }
+    fetchSavedPosts();
+  }, [posts, user]);
+
+  const addReaction = async (postId: string, reactionType: string) => {
+    if (!user) return;
+
+    try {
+      // Supprimer l'ancienne réaction si elle existe
+      if (userReactions[postId]) {
+        await supabase
+          .from('center_reactions')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+      }
+
+      // Ajouter la nouvelle réaction
+      const { error } = await supabase
+        .from('center_reactions')
+        .insert({
+          post_id: postId,
+          user_id: user.id,
+          reaction_type: reactionType
+        });
+
+      if (error) throw error;
+
+      setUserReactions(prev => ({ ...prev, [postId]: reactionType }));
+      setShowReactionPicker(null);
+      fetchPostReactions();
+    } catch (error) {
+      console.error('Erreur ajout réaction:', error);
+    }
+  };
+
+  const toggleSavePost = async (postId: string) => {
+    if (!user) return;
+
+    const isSaved = savedPosts.has(postId);
+
+    try {
+      if (isSaved) {
+        const { error } = await supabase
+          .from('center_saved_posts')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        setSavedPosts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(postId);
+          return newSet;
+        });
+        toast({ title: "Post retiré des favoris" });
+      } else {
+        const { error } = await supabase
+          .from('center_saved_posts')
+          .insert({
+            post_id: postId,
+            user_id: user.id
+          });
+
+        if (error) throw error;
+        setSavedPosts(prev => new Set([...prev, postId]));
+        toast({ title: "Post sauvegardé" });
+      }
+    } catch (error) {
+      console.error('Erreur sauvegarde post:', error);
+    }
+  };
+
+  const reportPost = async (postId: string, reason: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('center_reports')
+        .insert({
+          post_id: postId,
+          user_id: user.id,
+          reason,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+      toast({ 
+        title: "Signalement envoyé", 
+        description: "Notre équipe va examiner ce contenu." 
+      });
+    } catch (error) {
+      console.error('Erreur signalement:', error);
+    }
+  };
+
+  const processPostContent = (content: string) => {
+    // Traitement des mentions (@username)
+    const mentionRegex = /@(\w+)/g;
+    const hashtagRegex = /#(\w+)/g;
+
+    return content
+      .replace(mentionRegex, '<span class="text-blue-500 font-medium cursor-pointer">@$1</span>')
+      .replace(hashtagRegex, '<span class="text-green-500 font-medium cursor-pointer">#$1</span>');
+  };
+
+  const filterPosts = () => {
+    let filtered = [...posts];
+    
+    switch (contentFilter) {
+      case 'popular':
+        return filtered.sort((a, b) => (b.likes_count + b.comments_count) - (a.likes_count + a.comments_count));
+      case 'friends':
+        // Mock: filter posts from followed users
+        return filtered.filter(post => Math.random() > 0.3);
+      default:
+        return filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-50 z-50 flex flex-col">
-      {/* Header */}
+      {/* Header avec filtres */}
       <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200 shadow-sm">
         <div className="flex items-center space-x-3">
           <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full">
@@ -521,6 +705,25 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         </div>
         
         <div className="flex items-center space-x-2">
+          {/* Filtre de contenu */}
+          <select
+            value={contentFilter}
+            onChange={(e) => setContentFilter(e.target.value as any)}
+            className="text-sm border border-gray-300 rounded-lg px-2 py-1"
+          >
+            <option value="recent">Récent</option>
+            <option value="popular">Populaire</option>
+            <option value="friends">Amis</option>
+          </select>
+
+          {/* Mode d'affichage */}
+          <button
+            onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
+            className="p-2 hover:bg-gray-100 rounded-full"
+          >
+            {viewMode === 'list' ? <Grid3X3 className="w-5 h-5" /> : <List className="w-5 h-5" />}
+          </button>
+
           <button className="p-2 hover:bg-gray-100 rounded-full">
             <Search className="w-6 h-6 text-gray-600" />
           </button>
@@ -709,148 +912,245 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                 <p className="text-gray-400 text-sm">Soyez le premier à publier !</p>
               </div>
             ) : (
-              posts.map((post) => (
-                <div key={post.id} className="bg-white border-b border-gray-200 p-4">
-                  {/* Header du post */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                        <span className="text-white font-bold text-sm">
-                          {post.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
+              <div className={viewMode === 'grid' ? 'grid grid-cols-2 gap-2 p-2' : ''}>
+                {filterPosts().map((post) => (
+                  <div key={post.id} className={`bg-white border-b border-gray-200 ${viewMode === 'grid' ? 'rounded-lg overflow-hidden' : 'p-4'}`}>
+                    {/* Header du post */}
+                    <div className={`flex items-center justify-between ${viewMode === 'grid' ? 'p-3 pb-2' : 'mb-3'}`}>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                          <span className="text-white font-bold text-sm">
+                            {post.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
+                          </span>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">
+                            {post.user_profiles?.full_name || 'Utilisateur inconnu'}
+                          </h4>
+                          <p className="text-xs text-gray-500">@{post.user_profiles?.username || "anonyme"}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-500">
+                          {format(new Date(post.created_at), 'dd MMM HH:mm', { locale: fr })}
                         </span>
-                      </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-900">
-                          {post.user_profiles?.full_name || 'Utilisateur inconnu'}
-                        </h4>
-                        <p className="text-xs text-gray-500">@{post.user_profiles?.username || "anonyme"}</p>
-                        {post.user_profiles?.email && (
-                          <p className="text-xs text-gray-400">{post.user_profiles.email}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">
-                        {format(new Date(post.created_at), 'dd MMM HH:mm', { locale: fr })}
-                      </span>
-                      <button className="p-1 hover:bg-gray-100 rounded-full">
-                        <MoreVertical className="w-4 h-4 text-gray-500" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Contenu du post */}
-                  <div className="mb-3">
-                    <p className="text-gray-900 leading-relaxed">{post.content}</p>
-                    
-                    {/* Vidéo si présente */}
-                    {post.video_url && (
-                      <div className="mt-3 relative bg-black rounded-lg overflow-hidden">
-                        <div className="aspect-video flex items-center justify-center">
-                          <button className="w-16 h-16 bg-white bg-opacity-80 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all">
-                            <Play className="w-8 h-8 text-gray-800 ml-1" />
+                        
+                        {/* Menu actions */}
+                        <div className="relative">
+                          <button className="p-1 hover:bg-gray-100 rounded-full">
+                            <MoreVertical className="w-4 h-4 text-gray-500" />
                           </button>
+                          {/* Dropdown menu (simplified for demo) */}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contenu du post avec mentions et hashtags */}
+                    <div className={`${viewMode === 'grid' ? 'px-3 pb-2' : 'mb-3'}`}>
+                      <div 
+                        className="text-gray-900 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: processPostContent(post.content) }}
+                      />
+                      
+                      {/* Vidéo si présente */}
+                      {post.video_url && (
+                        <div className="mt-3 relative bg-black rounded-lg overflow-hidden">
+                          <div className="aspect-video flex items-center justify-center">
+                            <button className="w-16 h-16 bg-white bg-opacity-80 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all">
+                              <Play className="w-8 h-8 text-gray-800 ml-1" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Images en grille si présentes */}
+                      {post.media_urls && post.media_urls.length > 0 && (
+                        <div className={`mt-3 grid gap-2 rounded-lg overflow-hidden ${
+                          post.media_urls.length === 1 ? 'grid-cols-1' :
+                          post.media_urls.length === 2 ? 'grid-cols-2' :
+                          post.media_urls.length === 3 ? 'grid-cols-2' : 'grid-cols-2'
+                        }`}>
+                          {post.media_urls.slice(0, 4).map((url, index) => (
+                            <div key={index} className={`relative ${
+                              post.media_urls.length === 3 && index === 0 ? 'row-span-2' : ''
+                            }`}>
+                              <img 
+                                src={url} 
+                                alt={`Image ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              {post.media_urls.length > 4 && index === 3 && (
+                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                  <span className="text-white font-bold text-lg">+{post.media_urls.length - 4}</span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions avec réactions avancées */}
+                    <div className={`flex items-center justify-between pt-3 border-t border-gray-100 ${viewMode === 'grid' ? 'px-3 pb-3' : ''}`}>
+                      <div className="flex items-center space-x-4">
+                        {/* Réactions */}
+                        <div className="relative">
+                          <button
+                            onClick={() => setShowReactionPicker(showReactionPicker === post.id ? null : post.id)}
+                            className={`flex items-center space-x-2 transition-colors ${
+                              userReactions[post.id] ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+                            }`}
+                          >
+                            {userReactions[post.id] ? (
+                              <span className="text-lg">{reactions.find(r => r.name === userReactions[post.id])?.emoji}</span>
+                            ) : (
+                              <Heart className="w-5 h-5" />
+                            )}
+                            <span className="text-sm font-medium">
+                              {Object.values(postReactions[post.id] || {}).reduce((a, b) => a + b, 0) || post.likes_count}
+                            </span>
+                          </button>
+
+                          {/* Picker de réactions */}
+                          {showReactionPicker === post.id && (
+                            <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-full shadow-lg p-2 flex space-x-1 z-10">
+                              {reactions.map((reaction) => (
+                                <button
+                                  key={reaction.name}
+                                  onClick={() => addReaction(post.id, reaction.name)}
+                                  className="text-2xl hover:scale-125 transition-transform p-1"
+                                >
+                                  {reaction.emoji}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <button
+                          onClick={() => {
+                            setShowComments(showComments === post.id ? null : post.id);
+                            if (showComments !== post.id) {
+                              fetchComments(post.id);
+                            }
+                          }}
+                          className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
+                        >
+                          <MessageCircle className="w-5 h-5" />
+                          <span className="text-sm font-medium">{post.comments_count}</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => sharePost(post.id)}
+                          className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors"
+                        >
+                          <Share className="w-5 h-5" />
+                          <span className="text-sm font-medium">Partager</span>
+                        </button>
+
+                        {/* Sauvegarde */}
+                        <button
+                          onClick={() => toggleSavePost(post.id)}
+                          className={`transition-colors ${
+                            savedPosts.has(post.id) ? 'text-yellow-500' : 'text-gray-500 hover:text-yellow-500'
+                          }`}
+                        >
+                          {savedPosts.has(post.id) ? (
+                            <BookmarkCheck className="w-5 h-5" />
+                          ) : (
+                            <Bookmark className="w-5 h-5" />
+                          )}
+                        </button>
+
+                        {/* Signalement */}
+                        <button
+                          onClick={() => reportPost(post.id, 'inappropriate')}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <Flag className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Affichage des réactions populaires */}
+                    {postReactions[post.id] && Object.keys(postReactions[post.id]).length > 0 && (
+                      <div className={`flex items-center space-x-1 text-sm text-gray-500 ${viewMode === 'grid' ? 'px-3 pb-2' : 'mt-2'}`}>
+                        {Object.entries(postReactions[post.id])
+                          .sort(([,a], [,b]) => b - a)
+                          .slice(0, 3)
+                          .map(([reactionType, count]) => {
+                            const reaction = reactions.find(r => r.name === reactionType);
+                            return (
+                              <span key={reactionType} className="flex items-center space-x-1">
+                                <span>{reaction?.emoji}</span>
+                                <span>{count}</span>
+                              </span>
+                            );
+                          })}
+                      </div>
+                    )}
+
+                    {/* Section commentaires */}
+                    {showComments === post.id && (
+                      <div className="mt-4 border-t border-gray-100 pt-4">
+                        {/* Nouveau commentaire */}
+                        <div className="flex items-center space-x-3 mb-4">
+                          <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold text-xs">
+                              {user?.email?.[0]?.toUpperCase() || 'U'}
+                            </span>
+                          </div>
+                          <div className="flex-1 flex items-center space-x-2">
+                            <input
+                              type="text"
+                              value={newComment}
+                              onChange={(e) => setNewComment(e.target.value)}
+                              placeholder="Ajouter un commentaire..."
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              onKeyPress={(e) => e.key === 'Enter' && addComment(post.id)}
+                            />
+                            <button
+                              onClick={() => addComment(post.id)}
+                              disabled={!newComment.trim()}
+                              className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <Send className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Liste des commentaires */}
+                        <div className="space-y-3">
+                          {comments.map((comment) => (
+                            <div key={comment.id} className="flex items-start space-x-3">
+                              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
+                                <span className="text-white font-bold text-xs">
+                                  {comment.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <div className="bg-gray-100 rounded-2xl px-3 py-2">
+                                  <h5 className="font-semibold text-sm text-gray-900">
+                                    {comment.user_profiles?.full_name || 'Utilisateur inconnu'}
+                                  </h5>
+                                  <p className="text-sm text-gray-700">{comment.content}</p>
+                                  {comment.user_profiles?.email && (
+                                    <p className="text-xs text-gray-400">{comment.user_profiles.email}</p>
+                                  )}
+                                </div>
+                                <span className="text-xs text-gray-500 ml-3 mt-1">
+                                  {format(new Date(comment.created_at), 'dd MMM HH:mm', { locale: fr })}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
                   </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <div className="flex items-center space-x-6">
-                      <button
-                        onClick={() => toggleLike(post.id)}
-                        className={`flex items-center space-x-2 transition-colors ${
-                          likedPosts.has(post.id) ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
-                        }`}
-                      >
-                        <Heart className={`w-5 h-5 ${likedPosts.has(post.id) ? 'fill-current' : ''}`} />
-                        <span className="text-sm font-medium">{post.likes_count}</span>
-                      </button>
-                      
-                      <button
-                        onClick={() => {
-                          setShowComments(showComments === post.id ? null : post.id);
-                          if (showComments !== post.id) {
-                            fetchComments(post.id);
-                          }
-                        }}
-                        className="flex items-center space-x-2 text-gray-500 hover:text-blue-500 transition-colors"
-                      >
-                        <MessageCircle className="w-5 h-5" />
-                        <span className="text-sm font-medium">{post.comments_count}</span>
-                      </button>
-                      
-                      {/* Bouton partager avec logique de partage réelle */}
-                      <button
-                        onClick={() => sharePost(post.id)}
-                        className="flex items-center space-x-2 text-gray-500 hover:text-green-500 transition-colors"
-                      >
-                        <Share className="w-5 h-5" />
-                        <span className="text-sm font-medium">Partager</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Section commentaires */}
-                  {showComments === post.id && (
-                    <div className="mt-4 border-t border-gray-100 pt-4">
-                      {/* Nouveau commentaire */}
-                      <div className="flex items-center space-x-3 mb-4">
-                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
-                          <span className="text-white font-bold text-xs">
-                            {user?.email?.[0]?.toUpperCase() || 'U'}
-                          </span>
-                        </div>
-                        <div className="flex-1 flex items-center space-x-2">
-                          <input
-                            type="text"
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            placeholder="Ajouter un commentaire..."
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            onKeyPress={(e) => e.key === 'Enter' && addComment(post.id)}
-                          />
-                          <button
-                            onClick={() => addComment(post.id)}
-                            disabled={!newComment.trim()}
-                            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                          >
-                            <Send className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Liste des commentaires */}
-                      <div className="space-y-3">
-                        {comments.map((comment) => (
-                          <div key={comment.id} className="flex items-start space-x-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center">
-                              <span className="text-white font-bold text-xs">
-                                {comment.user_profiles?.username?.[0]?.toUpperCase() || 'U'}
-                              </span>
-                            </div>
-                            <div className="flex-1">
-                              <div className="bg-gray-100 rounded-2xl px-3 py-2">
-                                <h5 className="font-semibold text-sm text-gray-900">
-                                  {comment.user_profiles?.full_name || 'Utilisateur inconnu'}
-                                </h5>
-                                <p className="text-sm text-gray-700">{comment.content}</p>
-                                {comment.user_profiles?.email && (
-                                  <p className="text-xs text-gray-400">{comment.user_profiles.email}</p>
-                                )}
-                              </div>
-                              <span className="text-xs text-gray-500 ml-3 mt-1">
-                                {format(new Date(comment.created_at), 'dd MMM HH:mm', { locale: fr })}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
         )}

@@ -174,7 +174,7 @@ Que puis-je faire pour vous aujourd'hui ?`,
         { component: 'UnifiedAIAssistant', personality }
       );
 
-      // Correction stricte des erreurs TS - vérification complète de null
+      // Vérification complète de null pour response
       if (!response) {
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
@@ -186,7 +186,7 @@ Que puis-je faire pour vous aujourd'hui ?`,
         return;
       }
 
-      // Correction TS18047 : vérification complète avant d'accéder aux propriétés
+      // Vérification de type et d'existence pour response et ses propriétés
       if (response && typeof response === 'object' && 'actionDone' in response) {
         toast.success("Action IA réalisée !");
       }
@@ -194,8 +194,10 @@ Que puis-je faire pour vous aujourd'hui ?`,
       let assistantContent = '';
       if (typeof response === 'string') {
         assistantContent = response;
-      } else if (response && typeof response === 'object' && 'message' in response && (response as any).message) {
-        assistantContent = (response as any).message;
+      } else if (response && typeof response === 'object' && 'message' in response) {
+        // Vérification supplémentaire pour s'assurer que message n'est pas null/undefined
+        const messageValue = (response as any).message;
+        assistantContent = messageValue && typeof messageValue === 'string' ? messageValue : "Réponse non disponible.";
       } else {
         assistantContent = "Je n'ai pas pu comprendre la réponse du cerveau IA.";
       }

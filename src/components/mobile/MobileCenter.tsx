@@ -101,23 +101,39 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: postsData, error: postsError } = await supabase
         .from('center_posts')
-        .select(`
-          *,
-          user_profiles: user_id (
-            id,
-            full_name,
-            username,
-            avatar_url,
-            email
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (error) throw error;
-      setPosts(data || []);
+      if (postsError) throw postsError;
+
+      // Fetch user profiles separately for each post
+      const postsWithProfiles = await Promise.all(
+        (postsData || []).map(async (post) => {
+          const { data: userProfile, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('id, full_name, username, avatar_url, email')
+            .eq('id', post.user_id)
+            .single();
+
+          if (profileError) {
+            console.error('Erreur chargement profil:', profileError);
+            return {
+              ...post,
+              user_profiles: null
+            };
+          }
+
+          return {
+            ...post,
+            user_profiles: userProfile
+          };
+        })
+      );
+
+      setPosts(postsWithProfiles);
     } catch (error) {
       console.error('Erreur chargement posts:', error);
       toast({

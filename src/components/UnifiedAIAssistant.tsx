@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -174,32 +175,33 @@ Que puis-je faire pour vous aujourd'hui ?`,
         { component: 'UnifiedAIAssistant', personality }
       );
 
-      // Vérification complète de null pour response
-      if (!response) {
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: 'Désolé, je rencontre un problème technique. (Aucune réponse générée...)',
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, errorMessage]);
-        return;
-      }
-
-      // Vérification de type et d'existence pour response et ses propriétés
-      if (response && typeof response === 'object' && 'actionDone' in response) {
-        toast.success("Action IA réalisée !");
-      }
-
+      // === CORRECTION DEFINITIVE DE L'ERREUR TYPESCRIPT ===
+      // Gestion robuste et complète de tous les cas de response
       let assistantContent = '';
-      if (typeof response === 'string') {
+      
+      if (!response) {
+        // Cas 1: response est null/undefined
+        assistantContent = 'Désolé, je rencontre un problème technique. (Aucune réponse générée...)';
+      } else if (typeof response === 'string') {
+        // Cas 2: response est une string directe
         assistantContent = response;
-      } else if (response && typeof response === 'object' && 'message' in response) {
-        // Vérification supplémentaire pour s'assurer que message n'est pas null/undefined
-        const messageValue = (response as any).message;
-        assistantContent = messageValue && typeof messageValue === 'string' ? messageValue : "Réponse non disponible.";
+      } else if (typeof response === 'object') {
+        // Cas 3: response est un objet
+        if ('actionDone' in response) {
+          toast.success("Action IA réalisée !");
+        }
+        
+        if ('message' in response) {
+          const messageValue = (response as any).message;
+          assistantContent = (messageValue && typeof messageValue === 'string') 
+            ? messageValue 
+            : "Réponse non disponible.";
+        } else {
+          assistantContent = "Je n'ai pas pu comprendre la réponse du cerveau IA.";
+        }
       } else {
-        assistantContent = "Je n'ai pas pu comprendre la réponse du cerveau IA.";
+        // Cas 4: type inattendu
+        assistantContent = "Type de réponse inattendu du cerveau IA.";
       }
 
       const assistantMessage: Message = {

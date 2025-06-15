@@ -223,7 +223,7 @@ const MobileCloud = () => {
       {showDropboxBrowser && dropboxConnected && (
         <DropboxFileBrowserMobile 
           onClose={() => setShowDropboxBrowser(false)}
-          onRefresh={() => setShowDropboxBrowser(false) || setShowDropboxBrowser(true)} // Hack: refresh hard reset
+          onRefresh={() => { setShowDropboxBrowser(false); setShowDropboxBrowser(true); }} // Fix: call both actions inside a block, no || or &&
         />
       )}
 

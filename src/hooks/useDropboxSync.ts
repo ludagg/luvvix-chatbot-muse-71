@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fileService } from "@/services/file-service";
@@ -23,7 +22,7 @@ export function useDropboxSync() {
     let dropboxFiles: DropboxFileEntry[] = [];
     try {
       const { data, error } = await supabase.functions.invoke('dropbox-list-files', {
-        body: { path: "", recursive: true }, // on force le listing complet
+        body: { path: "", recursive: true },
       });
       if (error || !data?.files) throw error || new Error("Dropbox API error");
       dropboxFiles = data.files.filter((f: DropboxFileEntry) => f[".tag"] === "file");
@@ -54,10 +53,11 @@ export function useDropboxSync() {
         if (error || !data) throw error || new Error("Erreur téléchargement Dropbox");
         // Recrée un fichier compatible
         let blob: Blob;
-        if (data instanceof ArrayBuffer) blob = new Blob([data], { type: dropFile?.mime_type || 'application/octet-stream' });
+        if (data instanceof ArrayBuffer) blob = new Blob([data], { type: "application/octet-stream" });
         else if (data instanceof Blob) blob = data;
         else blob = new Blob([]);
         
+        // Correction : deviner le mimetype UNIQUEMENT à partir de l’extension
         const ftype = dropFile.name?.split('.').pop()?.toLowerCase();
         let guessedType = "application/octet-stream";
         if (ftype === 'pdf') guessedType = "application/pdf";

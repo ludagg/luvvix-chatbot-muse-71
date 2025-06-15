@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCloudConnections } from '@/hooks/use-cloud-connections';
 import { fileService } from '@/services/file-service';
 import { Cloud, CheckCircle, Link as LinkIcon, Unlink, Shield } from 'lucide-react';
+import { useDropboxSync } from '@/hooks/useDropboxSync';
 
 const MobileCloud = () => {
   const [currentPath] = useState('/');
@@ -9,6 +10,7 @@ const MobileCloud = () => {
   const [loading, setLoading] = useState(true);
   const [usedStorage, setUsedStorage] = useState(0);
   const [showKoofr, setShowKoofr] = useState(false);
+  const { syncDropboxAndCloud } = useDropboxSync();
 
   // Connexion Koofr user
   const {
@@ -19,6 +21,12 @@ const MobileCloud = () => {
     disconnectCloud,
     loading: koofrLoading
   } = useCloudConnections();
+
+  // Synchronisation automatique Dropbox <-> Cloud à l'ouverture mobile
+  useEffect(() => {
+    // Si l'utilisateur est connecté : on synchronise Dropbox <-> Cloud en fond
+    syncDropboxAndCloud();
+  }, []); // Exécuté une seule fois lors du montage
 
   // Charger les vrais fichiers Cloud utilisateur
   useEffect(() => {

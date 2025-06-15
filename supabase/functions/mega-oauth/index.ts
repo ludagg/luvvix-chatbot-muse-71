@@ -35,25 +35,24 @@ serve(async (req) => {
     const { action, email, password } = await req.json();
 
     if (action === 'connect') {
-      // Pour Mega, on utilise email/password pour l'authentification
       if (!email || !password) {
         throw new Error('Email et mot de passe requis pour Mega');
       }
 
       console.log('Connexion Mega pour:', email);
 
-      // Sauvegarder la connexion en base
+      // Vérifier s'il existe déjà une connexion active
       const { data: existingConnection, error: checkError } = await supabase
         .from('cloud_connections')
         .select('id')
         .eq('user_id', user.id)
         .eq('provider', 'mega')
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (checkError && checkError.code !== 'PGRST116') {
         console.error('Erreur vérification connexion existante:', checkError);
-        throw new Error('Erreur lors de la vérification');
+        throw new Error('Erreur lors de la vérification : ' + JSON.stringify(checkError));
       }
 
       if (existingConnection) {
@@ -74,7 +73,9 @@ serve(async (req) => {
 
         if (updateError) {
           console.error('Erreur mise à jour connexion:', updateError);
-          throw new Error('Erreur lors de la mise à jour');
+          throw new Error(
+            'Erreur lors de la mise à jour : ' + (updateError.message || '') + ' - Détails : ' + JSON.stringify(updateError)
+          );
         }
       } else {
         // Créer une nouvelle connexion
@@ -96,7 +97,9 @@ serve(async (req) => {
 
         if (insertError) {
           console.error('Erreur insertion connexion:', insertError);
-          throw new Error('Erreur lors de la sauvegarde');
+          throw new Error(
+            'Erreur lors de la sauvegarde : ' + (insertError.message || '') + ' - Détails : ' + JSON.stringify(insertError)
+          );
         }
       }
 
@@ -114,7 +117,6 @@ serve(async (req) => {
     }
 
     if (action === 'disconnect') {
-      // Déconnecter Mega
       const { error: updateError } = await supabase
         .from('cloud_connections')
         .update({ is_active: false })
@@ -123,7 +125,9 @@ serve(async (req) => {
 
       if (updateError) {
         console.error('Erreur déconnexion:', updateError);
-        throw new Error('Erreur lors de la déconnexion');
+        throw new Error(
+          'Erreur lors de la déconnexion : ' + (updateError.message || '') + ' - Détails : ' + JSON.stringify(updateError)
+        );
       }
 
       return new Response(JSON.stringify({ 
@@ -134,12 +138,13 @@ serve(async (req) => {
       });
     }
 
-    throw new Error('Action non supportée');
+    throw new Error('Action non supportée : ' + action);
 
   } catch (error) {
-    console.error('Erreur Mega OAuth:', error);
+    // Log complet de l’erreur côté serveur
+    console.error('Erreur Mega OAuth détaillée:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error?.message || 'Erreur inconnue', details: error }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import FileUploader from './FileUploader';
 import FilePreview from './FilePreview';
 import { useAuth } from '@/hooks/useAuth';
+import DropboxFileBrowser from "./DropboxFileBrowser";
 
 interface FileExplorerProps {
   folderId?: string;
@@ -26,6 +27,7 @@ const FileExplorer = ({ folderId, filterType, viewMode = 'grid' }: FileExplorerP
   const [showUploader, setShowUploader] = useState(false);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [breadcrumbs, setBreadcrumbs] = useState<Array<{ id?: string; name: string }>>([]);
+  const [showDropbox, setShowDropbox] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -273,122 +275,128 @@ const FileExplorer = ({ folderId, filterType, viewMode = 'grid' }: FileExplorerP
 
   return (
     <div className="space-y-4">
-      {/* Breadcrumbs */}
-      <div className="flex items-center flex-wrap space-x-1 text-sm mb-4">
-        {breadcrumbs.map((crumb, index) => (
-          <div key={index} className="flex items-center">
-            {index > 0 && <span className="mx-1 text-gray-400">/</span>}
-            <button
-              onClick={() => handleBreadcrumbClick(crumb.id)}
-              className={`hover:underline ${index === breadcrumbs.length - 1 ? 'font-bold' : ''}`}
-            >
-              {crumb.name}
-            </button>
-          </div>
-        ))}
+      {/* Boutons pour basculer entre vues Cloud interne / Dropbox */}
+      <div className="flex gap-2 mb-4">
+        <Button
+          variant={!showDropbox ? 'default' : 'outline'}
+          onClick={() => setShowDropbox(false)}
+        >
+          Mes Fichiers LuvviX
+        </Button>
+        <Button
+          variant={showDropbox ? 'default' : 'outline'}
+          onClick={() => setShowDropbox(true)}
+        >
+          Dropbox
+        </Button>
       </div>
-      
-      {/* Main content: either uploader or file list */}
-      {showUploader ? (
-        <div>
-          <div className="mb-4 flex justify-between items-center">
-            <Button variant="outline" onClick={() => setShowUploader(false)}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour aux fichiers
-            </Button>
-          </div>
-          <FileUploader 
-            currentFolderId={params.folderId || folderId} 
-            onUploadComplete={() => {
-              loadFiles(params.folderId || folderId);
-              setShowUploader(false);
-            }} 
-          />
-        </div>
+
+      {/* Vue Dropbox : exploration de son compte */}
+      {showDropbox ? (
+        <DropboxFileBrowser />
       ) : (
-        <>
-          {/* Search and actions */}
-          <div className="flex flex-col sm:flex-row justify-between gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input
-                placeholder="Rechercher des fichiers..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setShowUploader(true)}>
-                <Upload className="mr-2 h-4 w-4" />
-                Télécharger
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={handleManualSync}
-                disabled={syncing}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-                Synchroniser
+        // Main content: either uploader or file list
+        showUploader ? (
+          <div>
+            <div className="mb-4 flex justify-between items-center">
+              <Button variant="outline" onClick={() => setShowUploader(false)}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Retour aux fichiers
               </Button>
             </div>
+            <FileUploader 
+              currentFolderId={params.folderId || folderId} 
+              onUploadComplete={() => {
+                loadFiles(params.folderId || folderId);
+                setShowUploader(false);
+              }} 
+            />
           </div>
-          
-          {/* Tab filters */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-4">
-              <TabsTrigger value="all">Tous</TabsTrigger>
-              <TabsTrigger value="folders">Dossiers</TabsTrigger>
-              <TabsTrigger value="files">Fichiers</TabsTrigger>
-              <TabsTrigger value="starred">Favoris</TabsTrigger>
-            </TabsList>
+        ) : (
+          <>
+            {/* Search and actions */}
+            <div className="flex flex-col sm:flex-row justify-between gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  placeholder="Rechercher des fichiers..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={() => setShowUploader(true)}>
+                  <Upload className="mr-2 h-4 w-4" />
+                  Télécharger
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleManualSync}
+                  disabled={syncing}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                  Synchroniser
+                </Button>
+              </div>
+            </div>
             
-            <TabsContent value={activeTab} className="mt-4">
-              {loading ? (
-                <div className={gridClasses}>
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="border rounded-lg p-4 animate-pulse">
-                      <div className="h-8 w-8 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : sortedFiles.length > 0 ? (
-                <div className={gridClasses}>
-                  {sortedFiles.map((file) => (
-                    <div
-                      key={file.id}
-                      className={`border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors relative group ${
-                        viewMode === 'list' ? 'flex items-center space-x-4' : ''
-                      }`}
-                      onClick={() => file.type === 'folder' ? handleFolderClick(file.id) : handleFileClick(file.id)}
-                    >
-                      <div className="flex items-center">
-                        {getFileIcon(file.type)}
-                        {file.starred && (
-                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 absolute top-2 right-2" />
-                        )}
+            {/* Tab filters */}
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid grid-cols-4">
+                <TabsTrigger value="all">Tous</TabsTrigger>
+                <TabsTrigger value="folders">Dossiers</TabsTrigger>
+                <TabsTrigger value="files">Fichiers</TabsTrigger>
+                <TabsTrigger value="starred">Favoris</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value={activeTab} className="mt-4">
+                {loading ? (
+                  <div className={gridClasses}>
+                    {[1, 2, 3, 4].map((i) => (
+                      <div key={i} className="border rounded-lg p-4 animate-pulse">
+                        <div className="h-8 w-8 bg-gray-200 rounded mb-2"></div>
+                        <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
                       </div>
-                      <div className={`${viewMode === 'list' ? 'flex-1' : 'mt-2'}`}>
-                        <p className="font-medium truncate" title={file.name}>
-                          {file.name}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {file.type === 'folder' ? 'Dossier' : `${(file.size / 1024).toFixed(1)} KB`}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {new Date(file.modified).toLocaleDateString()}
-                        </p>
+                    ))}
+                  </div>
+                ) : sortedFiles.length > 0 ? (
+                  <div className={gridClasses}>
+                    {sortedFiles.map((file) => (
+                      <div
+                        key={file.id}
+                        className={`border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors relative group ${
+                          viewMode === 'list' ? 'flex items-center space-x-4' : ''
+                        }`}
+                        onClick={() => file.type === 'folder' ? handleFolderClick(file.id) : handleFileClick(file.id)}
+                      >
+                        <div className="flex items-center">
+                          {getFileIcon(file.type)}
+                          {file.starred && (
+                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 absolute top-2 right-2" />
+                          )}
+                        </div>
+                        <div className={`${viewMode === 'list' ? 'flex-1' : 'mt-2'}`}>
+                          <p className="font-medium truncate" title={file.name}>
+                            {file.name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {file.type === 'folder' ? 'Dossier' : `${(file.size / 1024).toFixed(1)} KB`}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(file.modified).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                emptyState
-              )}
-            </TabsContent>
-          </Tabs>
-        </>
+                    ))}
+                  </div>
+                ) : (
+                  emptyState
+                )}
+              </TabsContent>
+            </Tabs>
+          </>
+        )
       )}
     </div>
   );

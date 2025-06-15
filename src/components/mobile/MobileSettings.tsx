@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Globe, Palette, Database, Cloud } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,7 +6,7 @@ import ProfilePage from './AccountPages/ProfilePage';
 import SecurityPage from './AccountPages/SecurityPage';
 import NotificationsPage from './AccountPages/NotificationsPage';
 import PrivacyPage from './AccountPages/PrivacyPage';
-import MegaCloudPage from './AccountPages/MegaCloudPage';
+import KoofrCloudPage from './AccountPages/KoofrCloudPage';
 
 const MobileSettings = () => {
   const { user, signOut } = useAuth();
@@ -111,7 +110,7 @@ const MobileSettings = () => {
   }
   
   if (currentPage === 'cloud') {
-    return <MegaCloudPage onBack={() => setCurrentPage(null)} />;
+    return <KoofrCloudPage onBack={() => setCurrentPage(null)} />;
   }
   
   if (currentPage === 'notifications') {

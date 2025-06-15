@@ -12,7 +12,7 @@ interface CloudConnection {
   provider: string;
   account_info: any;
   is_active: boolean;
-  created_at: string;
+  created_at: string; // <-- Add this line to match Supabase schema
 }
 
 const CloudConnection: React.FC = () => {

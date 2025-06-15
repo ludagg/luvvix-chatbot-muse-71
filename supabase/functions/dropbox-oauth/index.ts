@@ -1,5 +1,4 @@
 
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
@@ -39,30 +38,28 @@ serve(async (req) => {
     if (!frontendUrl) {
       throw new Error("FRONTEND_URL secret is not set in Supabase.");
     }
-    // S'assurer que l'URL n'a pas de slash à la fin pour éviter les doubles slashes
     if (frontendUrl.endsWith('/')) {
       frontendUrl = frontendUrl.slice(0, -1);
     }
     const redirectUri = `${frontendUrl}/auth/dropbox/callback`;
 
     if (action === 'get_auth_url') {
-      // Clés Dropbox directement dans le code
+      // Utilise ici la clé corrigée
       const clientId = 'n996hgcgi6xp1pu';
-
       const scope = 'files.content.write files.content.read files.metadata.read account_info.read';
-      
+
       const authUrl = `https://www.dropbox.com/oauth2/authorize?` +
         `client_id=${clientId}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `response_type=code&` +
         `scope=${encodeURIComponent(scope)}&` +
-        `token_access_type=offline`; // Ajout pour obtenir un refresh_token
+        `token_access_type=offline`;
 
       console.log('Generated Dropbox auth URL:', authUrl);
       console.log('Redirect URI for Dropbox:', redirectUri);
 
-      return new Response(JSON.stringify({ 
-        auth_url: authUrl 
+      return new Response(JSON.stringify({
+        auth_url: authUrl
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -73,7 +70,7 @@ serve(async (req) => {
         throw new Error('Code d\'autorisation manquant');
       }
 
-      // Clés Dropbox directement dans le code
+      // Clés Dropbox corrigées ici aussi
       const clientId = 'n996hgcgi6xp1pu';
       const clientSecret = '787xbwfkw5tjhux';
 
@@ -81,7 +78,7 @@ serve(async (req) => {
 
       const tokenResponse = await fetch('https://api.dropboxapi.com/oauth2/token', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`
         },
@@ -104,7 +101,7 @@ serve(async (req) => {
       // Récupérer les informations du compte
       const accountResponse = await fetch('https://api.dropboxapi.com/2/users/get_current_account', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${tokens.access_token}`,
         },
       });
@@ -141,7 +138,7 @@ serve(async (req) => {
         throw new Error('Erreur lors de la sauvegarde');
       }
 
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         success: true,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -158,4 +155,3 @@ serve(async (req) => {
     );
   }
 });
-

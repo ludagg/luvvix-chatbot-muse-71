@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
@@ -24,8 +23,12 @@ import {
   CalendarDays,
   Bell,
   Languages,
-  FormInput
+  FormInput,
+  News
 } from 'lucide-react';
+import { fetchLatestNews } from "@/services/news-service";
+import { NewsItem } from "@/types/news";
+import MobileNewsPage from "./MobileNewsPage";
 
 const MobileHome = () => {
   const { user } = useAuth();
@@ -63,6 +66,24 @@ const MobileHome = () => {
       }, 2000);
     }
   }, [notificationsEnabled, requestPermission]);
+
+  // -- Ajout de l'état local pour les news --
+  const [news, setNews] = React.useState<NewsItem[]>([]);
+  const [loadingNews, setLoadingNews] = React.useState(false);
+  const [newsError, setNewsError] = React.useState<string | null>(null);
+  const [showNewsPage, setShowNewsPage] = React.useState(false);
+
+  // Charger les actualités au montage, au tout dernier (afin de prioriser le reste)
+  React.useEffect(() => {
+    setLoadingNews(true);
+    fetchLatestNews("general", "fr")
+      .then((items) => {
+        setNews(items.slice(0, 5));
+        setNewsError(null);
+      })
+      .catch(() => setNewsError("Impossible de charger les actualités"))
+      .finally(() => setLoadingNews(false));
+  }, []);
 
   const quickActions = [
     {
@@ -164,6 +185,11 @@ const MobileHome = () => {
     totalTranslations: history?.length || 0,
     totalEvents: events?.length || 0
   };
+
+  // Redirige l'utilisateur vers la page MobileNewsPage au clic
+  if (showNewsPage) {
+    return <MobileNewsPage onBack={() => setShowNewsPage(false)} />;
+  }
 
   return (
     <div className="flex-1 overflow-auto p-4 pb-20">
@@ -359,6 +385,52 @@ const MobileHome = () => {
               Planifier un événement
             </button>
           </div>
+        )}
+      </div>
+
+      {/* === Section Actualités === */}
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-gray-900 flex items-center">
+            <News className="w-5 h-5 mr-2 text-blue-500" />
+            Actualités
+          </h3>
+          <button
+            onClick={() => setShowNewsPage(true)}
+            className="text-blue-500 text-sm font-medium hover:text-blue-600 transition"
+          >
+            Voir tout →
+          </button>
+        </div>
+        {loadingNews ? (
+          <div className="text-center py-6 text-gray-400 text-sm">Chargement...</div>
+        ) : newsError ? (
+          <div className="text-center py-6 text-red-500 text-sm">{newsError}</div>
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {news.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-start py-3 cursor-pointer hover:bg-blue-50 rounded-xl transition-all"
+                onClick={() => window.open(item.url, "_blank")}
+              >
+                {/* Image optionnelle */}
+                {item.imageUrl && (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-12 h-12 object-cover rounded-lg mr-3 flex-shrink-0 bg-gray-100"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-blue-600 font-medium truncate">{item.source}</p>
+                  <p className="text-sm font-semibold text-gray-900 line-clamp-2">{item.title}</p>
+                  <p className="text-xs text-gray-500 truncate">{item.summary}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>

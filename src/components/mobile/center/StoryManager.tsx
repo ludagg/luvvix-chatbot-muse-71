@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Camera, Play } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -86,7 +85,13 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
-      if (storiesError) throw storiesError;
+      if (storiesError) {
+        // Afficher un toast explicite avec le message d'erreur détaillé
+        console.error('Erreur Supabase récupération des stories:', storiesError);
+        toast.error(`Impossible de charger les stories: ${storiesError.message || storiesError.details || JSON.stringify(storiesError)}`);
+        setLoading(false);
+        return;
+      }
 
       console.log('StoryManager: Stories récupérées:', storiesData?.length || 0, 'stories trouvées');
       console.log('StoryManager: Détails des stories:', storiesData);
@@ -100,9 +105,9 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
 
       setUserStories(myStories);
       setStories(otherStories);
-    } catch (error) {
-      console.error('Erreur chargement stories:', error);
-      toast.error("Impossible de charger les stories.");
+    } catch (error:any) {
+      console.error('Erreur chargement stories (JS catch):', error);
+      toast.error('Erreur inattendue lors du chargement des stories: ' + (error?.message || error));
     } finally {
       setLoading(false);
     }
@@ -181,6 +186,8 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
   if (loading) {
     return <StoryLoader text="Chargement des stories..." />;
   }
+
+  const hasNoStories = stories.length === 0 && userStories.length === 0;
 
   return (
     <>
@@ -291,9 +298,16 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
           </div>
         ))}
 
-        {stories.length === 0 && userStories.length === 0 && (
+        {/* Message personnalisé si aucune story */}
+        {hasNoStories && (
           <div className="flex-1 text-center py-4">
-            <p className="text-gray-500 text-sm">Aucune story d'amis disponible</p>
+            <p className="text-gray-500 text-sm">
+              Aucune story disponible. 
+              <br />
+              {user
+                ? "Commencez en publiant la vôtre !"
+                : "Connectez-vous pour créer ou voir les stories."}
+            </p>
           </div>
         )}
       </div>

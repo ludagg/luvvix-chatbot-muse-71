@@ -4,6 +4,7 @@ import { fileService } from '@/services/file-service';
 import { Cloud, CheckCircle, Link as LinkIcon, Unlink, Shield } from 'lucide-react';
 import { useDropboxSync } from '@/hooks/useDropboxSync';
 import DropboxFileBrowser from "@/components/cloud/DropboxFileBrowser";
+import DropboxFileBrowserMobile from "@/components/cloud/DropboxFileBrowserMobile";
 
 const MobileCloud = () => {
   const [currentPath] = useState('/');
@@ -181,7 +182,7 @@ const MobileCloud = () => {
       {/* Quick Actions */}
       <div className="p-4">
         <div className="grid grid-cols-3 gap-3 mb-6">
-          {/* Importer/Explorer Dropbox button only if Dropbox connecté ! */}
+          {/* Importer/Explorer Dropbox button */}
           <button
             className={`flex flex-col items-center space-y-2 p-4 bg-white rounded-xl shadow-sm border border-gray-100 ${
               !dropboxConnected ? "opacity-50 pointer-events-none" : ""
@@ -218,21 +219,12 @@ const MobileCloud = () => {
         </div>
       </div>
 
-      {/* Affichage du browser Dropbox natif (modal/drawer like) */}
+      {/* NEW: Affichage du navigateur Dropbox complet (modal recouvre tout) */}
       {showDropboxBrowser && dropboxConnected && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 z-40 flex items-end sm:items-center transition-all" onClick={() => setShowDropboxBrowser(false)}>
-          <div className="w-full sm:w-[90vw] max-h-[95vh] bg-white rounded-t-2xl sm:rounded-2xl shadow-lg overflow-y-auto" style={{ maxHeight: '90vh'}} onClick={e => e.stopPropagation()}>
-            <div className="flex p-4 border-b border-gray-200 items-center justify-between">
-              <span className="font-semibold text-lg">Explorer Dropbox</span>
-              <button className="px-2 py-1 text-gray-500 hover:bg-gray-100 rounded" onClick={() => setShowDropboxBrowser(false)}>Fermer</button>
-            </div>
-            <div className="p-2">
-              <DropboxFileBrowser
-                onImportFile={() => setShowDropboxBrowser(false)} // referme le browser après import
-              />
-            </div>
-          </div>
-        </div>
+        <DropboxFileBrowserMobile 
+          onClose={() => setShowDropboxBrowser(false)}
+          onRefresh={() => setShowDropboxBrowser(false) || setShowDropboxBrowser(true)} // Hack: refresh hard reset
+        />
       )}
 
       {/* Files List */}

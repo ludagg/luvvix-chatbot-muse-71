@@ -82,6 +82,25 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     { tag: 'WebDev', posts_count: 8934, trend_direction: 'up' as const, change_percentage: 12 }
   ];
 
+  const [searchModalQuery, setSearchModalQuery] = useState<{show: boolean, initial?: string}>({show: false});
+
+  const handleShowSearch = () => setSearchModalQuery({ show: true });
+  const handleCloseSearch = () => setSearchModalQuery({ show: false });
+
+  const handleShowPost = (postId: string) => {
+    setSearchModalQuery({ show: false });
+    setTimeout(() => {
+      setShowCommentsModal(postId);  // Affiche le post sélectionné (peut être amélioré pour ouvrir une vue dédiée post)
+    }, 100); // petite latence pour la transition
+  };
+
+  const handleShowUserProfile = (userId: string) => {
+    setSearchModalQuery({ show: false });
+    setTimeout(() => {
+      setShowUserProfile(userId);
+    }, 100);
+  };
+
   useEffect(() => {
     fetchPosts();
     fetchLikedPosts();
@@ -827,6 +846,17 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
       >
         <Feather className="w-6 h-6" />
       </button>
+
+      {/* Modale de recherche réelle */}
+      {searchModalQuery.show && (
+        <SearchAdvanced
+          onSearch={() => {}} // La recherche est gérée dans le composant maintenant
+          onClose={handleCloseSearch}
+          showResultsInModal
+          onShowPost={handleShowPost}
+          onShowUser={handleShowUserProfile}
+        />
+      )}
 
       {/* Modals */}
       {showComposer && (

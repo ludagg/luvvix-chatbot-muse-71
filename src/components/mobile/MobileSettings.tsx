@@ -6,7 +6,7 @@ import ProfilePage from './AccountPages/ProfilePage';
 import SecurityPage from './AccountPages/SecurityPage';
 import NotificationsPage from './AccountPages/NotificationsPage';
 import PrivacyPage from './AccountPages/PrivacyPage';
-import KoofrCloudPage from './AccountPages/KoofrCloudPage';
+import CloudConnectionsPage from './AccountPages/CloudConnectionsPage';
 
 const MobileSettings = () => {
   const { user, signOut } = useAuth();
@@ -110,7 +110,7 @@ const MobileSettings = () => {
   }
   
   if (currentPage === 'cloud') {
-    return <KoofrCloudPage onBack={() => setCurrentPage(null)} />;
+    return <CloudConnectionsPage onBack={() => setCurrentPage(null)} />;
   }
   
   if (currentPage === 'notifications') {

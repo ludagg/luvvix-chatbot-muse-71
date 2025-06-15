@@ -34,6 +34,12 @@ serve(async (req) => {
 
     const { action, code } = await req.json();
 
+    const frontendUrl = Deno.env.get("FRONTEND_URL")!;
+    if (!frontendUrl) {
+      throw new Error("FRONTEND_URL secret is not set in Supabase.");
+    }
+    const redirectUri = `${frontendUrl}/auth/dropbox/callback`;
+
     if (action === 'get_auth_url') {
       // Générer l'URL d'autorisation Dropbox
       const clientId = Deno.env.get('DROPBOX_CLIENT_ID');
@@ -41,9 +47,7 @@ serve(async (req) => {
         throw new Error('DROPBOX_CLIENT_ID non configuré');
       }
 
-      // Utiliser votre nom de domaine correct
-      const redirectUri = 'https://luvvix.it.com/auth/dropbox/callback';
-      const scope = 'files.content.write files.content.read files.metadata.read';
+      const scope = 'files.content.write files.content.read files.metadata.read account_info.read';
       
       const authUrl = `https://www.dropbox.com/oauth2/authorize?` +
         `client_id=${clientId}&` +
@@ -51,8 +55,8 @@ serve(async (req) => {
         `response_type=code&` +
         `scope=${encodeURIComponent(scope)}`;
 
-      console.log('Generated auth URL:', authUrl);
-      console.log('Redirect URI:', redirectUri);
+      console.log('Generated Dropbox auth URL:', authUrl);
+      console.log('Redirect URI for Dropbox:', redirectUri);
 
       return new Response(JSON.stringify({ 
         auth_url: authUrl 
@@ -61,19 +65,16 @@ serve(async (req) => {
       });
     }
 
-    if (action === 'exchange_token' || code) {
-      const authCode = code || (await req.json()).code;
-      
-      if (!authCode) {
+    if (action === 'exchange_token') {
+      if (!code) {
         throw new Error('Code d\'autorisation manquant');
       }
 
       // Échanger le code contre des tokens
       const clientId = Deno.env.get('DROPBOX_CLIENT_ID')!;
       const clientSecret = Deno.env.get('DROPBOX_CLIENT_SECRET')!;
-      const redirectUri = 'https://luvvix.it.com/auth/dropbox/callback';
 
-      console.log('Échange du code Dropbox:', { code: authCode, redirectUri });
+      console.log('Échange du code Dropbox:', { code, redirectUri });
 
       const tokenResponse = await fetch('https://api.dropboxapi.com/oauth2/token', {
         method: 'POST',
@@ -82,7 +83,7 @@ serve(async (req) => {
           'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`
         },
         body: new URLSearchParams({
-          code: authCode,
+          code,
           grant_type: 'authorization_code',
           redirect_uri: redirectUri,
         }),
@@ -102,7 +103,6 @@ serve(async (req) => {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${tokens.access_token}`,
-          'Content-Type': 'application/json'
         },
       });
 
@@ -112,7 +112,7 @@ serve(async (req) => {
       }
 
       const accountInfo = await accountResponse.json();
-      console.log('Info compte récupérées:', { email: accountInfo.email });
+      console.log('Info compte Dropbox récupérées:', { email: accountInfo.email });
 
       // Sauvegarder la connexion en base
       const { error: dbError } = await supabase
@@ -140,13 +140,6 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({ 
         success: true,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        account_info: {
-          email: accountInfo.email,
-          name: accountInfo.name?.display_name || '',
-          account_id: accountInfo.account_id
-        }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

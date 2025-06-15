@@ -1,26 +1,25 @@
 
-import React, { useState } from 'react';
-import { ArrowLeft, Cloud, CheckCircle, AlertCircle, Link as LinkIcon, Unlink, Shield } from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, CheckCircle, AlertCircle, Link as LinkIcon, Unlink, Shield } from 'lucide-react';
 import { useCloudConnections } from '@/hooks/use-cloud-connections';
 
-interface KoofrCloudPageProps {
+interface CloudConnectionsPageProps {
   onBack: () => void;
 }
 
-const KoofrCloudPage = ({ onBack }: KoofrCloudPageProps) => {
+const CloudConnectionsPage = ({ onBack }: CloudConnectionsPageProps) => {
   const { 
     connections, 
     loading, 
     connectKoofr, 
+    connectDropbox,
     disconnectCloud, 
-    isKoofrConnected 
+    isKoofrConnected,
+    isDropboxConnected
   } = useCloudConnections();
 
   const koofrConnection = connections.find(conn => conn.provider === 'koofr');
-
-  const handleConnect = async () => {
-    await connectKoofr();
-  };
+  const dropboxConnection = connections.find(conn => conn.provider === 'dropbox');
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
@@ -50,7 +49,7 @@ const KoofrCloudPage = ({ onBack }: KoofrCloudPageProps) => {
                 </h3>
                 <p className="text-sm text-gray-600">
                   {isKoofrConnected() 
-                    ? `Connecté comme ${koofrConnection?.account_info?.email || 'Utilisateur'}`
+                    ? `Connecté: ${koofrConnection?.account_info?.email || 'Utilisateur'}`
                     : '10GB gratuit - Sécurité slovène 🇸🇮'
                   }
                 </p>
@@ -60,12 +59,10 @@ const KoofrCloudPage = ({ onBack }: KoofrCloudPageProps) => {
             {isKoofrConnected() ? (
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-500" />
-                <span className="text-sm font-medium text-green-700">Connecté</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-orange-500" />
-                <span className="text-sm font-medium text-orange-700">Non connecté</span>
               </div>
             )}
           </div>
@@ -76,11 +73,11 @@ const KoofrCloudPage = ({ onBack }: KoofrCloudPageProps) => {
               className="w-full bg-red-50 text-red-600 font-medium py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
             >
               <Unlink className="w-4 h-4" />
-              Déconnecter Koofr
+              Déconnecter
             </button>
           ) : (
             <button
-              onClick={handleConnect}
+              onClick={connectKoofr}
               disabled={loading}
               className="w-full bg-green-600 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-green-700 transition-colors disabled:opacity-50"
             >
@@ -90,50 +87,59 @@ const KoofrCloudPage = ({ onBack }: KoofrCloudPageProps) => {
           )}
         </div>
 
-        {/* Avantages */}
-        <div className="bg-green-50 rounded-2xl p-4 mb-4">
-          <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
-            <Shield className="w-5 h-5" />
-            Pourquoi connecter Koofr ?
-          </h4>
-          <ul className="text-sm text-green-800 space-y-2">
-            <li className="flex items-start gap-2">
-              <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              10GB de stockage gratuit
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              Basé en Slovénie (Europe)
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              Respect de la vie privée
-            </li>
-            <li className="flex items-start gap-2">
-              <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              Accès depuis LuvviX Cloud
-            </li>
-          </ul>
-        </div>
-
-        {!isKoofrConnected() && (
-          <div className="bg-orange-50 rounded-2xl p-4 border border-orange-200">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
+        {/* Dropbox */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center">
+                 <svg viewBox="0 0 24 24" className="w-6 h-6 text-white">
+                  <path fill="currentColor" d="M7.71,3.5L1.15,8L7.71,12.5L12.39,8L7.71,3.5M21.15,8L14.59,3.5L9.91,8L14.59,12.5L21.15,8M14.59,14.5L21.15,19L12.39,19L7.71,14.5L14.59,14.5M7.71,14.5L1.15,19L9.91,19L14.59,14.5L7.71,14.5Z"/>
+                </svg>
+              </div>
               <div>
-                <h4 className="font-medium text-orange-900 mb-1">
-                  Connexion requise
-                </h4>
-                <p className="text-sm text-orange-800">
-                  Vous devez connecter votre Koofr pour utiliser les fonctionnalités de stockage cloud de LuvviX.
+                <h3 className="font-semibold text-lg">Dropbox</h3>
+                <p className="text-sm text-gray-600">
+                  {isDropboxConnected()
+                    ? `Connecté: ${dropboxConnection?.account_info?.email || 'Utilisateur'}`
+                    : 'Le leader de la synchro cloud'
+                  }
                 </p>
               </div>
             </div>
+            
+            {isDropboxConnected() ? (
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-green-500" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-orange-500" />
+              </div>
+            )}
           </div>
-        )}
+          
+          {isDropboxConnected() ? (
+            <button
+              onClick={() => dropboxConnection && disconnectCloud(dropboxConnection.id)}
+              className="w-full bg-red-50 text-red-600 font-medium py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+            >
+              <Unlink className="w-4 h-4" />
+              Déconnecter
+            </button>
+          ) : (
+            <button
+              onClick={connectDropbox}
+              disabled={loading}
+              className="w-full bg-blue-600 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              <LinkIcon className="w-4 h-4" />
+              {loading ? 'Connexion...' : 'Connecter Dropbox'}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
-export default KoofrCloudPage;
+export default CloudConnectionsPage;

@@ -1,20 +1,24 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCloudConnections } from '@/hooks/use-cloud-connections';
-import { Link as LinkIcon, Unlink, Cloud, CheckCircle, AlertCircle } from 'lucide-react';
+import { Link as LinkIcon, Unlink, Cloud, CheckCircle, AlertCircle, Shield } from 'lucide-react';
 
 const CloudConnectionSettings = () => {
   const { 
     connections, 
     loading, 
-    connectDropbox, 
+    connectDropbox,
+    connectKoofr,
     disconnectCloud, 
-    isDropboxConnected 
+    isDropboxConnected,
+    isKoofrConnected,
   } = useCloudConnections();
 
   const dropboxConnection = connections.find(conn => conn.provider === 'dropbox');
+  const koofrConnection = connections.find(conn => conn.provider === 'koofr');
 
   return (
     <Card>
@@ -81,35 +85,76 @@ const CloudConnectionSettings = () => {
             )}
           </div>
         </div>
+        
+        {/* Koofr */}
+        <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="w-6 h-6 text-white">
+                  <path fill="currentColor" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6L15.5,10L12,14L8.5,10L12,6Z"/>
+                </svg>
+            </div>
+            <div>
+              <h3 className="font-medium flex items-center gap-2">
+                Koofr
+                <Shield className="w-4 h-4 text-green-500" />
+              </h3>
+              <p className="text-sm text-gray-600">
+                {isKoofrConnected() 
+                  ? `Connecté comme ${koofrConnection?.account_info?.email || 'Utilisateur'}`
+                  : '10GB gratuit - Sécurité slovène 🇸🇮'
+                }
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {isKoofrConnected() ? (
+              <>
+                <Badge variant="secondary" className="text-green-700 bg-green-50">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Connecté
+                </Badge>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => koofrConnection && disconnectCloud(koofrConnection.id)}
+                >
+                  <Unlink className="w-4 h-4 mr-2" />
+                  Déconnecter
+                </Button>
+              </>
+            ) : (
+              <>
+                <Badge variant="secondary" className="text-orange-700 bg-orange-50">
+                  <AlertCircle className="w-3 h-3 mr-1" />
+                  Non connecté
+                </Badge>
+                <Button 
+                  onClick={connectKoofr}
+                  disabled={loading}
+                  size="sm"
+                >
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                  Connecter
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
 
         {/* Infos importantes */}
         <div className="p-4 bg-blue-50 rounded-lg">
           <h4 className="font-medium text-blue-900 mb-2">
-            Pourquoi connecter Dropbox ?
+            Pourquoi connecter un service cloud ?
           </h4>
           <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Accès à vos fichiers depuis LuvviX Cloud</li>
-            <li>• Synchronisation automatique</li>
-            <li>• Gestion unifiée de vos documents</li>
-            <li>• Sauvegarde sécurisée</li>
+            <li>• Accès à tous vos fichiers depuis LuvviX Cloud</li>
+            <li>• Synchronisation automatique entre vos appareils</li>
+            <li>• Gestion unifiée de vos documents importants</li>
+            <li>• Sauvegarde sécurisée et centralisée de vos données</li>
           </ul>
         </div>
-
-        {!isDropboxConnected() && (
-          <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-medium text-orange-900 mb-1">
-                  Connexion requise
-                </h4>
-                <p className="text-sm text-orange-800">
-                  Vous devez connecter votre Dropbox pour utiliser les fonctionnalités de stockage cloud de LuvviX.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

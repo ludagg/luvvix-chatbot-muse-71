@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePersistentConversations, Message } from "@/hooks/use-persistent-conversations";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
 
 const PERSONALITIES = [
   { 
@@ -157,20 +158,23 @@ const ModernAIChat = () => {
     setPreviewUrl(null);
 
     try {
-      const res = await fetch("/functions/v1/gemini-chat-response", {
-        method: "POST",
-        body: formData,
+      // Utiliser l'API Supabase directement au lieu de l'endpoint relatif
+      const { data, error } = await supabase.functions.invoke('gemini-chat-response', {
+        body: {
+          message: personalizedPrompt,
+          image: previewUrl || null
+        }
       });
-      if (!res.ok) {
-        throw new Error("Erreur réponse Gemini");
+
+      if (error) {
+        throw new Error(error.message || "Erreur lors de la communication avec l'IA");
       }
-      const { response, responseImage } = await res.json();
 
       const assistantMessage: Message = {
         id: Date.now().toString() + "ai",
         role: "assistant",
-        content: response,
-        imageUrl: responseImage || undefined,
+        content: data.response || "Je n'ai pas pu générer de réponse.",
+        imageUrl: data.responseImage || undefined,
         createdAt: new Date(),
       };
 
@@ -179,15 +183,17 @@ const ModernAIChat = () => {
       // Sauvegarder la réponse de l'assistant
       await saveMessage(conversationId, {
         role: "assistant",
-        content: response,
-        imageUrl: responseImage || undefined
+        content: data.response || "Je n'ai pas pu générer de réponse.",
+        imageUrl: data.responseImage || undefined
       });
 
     } catch (e) {
+      console.error('Erreur lors de l\'envoi du message:', e);
+      
       const errorMessage: Message = {
         id: Date.now().toString() + "fail",
         role: "assistant",
-        content: "Désolé, je n'ai pas pu obtenir de réponse 🤖💔.",
+        content: "Désolé, je n'ai pas pu obtenir de réponse 🤖💔. Veuillez réessayer.",
         createdAt: new Date(),
       };
 
@@ -196,7 +202,7 @@ const ModernAIChat = () => {
       // Sauvegarder le message d'erreur
       await saveMessage(conversationId, {
         role: "assistant",
-        content: "Désolé, je n'ai pas pu obtenir de réponse 🤖💔."
+        content: "Désolé, je n'ai pas pu obtenir de réponse 🤖💔. Veuillez réessayer."
       });
     } finally {
       setIsTyping(false);

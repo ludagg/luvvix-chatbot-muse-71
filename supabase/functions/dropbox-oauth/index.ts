@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
@@ -44,11 +45,8 @@ serve(async (req) => {
     const redirectUri = `${frontendUrl}/auth/dropbox/callback`;
 
     if (action === 'get_auth_url') {
-      // Générer l'URL d'autorisation Dropbox
-      const clientId = Deno.env.get('DROPBOX_CLIENT_ID');
-      if (!clientId) {
-        throw new Error('DROPBOX_CLIENT_ID non configuré');
-      }
+      // Clés Dropbox directement dans le code
+      const clientId = 'n996hgcg16xp1pu';
 
       const scope = 'files.content.write files.content.read files.metadata.read account_info.read';
       
@@ -74,9 +72,9 @@ serve(async (req) => {
         throw new Error('Code d\'autorisation manquant');
       }
 
-      // Échanger le code contre des tokens
-      const clientId = Deno.env.get('DROPBOX_CLIENT_ID')!;
-      const clientSecret = Deno.env.get('DROPBOX_CLIENT_SECRET')!;
+      // Clés Dropbox directement dans le code
+      const clientId = 'n996hgcg16xp1pu';
+      const clientSecret = '787xbwfkw5tjhux';
 
       console.log('Échange du code Dropbox:', { code, redirectUri });
 

@@ -1,4 +1,5 @@
 
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
@@ -46,7 +47,7 @@ serve(async (req) => {
 
     if (action === 'get_auth_url') {
       // Clés Dropbox directement dans le code
-      const clientId = 'n996hgcg16xp1pu';
+      const clientId = 'n996hgcgi6xp1pu';
 
       const scope = 'files.content.write files.content.read files.metadata.read account_info.read';
       
@@ -73,7 +74,7 @@ serve(async (req) => {
       }
 
       // Clés Dropbox directement dans le code
-      const clientId = 'n996hgcg16xp1pu';
+      const clientId = 'n996hgcgi6xp1pu';
       const clientSecret = '787xbwfkw5tjhux';
 
       console.log('Échange du code Dropbox:', { code, redirectUri });
@@ -157,3 +158,4 @@ serve(async (req) => {
     );
   }
 });
+

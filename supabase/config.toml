@@ -1,4 +1,3 @@
-
 project_id = "qlhovvqcwjdbirmekdoy"
 
 [api]
@@ -16,6 +15,9 @@ verify_jwt = false
 
 [functions.luvvix-forms-api]
 verify_jwt = false
+
+[functions.koofr-oauth]
+verify_jwt = true
 
 [db]
 port = 54322

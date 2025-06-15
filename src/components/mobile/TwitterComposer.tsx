@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
 import { X, Image as ImageIcon, MapPin, Smile, Calendar, BarChart3 } from 'lucide-react';
+import MentionAutocomplete from "./MentionAutocomplete";
 
 interface TwitterComposerProps {
   onClose: () => void;
@@ -11,6 +11,9 @@ interface TwitterComposerProps {
 const TwitterComposer = ({ onClose, onPost, isSubmitting }: TwitterComposerProps) => {
   const [content, setContent] = useState('');
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionStart, setMentionStart] = useState<number | null>(null);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -30,11 +33,43 @@ const TwitterComposer = ({ onClose, onPost, isSubmitting }: TwitterComposerProps
     onClose();
   };
 
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setContent(value);
+
+    const caret = e.target.selectionStart ?? value.length;
+    const beforeCaret = value.slice(0, caret);
+
+    // regex : dernier @word dans la chaîne avant le caret
+    const match = /(?:^|\s)@(\w{1,20})$/.exec(beforeCaret);
+    if (match) {
+      setMentionQuery(match[1]);
+      setMentionStart(caret - match[1].length - 1); // position du @
+      setShowAutocomplete(true);
+    } else {
+      setMentionQuery('');
+      setMentionStart(null);
+      setShowAutocomplete(false);
+    }
+  };
+
+  const handleSelectUser = (user: { username: string }) => {
+    if (mentionStart !== null) {
+      const before = content.slice(0, mentionStart);
+      const after = content.slice(mentionStart + mentionQuery.length + 1); // +1 pour le @
+      const toInsert = "@" + user.username + " ";
+      setContent(before + toInsert + after);
+      setMentionQuery('');
+      setMentionStart(null);
+      setShowAutocomplete(false);
+    }
+  };
+
   const remainingChars = 280 - content.length;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-start justify-center pt-12">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 max-h-[80vh] overflow-y-auto relative">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <button 
@@ -59,16 +94,24 @@ const TwitterComposer = ({ onClose, onPost, isSubmitting }: TwitterComposerProps
               <span className="text-white font-bold text-sm">U</span>
             </div>
             
-            <div className="flex-1">
+            <div className="flex-1 relative">
               <textarea
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
+                onChange={handleContentChange}
                 placeholder="Quoi de neuf ?"
                 className="w-full text-xl placeholder-gray-500 border-none outline-none resize-none"
                 rows={4}
                 maxLength={280}
                 autoFocus
               />
+              {/* Mentions autocomplete */}
+              {showAutocomplete && mentionQuery && (
+                <MentionAutocomplete
+                  query={mentionQuery}
+                  onSelect={handleSelectUser}
+                  excludeList={[]} // on peut rajouter l'auteur
+                />
+              )}
 
               {/* Images preview */}
               {selectedImages.length > 0 && (

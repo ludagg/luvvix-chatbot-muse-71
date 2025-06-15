@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Heart, MessageCircle, Repeat2, Share, Bookmark, MoreHorizontal, Play } from 'lucide-react';
 
@@ -32,6 +31,21 @@ interface TwitterPostProps {
   onSave: () => void;
   onShowReactions: () => void;
   onUserClick?: () => void;
+}
+
+// Utilitaire pour lier les mentions à des profils
+function linkifyMentions(text: string) {
+  const regex = /(^|\s)@(\w{1,20})/g;
+  return text.split('\n').map((line, i) =>
+    <React.Fragment key={i}>
+      {line.split(regex).map((part, j) =>
+        (j % 3 === 2 && part) // part 2 (i.e. username group)
+          ? <a key={j} href={`#`} className="text-blue-600 hover:underline">@{part}</a>
+          : part
+      )}
+      {i < text.split('\n').length - 1 && <br />}
+    </React.Fragment>
+  );
 }
 
 const TwitterPost = ({
@@ -113,7 +127,7 @@ const TwitterPost = ({
           {/* Content */}
           <div className="mt-2">
             <p className="text-gray-900 text-sm leading-relaxed whitespace-pre-wrap">
-              {post.content}
+              {linkifyMentions(post.content)}
             </p>
             
             {/* Media */}

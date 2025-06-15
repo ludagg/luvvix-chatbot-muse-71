@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -8,10 +7,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Shield, Bell, Globe } from "lucide-react";
+import { Loader2, User, Shield, Bell, Globe, Cloud } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import BiometricSettings from "@/components/settings/BiometricSettings";
+import CloudConnectionSettings from "@/components/settings/CloudConnectionSettings";
 
 const AccountSettings = () => {
   const { user, profile, loading } = useAuth();
@@ -53,7 +53,7 @@ const AccountSettings = () => {
             </div>
             
             <Tabs defaultValue="profile" className="w-full">
-              <TabsList className="mb-8 grid grid-cols-4 gap-4 bg-transparent">
+              <TabsList className="mb-8 grid grid-cols-5 gap-4 bg-transparent">
                 <TabsTrigger value="profile" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
                   <User className="mr-2 h-4 w-4" /> 
                   Profile
@@ -61,6 +61,10 @@ const AccountSettings = () => {
                 <TabsTrigger value="security" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
                   <Shield className="mr-2 h-4 w-4" /> 
                   Security
+                </TabsTrigger>
+                <TabsTrigger value="cloud" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                  <Cloud className="mr-2 h-4 w-4" /> 
+                  Cloud
                 </TabsTrigger>
                 <TabsTrigger value="notifications" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
                   <Bell className="mr-2 h-4 w-4" /> 
@@ -220,6 +224,10 @@ const AccountSettings = () => {
                     </CardContent>
                   </Card>
                 </div>
+              </TabsContent>
+              
+              <TabsContent value="cloud">
+                <CloudConnectionSettings />
               </TabsContent>
               
               <TabsContent value="notifications">

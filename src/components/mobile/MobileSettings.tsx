@@ -1,12 +1,12 @@
-
 import React, { useState } from 'react';
-import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Globe, Palette, Database } from 'lucide-react';
+import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Globe, Palette, Database, Cloud } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import ProfilePage from './AccountPages/ProfilePage';
 import SecurityPage from './AccountPages/SecurityPage';
 import NotificationsPage from './AccountPages/NotificationsPage';
 import PrivacyPage from './AccountPages/PrivacyPage';
+import CloudPage from './AccountPages/CloudPage';
 
 const MobileSettings = () => {
   const { user, signOut } = useAuth();
@@ -43,6 +43,12 @@ const MobileSettings = () => {
           label: "Sécurité",
           description: "Mot de passe et authentification",
           action: () => setCurrentPage('security')
+        },
+        {
+          icon: <Cloud className="w-5 h-5" />,
+          label: "Connexions Cloud",
+          description: "Gérer vos services de stockage",
+          action: () => setCurrentPage('cloud')
         }
       ]
     },
@@ -101,6 +107,10 @@ const MobileSettings = () => {
   
   if (currentPage === 'security') {
     return <SecurityPage onBack={() => setCurrentPage(null)} />;
+  }
+  
+  if (currentPage === 'cloud') {
+    return <CloudPage onBack={() => setCurrentPage(null)} />;
   }
   
   if (currentPage === 'notifications') {

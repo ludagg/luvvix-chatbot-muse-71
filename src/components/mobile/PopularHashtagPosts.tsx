@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { TwitterPost } from './TwitterPost';
+import TwitterPost from './TwitterPost';
 
 interface Post {
   id: string;

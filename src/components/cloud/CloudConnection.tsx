@@ -70,53 +70,48 @@ const CloudConnection: React.FC = () => {
     setSelectedProvider(providerId);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Session non trouvée');
-      }
-
       // Rediriger vers l'OAuth du provider
-      const redirectUrl = `${window.location.origin}/cloud/oauth`;
-      let authUrl = '';
+      // const redirectUrl = `${window.location.origin}/cloud/oauth`;
+      // let authUrl = '';
 
-      switch (providerId) {
-        case 'google_drive':
-          authUrl = `https://accounts.google.com/oauth2/auth?` +
-            `client_id=${import.meta.env.VITE_GOOGLE_CLIENT_ID}&` +
-            `redirect_uri=${redirectUrl}&` +
-            `scope=https://www.googleapis.com/auth/drive&` +
-            `response_type=code&` +
-            `access_type=offline&` +
-            `prompt=consent&` +
-            `state=google_drive`;
-          break;
+      // switch (providerId) {
+      //   case 'google_drive':
+      //     authUrl = `https://accounts.google.com/oauth2/auth?` +
+      //       `client_id=${import.meta.env.VITE_GOOGLE_CLIENT_ID}&` +
+      //       `redirect_uri=${redirectUrl}&` +
+      //       `scope=https://www.googleapis.com/auth/drive&` +
+      //       `response_type=code&` +
+      //       `access_type=offline&` +
+      //       `prompt=consent&` +
+      //       `state=google_drive`;
+      //     break;
         
-        case 'dropbox':
-          authUrl = `https://www.dropbox.com/oauth2/authorize?` +
-            `client_id=${import.meta.env.VITE_DROPBOX_CLIENT_ID}&` +
-            `redirect_uri=${redirectUrl}&` +
-            `response_type=code&` +
-            `state=dropbox`;
-          break;
+      //   case 'dropbox':
+      //     authUrl = `https://www.dropbox.com/oauth2/authorize?` +
+      //       `client_id=${import.meta.env.VITE_DROPBOX_CLIENT_ID}&` +
+      //       `redirect_uri=${redirectUrl}&` +
+      //       `response_type=code&` +
+      //       `state=dropbox`;
+      //     break;
         
-        case 'onedrive':
-          authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
-            `client_id=${import.meta.env.VITE_MICROSOFT_CLIENT_ID}&` +
-            `redirect_uri=${redirectUrl}&` +
-            `scope=https://graph.microsoft.com/Files.ReadWrite&` +
-            `response_type=code&` +
-            `state=onedrive`;
-          break;
+      //   case 'onedrive':
+      //     authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?` +
+      //       `client_id=${import.meta.env.VITE_MICROSOFT_CLIENT_ID}&` +
+      //       `redirect_uri=${redirectUrl}&` +
+      //       `scope=https://graph.microsoft.com/Files.ReadWrite&` +
+      //       `response_type=code&` +
+      //       `state=onedrive`;
+      //     break;
         
-        default:
-          throw new Error('Provider non supporté');
-      }
+      //   default:
+      //     throw new Error('Provider non supporté');
+      // }
 
-      if (authUrl) {
-        window.location.href = authUrl;
-      } else {
-        throw new Error('Configuration OAuth manquante');
-      }
+      // if (authUrl) {
+      //   window.location.href = authUrl;
+      // } else {
+      //   throw new Error('Configuration OAuth manquante');
+      // }
 
     } catch (error: any) {
       console.error('Erreur de connexion:', error);

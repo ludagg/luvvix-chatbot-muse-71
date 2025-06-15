@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from '@/hooks/use-toast';
 import { useWeather } from '@/hooks/use-weather';
+import { useWeatherAIAnalysis } from "@/hooks/useWeatherAIAnalysis";
 
 interface MobileWeatherProps {
   onBack: () => void;
@@ -16,6 +17,12 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
   const [searchLocation, setSearchLocation] = useState('');
 
   const { weatherData, loading, fetchWeather } = useWeather();
+
+  const {
+    aiAnalysis,
+    loadingAI,
+    generateAIAnalysis,
+  } = useWeatherAIAnalysis();
 
   // Géolocalisation
   const getCurrentLocation = () => {
@@ -163,6 +170,30 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Analyse IA */}
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-5 h-5 text-purple-600" />
+              <h3 className="font-medium text-purple-900">Analyse IA</h3>
+            </div>
+            <button
+              onClick={() => generateAIAnalysis(weatherData)}
+              disabled={loadingAI}
+              className="px-3 py-1 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600 disabled:opacity-50 transition-colors"
+            >
+              {loadingAI ? "Analyse..." : "Analyser"}
+            </button>
+          </div>
+          {aiAnalysis ? (
+            <p className="text-purple-800 text-sm leading-relaxed">{aiAnalysis}</p>
+          ) : (
+            <p className="text-purple-600 text-sm">
+              Cliquez sur "Analyser" pour obtenir une analyse IA des conditions météo actuelles.
+            </p>
+          )}
         </div>
       </div>
     );

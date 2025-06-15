@@ -152,11 +152,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, metadata: any) => {
     try {
+      // S'assurer que 'metadata' est un objet, pas une string
+      if (typeof metadata !== "object" || metadata === null) {
+        throw new Error("Les métadonnées utilisateur sont invalides.");
+      }
+
       const { error, data } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: metadata,
+          data: metadata, // objet direct, PAS stringifié !
           emailRedirectTo: `${window.location.origin}/`
         }
       });

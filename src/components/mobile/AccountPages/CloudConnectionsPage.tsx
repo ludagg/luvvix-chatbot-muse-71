@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ArrowLeft, CheckCircle, AlertCircle, Link as LinkIcon, Unlink, Shield } from 'lucide-react';
 import { useCloudConnections } from '@/hooks/use-cloud-connections';
@@ -20,6 +19,9 @@ const CloudConnectionsPage = ({ onBack }: CloudConnectionsPageProps) => {
 
   const koofrConnection = connections.find(conn => conn.provider === 'koofr');
   const dropboxConnection = connections.find(conn => conn.provider === 'dropbox');
+
+  // Ajout détection Dropbox connecté
+  const dropboxConnected = !!dropboxConnection;
 
   return (
     <div className="fixed inset-0 bg-white z-50 flex flex-col">
@@ -99,15 +101,14 @@ const CloudConnectionsPage = ({ onBack }: CloudConnectionsPageProps) => {
               <div>
                 <h3 className="font-semibold text-lg">Dropbox</h3>
                 <p className="text-sm text-gray-600">
-                  {isDropboxConnected()
+                  {dropboxConnected
                     ? `Connecté: ${dropboxConnection?.account_info?.email || 'Utilisateur'}`
                     : 'Le leader de la synchro cloud'
                   }
                 </p>
               </div>
             </div>
-            
-            {isDropboxConnected() ? (
+            {dropboxConnected ? (
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-500" />
               </div>
@@ -118,7 +119,7 @@ const CloudConnectionsPage = ({ onBack }: CloudConnectionsPageProps) => {
             )}
           </div>
           
-          {isDropboxConnected() ? (
+          {dropboxConnected ? (
             <button
               onClick={() => dropboxConnection && disconnectCloud(dropboxConnection.id)}
               className="w-full bg-red-50 text-red-600 font-medium py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"

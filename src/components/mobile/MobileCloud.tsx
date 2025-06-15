@@ -3,6 +3,7 @@ import { useCloudConnections } from '@/hooks/use-cloud-connections';
 import { fileService } from '@/services/file-service';
 import { Cloud, CheckCircle, Link as LinkIcon, Unlink, Shield } from 'lucide-react';
 import { useDropboxSync } from '@/hooks/useDropboxSync';
+import DropboxFileBrowser from "@/components/cloud/DropboxFileBrowser";
 
 const MobileCloud = () => {
   const [currentPath] = useState('/');
@@ -10,23 +11,32 @@ const MobileCloud = () => {
   const [loading, setLoading] = useState(true);
   const [usedStorage, setUsedStorage] = useState(0);
   const [showKoofr, setShowKoofr] = useState(false);
+  const [showDropboxBrowser, setShowDropboxBrowser] = useState(false);
   const { syncDropboxAndCloud } = useDropboxSync();
 
-  // Connexion Koofr user
+  // Connexion Koofr/Dropbox user
   const {
     connections,
     isKoofrConnected,
     getKoofrConnection,
+    isDropboxConnected,
+    getDropboxConnection,
     connectKoofr,
+    connectDropbox,
     disconnectCloud,
     loading: koofrLoading
   } = useCloudConnections();
 
+  // NEW: Dropbox connecté ?
+  const dropboxConn = getDropboxConnection();
+  const dropboxConnected = isDropboxConnected();
+
   // Synchronisation automatique Dropbox <-> Cloud à l'ouverture mobile
   useEffect(() => {
-    // Si l'utilisateur est connecté : on synchronise Dropbox <-> Cloud en fond
-    syncDropboxAndCloud();
-  }, []); // Exécuté une seule fois lors du montage
+    if (dropboxConnected) {
+      syncDropboxAndCloud();
+    }
+  }, [dropboxConnected]);
 
   // Charger les vrais fichiers Cloud utilisateur
   useEffect(() => {
@@ -35,7 +45,6 @@ const MobileCloud = () => {
       try {
         const realFiles = await fileService.listFiles();
         setFiles(realFiles || []);
-        // Somme de la taille des fichiers (hors dossiers)
         let total = 0;
         if (realFiles && realFiles.length > 0) {
           total = realFiles
@@ -130,7 +139,7 @@ const MobileCloud = () => {
           </button>
         </div>
 
-        {/* Storage Usage */}
+        {/* Usage & bar */}
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-4 text-white">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm opacity-90">Stockage utilisé</span>
@@ -139,7 +148,7 @@ const MobileCloud = () => {
             </span>
           </div>
           <div className="w-full bg-white bg-opacity-20 rounded-full h-2">
-            <div className="bg-white h-2 rounded-full transition-all duration-500" style={{ width: `${percent}%` }}></div>
+            <div className="bg-white h-2 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, Math.round((usedStorage / (50 * 1024 * 1024 * 1024)) * 100))}%` }}></div>
           </div>
         </div>
       </div>
@@ -172,15 +181,23 @@ const MobileCloud = () => {
       {/* Quick Actions */}
       <div className="p-4">
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <button className="flex flex-col items-center space-y-2 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
+          {/* Importer/Explorer Dropbox button only if Dropbox connecté ! */}
+          <button
+            className={`flex flex-col items-center space-y-2 p-4 bg-white rounded-xl shadow-sm border border-gray-100 ${
+              !dropboxConnected ? "opacity-50 pointer-events-none" : ""
+            }`}
+            onClick={() => setShowDropboxBrowser(true)}
+            disabled={!dropboxConnected}
+          >
             <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
               </svg>
             </div>
-            <span className="text-xs font-medium text-gray-700">Importer</span>
+            <span className="text-xs font-medium text-gray-700">Dropbox</span>
           </button>
           
+          {/* Import ou Nouveau */}
           <button className="flex flex-col items-center space-y-2 p-4 bg-white rounded-xl shadow-sm border border-gray-100">
             <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
               <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -200,6 +217,23 @@ const MobileCloud = () => {
           </button>
         </div>
       </div>
+
+      {/* Affichage du browser Dropbox natif (modal/drawer like) */}
+      {showDropboxBrowser && dropboxConnected && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-40 flex items-end sm:items-center transition-all" onClick={() => setShowDropboxBrowser(false)}>
+          <div className="w-full sm:w-[90vw] max-h-[95vh] bg-white rounded-t-2xl sm:rounded-2xl shadow-lg overflow-y-auto" style={{ maxHeight: '90vh'}} onClick={e => e.stopPropagation()}>
+            <div className="flex p-4 border-b border-gray-200 items-center justify-between">
+              <span className="font-semibold text-lg">Explorer Dropbox</span>
+              <button className="px-2 py-1 text-gray-500 hover:bg-gray-100 rounded" onClick={() => setShowDropboxBrowser(false)}>Fermer</button>
+            </div>
+            <div className="p-2">
+              <DropboxFileBrowser
+                onImportFile={() => setShowDropboxBrowser(false)} // referme le browser après import
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Files List */}
       <div className="flex-1 px-4 pb-20">

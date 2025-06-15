@@ -6,13 +6,13 @@ import { toast } from '@/hooks/use-toast';
 import { Cloud, CheckCircle, Plus } from 'lucide-react';
 import { useCloudConnections } from '@/hooks/use-cloud-connections';
 
-// Adopt the type from the cloud hook, which includes created_at
+// Adopt the type from the cloud hook, which includes connected_at (et pas created_at !)
 interface CloudConnection {
   id: string;
   provider: string;
   account_info: any;
   is_active: boolean;
-  created_at: string; // Ensures created_at is present in type
+  connected_at: string; // Corrigé ici
 }
 
 const CloudConnection: React.FC = () => {
@@ -243,7 +243,7 @@ const CloudConnection: React.FC = () => {
               {connections.map((connection) => {
                 // match provider meta for icon/color
                 const provider = cloudProviders.find(p => p.id === connection.provider);
-                const { created_at } = connection; // <-- Explicit destructure created_at
+                const { connected_at } = connection; // Corrigé ici
                 return (
                   <div key={connection.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center space-x-3">
@@ -253,7 +253,7 @@ const CloudConnection: React.FC = () => {
                       <div>
                         <p className="font-medium">{provider?.name ?? connection.provider}</p>
                         <p className="text-sm text-gray-500">
-                          Connecté le {created_at ? new Date(created_at).toLocaleDateString('fr-FR') : ''}
+                          Connecté le {connected_at ? new Date(connected_at).toLocaleDateString('fr-FR') : ''}
                         </p>
                       </div>
                     </div>

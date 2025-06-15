@@ -41,7 +41,8 @@ serve(async (req) => {
         throw new Error('DROPBOX_CLIENT_ID non configuré');
       }
 
-      const redirectUri = `${new URL(req.url).origin.replace(/\/functions\/v1\/.*/, '')}/auth/dropbox/callback`;
+      // Utiliser l'URL fixe de votre application déployée
+      const redirectUri = 'https://luvvix-id.com/auth/dropbox/callback';
       const scope = 'files.content.write files.content.read files.metadata.read';
       
       const authUrl = `https://www.dropbox.com/oauth2/authorize?` +
@@ -49,6 +50,9 @@ serve(async (req) => {
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `response_type=code&` +
         `scope=${encodeURIComponent(scope)}`;
+
+      console.log('Generated auth URL:', authUrl);
+      console.log('Redirect URI:', redirectUri);
 
       return new Response(JSON.stringify({ 
         auth_url: authUrl 
@@ -67,7 +71,7 @@ serve(async (req) => {
       // Échanger le code contre des tokens
       const clientId = Deno.env.get('DROPBOX_CLIENT_ID')!;
       const clientSecret = Deno.env.get('DROPBOX_CLIENT_SECRET')!;
-      const redirectUri = `${new URL(req.url).origin.replace(/\/functions\/v1\/.*/, '')}/auth/dropbox/callback`;
+      const redirectUri = 'https://luvvix-id.com/auth/dropbox/callback';
 
       console.log('Échange du code Dropbox:', { code: authCode, redirectUri });
 

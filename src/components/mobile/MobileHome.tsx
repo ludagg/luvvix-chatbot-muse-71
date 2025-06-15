@@ -155,7 +155,7 @@ const MobileHome = () => {
   };
 
   // Prochain événement du calendrier
-  const nextEvent = events?.find(event => new Date(event.start_time) > new Date()) || null;
+  const nextEvent = events?.find(event => new Date(event.start_date) > new Date()) || null;
 
   // Statistiques réelles
   const stats = {
@@ -335,7 +335,7 @@ const MobileHome = () => {
               <div className="flex items-center justify-between mt-1">
                 <p className="text-sm text-gray-600 flex items-center space-x-1">
                   <Clock className="w-4 h-4" />
-                  <span>{format(new Date(nextEvent.start_time), 'dd/MM à HH:mm')}</span>
+                  <span>{format(new Date(nextEvent.start_date), 'dd/MM à HH:mm')}</span>
                 </p>
                 {nextEvent.attendees && nextEvent.attendees.length > 0 && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">

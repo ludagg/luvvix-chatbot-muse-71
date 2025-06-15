@@ -59,7 +59,9 @@ const MegaConnectionSettings = () => {
             <div>
               <h3 className="font-medium flex items-center gap-2">
                 Mega
-                <Shield className="w-4 h-4 text-green-600" title="Chiffrement de bout en bout" />
+                <div title="Chiffrement de bout en bout">
+                  <Shield className="w-4 h-4 text-green-600" />
+                </div>
               </h3>
               <p className="text-sm text-gray-600">
                 {isMegaConnected() 

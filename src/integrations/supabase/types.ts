@@ -235,6 +235,41 @@ export type Database = {
           },
         ]
       }
+      ai_assistant_messages: {
+        Row: {
+          content: string
+          conversation_id: string | null
+          created_at: string | null
+          id: string
+          image_url: string | null
+          role: string
+        }
+        Insert: {
+          content: string
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          role: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_assistant_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_assistant_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_conversations: {
         Row: {
           agent_id: string

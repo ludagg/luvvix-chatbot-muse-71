@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, MapPin, Wind, Droplets, Eye, Sun, Moon, Cloud, CloudRain, Zap, Snowflake, RefreshCw, Sparkles, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
@@ -16,7 +15,7 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
   const [useCurrentLocation, setUseCurrentLocation] = useState(true);
   const [searchLocation, setSearchLocation] = useState('');
 
-  const { weatherData, loading, aiAnalysis, loadingAI, fetchWeather, generateAIAnalysis } = useWeather();
+  const { weatherData, loading, fetchWeather } = useWeather();
 
   // Géolocalisation
   const getCurrentLocation = () => {
@@ -165,29 +164,6 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
             </div>
           </div>
         </div>
-
-        {/* Analyse IA */}
-        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-2">
-              <Sparkles className="w-5 h-5 text-purple-600" />
-              <h3 className="font-medium text-purple-900">Analyse IA</h3>
-            </div>
-            <button
-              onClick={generateAIAnalysis}
-              disabled={loadingAI}
-              className="px-3 py-1 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600 disabled:opacity-50 transition-colors"
-            >
-              {loadingAI ? 'Analyse...' : 'Analyser'}
-            </button>
-          </div>
-          
-          {aiAnalysis ? (
-            <p className="text-purple-800 text-sm leading-relaxed">{aiAnalysis}</p>
-          ) : (
-            <p className="text-purple-600 text-sm">Cliquez sur "Analyser" pour obtenir une analyse IA des conditions météo actuelles.</p>
-          )}
-        </div>
       </div>
     );
   };
@@ -328,13 +304,6 @@ const MobileWeather = ({ onBack }: MobileWeatherProps) => {
             }`}
           >
             <MapPin className="w-5 h-5" />
-          </button>
-          <button
-            onClick={generateAIAnalysis}
-            disabled={loadingAI}
-            className="p-2 bg-purple-100 text-purple-600 rounded-full hover:bg-purple-200 transition-colors"
-          >
-            <Sparkles className="w-5 h-5" />
           </button>
         </div>
       </div>

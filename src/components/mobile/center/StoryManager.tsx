@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Camera, Play } from 'lucide-react';
+import { Plus, Play } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import StoryPreviewModal from './StoryPreviewModal';
 import StoryLoader from './StoryLoader';
+import StoryViewer from '../StoryViewer';
 
 interface Story {
   id: string;
@@ -22,6 +23,16 @@ interface Story {
   };
 }
 
+interface UserStoriesGroup {
+  user_id: string;
+  user_profiles?: {
+    username: string;
+    full_name?: string;
+    avatar_url?: string;
+  };
+  stories: Story[];
+}
+
 interface StoryManagerProps {
   onStoryView: (storyId: string) => void;
 }
@@ -33,6 +44,11 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [storyGroups, setStoryGroups] = useState<UserStoriesGroup[]>([]);
+  const [myStoryGroup, setMyStoryGroup] = useState<UserStoriesGroup | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerStories, setViewerStories] = useState<Story[]>([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   useEffect(() => {
     fetchStories();
@@ -41,36 +57,22 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
   const fetchStories = async () => {
     setLoading(true);
     if (!user) {
-      console.log('StoryManager: Aucun utilisateur connecté');
       setLoading(false);
       return;
     }
-
-    console.log('StoryManager: Début du chargement des stories pour l\'utilisateur:', user.id);
-
     try {
-      // 1. Récupérer les amis de l'utilisateur
-      console.log('StoryManager: Récupération des amitiés...');
-      const { data: friendships, error: friendError } = await supabase
+      // Récupérer les amis
+      const { data: friendships } = await supabase
         .from('center_friendships')
         .select('requester_id, addressee_id')
         .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
         .eq('status', 'accepted');
-
-      if (friendError) {
-        console.error("Erreur chargement des amitiés pour les stories:", friendError);
-        // On ne bloque pas, on essaiera au moins de charger les stories de l'utilisateur
-      }
-
-      // Extraire les IDs des amis
       const friendIds = (friendships || []).map(f => 
         f.requester_id === user.id ? f.addressee_id : f.requester_id
       );
-      // Ajouter l'utilisateur actuel
       const allowedUserIds = [...new Set([...friendIds, user.id])];
-      console.log('StoryManager: IDs autorisés pour les stories:', allowedUserIds);
 
-      // 2. Récupérer les stories des amis et utilisateur, sans join
+      // Récupérer les stories récentes
       const { data: storiesData, error: storiesError } = await supabase
         .from('center_stories')
         .select('*')
@@ -79,52 +81,65 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
         .order('created_at', { ascending: false });
 
       if (storiesError) {
-        console.error('Erreur Supabase récupération des stories:', storiesError);
-        toast.error(`Impossible de charger les stories: ${storiesError.message || storiesError.details || JSON.stringify(storiesError)}`);
+        toast.error(`Impossible de charger les stories: ${storiesError.message}`);
         setLoading(false);
         return;
       }
       if (!storiesData || storiesData.length === 0) {
         setUserStories([]);
         setStories([]);
+        setStoryGroups([]);
+        setMyStoryGroup(null);
         setLoading(false);
         return;
       }
 
-      // 3. Récupérer tous les profils nécessaires (batch)
+      // Récupérer tous les profils nécessaires
       const uniqueUserIds = [
         ...new Set(storiesData.map((story: any) => story.user_id))
       ];
-
-      const { data: profilesData, error: profilesError } = await supabase
+      const { data: profilesData } = await supabase
         .from('user_profiles')
         .select('id, username, full_name, avatar_url')
         .in('id', uniqueUserIds);
 
-      if (profilesError) {
-        console.error('Erreur chargement profils user_profiles pour stories:', profilesError);
-      }
-
-      // Créer un map rapide des profils
       const profilesMap: { [key: string]: any } = {};
       (profilesData || []).forEach((profile: any) => {
         profilesMap[profile.id] = profile;
       });
 
-      // 4. Associer chaque profil à chaque story
-      const storiesWithProfiles = (storiesData || []).map((story: any) => ({
-        ...story,
-        user_profiles: profilesMap[story.user_id] || undefined
-      }));
+      // Grouper stories par user_id (du plus récent au plus ancien)
+      const userStoriesMap: { [userId: string]: Story[] } = {};
+      (storiesData || []).forEach((story: Story) => {
+        if (!userStoriesMap[story.user_id]) userStoriesMap[story.user_id] = [];
+        userStoriesMap[story.user_id].push({
+          ...story,
+          user_profiles: profilesMap[story.user_id] || undefined
+        });
+      });
 
-      // Séparer mes stories des autres
-      const myStories = storiesWithProfiles.filter(story => story.user_id === user.id);
-      const otherStories = storiesWithProfiles.filter(story => story.user_id !== user.id);
+      // Séparer "moi" et "autres"
+      const myStoriesArr = userStoriesMap[user.id] || [];
+      const myStoryGrp: UserStoriesGroup | null = myStoriesArr.length > 0 ? {
+        user_id: user.id,
+        user_profiles: profilesMap[user.id] || undefined,
+        stories: myStoriesArr,
+      } : null;
 
-      setUserStories(myStories);
-      setStories(otherStories);
+      // Autres users
+      const otherGroups: UserStoriesGroup[] = Object.entries(userStoriesMap)
+        .filter(([uid]) => uid !== user.id)
+        .map(([uid, stories]) => ({
+          user_id: uid,
+          user_profiles: profilesMap[uid] || undefined,
+          stories
+        }));
+
+      setUserStories(myStoriesArr);
+      setStories(storiesData);
+      setMyStoryGroup(myStoryGrp);
+      setStoryGroups(otherGroups);
     } catch (error: any) {
-      console.error('Erreur chargement stories (JS catch):', error);
       toast.error('Erreur inattendue lors du chargement des stories: ' + (error?.message || error));
     } finally {
       setLoading(false);
@@ -185,73 +200,55 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
     await createStory(file);
   };
 
-  const viewStory = async (storyId: string) => {
-    try {
-      // Ajouter une vue
-      await supabase
-        .from('center_story_views')
-        .insert({
-          story_id: storyId,
-          viewer_id: user?.id
-        });
-
-      onStoryView(storyId);
-    } catch (error) {
-      console.error('Erreur vue story:', error);
-    }
+  // Fonction qui ouvre le StoryViewer pour UN user (moi ou autre)
+  const handleOpenStoryViewer = (stories: Story[], initialIndex: number = 0) => {
+    setViewerStories(stories.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
+    setViewerIndex(initialIndex);
+    setViewerOpen(true);
+    if (stories[initialIndex]?.id) onStoryView(stories[initialIndex].id);
   };
+
+  const hasNoStories = storyGroups.length === 0 && (!myStoryGroup || !myStoryGroup.stories.length);
 
   if (loading) {
     return <StoryLoader text="Chargement des stories..." />;
   }
 
-  const hasNoStories = stories.length === 0 && userStories.length === 0;
-
   return (
     <>
-      {/* Loader pendant upload story */}
       {uploading && (
         <div className="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center">
           <StoryLoader text="Envoi en cours..." />
         </div>
       )}
       <div className="flex items-center space-x-3 p-4 overflow-x-auto bg-white border-b border-gray-200">
-        {/* Debug info */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="text-xs text-gray-500 mb-2">
-            Debug: {userStories.length} story(s) utilisateur, {stories.length} story(s) amis
-          </div>
-        )}
-
-        {/* Mes stories (plusieurs possibles) */}
-        {userStories.length > 0 ? (
-          userStories.map((story) => (
-            <div key={story.id} className="flex-shrink-0 text-center">
-              <button
-                onClick={() => viewStory(story.id)}
-                className="relative"
-              >
-                <div className="w-16 h-16 rounded-full border-2 border-blue-500 p-0.5">
-                  <div className="w-full h-full rounded-full bg-gray-200 overflow-hidden">
-                    {story.media_type === 'video' ? (
-                      <div className="w-full h-full bg-black flex items-center justify-center">
-                        <Play className="w-6 h-6 text-white" />
-                      </div>
-                    ) : (
-                      <img
-                        src={story.media_url}
-                        alt="Ma story"
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
+        {/* Profil - mes stories GROUPÉES */}
+        {myStoryGroup && myStoryGroup.stories.length > 0 ? (
+          <div className="flex-shrink-0 text-center">
+            <button
+              onClick={() => handleOpenStoryViewer(myStoryGroup.stories, 0)}
+              className="relative"
+            >
+              <div className="w-16 h-16 rounded-full border-2 border-blue-500 p-0.5">
+                <div className="w-full h-full rounded-full bg-gray-200 overflow-hidden">
+                  {myStoryGroup.stories[0].media_type === 'video' ? (
+                    <div className="w-full h-full bg-black flex items-center justify-center">
+                      <Play className="w-6 h-6 text-white" />
+                    </div>
+                  ) : (
+                    <img
+                      src={myStoryGroup.stories[0].media_url}
+                      alt="Ma story"
+                      className="w-full h-full object-cover"
+                    />
+                  )}
                 </div>
-              </button>
-              <p className="text-xs mt-1 text-gray-600 truncate max-w-16">
-                {new Date(story.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
-            </div>
-          ))
+              </div>
+            </button>
+            <p className="text-xs mt-1 text-gray-600 truncate max-w-16">
+              {new Date(myStoryGroup.stories[0].created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+          </div>
         ) : (
           <label className="relative cursor-pointer">
             <input
@@ -266,8 +263,8 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
           </label>
         )}
 
-        {/* Ajouter un bouton en plus pour nouvelle story quand l'utilisateur en a déjà */}
-        {userStories.length > 0 && (
+        {/* Ajouter un bouton nouvelle story si déjà existante */}
+        {myStoryGroup && myStoryGroup.stories.length > 0 && (
           <label className="flex-shrink-0 text-center cursor-pointer">
             <input
               type="file"
@@ -282,27 +279,27 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
           </label>
         )}
 
-        {/* Stories des amis */}
-        {stories.map((story) => (
-          <div key={story.id} className="flex-shrink-0 text-center">
+        {/* Stories des amis GROUPÉES */}
+        {storyGroups.map((group) => (
+          <div key={group.user_id} className="flex-shrink-0 text-center">
             <button
-              onClick={() => viewStory(story.id)}
+              onClick={() => handleOpenStoryViewer(group.stories, 0)}
               className="relative"
             >
               <div className="w-16 h-16 rounded-full border-2 border-gray-300 p-0.5">
                 <div className="w-full h-full rounded-full bg-gray-200 overflow-hidden">
-                  {story.media_type === 'video' ? (
+                  {group.stories[0].media_type === 'video' ? (
                     <div className="w-full h-full bg-black flex items-center justify-center relative">
                       <Play className="w-6 h-6 text-white" />
                       <img
-                        src={story.media_url}
+                        src={group.stories[0].media_url}
                         alt="Story"
-                        className="w-full h-full object-cover absolute inset-0"
+                        className="w-full h-full object-cover absolute inset-0 opacity-40"
                       />
                     </div>
                   ) : (
                     <img
-                      src={story.media_url}
+                      src={group.stories[0].media_url}
                       alt="Story"
                       className="w-full h-full object-cover"
                     />
@@ -311,7 +308,7 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
               </div>
             </button>
             <p className="text-xs mt-1 text-gray-600 truncate max-w-16">
-              {story.user_profiles?.username || 'Utilisateur'}
+              {group.user_profiles?.username || 'Utilisateur'}
             </p>
           </div>
         ))}
@@ -329,12 +326,32 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
           </div>
         )}
       </div>
-      {/* Aperçu Modal */}
+      {/* Modal d'aperçu */}
       {previewFile && (
         <StoryPreviewModal
           file={previewFile}
           onPublish={handlePublishStory}
           onCancel={() => setPreviewFile(null)}
+        />
+      )}
+      {/* Story viewer modal */}
+      {viewerOpen && viewerStories.length > 0 && (
+        <StoryViewer
+          stories={viewerStories.map(story => ({
+            id: story.id,
+            user: {
+              id: story.user_id,
+              username: story.user_profiles?.username || '',
+              avatar_url: story.user_profiles?.avatar_url || '',
+              full_name: story.user_profiles?.full_name || ''
+            },
+            media_url: story.media_url,
+            media_type: story.media_type,
+            created_at: story.created_at,
+            duration: 5000 // 5s par défaut, option à améliorer
+          }))}
+          initialIndex={viewerIndex}
+          onClose={() => setViewerOpen(false)}
         />
       )}
     </>

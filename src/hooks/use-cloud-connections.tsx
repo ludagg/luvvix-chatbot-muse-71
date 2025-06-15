@@ -41,8 +41,8 @@ export const useCloudConnections = () => {
   const connectDropbox = async () => {
     setLoading(true);
     try {
-      // Construire l'URL d'autorisation Dropbox
-      const clientId = 'YOUR_DROPBOX_CLIENT_ID'; // À configurer
+      // Utiliser les vraies clés API
+      const clientId = 'n996hgcg16xp1pu';
       const redirectUri = `${window.location.origin}/auth/dropbox/callback`;
       const scope = 'files.content.write files.content.read files.metadata.read';
       

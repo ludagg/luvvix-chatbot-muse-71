@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, User, Camera, Globe, Calendar, Users, Upload, Link as LinkIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -124,11 +123,22 @@ const EnhancedMobileAuthFlow = ({ onSuccess, onBack }: MobileAuthFlowProps) => {
   };
 
   const handleDropboxConnect = () => {
+    const clientId = 'n996hgcg16xp1pu';
+    const redirectUri = `${window.location.origin}/auth/dropbox/callback`;
+    const scope = 'files.content.write files.content.read files.metadata.read';
+    
+    const authUrl = `https://www.dropbox.com/oauth2/authorize?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=code&` +
+      `scope=${encodeURIComponent(scope)}`;
+    
     toast({
       title: "Connexion Dropbox",
       description: "Redirection vers Dropbox...",
     });
-    // Implémentation de la connexion Dropbox
+    
+    window.location.href = authUrl;
   };
 
   const renderSignupStep = () => {

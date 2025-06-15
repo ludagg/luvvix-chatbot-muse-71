@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,18 +144,22 @@ const EnhancedSignupForm = () => {
   };
 
   const handleDropboxConnect = () => {
-    // Rediriger vers le processus de connexion Dropbox
+    const clientId = 'n996hgcg16xp1pu';
+    const redirectUri = `${window.location.origin}/auth/dropbox/callback`;
+    const scope = 'files.content.write files.content.read files.metadata.read';
+    
+    const authUrl = `https://www.dropbox.com/oauth2/authorize?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=code&` +
+      `scope=${encodeURIComponent(scope)}`;
+    
     toast({
       title: "Connexion Dropbox",
       description: "Redirection vers Dropbox pour l'autorisation...",
     });
     
-    // Ici vous implémenterez la connexion Dropbox
-    const clientId = 'YOUR_DROPBOX_CLIENT_ID';
-    const redirectUri = `${window.location.origin}/auth/dropbox/callback`;
-    const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`;
-    
-    window.open(authUrl, '_blank', 'width=600,height=700');
+    window.location.href = authUrl;
   };
 
   if (step === 1) {

@@ -47,37 +47,23 @@ const DropboxCallbackPage = () => {
       }
       
       try {
-        // Échanger le code contre un token d'accès
-        const response = await fetch('/api/dropbox/exchange-token', {
-          method: 'POST',
+        // Appeler la fonction edge pour échanger le token
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        const { data, error: functionError } = await supabase.functions.invoke('dropbox-oauth', {
+          body: { code },
           headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ code })
+            Authorization: `Bearer ${sessionData.session?.access_token}`
+          }
         });
         
-        if (!response.ok) {
-          throw new Error('Erreur lors de l\'échange du token');
+        if (functionError) {
+          throw new Error(functionError.message);
         }
-        
-        const { access_token, refresh_token, account_info } = await response.json();
-        
-        // Sauvegarder la connexion en base
-        const { error: dbError } = await supabase
-          .from('cloud_connections')
-          .upsert({
-            user_id: user.id,
-            provider: 'dropbox',
-            access_token,
-            refresh_token,
-            account_info,
-            connected_at: new Date().toISOString(),
-            is_active: true
-          }, {
-            onConflict: 'user_id,provider'
-          });
-        
-        if (dbError) throw dbError;
+
+        if (data?.error) {
+          throw new Error(data.error);
+        }
         
         toast({
           title: "Dropbox connecté avec succès !",
@@ -86,11 +72,11 @@ const DropboxCallbackPage = () => {
         
         navigate('/cloud');
         
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error connecting Dropbox:', error);
         toast({
           title: "Erreur de connexion",
-          description: "Impossible de connecter Dropbox",
+          description: error.message || "Impossible de connecter Dropbox",
           variant: "destructive"
         });
         navigate('/dashboard');

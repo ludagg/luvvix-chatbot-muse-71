@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -45,8 +44,8 @@ export function useDropboxFiles() {
     setError(null);
     try {
       const { data, error } = await supabase.functions.invoke('dropbox-download-file', {
-        body: { path: file.path_display },
-        responseType: "arraybuffer"
+        body: { path: file.path_display }
+        // removed responseType property as it's not allowed
       });
       if (error) throw error;
 

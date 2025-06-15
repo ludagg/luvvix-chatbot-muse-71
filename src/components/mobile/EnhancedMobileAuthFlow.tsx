@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, User, Camera, Globe, Calendar, Users, Upload, Link as LinkIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -437,35 +438,15 @@ const EnhancedMobileAuthFlow = ({ onSuccess, onBack }: MobileAuthFlowProps) => {
             >
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>
-
-            <div className="text-center mt-6">
-              <button
-                onClick={() => setIsLogin(false)}
-                className="text-blue-500 font-medium"
-              >
-                Pas encore de compte ? S'inscrire
-              </button>
-            </div>
           </div>
         ) : (
           renderSignupStep()
         )}
 
-        {isLogin && (
-          <div className="text-center mt-6">
-            <button
-              onClick={() => setIsLogin(false)}
-              className="text-blue-500 font-medium"
-            >
-              Pas encore de compte ? S'inscrire
-            </button>
-          </div>
-        )}
-
         {!isLogin && (
           <div className="text-center mt-6">
             <button
-              onClick={()={() => setIsLogin(true)}}
+              onClick={() => setIsLogin(true)}
               className="text-blue-500 font-medium"
             >
               Déjà un compte ? Se connecter

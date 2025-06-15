@@ -1,10 +1,10 @@
-
 import React, { useEffect, useState } from "react";
 import { useDropboxFiles, DropboxFileEntry } from "@/hooks/useDropboxFiles";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { fileService } from "@/services/file-service";
 import { Folder, File as FileIcon, ArrowLeft, Download, Trash2, Plus, Edit, FolderPlus, UploadCloud } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Ce composant gère la navigation, suppression, renommage, création de dossiers et upload mobile pour Dropbox.
@@ -125,17 +125,18 @@ const DropboxFileBrowserMobile: React.FC<Props> = ({ onClose, onRefresh }) => {
       // Lis le fichier, l'encode en base64
       const arrBuffer = await file.arrayBuffer();
       const base64Content = btoa(String.fromCharCode(...new Uint8Array(arrBuffer)));
-      const { error } = await fetch("/api/dropbox/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+
+      // Correction: utiliser Supabase Functions (edge) pour uploader
+      const { data, error } = await supabase.functions.invoke('dropbox-upload-file', {
+        body: {
           file: base64Content,
           filename: file.name,
           path: (currentPath || "") + "/" + file.name,
           mimetype: file.type || "application/octet-stream"
-        }),
-      }).then(res => res.json());
-      if (error) throw new Error(error);
+        },
+      });
+
+      if (error) throw error;
       toast({ title: "Importé", description: `${file.name} uploadé sur Dropbox.` });
       await fetchFiles(currentPath);
       setShowUpload(false);

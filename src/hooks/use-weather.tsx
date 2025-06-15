@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 
-interface WeatherData {
+export interface WeatherData {
   location: {
     name: string;
     region: string;

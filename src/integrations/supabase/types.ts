@@ -3466,25 +3466,37 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          age: number | null
           avatar_url: string | null
+          bio: string | null
+          country: string | null
           created_at: string | null
           full_name: string | null
+          gender: string | null
           id: string
           updated_at: string | null
           username: string | null
         }
         Insert: {
+          age?: number | null
           avatar_url?: string | null
+          bio?: string | null
+          country?: string | null
           created_at?: string | null
           full_name?: string | null
+          gender?: string | null
           id: string
           updated_at?: string | null
           username?: string | null
         }
         Update: {
+          age?: number | null
           avatar_url?: string | null
+          bio?: string | null
+          country?: string | null
           created_at?: string | null
           full_name?: string | null
+          gender?: string | null
           id?: string
           updated_at?: string | null
           username?: string | null

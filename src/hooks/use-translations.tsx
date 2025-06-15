@@ -24,13 +24,38 @@ export const useTranslations = () => {
     
     setLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('luvvix-translate-api/translate', {
-        body: { text, from, to },
+      // Utiliser l'edge function gemini-translate qui fonctionne
+      const { data, error } = await supabase.functions.invoke('gemini-translate', {
+        body: { 
+          text, 
+          fromLanguage: from === 'auto' ? 'auto' : from, 
+          toLanguage: to,
+          context: 'General translation'
+        },
       });
 
       if (error) throw error;
       
-      await fetchHistory();
+      // Sauvegarder dans l'historique si la traduction réussit
+      if (data && data.translatedText) {
+        try {
+          await supabase
+            .from('translations')
+            .insert([{
+              user_id: user.id,
+              source_text: text,
+              translated_text: data.translatedText,
+              source_language: data.detectedLanguage || from,
+              target_language: to,
+            }]);
+          
+          await fetchHistory();
+        } catch (saveError) {
+          console.error('Error saving translation:', saveError);
+          // Ne pas bloquer l'utilisateur si la sauvegarde échoue
+        }
+      }
+      
       toast({
         title: "Traduction terminée",
         description: "Le texte a été traduit avec succès",
@@ -54,7 +79,12 @@ export const useTranslations = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase.functions.invoke('luvvix-translate-api/history');
+      const { data, error } = await supabase
+        .from('translations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) throw error;
       setHistory(data || []);
@@ -67,9 +97,11 @@ export const useTranslations = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase.functions.invoke(`luvvix-translate-api/favorite/${translationId}`, {
-        body: { isFavorite },
-      });
+      const { error } = await supabase
+        .from('translations')
+        .update({ is_favorite: isFavorite })
+        .eq('id', translationId)
+        .eq('user_id', user.id);
 
       if (error) throw error;
       

@@ -14,12 +14,6 @@ serve(async (req) => {
   }
 
   try {
-    const { code } = await req.json();
-    
-    if (!code) {
-      throw new Error('Code d\'autorisation manquant');
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -38,88 +32,123 @@ serve(async (req) => {
       throw new Error('Utilisateur non trouvé');
     }
 
-    // Échanger le code contre des tokens
-    const clientId = Deno.env.get('DROPBOX_CLIENT_ID')!;
-    const clientSecret = Deno.env.get('DROPBOX_CLIENT_SECRET')!;
-    const redirectUri = `${new URL(req.url).origin}/auth/dropbox/callback`;
+    const { action, code } = await req.json();
 
-    console.log('Échange du code Dropbox:', { code, redirectUri });
+    if (action === 'get_auth_url') {
+      // Générer l'URL d'autorisation Dropbox
+      const clientId = Deno.env.get('DROPBOX_CLIENT_ID');
+      if (!clientId) {
+        throw new Error('DROPBOX_CLIENT_ID non configuré');
+      }
 
-    const tokenResponse = await fetch('https://api.dropboxapi.com/oauth2/token', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`
-      },
-      body: new URLSearchParams({
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
-      }),
-    });
+      const redirectUri = `${new URL(req.url).origin.replace(/\/functions\/v1\/.*/, '')}/auth/dropbox/callback`;
+      const scope = 'files.content.write files.content.read files.metadata.read';
+      
+      const authUrl = `https://www.dropbox.com/oauth2/authorize?` +
+        `client_id=${clientId}&` +
+        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `response_type=code&` +
+        `scope=${encodeURIComponent(scope)}`;
 
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error('Erreur échange token Dropbox:', errorText);
-      throw new Error('Erreur lors de l\'échange du token');
+      return new Response(JSON.stringify({ 
+        auth_url: authUrl 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    const tokens = await tokenResponse.json();
-    console.log('Tokens reçus:', { hasAccessToken: !!tokens.access_token });
+    if (action === 'exchange_token' || code) {
+      const authCode = code || (await req.json()).code;
+      
+      if (!authCode) {
+        throw new Error('Code d\'autorisation manquant');
+      }
 
-    // Récupérer les informations du compte
-    const accountResponse = await fetch('https://api.dropboxapi.com/2/users/get_current_account', {
-      method: 'POST',
-      headers: { 
-        'Authorization': `Bearer ${tokens.access_token}`,
-        'Content-Type': 'application/json'
-      },
-    });
+      // Échanger le code contre des tokens
+      const clientId = Deno.env.get('DROPBOX_CLIENT_ID')!;
+      const clientSecret = Deno.env.get('DROPBOX_CLIENT_SECRET')!;
+      const redirectUri = `${new URL(req.url).origin.replace(/\/functions\/v1\/.*/, '')}/auth/dropbox/callback`;
 
-    if (!accountResponse.ok) {
-      console.error('Erreur récupération compte Dropbox');
-      throw new Error('Erreur lors de la récupération du compte');
-    }
+      console.log('Échange du code Dropbox:', { code: authCode, redirectUri });
 
-    const accountInfo = await accountResponse.json();
-    console.log('Info compte récupérées:', { email: accountInfo.email });
+      const tokenResponse = await fetch('https://api.dropboxapi.com/oauth2/token', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`
+        },
+        body: new URLSearchParams({
+          code: authCode,
+          grant_type: 'authorization_code',
+          redirect_uri: redirectUri,
+        }),
+      });
 
-    // Sauvegarder la connexion en base
-    const { error: dbError } = await supabase
-      .from('cloud_connections')
-      .upsert({
-        user_id: user.id,
-        provider: 'dropbox',
+      if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text();
+        console.error('Erreur échange token Dropbox:', errorText);
+        throw new Error('Erreur lors de l\'échange du token');
+      }
+
+      const tokens = await tokenResponse.json();
+      console.log('Tokens reçus:', { hasAccessToken: !!tokens.access_token });
+
+      // Récupérer les informations du compte
+      const accountResponse = await fetch('https://api.dropboxapi.com/2/users/get_current_account', {
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${tokens.access_token}`,
+          'Content-Type': 'application/json'
+        },
+      });
+
+      if (!accountResponse.ok) {
+        console.error('Erreur récupération compte Dropbox');
+        throw new Error('Erreur lors de la récupération du compte');
+      }
+
+      const accountInfo = await accountResponse.json();
+      console.log('Info compte récupérées:', { email: accountInfo.email });
+
+      // Sauvegarder la connexion en base
+      const { error: dbError } = await supabase
+        .from('cloud_connections')
+        .upsert({
+          user_id: user.id,
+          provider: 'dropbox',
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          account_info: {
+            email: accountInfo.email,
+            name: accountInfo.name?.display_name || '',
+            account_id: accountInfo.account_id
+          },
+          connected_at: new Date().toISOString(),
+          is_active: true
+        }, {
+          onConflict: 'user_id,provider'
+        });
+
+      if (dbError) {
+        console.error('Erreur sauvegarde DB:', dbError);
+        throw new Error('Erreur lors de la sauvegarde');
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         account_info: {
           email: accountInfo.email,
           name: accountInfo.name?.display_name || '',
           account_id: accountInfo.account_id
-        },
-        connected_at: new Date().toISOString(),
-        is_active: true
-      }, {
-        onConflict: 'user_id,provider'
+        }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-
-    if (dbError) {
-      console.error('Erreur sauvegarde DB:', dbError);
-      throw new Error('Erreur lors de la sauvegarde');
     }
 
-    return new Response(JSON.stringify({ 
-      success: true,
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
-      account_info: {
-        email: accountInfo.email,
-        name: accountInfo.name?.display_name || '',
-        account_id: accountInfo.account_id
-      }
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    throw new Error('Action non supportée');
 
   } catch (error) {
     console.error('Erreur Dropbox OAuth:', error);

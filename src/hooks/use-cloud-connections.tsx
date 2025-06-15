@@ -41,24 +41,29 @@ export const useCloudConnections = () => {
   const connectDropbox = async () => {
     setLoading(true);
     try {
-      // Utiliser les vraies clés API
-      const clientId = 'n996hgcg16xp1pu';
-      const redirectUri = `${window.location.origin}/auth/dropbox/callback`;
-      const scope = 'files.content.write files.content.read files.metadata.read';
+      // Obtenir l'URL d'autorisation depuis notre edge function
+      const { data: sessionData } = await supabase.auth.getSession();
       
-      const authUrl = `https://www.dropbox.com/oauth2/authorize?` +
-        `client_id=${clientId}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-        `response_type=code&` +
-        `scope=${encodeURIComponent(scope)}`;
+      const { data, error } = await supabase.functions.invoke('dropbox-oauth', {
+        body: { action: 'get_auth_url' },
+        headers: {
+          Authorization: `Bearer ${sessionData.session?.access_token}`
+        }
+      });
       
-      // Rediriger vers Dropbox pour l'autorisation
-      window.location.href = authUrl;
-    } catch (error) {
+      if (error) throw error;
+      
+      if (data?.auth_url) {
+        // Rediriger vers l'URL d'autorisation
+        window.location.href = data.auth_url;
+      } else {
+        throw new Error('Impossible d\'obtenir l\'URL d\'autorisation');
+      }
+    } catch (error: any) {
       console.error('Error connecting to Dropbox:', error);
       toast({
         title: "Erreur de connexion",
-        description: "Impossible de se connecter à Dropbox",
+        description: error.message || "Impossible de se connecter à Dropbox",
         variant: "destructive"
       });
     } finally {

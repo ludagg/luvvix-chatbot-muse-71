@@ -51,7 +51,7 @@ const DropboxCallbackPage = () => {
         const { data: sessionData } = await supabase.auth.getSession();
         
         const { data, error: functionError } = await supabase.functions.invoke('dropbox-oauth', {
-          body: { code },
+          body: { action: 'exchange_token', code },
           headers: {
             Authorization: `Bearer ${sessionData.session?.access_token}`
           }

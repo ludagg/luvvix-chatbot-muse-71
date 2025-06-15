@@ -36,9 +36,12 @@ serve(async (req) => {
       throw new Error("Utilisateur non trouvé");
     }
 
-    const url = new URL(req.url);
-    const origin = url.origin;
-    const redirectUri = `${origin}/functions/v1/koofr-oauth/callback`;
+    // ---------
+    // Correction ICI : on prend l'URL du frontend depuis une variable d'environnement (publique)
+    // Pour Lovable, règle la variable FRONTEND_URL dans Supabase Secrets à :
+    // https://id-preview--ad47350f-59af-461e-b682-1f7fd95503bc.lovable.app (ou ton domaine prod)
+    const frontendUrl = Deno.env.get("FRONTEND_URL")!;
+    const redirectUri = `${frontendUrl}/functions/v1/koofr-oauth/callback`;
 
     // Parse l’action
     const body = req.method === "POST" ? await req.json() : {};

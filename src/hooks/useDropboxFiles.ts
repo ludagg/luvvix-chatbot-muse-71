@@ -38,6 +38,44 @@ export function useDropboxFiles() {
     }
   }, []);
 
+  // Télécharger un fichier Dropbox en tant que Blob
+  const downloadFile = useCallback(async (file: DropboxFileEntry) => {
+    if (file[".tag"] !== "file" || !file.path_display) return null;
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('dropbox-download-file', {
+        body: { path: file.path_display },
+        responseType: "arraybuffer"
+      });
+      if (error) throw error;
+
+      // Tentative d'extraction du nom du header, sinon fallback
+      let fileName = file.name;
+      let contentType = "application/octet-stream";
+      let blob: Blob;
+      if (data) {
+        if (data instanceof ArrayBuffer) {
+          blob = new Blob([data], { type: contentType });
+        } else if (data instanceof Blob) {
+          blob = data;
+        } else {
+          // fallback : string/objet, ce n'est pas attendu ici
+          blob = new Blob([]);
+        }
+
+        return { name: fileName, blob };
+      } else {
+        throw new Error("Aucune donnée reçue de Dropbox");
+      }
+    } catch (err: any) {
+      setError(err.message || "Erreur lors du téléchargement Dropbox");
+    } finally {
+      setLoading(false);
+    }
+    return null;
+  }, []);
+
   // Navigation dans les dossiers Dropbox
   const openFolder = async (entry: DropboxFileEntry) => {
     if (entry[".tag"] === "folder") {
@@ -57,6 +95,6 @@ export function useDropboxFiles() {
 
   return {
     files, loading, error, currentPath,
-    fetchFiles, openFolder, goUp
+    fetchFiles, openFolder, goUp, downloadFile
   };
 }

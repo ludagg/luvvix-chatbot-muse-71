@@ -1,23 +1,70 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDropboxFiles, DropboxFileEntry } from "@/hooks/useDropboxFiles";
 import { Button } from "@/components/ui/button";
-import { Search, Folder, File as FileIcon, ArrowLeft, Download, Upload as UploadIcon } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { fileService } from "@/services/file-service";
+import { Search, Folder, File as FileIcon, ArrowLeft, Download } from "lucide-react";
 
 interface DropboxFileBrowserProps {
   onImportFile?: (file: DropboxFileEntry) => void;
   onExportFile?: (file: DropboxFileEntry) => void;
 }
-
 const DropboxFileBrowser: React.FC<DropboxFileBrowserProps> = ({
   onImportFile,
   onExportFile,
 }) => {
-  const { files, fetchFiles, openFolder, goUp, loading, error, currentPath } = useDropboxFiles();
+  const { files, fetchFiles, openFolder, goUp, loading, error, currentPath, downloadFile } = useDropboxFiles();
+  const { toast } = useToast();
+  const [importingId, setImportingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchFiles(""); // Affiche la racine au chargement
   }, [fetchFiles]);
+
+  // Handler pour importer un fichier Dropbox dans LuvviX Cloud
+  const handleImport = async (file: DropboxFileEntry) => {
+    setImportingId(file.id);
+    try {
+      toast({
+        title: `Import de ${file.name} en cours...`,
+        description: "Téléchargement du fichier Dropbox",
+      });
+      const res = await downloadFile(file);
+      if (!res) throw new Error("Échec du téléchargement Dropbox.");
+
+      // Crée un "File" compatible (nom & type correct pour upload, utiliser le nom d'origine et essayer de deviner le type)
+      // Essayer de deviner le type du fichier par l'extension (.pdf, .jpg, etc)
+      const fname = res.name;
+      const ext = fname?.split('.').pop();
+      let guessedType = "application/octet-stream";
+      if (ext === 'pdf') guessedType = "application/pdf";
+      else if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext || "")) guessedType = `image/${ext.replace('jpg', 'jpeg')}`;
+      else if (["mp3", "wav"].includes(ext || "")) guessedType = `audio/${ext}`;
+      else if (["mp4", "webm"].includes(ext || "")) guessedType = `video/${ext}`;
+      // Créer l'objet File
+      const fileToUpload = new File([res.blob], fname, { type: guessedType });
+
+      // Importer sur LuvviX Cloud : placer dans la racine par défaut
+      const id = await fileService.uploadFile(fileToUpload, undefined);
+      toast({
+        title: `Import réussi`,
+        description: `"${fname}" ajouté à votre cloud LuvviX.`,
+      });
+
+      // Eventuellement, callback pour actualiser la liste côté parent
+      if (onImportFile) onImportFile(file);
+
+    } catch (e: any) {
+      toast({
+        title: "Erreur lors de l'import",
+        description: e?.message || "Impossible d'uploader le fichier dans votre cloud",
+        variant: "destructive",
+      });
+    } finally {
+      setImportingId(null);
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-100 dark:border-gray-800 p-4 h-full flex flex-col">
@@ -67,11 +114,15 @@ const DropboxFileBrowser: React.FC<DropboxFileBrowserProps> = ({
                         size="sm"
                         variant="outline"
                         className="mr-2"
-                        disabled
-                        title="Importer ce fichier dans mon cloud (à venir)"
+                        onClick={e => {
+                          e.stopPropagation();
+                          handleImport(file);
+                        }}
+                        disabled={importingId === file.id}
+                        title="Importer ce fichier dans mon cloud"
                       >
                         <Download className="w-4 h-4 mr-1" />
-                        Importer
+                        {importingId === file.id ? "Import…" : "Importer"}
                       </Button>
                     )}
                   </td>

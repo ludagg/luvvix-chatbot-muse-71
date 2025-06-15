@@ -231,7 +231,7 @@ const ModernAIChat = () => {
   const selectedPersonality = PERSONALITIES.find(p => p.key === personality);
 
   return (
-    <div className="h-full max-w-4xl mx-auto bg-white dark:bg-gray-900 rounded-3xl shadow-lg overflow-hidden flex">
+    <div className="h-full max-w-4xl mx-auto bg-white dark:bg-gray-900 rounded-3xl md:shadow-lg overflow-hidden flex">
       {/* Sidebar */}
       <div className={`${showSidebar ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0`}>
         <ConversationSidebar
@@ -255,39 +255,39 @@ const ModernAIChat = () => {
       {/* Chat principale */}
       <div className="flex-1 flex flex-col">
         {/* Header épuré */}
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 p-6">
+        <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 p-3 md:p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 md:space-x-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowSidebar(!showSidebar)}
-                className="lg:hidden text-gray-600 hover:bg-gray-100 rounded-full"
+                className="lg:hidden text-gray-600 hover:bg-gray-100 rounded-full p-1 md:p-2"
               >
-                {showSidebar ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {showSidebar ? <X className="w-4 h-4 md:w-5 md:h-5" /> : <Menu className="w-4 h-4 md:w-5 md:h-5" />}
               </Button>
               <div className="relative">
-                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center">
-                  <Brain className="w-6 h-6 text-blue-600" />
+                <div className="w-8 h-8 md:w-12 md:h-12 bg-blue-50 rounded-xl md:rounded-2xl flex items-center justify-center">
+                  <Brain className="w-4 h-4 md:w-6 md:h-6 text-blue-600" />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
+                <div className="absolute -bottom-0.5 -right-0.5 md:-bottom-1 md:-right-1 w-2 h-2 md:w-3 md:h-3 bg-green-400 rounded-full border border-white" />
               </div>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                <h1 className="text-sm md:text-xl font-semibold text-gray-900 dark:text-white">
                   {currentConversation?.title || "LuvviX Brain"}
                 </h1>
-                <p className="text-sm text-gray-500">Assistant IA personnel</p>
+                <p className="text-xs md:text-sm text-gray-500">Assistant IA personnel</p>
               </div>
             </div>
             
-            <Badge className="bg-green-50 text-green-700 border-green-200">
-              <div className="w-2 h-2 bg-green-400 rounded-full mr-2" />
+            <Badge className="bg-green-50 text-green-700 border-green-200 text-xs">
+              <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-400 rounded-full mr-1 md:mr-2" />
               En ligne
             </Badge>
           </div>
 
-          {/* Sélecteur de personnalité épuré */}
-          <div className="mt-6">
+          {/* Sélecteur de personnalité épuré - masqué sur mobile */}
+          <div className="mt-3 md:mt-6 hidden md:block">
             <p className="text-sm text-gray-600 mb-3">Mode :</p>
             <div className="flex flex-wrap gap-2">
               {PERSONALITIES.map(p => (
@@ -311,8 +311,8 @@ const ModernAIChat = () => {
 
         {/* Zone de chat */}
         <div className="flex-1 flex flex-col">
-          <ScrollArea className="flex-1 p-6">
-            <div className="space-y-6">
+          <ScrollArea className="flex-1 p-3 md:p-6">
+            <div className="space-y-4 md:space-y-6">
               <AnimatePresence>
                 {messages.map((message) => (
                   <motion.div
@@ -322,24 +322,24 @@ const ModernAIChat = () => {
                     exit={{ opacity: 0, y: -20 }}
                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className={`flex items-end space-x-3 max-w-[80%] ${
+                    <div className={`flex items-end space-x-2 md:space-x-3 max-w-[85%] md:max-w-[80%] ${
                       message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
                     }`}>
                       {/* Avatar */}
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                         message.role === 'user' 
                           ? 'bg-blue-50' 
                           : 'bg-gray-50'
                       }`}>
                         {message.role === 'user' ? (
-                          <User className="w-4 h-4 text-blue-600" />
+                          <User className="w-3 h-3 md:w-4 md:h-4 text-blue-600" />
                         ) : (
-                          <Bot className="w-4 h-4 text-gray-600" />
+                          <Bot className="w-3 h-3 md:w-4 md:h-4 text-gray-600" />
                         )}
                       </div>
 
                       {/* Message bubble */}
-                      <div className={`px-4 py-3 rounded-2xl max-w-full ${
+                      <div className={`px-3 py-2 md:px-4 md:py-3 rounded-xl md:rounded-2xl max-w-full ${
                         message.role === 'user'
                           ? 'bg-blue-500 text-white'
                           : 'bg-gray-50 text-gray-900 border border-gray-100'
@@ -348,13 +348,13 @@ const ModernAIChat = () => {
                           <img
                             src={message.imageUrl}
                             alt="Image envoyée"
-                            className="rounded-xl shadow mb-3 max-w-xs border"
+                            className="rounded-lg md:rounded-xl shadow mb-2 md:mb-3 max-w-xs border"
                           />
                         )}
-                        <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                        <div className="whitespace-pre-wrap text-xs md:text-sm leading-relaxed">
                           {message.content}
                         </div>
-                        <div className={`text-xs mt-2 ${
+                        <div className={`text-xs mt-1 md:mt-2 ${
                           message.role === 'user' ? 'text-blue-100' : 'text-gray-400'
                         }`}>
                           {message.createdAt.toLocaleTimeString('fr-FR', { 
@@ -375,15 +375,15 @@ const ModernAIChat = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex justify-start"
                 >
-                  <div className="flex items-end space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center">
-                      <Bot className="w-4 h-4 text-gray-600" />
+                  <div className="flex items-end space-x-2 md:space-x-3">
+                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-50 flex items-center justify-center">
+                      <Bot className="w-3 h-3 md:w-4 md:h-4 text-gray-600" />
                     </div>
-                    <div className="bg-gray-50 px-4 py-3 rounded-2xl rounded-bl-sm border border-gray-100">
+                    <div className="bg-gray-50 px-3 py-2 md:px-4 md:py-3 rounded-xl md:rounded-2xl rounded-bl-sm border border-gray-100">
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-gray-400 rounded-full animate-bounce" />
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
+                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
                       </div>
                     </div>
                   </div>
@@ -394,9 +394,9 @@ const ModernAIChat = () => {
             </div>
           </ScrollArea>
 
-          {/* Actions rapides */}
-          <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
-            <div className="flex space-x-2 mb-4 overflow-x-auto">
+          {/* Actions rapides - masquées sur mobile */}
+          <div className="p-3 md:p-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
+            <div className="hidden md:flex space-x-2 mb-4 overflow-x-auto">
               {QUICK_ACTIONS.map((action, index) => (
                 <motion.button
                   key={index}
@@ -412,7 +412,7 @@ const ModernAIChat = () => {
             </div>
 
             {/* Zone de saisie */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 md:space-x-3">
               <ImageUploader
                 previewUrl={previewUrl}
                 onImageSelected={setSelectedImage}
@@ -421,7 +421,7 @@ const ModernAIChat = () => {
               <div className="flex-1 relative">
                 <Input
                   ref={inputRef}
-                  placeholder={`Écrivez votre message...`}
+                  placeholder="Écrivez votre message..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => {
@@ -431,7 +431,7 @@ const ModernAIChat = () => {
                     }
                   }}
                   disabled={isTyping}
-                  className="bg-gray-50 border-gray-200 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="bg-gray-50 border-gray-200 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm md:text-base h-10 md:h-auto"
                 />
               </div>
               

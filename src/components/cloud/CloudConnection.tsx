@@ -12,7 +12,7 @@ interface CloudConnection {
   provider: string;
   account_info: any;
   is_active: boolean;
-  created_at: string; // <-- Add this line to match Supabase schema
+  created_at: string; // Ensures created_at is present in type
 }
 
 const CloudConnection: React.FC = () => {
@@ -243,6 +243,7 @@ const CloudConnection: React.FC = () => {
               {connections.map((connection) => {
                 // match provider meta for icon/color
                 const provider = cloudProviders.find(p => p.id === connection.provider);
+                const { created_at } = connection; // <-- Explicit destructure created_at
                 return (
                   <div key={connection.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center space-x-3">
@@ -252,8 +253,7 @@ const CloudConnection: React.FC = () => {
                       <div>
                         <p className="font-medium">{provider?.name ?? connection.provider}</p>
                         <p className="text-sm text-gray-500">
-                          {/* created_at now always exists */}
-                          Connecté le {connection.created_at ? new Date(connection.created_at).toLocaleDateString('fr-FR') : ''}
+                          Connecté le {created_at ? new Date(created_at).toLocaleDateString('fr-FR') : ''}
                         </p>
                       </div>
                     </div>

@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
@@ -34,9 +33,13 @@ serve(async (req) => {
 
     const { action, code } = await req.json();
 
-    const frontendUrl = Deno.env.get("FRONTEND_URL")!;
+    let frontendUrl = Deno.env.get("FRONTEND_URL")!;
     if (!frontendUrl) {
       throw new Error("FRONTEND_URL secret is not set in Supabase.");
+    }
+    // S'assurer que l'URL n'a pas de slash à la fin pour éviter les doubles slashes
+    if (frontendUrl.endsWith('/')) {
+      frontendUrl = frontendUrl.slice(0, -1);
     }
     const redirectUri = `${frontendUrl}/auth/dropbox/callback`;
 
@@ -53,7 +56,8 @@ serve(async (req) => {
         `client_id=${clientId}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `response_type=code&` +
-        `scope=${encodeURIComponent(scope)}`;
+        `scope=${encodeURIComponent(scope)}&` +
+        `token_access_type=offline`; // Ajout pour obtenir un refresh_token
 
       console.log('Generated Dropbox auth URL:', authUrl);
       console.log('Redirect URI for Dropbox:', redirectUri);

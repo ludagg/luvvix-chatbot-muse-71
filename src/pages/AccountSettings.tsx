@@ -11,7 +11,7 @@ import { Loader2, User, Shield, Bell, Globe, Cloud } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import BiometricSettings from "@/components/settings/BiometricSettings";
-import CloudConnectionSettings from "@/components/settings/CloudConnectionSettings";
+import MegaConnectionSettings from "@/components/settings/MegaConnectionSettings";
 
 const AccountSettings = () => {
   const { user, profile, loading } = useAuth();
@@ -227,7 +227,7 @@ const AccountSettings = () => {
               </TabsContent>
               
               <TabsContent value="cloud">
-                <CloudConnectionSettings />
+                <MegaConnectionSettings />
               </TabsContent>
               
               <TabsContent value="notifications">

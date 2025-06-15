@@ -23,7 +23,6 @@ export const useCloudConnections = () => {
 
   const fetchConnections = async () => {
     if (!user) return;
-    
     try {
       const { data, error } = await supabase
         .from('cloud_connections')
@@ -41,29 +40,53 @@ export const useCloudConnections = () => {
   const connectDropbox = async () => {
     setLoading(true);
     try {
-      // Obtenir l'URL d'autorisation depuis notre edge function
       const { data: sessionData } = await supabase.auth.getSession();
-      
       const { data, error } = await supabase.functions.invoke('dropbox-oauth', {
         body: { action: 'get_auth_url' },
         headers: {
           Authorization: `Bearer ${sessionData.session?.access_token}`
         }
       });
-      
       if (error) throw error;
-      
       if (data?.auth_url) {
-        // Rediriger vers l'URL d'autorisation
         window.location.href = data.auth_url;
       } else {
-        throw new Error('Impossible d\'obtenir l\'URL d\'autorisation');
+        throw new Error("Impossible d'obtenir l'URL d'autorisation");
       }
     } catch (error: any) {
       console.error('Error connecting to Dropbox:', error);
       toast({
         title: "Erreur de connexion",
         description: error.message || "Impossible de se connecter à Dropbox",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ----------- INTÉGRATION KOOFR -------------
+  const connectKoofr = async () => {
+    setLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke('koofr-oauth', {
+        body: { action: 'get_auth_url' },
+        headers: {
+          Authorization: `Bearer ${sessionData.session?.access_token}`
+        }
+      });
+      if (error) throw error;
+      if (data?.auth_url) {
+        window.location.href = data.auth_url;
+      } else {
+        throw new Error("Impossible d'obtenir l'URL d'autorisation Koofr");
+      }
+    } catch (error: any) {
+      console.error('Error connecting to Koofr:', error);
+      toast({
+        title: "Erreur de connexion Koofr",
+        description: error.message || "Impossible de se connecter à Koofr",
         variant: "destructive"
       });
     } finally {
@@ -80,11 +103,11 @@ export const useCloudConnections = () => {
         .eq('user_id', user?.id);
 
       if (error) throw error;
-      
+
       await fetchConnections();
       toast({
         title: "Déconnexion réussie",
-        description: "Le service cloud a été déconnecté"
+        description: "Le service cloud a été déconnecté",
       });
     } catch (error) {
       console.error('Error disconnecting cloud service:', error);
@@ -96,13 +119,11 @@ export const useCloudConnections = () => {
     }
   };
 
-  const getDropboxConnection = () => {
-    return connections.find(conn => conn.provider === 'dropbox');
-  };
+  const getDropboxConnection = () => connections.find(conn => conn.provider === 'dropbox');
+  const getKoofrConnection = () => connections.find(conn => conn.provider === 'koofr');
 
-  const isDropboxConnected = () => {
-    return !!getDropboxConnection();
-  };
+  const isDropboxConnected = () => !!getDropboxConnection();
+  const isKoofrConnected = () => !!getKoofrConnection();
 
   useEffect(() => {
     if (user) {
@@ -114,9 +135,12 @@ export const useCloudConnections = () => {
     connections,
     loading,
     connectDropbox,
+    connectKoofr,
     disconnectCloud,
     getDropboxConnection,
+    getKoofrConnection,
     isDropboxConnected,
+    isKoofrConnected,
     refetch: fetchConnections
   };
 };

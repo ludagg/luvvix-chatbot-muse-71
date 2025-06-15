@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Cloud, HardDrive, Smartphone, Plus, CheckCircle, AlertCircle } from 'lucide-react';
+import { useCloudConnections } from '@/hooks/use-cloud-connections';
 
 interface CloudConnection {
   id: string;
@@ -16,7 +16,19 @@ interface CloudConnection {
 }
 
 const CloudConnection: React.FC = () => {
-  const [connections, setConnections] = useState<CloudConnection[]>([]);
+  const {
+    connections,
+    isDropboxConnected,
+    connectDropbox,
+    disconnectCloud,
+    getDropboxConnection,
+    loading,
+    // --------- Koofr ------------
+    isKoofrConnected,
+    connectKoofr,
+    getKoofrConnection
+  } = useCloudConnections();
+
   const [isConnecting, setIsConnecting] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string>('');
 
@@ -139,6 +151,10 @@ const CloudConnection: React.FC = () => {
     return connections.find(conn => conn.provider === providerId);
   };
 
+  const koofrConn = getKoofrConnection();
+  const koofrConnected = isKoofrConnected();
+  const koofrEmail = koofrConn?.account_info?.email;
+
   return (
     <div className="space-y-6">
       <div className="text-center">
@@ -193,6 +209,49 @@ const CloudConnection: React.FC = () => {
             </Card>
           );
         })}
+        <Card key="koofr" className="relative">
+          <CardHeader className="text-center pb-3">
+            <div className="w-12 h-12 mx-auto mb-2 bg-green-600 rounded-full flex items-center justify-center text-white text-2xl">
+              <span role="img" aria-label="Koofr">☁️</span>
+            </div>
+            <CardTitle className="text-lg">Koofr</CardTitle>
+            {koofrConnected && (
+              <Badge variant="secondary" className="absolute top-2 right-2">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Connecté
+              </Badge>
+            )}
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 text-center">
+              Synchronisez vos fichiers Koofr.<br />
+              {koofrConnected && koofrEmail ? (
+                <span className="text-green-700 text-xs">Connecté comme {koofrEmail}</span>
+              ) : (
+                <span className="text-gray-500 text-xs">La sécurité slovène 🇸🇮</span>
+              )}
+            </p>
+            {koofrConnected ? (
+              <Button
+                onClick={() => koofrConn && disconnectCloud(koofrConn.id)}
+                disabled={loading}
+                variant="outline"
+                className="w-full"
+              >
+                Déconnecter Koofr
+              </Button>
+            ) : (
+              <Button
+                onClick={connectKoofr}
+                disabled={loading}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Connecter Koofr
+              </Button>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {connections.length > 0 && (

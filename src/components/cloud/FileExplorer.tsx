@@ -11,6 +11,7 @@ import FileUploader from './FileUploader';
 import FilePreview from './FilePreview';
 import { useAuth } from '@/hooks/useAuth';
 import DropboxFileBrowser from "./DropboxFileBrowser";
+import { useDropboxSync } from "@/hooks/useDropboxSync";
 
 interface FileExplorerProps {
   folderId?: string;
@@ -33,6 +34,8 @@ const FileExplorer = ({ folderId, filterType, viewMode = 'grid' }: FileExplorerP
   const { user } = useAuth();
   const { fileId } = useParams<{ fileId?: string; folderId?: string }>();
   const params = useParams();
+  const { currentView } = useParams<{ currentView?: string }>();
+  const { syncDropboxAndCloud } = useDropboxSync();
 
   useEffect(() => {
     // Si fileId est défini dans les params, il a priorité sur la prop

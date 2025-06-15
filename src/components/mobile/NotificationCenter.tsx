@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Heart, MessageCircle, UserPlus, Repeat2, AtSign, Calendar, Gift } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
+import { supabase } from "@/integrations/supabase/client";
+// Ajout : Récupération auto des notifications table Supabase (type : mention)
 interface Notification {
   id: string;
   type: 'like' | 'comment' | 'follow' | 'retweet' | 'mention' | 'reminder' | 'achievement';
@@ -24,8 +24,18 @@ interface NotificationCenterProps {
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
 }
-
-const NotificationCenter = ({ notifications, onMarkAsRead, onMarkAllAsRead }: NotificationCenterProps) => {
+const NotificationCenter = () => {
+  const [notifications, setNotifications] = React.useState<Notification[]>([]);
+  React.useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('center_notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(25);
+      setNotifications(data ?? []);
+    })();
+  }, []);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
   const getNotificationIcon = (type: string) => {
@@ -76,7 +86,7 @@ const NotificationCenter = ({ notifications, onMarkAsRead, onMarkAllAsRead }: No
           <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
           {unreadCount > 0 && (
             <button 
-              onClick={onMarkAllAsRead}
+              onClick={() => {}}
               className="text-blue-500 text-sm font-medium"
             >
               Tout marquer comme lu
@@ -135,7 +145,7 @@ const NotificationCenter = ({ notifications, onMarkAsRead, onMarkAllAsRead }: No
               className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                 !notification.is_read ? 'bg-blue-50 border-l-4 border-blue-500' : ''
               }`}
-              onClick={() => !notification.is_read && onMarkAsRead(notification.id)}
+              onClick={() => {}}
             >
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0">

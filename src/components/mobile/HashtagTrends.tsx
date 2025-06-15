@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { TrendingUp, Hash } from 'lucide-react';
+import { supabase } from "@/integrations/supabase/client";
 
 interface Hashtag {
   tag: string;
@@ -15,7 +15,27 @@ interface HashtagTrendsProps {
 }
 
 const HashtagTrends = ({ hashtags, onHashtagClick }: HashtagTrendsProps) => {
-  if (hashtags.length === 0) return null;
+  // Ajout : état pour hashtags dynamiques
+  const [trends, setTrends] = React.useState<Hashtag[]>([]);
+  React.useEffect(() => {
+    // Aller chercher les hashtags tendances (top 6) en base
+    (async () => {
+      const { data, error } = await supabase
+        .from('center_hashtags')
+        .select('tag, posts_count')
+        .order('posts_count', { ascending: false })
+        .limit(6);
+      if (data) {
+        setTrends(data.map((d: any) => ({
+          tag: d.tag,
+          posts_count: d.posts_count,
+          trend_direction: 'up', // Pour démo : à affiner pour variation réelle
+          change_percentage: undefined,
+        })));
+      }
+    })();
+  }, []);
+  const trendsToDisplay = trends.length > 0 ? trends : hashtags;
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -31,7 +51,7 @@ const HashtagTrends = ({ hashtags, onHashtagClick }: HashtagTrendsProps) => {
       </div>
       
       <div className="space-y-3">
-        {hashtags.slice(0, 6).map((hashtag, index) => (
+        {trendsToDisplay.slice(0, 6).map((hashtag, index) => (
           <button
             key={hashtag.tag}
             onClick={() => onHashtagClick(hashtag.tag)}
@@ -47,7 +67,7 @@ const HashtagTrends = ({ hashtags, onHashtagClick }: HashtagTrendsProps) => {
                     <div className="flex items-center space-x-1 text-green-500">
                       <TrendingUp className="w-3 h-3" />
                       <span className="text-xs font-medium">
-                        +{hashtag.change_percentage}%
+                        {hashtag.change_percentage !== undefined ? `+${hashtag.change_percentage}%` : ''}
                       </span>
                     </div>
                   )}

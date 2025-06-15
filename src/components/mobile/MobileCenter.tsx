@@ -256,7 +256,6 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         }));
         postData.media_urls = uploadResults;
       }
-
       // Upload video
       if (video) {
         const { data, error } = await supabase.storage
@@ -266,11 +265,56 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
         postData.video_url = supabase.storage.from('center-media').getPublicUrl(data.path).data.publicUrl;
       }
 
-      const { error } = await supabase
+      // Sauver le post
+      const { data: inserted, error } = await supabase
         .from('center_posts')
-        .insert(postData);
+        .insert(postData)
+        .select()
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error || !inserted) throw error || new Error('Insertion post échouée');
+
+      // --- Ajout : hashtags ---
+      const hashtags = extractHashtags(content);
+      for (const tag of hashtags) {
+        // Upsert le hashtag
+        const { data: hash, error: hashtagErr } = await supabase
+          .from('center_hashtags')
+          .upsert([
+            { tag, posts_count: 1, last_used: new Date().toISOString() }
+          ], { onConflict: 'tag', ignoreDuplicates: false })
+          .select()
+          .maybeSingle();
+        // Incrémente le compteur si déjà existant
+        if (!hashtagErr && hash && hash.id) {
+          await supabase.rpc('increment_hashtag_count', { tag_val: tag });
+          await supabase
+            .from('center_post_hashtags')
+            .insert({
+              post_id: inserted.id,
+              hashtag_id: hash.id
+            });
+        }
+      }
+
+      // --- Ajout : notifs de mention ---
+      const mentions = extractMentions(content);
+      if (mentions.length > 0) {
+        const { data: userProfiles } = await supabase
+          .from('user_profiles')
+          .select('id,username')
+          .in('username', mentions.map(x => x.toLowerCase()));
+
+        for (const profile of userProfiles ?? []) {
+          await supabase.from('center_notifications').insert({
+            user_id: profile.id,
+            type: 'mention',
+            post_id: inserted.id,
+            triggered_by: user.id,
+            content: content
+          });
+        }
+      }
 
       fetchPosts();
       toast({

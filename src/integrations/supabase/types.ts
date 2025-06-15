@@ -1418,6 +1418,27 @@ export type Database = {
         }
         Relationships: []
       }
+      center_hashtags: {
+        Row: {
+          id: string
+          last_used: string | null
+          posts_count: number
+          tag: string
+        }
+        Insert: {
+          id?: string
+          last_used?: string | null
+          posts_count?: number
+          tag: string
+        }
+        Update: {
+          id?: string
+          last_used?: string | null
+          posts_count?: number
+          tag?: string
+        }
+        Relationships: []
+      }
       center_likes: {
         Row: {
           created_at: string | null
@@ -1521,6 +1542,27 @@ export type Database = {
           message?: string | null
           type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      center_post_hashtags: {
+        Row: {
+          created_at: string | null
+          hashtag_id: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          hashtag_id: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          created_at?: string | null
+          hashtag_id?: string
+          id?: string
+          post_id?: string
         }
         Relationships: []
       }

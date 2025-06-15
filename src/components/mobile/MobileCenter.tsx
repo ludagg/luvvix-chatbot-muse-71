@@ -19,6 +19,7 @@ import CommentsModal from './center/CommentsModal';
 import FriendshipManager from './center/FriendshipManager';
 import MessagingManager from './center/MessagingManager';
 import UserProfileModal from './center/UserProfileModal';
+import { extractHashtags, extractMentions } from '@/utils/extractTagsAndMentions';
 
 interface MobileCenterProps {
   onBack: () => void;

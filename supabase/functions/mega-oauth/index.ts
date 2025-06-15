@@ -40,32 +40,64 @@ serve(async (req) => {
         throw new Error('Email et mot de passe requis pour Mega');
       }
 
-      // Simulation de l'authentification Mega (dans un vrai cas, utilisez l'API Mega)
-      // Note: Mega n'a pas d'OAuth traditionnel, on stocke les credentials chiffrés
       console.log('Connexion Mega pour:', email);
 
-      // Sauvegarder la connexion en base (credentials chiffrés côté client)
-      const { error: dbError } = await supabase
+      // Sauvegarder la connexion en base
+      const { data: existingConnection, error: checkError } = await supabase
         .from('cloud_connections')
-        .upsert({
-          user_id: user.id,
-          provider: 'mega',
-          access_token: btoa(email), // Base64 encode de l'email pour l'identifier
-          refresh_token: null,
-          account_info: {
-            email: email,
-            storage_quota: 53687091200, // 50GB en bytes
-            used_storage: 0
-          },
-          connected_at: new Date().toISOString(),
-          is_active: true
-        }, {
-          onConflict: 'user_id,provider'
-        });
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('provider', 'mega')
+        .eq('is_active', true)
+        .single();
 
-      if (dbError) {
-        console.error('Erreur sauvegarde DB:', dbError);
-        throw new Error('Erreur lors de la sauvegarde');
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Erreur vérification connexion existante:', checkError);
+        throw new Error('Erreur lors de la vérification');
+      }
+
+      if (existingConnection) {
+        // Mettre à jour la connexion existante
+        const { error: updateError } = await supabase
+          .from('cloud_connections')
+          .update({
+            access_token: btoa(email),
+            account_info: {
+              email: email,
+              storage_quota: 53687091200,
+              used_storage: 0
+            },
+            last_synced_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingConnection.id);
+
+        if (updateError) {
+          console.error('Erreur mise à jour connexion:', updateError);
+          throw new Error('Erreur lors de la mise à jour');
+        }
+      } else {
+        // Créer une nouvelle connexion
+        const { error: insertError } = await supabase
+          .from('cloud_connections')
+          .insert({
+            user_id: user.id,
+            provider: 'mega',
+            access_token: btoa(email),
+            refresh_token: null,
+            account_info: {
+              email: email,
+              storage_quota: 53687091200,
+              used_storage: 0
+            },
+            connected_at: new Date().toISOString(),
+            is_active: true
+          });
+
+        if (insertError) {
+          console.error('Erreur insertion connexion:', insertError);
+          throw new Error('Erreur lors de la sauvegarde');
+        }
       }
 
       return new Response(JSON.stringify({ 
@@ -83,13 +115,14 @@ serve(async (req) => {
 
     if (action === 'disconnect') {
       // Déconnecter Mega
-      const { error: dbError } = await supabase
+      const { error: updateError } = await supabase
         .from('cloud_connections')
         .update({ is_active: false })
         .eq('user_id', user.id)
         .eq('provider', 'mega');
 
-      if (dbError) {
+      if (updateError) {
+        console.error('Erreur déconnexion:', updateError);
         throw new Error('Erreur lors de la déconnexion');
       }
 
@@ -107,7 +140,7 @@ serve(async (req) => {
     console.error('Erreur Mega OAuth:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

@@ -18,14 +18,14 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, previewU
     }
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: React.DragEvent<HTMLButtonElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       onImageSelected(e.dataTransfer.files[0]);
     }
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (e: React.DragEvent<HTMLButtonElement>) => {
     e.preventDefault();
   };
 
@@ -45,7 +45,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, previewU
           <img 
             src={previewUrl} 
             alt="Aperçu" 
-            className="w-10 h-10 md:w-12 md:h-12 rounded-lg object-cover border border-gray-200" 
+            className="w-10 h-10 rounded-lg object-cover border border-gray-200" 
           />
           <Button
             variant="ghost"
@@ -62,11 +62,11 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageSelected, previewU
           size="sm"
           onClick={() => !disabled && fileInputRef.current?.click()}
           disabled={disabled}
-          className="h-10 w-10 md:h-12 md:w-12 p-0 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center"
+          className="h-10 w-10 p-0 border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center justify-center"
           onDrop={handleDrop}
           onDragOver={handleDragOver}
         >
-          <Upload className="w-4 h-4 md:w-5 md:h-5 text-gray-500" />
+          <Upload className="w-4 h-4 text-gray-500" />
         </Button>
       )}
       <input

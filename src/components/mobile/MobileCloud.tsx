@@ -1,36 +1,112 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useMegaConnections } from '@/hooks/use-mega-connections';
+import { fileService } from '@/services/file-service';
+import { Cloud, CheckCircle, Link as LinkIcon, Unlink, Shield } from 'lucide-react';
 
 const MobileCloud = () => {
-  const [currentPath, setCurrentPath] = useState('/');
-  
-  const files = [
-    { id: 1, name: 'Documents', type: 'folder', size: '', modified: '2025-06-12' },
-    { id: 2, name: 'Images', type: 'folder', size: '', modified: '2025-06-11' },
-    { id: 3, name: 'Projet_LuvviX.pdf', type: 'pdf', size: '2.5 MB', modified: '2025-06-12' },
-    { id: 4, name: 'Présentation.pptx', type: 'pptx', size: '15.8 MB', modified: '2025-06-10' },
-    { id: 5, name: 'Notes_reunion.docx', type: 'docx', size: '1.2 MB', modified: '2025-06-09' },
-  ];
+  const [currentPath] = useState('/');
+  const [files, setFiles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [usedStorage, setUsedStorage] = useState(0);
+  const [showMega, setShowMega] = useState(false);
 
+  // Connexion Mega user
+  const {
+    connections,
+    isMegaConnected,
+    getMegaConnection,
+    connectMega,
+    disconnectCloud,
+    loading: megaLoading
+  } = useMegaConnections();
+
+  // Charger les vrais fichiers Cloud utilisateur
+  useEffect(() => {
+    async function fetchFiles() {
+      setLoading(true);
+      try {
+        const realFiles = await fileService.listFiles();
+        setFiles(realFiles || []);
+        // Somme de la taille des fichiers (hors dossiers)
+        let total = 0;
+        if (realFiles && realFiles.length > 0) {
+          total = realFiles
+            .filter((f: any) => f.type !== 'folder')
+            .reduce((sum: number, f: any) => sum + (f.size || 0), 0);
+        }
+        setUsedStorage(total);
+      } catch (e) {
+        setFiles([]);
+        setUsedStorage(0);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchFiles();
+  }, []);
+
+  // Pourcentage utilisé pour la barre
+  const quota = 50 * 1024 * 1024 * 1024; // 50 Go par défaut pour Mega
+  const percent = Math.min(100, Math.round((usedStorage / quota) * 100));
+
+  // Formatage stockage
+  function formatBytes(bytes: number) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  // Icône selon le type de fichier
   const getFileIcon = (type: string) => {
     switch (type) {
-      case 'folder': return '📁';
-      case 'pdf': return '📄';
-      case 'pptx': return '📊';
-      case 'docx': return '📝';
-      default: return '📎';
+      case 'folder':
+        return '📁';
+      case 'application/pdf':
+        return '📄';
+      case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+      case 'application/vnd.ms-powerpoint':
+        return '📊';
+      case 'application/msword':
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        return '📝';
+      case 'image/jpeg':
+      case 'image/png':
+      case 'image/gif':
+      case 'image/svg+xml':
+        return '🖼️';
+      default:
+        return '📎';
     }
   };
 
   const getFileColor = (type: string) => {
     switch (type) {
-      case 'folder': return 'bg-blue-100 text-blue-600';
-      case 'pdf': return 'bg-red-100 text-red-600';
-      case 'pptx': return 'bg-orange-100 text-orange-600';
-      case 'docx': return 'bg-blue-100 text-blue-600';
-      default: return 'bg-gray-100 text-gray-600';
+      case 'folder':
+        return 'bg-blue-100 text-blue-600';
+      case 'application/pdf':
+        return 'bg-red-100 text-red-600';
+      case 'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+      case 'application/vnd.ms-powerpoint':
+        return 'bg-orange-100 text-orange-600';
+      case 'application/msword':
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        return 'bg-blue-100 text-blue-600';
+      case 'image/jpeg':
+      case 'image/png':
+      case 'image/gif':
+      case 'image/svg+xml':
+        return 'bg-green-100 text-green-600';
+      default:
+        return 'bg-gray-100 text-gray-600';
     }
   };
+
+  // Get main Mega connection
+  const megaConn = getMegaConnection();
+  const connectedEmail = megaConn?.account_info?.email || null;
 
   return (
     <div className="flex-1 flex flex-col bg-gray-50">
@@ -38,10 +114,12 @@ const MobileCloud = () => {
       <div className="bg-white border-b border-gray-200 p-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-900">Cloud Storage</h2>
-          <button className="p-2 hover:bg-gray-100 rounded-lg">
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-            </svg>
+          <button 
+            className="p-2 hover:bg-gray-100 rounded-lg"
+            onClick={() => setShowMega((s) => !s)}
+            aria-label="Mega Connection Info"
+          >
+            <Shield className="w-5 h-5 text-red-600" />
           </button>
         </div>
 
@@ -49,13 +127,40 @@ const MobileCloud = () => {
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-4 text-white">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm opacity-90">Stockage utilisé</span>
-            <span className="text-sm opacity-90">15.2 GB / 100 GB</span>
+            <span className="text-sm opacity-90">
+              {formatBytes(usedStorage)} / 50 GB
+            </span>
           </div>
           <div className="w-full bg-white bg-opacity-20 rounded-full h-2">
-            <div className="bg-white h-2 rounded-full" style={{ width: '15%' }}></div>
+            <div className="bg-white h-2 rounded-full transition-all duration-500" style={{ width: `${percent}%` }}></div>
           </div>
         </div>
       </div>
+
+      {/* Mega connection info */}
+      {showMega && (
+        <div className="p-4">
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="w-6 h-6 text-white">
+                  <path fill="currentColor" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6L15.5,10L12,14L8.5,10L12,6Z"/>
+                </svg>
+              </div>
+              <div>
+                <div className="font-semibold text-base flex items-center gap-1">
+                  Mega {isMegaConnected() && <CheckCircle className="w-4 h-4 text-green-500" />}
+                </div>
+                <div className="text-xs text-gray-600">
+                  {isMegaConnected() 
+                    ? <>Connecté&nbsp;<span className="text-gray-900">{connectedEmail}</span></>
+                    : "Non connecté - activez Mega pour 50GB sécurisé"}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="p-4">
@@ -93,9 +198,17 @@ const MobileCloud = () => {
       <div className="flex-1 px-4 pb-20">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
           <div className="p-4 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900">Fichiers récents</h3>
+            <h3 className="font-semibold text-gray-900">Vos fichiers Cloud</h3>
           </div>
           
+          {loading && (
+            <div className="p-6 text-center text-gray-400">Chargement...</div>
+          )}
+          
+          {!loading && files.length === 0 && (
+            <div className="p-6 text-center text-gray-400">Aucun fichier pour le moment.</div>
+          )}
+
           <div className="divide-y divide-gray-100">
             {files.map((file) => (
               <div key={file.id} className="p-4 hover:bg-gray-50 active:bg-gray-100 transition-colors">
@@ -107,13 +220,13 @@ const MobileCloud = () => {
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-gray-900 truncate">{file.name}</h4>
                     <div className="flex items-center space-x-2 text-sm text-gray-500">
-                      {file.size && <span>{file.size}</span>}
+                      <span>{file.type === 'folder' ? 'Dossier' : formatBytes(file.size || 0)}</span>
                       <span>•</span>
-                      <span>{file.modified}</span>
+                      <span>{file.modified ? new Date(file.modified).toLocaleDateString() : ''}</span>
                     </div>
                   </div>
                   
-                  <button className="p-1 hover:bg-gray-200 rounded">
+                  <button className="p-1 hover:bg-gray-200 rounded" aria-label="Fichier options">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
                     </svg>
@@ -129,3 +242,4 @@ const MobileCloud = () => {
 };
 
 export default MobileCloud;
+

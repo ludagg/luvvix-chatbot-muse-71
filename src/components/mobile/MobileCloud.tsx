@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useMegaConnections } from '@/hooks/use-mega-connections';
+import { useCloudConnections } from '@/hooks/use-cloud-connections';
 import { fileService } from '@/services/file-service';
 import { Cloud, CheckCircle, Link as LinkIcon, Unlink, Shield } from 'lucide-react';
 
@@ -9,17 +8,17 @@ const MobileCloud = () => {
   const [files, setFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [usedStorage, setUsedStorage] = useState(0);
-  const [showMega, setShowMega] = useState(false);
+  const [showKoofr, setShowKoofr] = useState(false);
 
-  // Connexion Mega user
+  // Connexion Koofr user
   const {
     connections,
-    isMegaConnected,
-    getMegaConnection,
-    connectMega,
+    isKoofrConnected,
+    getKoofrConnection,
+    connectKoofr,
     disconnectCloud,
-    loading: megaLoading
-  } = useMegaConnections();
+    loading: koofrLoading
+  } = useCloudConnections();
 
   // Charger les vrais fichiers Cloud utilisateur
   useEffect(() => {
@@ -104,9 +103,9 @@ const MobileCloud = () => {
     }
   };
 
-  // Get main Mega connection
-  const megaConn = getMegaConnection();
-  const connectedEmail = megaConn?.account_info?.email || null;
+  // Get main Koofr connection
+  const koofrConn = getKoofrConnection();
+  const connectedEmail = koofrConn?.account_info?.email || null;
 
   return (
     <div className="flex-1 flex flex-col bg-gray-50">
@@ -116,10 +115,10 @@ const MobileCloud = () => {
           <h2 className="text-xl font-bold text-gray-900">Cloud Storage</h2>
           <button 
             className="p-2 hover:bg-gray-100 rounded-lg"
-            onClick={() => setShowMega((s) => !s)}
-            aria-label="Mega Connection Info"
+            onClick={() => setShowKoofr((s) => !s)}
+            aria-label="Koofr Connection Info"
           >
-            <Shield className="w-5 h-5 text-red-600" />
+            <Shield className="w-5 h-5 text-green-600" />
           </button>
         </div>
 
@@ -137,24 +136,24 @@ const MobileCloud = () => {
         </div>
       </div>
 
-      {/* Mega connection info */}
-      {showMega && (
+      {/* Koofr connection info */}
+      {showKoofr && (
         <div className="p-4">
           <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-2">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center">
                 <svg viewBox="0 0 24 24" className="w-6 h-6 text-white">
                   <path fill="currentColor" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6L15.5,10L12,14L8.5,10L12,6Z"/>
                 </svg>
               </div>
               <div>
                 <div className="font-semibold text-base flex items-center gap-1">
-                  Mega {isMegaConnected() && <CheckCircle className="w-4 h-4 text-green-500" />}
+                  Koofr {isKoofrConnected() && <CheckCircle className="w-4 h-4 text-green-500" />}
                 </div>
                 <div className="text-xs text-gray-600">
-                  {isMegaConnected() 
+                  {isKoofrConnected() 
                     ? <>Connecté&nbsp;<span className="text-gray-900">{connectedEmail}</span></>
-                    : "Non connecté - activez Mega pour 50GB sécurisé"}
+                    : "Non connecté - activez Koofr pour 10GB sécurisé"}
                 </div>
               </div>
             </div>
@@ -242,4 +241,3 @@ const MobileCloud = () => {
 };
 
 export default MobileCloud;
-

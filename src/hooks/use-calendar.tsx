@@ -82,16 +82,23 @@ export const useCalendar = () => {
     if (!user) return null;
 
     try {
+      // Construction de l'objet adapté au schéma de la table Supabase
       const newEvent = {
-        ...eventData,
-        user_id: user.id,
+        title: eventData.title,
+        description: eventData.description,
+        event_type: eventData.event_type,
+        priority: eventData.priority,
+        location: eventData.location,
+        attendees: eventData.attendees,
         color: eventData.color || getEventColor(eventData.event_type),
-        start_date: eventData.start_time.split('T')[0],
-        end_date: eventData.end_time ? eventData.end_time.split('T')[0] : eventData.start_time.split('T')[0]
+        completed: eventData.completed,
+        user_id: user.id,
+        start_date: eventData.start_time, // string ISO directement depuis le form
+        end_date: eventData.end_time || eventData.start_time // string ISO ou undefined
       };
 
-      // DEBUG: Affiche ce qu'on tente d'envoyer à Supabase
-      console.log('[createEvent] Event to insert:', newEvent);
+      // Supprimer tout champ superflu
+      // console.log('[createEvent] À insérer:', newEvent);
 
       const { data, error } = await supabase
         .from('calendar_events')
@@ -100,7 +107,6 @@ export const useCalendar = () => {
         .single();
 
       if (error) {
-        // Ajout d’un message toast détaillé et log de l’erreur
         console.error('[createEvent] Supabase error:', error);
         toast({
           title: "Erreur création événement",

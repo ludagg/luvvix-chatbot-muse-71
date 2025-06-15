@@ -63,6 +63,7 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   const [showCommentsModal, setShowCommentsModal] = useState<string | null>(null);
   const [showUserProfile, setShowUserProfile] = useState<string | null>(null);
   const [followers, setFollowers] = useState<Set<string>>(new Set());
+  const [selectedHashtag, setSelectedHashtag] = useState<string | null>(null);
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [suggestedUsers, setSuggestedUsers] = useState<UserProfile[]>([]);
@@ -88,10 +89,9 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
 
   const fetchPosts = async () => {
     if (!user) return;
+    setLoading(true);
 
     try {
-      console.log('Fetching posts with improved user data...');
-      
       // Récupérer les amis de l'utilisateur
       const { data: friendships, error: friendError } = await supabase
         .from('center_friendships')
@@ -115,13 +115,42 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
       console.log('Allowed user IDs:', allowedUserIds);
 
       // Récupérer les posts des amis ET de l'utilisateur
-      const { data: postsData, error: postsError } = await supabase
+      let query = supabase
         .from('center_posts')
         .select('*')
         .in('user_id', allowedUserIds)
         .order('created_at', { ascending: false })
         .limit(20);
 
+      // Si un hashtag est sélectionné, filtrer par hashtag
+      if (selectedHashtag) {
+        // Récupérer les ids des posts via la table de liaison et ce hashtag (en minuscule)
+        const { data: hashtagRow } = await supabase
+          .from('center_hashtags')
+          .select('id')
+          .eq('tag', selectedHashtag.toLowerCase())
+          .maybeSingle();
+        if (hashtagRow && hashtagRow.id) {
+          const { data: mappingRows } = await supabase
+            .from('center_post_hashtags')
+            .select('post_id')
+            .eq('hashtag_id', hashtagRow.id);
+          const postIds = mappingRows?.map(row => row.post_id) ?? [];
+          if (postIds.length > 0) {
+            query = supabase
+              .from('center_posts')
+              .select('*')
+              .in('id', postIds)
+              .order('created_at', { ascending: false });
+          } else {
+            setPosts([]); setLoading(false); return;
+          }
+        } else {
+          setPosts([]); setLoading(false); return;
+        }
+      }
+
+      const { data: postsData, error: postsError } = await query;
       if (postsError) throw postsError;
       console.log('Posts data:', postsData);
 
@@ -470,7 +499,11 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
   };
 
   const handleHashtagClick = (hashtag: string) => {
-    console.log('Clicked hashtag:', hashtag);
+    if (selectedHashtag === hashtag) {
+      setSelectedHashtag(null);
+    } else {
+      setSelectedHashtag(hashtag);
+    }
   };
 
   const handleUserClick = (userId: string) => {
@@ -602,9 +635,19 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
             />
 
             <HashtagTrends
-              hashtags={mockHashtags}
-              onHashtagClick={(hashtag) => console.log('Clicked hashtag:', hashtag)}
+              onHashtagClick={handleHashtagClick}
+              selectedHashtag={selectedHashtag}
             />
+            {selectedHashtag && (
+              <div className="px-4 py-2 bg-blue-50 text-blue-700 rounded mb-2 flex items-center gap-2">
+                <Hash /> <span>#</span>
+                <span className="font-bold">{selectedHashtag}</span>
+                <button
+                  onClick={() => setSelectedHashtag(null)}
+                  className="ml-2 px-2 py-0.5 bg-blue-200 rounded text-xs text-blue-900 hover:bg-blue-300"
+                >Réinitialiser le filtre</button>
+              </div>
+            )}
 
             {/* Zone de composition rapide */}
             <div className={`p-4 border-b ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>

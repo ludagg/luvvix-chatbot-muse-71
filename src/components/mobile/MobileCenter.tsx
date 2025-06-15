@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Plus, Search, Heart, MessageCircle, Share, Bell, Image as ImageIcon, MapPin, Users, Video, Feather, TrendingUp, Hash, Home, Mail, Camera, Bookmark, Settings, Moon, Sun, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +19,7 @@ import CommentsModal from './center/CommentsModal';
 import FriendshipManager from './center/FriendshipManager';
 import MessagingManager from './center/MessagingManager';
 import UserProfileModal from './center/UserProfileModal';
+import PopularHashtagPosts from './PopularHashtagPosts';
 import { extractHashtags, extractMentions } from '@/utils/extractTagsAndMentions';
 
 interface MobileCenterProps {
@@ -511,6 +512,19 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
     setShowUserProfile(userId);
   };
 
+  // Ajout : calculer posts populaires selon le hashtag sélectionné
+  const popularHashtagPosts = React.useMemo(() => {
+    if (!selectedHashtag) return [];
+    // Filtre posts contenant ce hashtag et trie par likes décroissant
+    return posts
+      .filter((post) => {
+        const contentTags = (post.content.match(/#([a-zA-Z0-9_]{1,40})/g) || []).map(tag => tag.substring(1).toLowerCase());
+        return contentTags.includes(selectedHashtag.toLowerCase());
+      })
+      .sort((a, b) => b.likes_count - a.likes_count)
+      .slice(0, 10); // Top 10
+  }, [selectedHashtag, posts]);
+
   // Show specific views
   if (showAdvancedSearch) {
     return (
@@ -647,6 +661,20 @@ const MobileCenter = ({ onBack }: MobileCenterProps) => {
                   className="ml-2 px-2 py-0.5 bg-blue-200 rounded text-xs text-blue-900 hover:bg-blue-300"
                 >Réinitialiser le filtre</button>
               </div>
+            )}
+
+            {/* Section posts populaires pour le hashtag sélectionné */}
+            {selectedHashtag && (
+              <PopularHashtagPosts
+                posts={popularHashtagPosts}
+                hashtag={selectedHashtag}
+                onComment={(postId) => setShowCommentsModal(postId)}
+                onLike={toggleLike}
+                onShare={sharePost}
+                isLiked={postId => likedPosts.has(postId)}
+                isSaved={postId => savedPosts.has(postId)}
+                onUserClick={handleUserClick}
+              />
             )}
 
             {/* Zone de composition rapide */}

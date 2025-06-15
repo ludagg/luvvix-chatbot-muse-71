@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Cloud, HardDrive, Smartphone, Plus, CheckCircle, AlertCircle } from 'lucide-react';
+import { Cloud, CheckCircle, Plus } from 'lucide-react';
 import { useCloudConnections } from '@/hooks/use-cloud-connections';
 
+// Adopt the type from the cloud hook, which includes created_at
 interface CloudConnection {
   id: string;
   provider: string;
@@ -63,23 +63,7 @@ const CloudConnection: React.FC = () => {
     }
   ];
 
-  useEffect(() => {
-    loadConnections();
-  }, []);
-
-  const loadConnections = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('cloud_connections')
-        .select('*')
-        .eq('is_active', true);
-
-      if (error) throw error;
-      setConnections(data || []);
-    } catch (error) {
-      console.error('Erreur lors du chargement des connexions:', error);
-    }
-  };
+  // Removing loadConnections and setConnections – use only the state from the cloud hook
 
   const handleConnect = async (providerId: string) => {
     setIsConnecting(true);
@@ -262,6 +246,7 @@ const CloudConnection: React.FC = () => {
           <CardContent>
             <div className="space-y-3">
               {connections.map((connection) => {
+                // match provider meta for icon/color
                 const provider = cloudProviders.find(p => p.id === connection.provider);
                 return (
                   <div key={connection.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -270,9 +255,10 @@ const CloudConnection: React.FC = () => {
                         {provider?.icon}
                       </div>
                       <div>
-                        <p className="font-medium">{provider?.name}</p>
+                        <p className="font-medium">{provider?.name ?? connection.provider}</p>
                         <p className="text-sm text-gray-500">
-                          Connecté le {new Date(connection.created_at).toLocaleDateString('fr-FR')}
+                          {/* created_at now always exists */}
+                          Connecté le {connection.created_at ? new Date(connection.created_at).toLocaleDateString('fr-FR') : ''}
                         </p>
                       </div>
                     </div>

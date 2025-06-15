@@ -15,8 +15,8 @@ const EventCreator = ({ isOpen, onClose, selectedDate }: EventCreatorProps) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    start_time: selectedDate ? format(selectedDate, "yyyy-MM-dd'T'HH:mm") : '',
-    end_time: selectedDate ? format(new Date(selectedDate.getTime() + 60 * 60 * 1000), "yyyy-MM-dd'T'HH:mm") : '',
+    start_date: selectedDate ? format(selectedDate, "yyyy-MM-dd'T'HH:mm") : '',
+    end_date: selectedDate ? format(new Date(selectedDate.getTime() + 60 * 60 * 1000), "yyyy-MM-dd'T'HH:mm") : '',
     event_type: 'meeting' as 'meeting' | 'task' | 'reminder' | 'personal',
     priority: 'medium' as 'low' | 'medium' | 'high',
     location: '',
@@ -30,10 +30,10 @@ const EventCreator = ({ isOpen, onClose, selectedDate }: EventCreatorProps) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.start_time) {
+    if (!formData.title || !formData.start_date) {
       toast({
         title: "Erreur",
-        description: "Le titre et l'heure de début sont obligatoires",
+        description: "Le titre et la date de début sont obligatoires",
         variant: "destructive"
       });
       return;
@@ -43,12 +43,8 @@ const EventCreator = ({ isOpen, onClose, selectedDate }: EventCreatorProps) => {
     const eventData = {
       title: formData.title,
       description: formData.description,
-      start_time: formData.start_time,
-      end_time: formData.end_time || formData.start_time,
-      start_date: formData.start_time.split('T')[0],
-      end_date: formData.end_time
-        ? formData.end_time.split('T')[0]
-        : formData.start_time.split('T')[0],
+      start_date: formData.start_date,
+      end_date: formData.end_date || formData.start_date,
       event_type: formData.event_type,
       priority: formData.priority,
       location: formData.location,
@@ -63,8 +59,8 @@ const EventCreator = ({ isOpen, onClose, selectedDate }: EventCreatorProps) => {
       setFormData({
         title: '',
         description: '',
-        start_time: '',
-        end_time: '',
+        start_date: '',
+        end_date: '',
         event_type: 'meeting',
         priority: 'medium',
         location: '',
@@ -153,8 +149,8 @@ const EventCreator = ({ isOpen, onClose, selectedDate }: EventCreatorProps) => {
               </label>
               <input
                 type="datetime-local"
-                value={formData.start_time}
-                onChange={(e) => setFormData(prev => ({ ...prev, start_time: e.target.value }))}
+                value={formData.start_date}
+                onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -165,8 +161,8 @@ const EventCreator = ({ isOpen, onClose, selectedDate }: EventCreatorProps) => {
               </label>
               <input
                 type="datetime-local"
-                value={formData.end_time}
-                onChange={(e) => setFormData(prev => ({ ...prev, end_time: e.target.value }))}
+                value={formData.end_date}
+                onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>

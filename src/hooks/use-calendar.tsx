@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -10,8 +9,6 @@ interface CalendarEvent {
   description?: string;
   start_date: string;
   end_date?: string;
-  start_time: string;
-  end_time: string;
   event_type: 'meeting' | 'task' | 'reminder' | 'personal';
   priority: 'low' | 'medium' | 'high';
   location?: string;
@@ -86,6 +83,8 @@ export const useCalendar = () => {
       const newEvent = {
         title: eventData.title,
         description: eventData.description,
+        start_date: eventData.start_date,
+        end_date: eventData.end_date || eventData.start_date,
         event_type: eventData.event_type,
         priority: eventData.priority,
         location: eventData.location,
@@ -93,12 +92,9 @@ export const useCalendar = () => {
         color: eventData.color || getEventColor(eventData.event_type),
         completed: eventData.completed,
         user_id: user.id,
-        start_date: eventData.start_time, // string ISO directement depuis le form
-        end_date: eventData.end_time || eventData.start_time // string ISO ou undefined
       };
 
-      // Supprimer tout champ superflu
-      // console.log('[createEvent] À insérer:', newEvent);
+      console.log('[createEvent] À insérer:', newEvent);
 
       const { data, error } = await supabase
         .from('calendar_events')
@@ -140,19 +136,9 @@ export const useCalendar = () => {
     if (!user) return false;
 
     try {
-      const updateData = { ...updates };
-      
-      // Mettre à jour start_date et end_date si les heures sont modifiées
-      if (updates.start_time) {
-        updateData.start_date = updates.start_time.split('T')[0];
-      }
-      if (updates.end_time) {
-        updateData.end_date = updates.end_time.split('T')[0];
-      }
-
       const { error } = await supabase
         .from('calendar_events')
-        .update(updateData)
+        .update(updates)
         .eq('id', eventId)
         .eq('user_id', user.id);
 
@@ -224,9 +210,9 @@ export const useCalendar = () => {
     future.setDate(now.getDate() + days);
     
     return events.filter(event => {
-      const eventDate = new Date(event.start_time);
+      const eventDate = new Date(event.start_date);
       return eventDate >= now && eventDate <= future;
-    }).sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    }).sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
   };
 
   const searchEvents = (query: string) => {
@@ -247,7 +233,7 @@ export const useCalendar = () => {
     return events.filter(event => 
       event.event_type === 'task' && 
       !event.completed &&
-      new Date(event.end_time) < now
+      new Date(event.end_date || event.start_date) < now
     );
   };
 

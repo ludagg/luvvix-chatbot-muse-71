@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar, Plus, Clock, Users, MapPin, Bell, ChevronLeft, ChevronRight, Search, Filter, Sparkles, Trash2, Edit3, CheckCircle, X } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, addMonths, subMonths, isValid, parseISO } from 'date-fns';
@@ -107,10 +106,8 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
         id: `holiday-${holiday.date}`,
         title: holiday.name,
         description: 'Jour férié',
-        start_time: holiday.date + 'T00:00:00',
-        end_time: holiday.date + 'T23:59:59',
-        start_date: holiday.date,
-        end_date: holiday.date,
+        start_date: holiday.date + 'T00:00:00',
+        end_date: holiday.date + 'T23:59:59',
         event_type: 'personal' as const,
         priority: 'low' as const,
         color: holiday.type === 'public' ? '#ef4444' : '#8b5cf6',
@@ -135,8 +132,8 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
     }
     
     return filtered.sort((a, b) => {
-      const dateA = parseDate(a.start_time);
-      const dateB = parseDate(b.start_time);
+      const dateA = parseDate(a.start_date);
+      const dateB = parseDate(b.start_date);
       if (!dateA) return 1;
       if (!dateB) return -1;
       return dateA.getTime() - dateB.getTime();
@@ -150,22 +147,22 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
         title: 'Révision quotidienne',
         event_type: 'task' as const,
         description: 'Réviser les notes de la veille',
-        start_time: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
-        end_time: new Date(now.getTime() + 90 * 60 * 1000).toISOString()
+        start_date: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
+        end_date: new Date(now.getTime() + 90 * 60 * 1000).toISOString()
       },
       {
         title: 'Pause créative',
         event_type: 'personal' as const,
         description: 'Temps de réflexion et brainstorming',
-        start_time: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
-        end_time: new Date(now.getTime() + 2.5 * 60 * 60 * 1000).toISOString()
+        start_date: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+        end_date: new Date(now.getTime() + 2.5 * 60 * 60 * 1000).toISOString()
       },
       {
         title: 'Exercice physique',
         event_type: 'personal' as const,
         description: 'Séance de sport pour rester en forme',
-        start_time: new Date(now.getTime() + 3 * 60 * 60 * 1000).toISOString(),
-        end_time: new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString()
+        start_date: new Date(now.getTime() + 3 * 60 * 60 * 1000).toISOString(),
+        end_date: new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString()
       }
     ];
     
@@ -175,9 +172,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
       ...suggestion,
       priority: 'medium' as const,
       color: '',
-      completed: false,
-      start_date: getDateString(suggestion.start_time),
-      end_date: getDateString(suggestion.end_time)
+      completed: false
     };
     
     const created = await createEvent(eventData);
@@ -309,7 +304,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                     </h4>
                     <p className="text-sm text-gray-600 flex items-center mt-1">
                       <Clock className="w-4 h-4 mr-1" />
-                      {formatEventTime(event.start_time, 'HH:mm')} - {formatEventTime(event.end_time, 'HH:mm')}
+                      {formatEventTime(event.start_date, 'HH:mm')} - {formatEventTime(event.end_date, 'HH:mm')}
                     </p>
                     {event.location && (
                       <p className="text-sm text-gray-600 flex items-center mt-1">
@@ -362,7 +357,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium text-blue-900">{event.title}</h4>
                     <span className="text-xs text-blue-600">
-                      {formatEventDate(event.start_time, 'dd/MM HH:mm')}
+                      {formatEventDate(event.start_date, 'dd/MM HH:mm')}
                     </span>
                   </div>
                 </div>
@@ -397,7 +392,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                       </h4>
                       <p className="text-sm text-gray-600 flex items-center mt-1">
                         <Clock className="w-4 h-4 mr-1" />
-                        {formatEventDate(event.start_time, 'dd/MM - HH:mm')} - {formatEventTime(event.end_time, 'HH:mm')}
+                        {formatEventDate(event.start_date, 'dd/MM - HH:mm')} - {formatEventTime(event.end_date, 'HH:mm')}
                       </p>
                       {event.attendees && event.attendees.length > 0 && (
                         <p className="text-sm text-gray-600 flex items-center mt-1">
@@ -594,7 +589,7 @@ const MobileCalendar = ({ onBack }: MobileCalendarProps) => {
                 <h4 className="font-medium text-gray-700 mb-1">Horaires</h4>
                 <div className="flex items-center text-gray-600">
                   <Clock className="w-4 h-4 mr-2" />
-                  <span>{formatEventDate(selectedEvent.start_time, 'dd/MM/yyyy HH:mm')} - {formatEventTime(selectedEvent.end_time, 'HH:mm')}</span>
+                  <span>{formatEventDate(selectedEvent.start_date, 'dd/MM/yyyy HH:mm')} - {formatEventTime(selectedEvent.end_date, 'HH:mm')}</span>
                 </div>
               </div>
               

@@ -1,13 +1,14 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Brain, Send, Sparkles, Zap, Calendar, Users, FileText } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Brain, Send, Sparkles, Zap, Calendar, Users, FileText, Bot, User, Cpu, Activity } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { luvvixBrain } from '@/services/luvvix-brain';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Message {
   id: string;
@@ -25,13 +26,37 @@ interface BrainInsight {
 }
 
 const PERSONALITIES = [
-  { key: "expert", label: "Expert", description: "Réponses précises, concises et professionnelles." },
-  { key: "coach", label: "Coach", description: "Encouragements et motivation en priorité." },
-  { key: "secretary", label: "Secrétaire", description: "Organisation, mémoire et gestion du temps." },
-  { key: "friend", label: "Ami", description: "Tonalité amicale, légère, empathique." }
+  { 
+    key: "expert", 
+    label: "Expert", 
+    description: "Réponses précises, concises et professionnelles.",
+    color: "bg-gradient-to-r from-blue-500 to-indigo-600",
+    emoji: "🎯"
+  },
+  { 
+    key: "coach", 
+    label: "Coach", 
+    description: "Encouragements et motivation en priorité.",
+    color: "bg-gradient-to-r from-green-500 to-emerald-600",
+    emoji: "💪"
+  },
+  { 
+    key: "secretary", 
+    label: "Secrétaire", 
+    description: "Organisation, mémoire et gestion du temps.",
+    color: "bg-gradient-to-r from-purple-500 to-violet-600",
+    emoji: "📋"
+  },
+  { 
+    key: "friend", 
+    label: "Ami", 
+    description: "Tonalité amicale, légère, empathique.",
+    color: "bg-gradient-to-r from-orange-500 to-amber-600",
+    emoji: "😊"
+  }
 ];
 
-const MEMO_KEY = "luvvixBrainChatMemory"; // Clé de stockage local
+const MEMO_KEY = "luvvixBrainChatMemory";
 
 const UnifiedAIAssistant = () => {
   const { user } = useAuth();
@@ -41,6 +66,7 @@ const UnifiedAIAssistant = () => {
   const [insights, setInsights] = useState<BrainInsight[]>([]);
   const [personality, setPersonality] = useState(PERSONALITIES[0].key);
   const [lastUserInputTime, setLastUserInputTime] = useState<number>(Date.now());
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const proActiveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -61,7 +87,6 @@ const UnifiedAIAssistant = () => {
       proActiveTimeout.current = setTimeout(() => {
         const lastMsg = messages[messages.length - 1];
         if (lastMsg && lastMsg.role === "assistant" && !loading) {
-          // Sinon, ajouter un conseil ou recommandation IA
           setMessages(prev => [
             ...prev,
             {
@@ -72,7 +97,7 @@ const UnifiedAIAssistant = () => {
             }
           ]);
         }
-      }, 30000); // 30 secondes d'inactivité détectée
+      }, 30000);
     }
     return () => {
       if (!!proActiveTimeout.current) clearTimeout(proActiveTimeout.current);
@@ -82,7 +107,6 @@ const UnifiedAIAssistant = () => {
   const initializeAssistant = async () => {
     if (!user) return;
 
-    // Message d'accueil personnalisé basé sur les connaissances
     const welcomeMessage: Message = {
       id: '1',
       role: 'assistant',
@@ -156,6 +180,7 @@ Que puis-je faire pour vous aujourd'hui ?`,
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setLoading(true);
+    setIsTyping(true);
 
     try {
       await luvvixBrain.trackInteraction(
@@ -165,28 +190,21 @@ Que puis-je faire pour vous aujourd'hui ?`,
         { message: input }
       );
 
-      // === Personnalisation avancée du prompt
       const personalizedPrompt = buildPersonalityPrompt() + input;
 
-      // Obtenir la réponse du cerveau (dans le code backend, injecter ce prompt)
       const response = await luvvixBrain.processConversation(
         user.id,
         personalizedPrompt,
         { component: 'UnifiedAIAssistant', personality }
       );
 
-      // === CORRECTION DEFINITIVE DE L'ERREUR TYPESCRIPT ===
-      // Gestion robuste et complète de tous les cas de response
       let assistantContent = '';
       
       if (!response) {
-        // Cas 1: response est null/undefined
         assistantContent = 'Désolé, je rencontre un problème technique. (Aucune réponse générée...)';
       } else if (typeof response === 'string') {
-        // Cas 2: response est une string directe
         assistantContent = response;
       } else if (typeof response === 'object') {
-        // Cas 3: response est un objet
         if ('actionDone' in response) {
           toast.success("Action IA réalisée !");
         }
@@ -200,7 +218,6 @@ Que puis-je faire pour vous aujourd'hui ?`,
           assistantContent = "Je n'ai pas pu comprendre la réponse du cerveau IA.";
         }
       } else {
-        // Cas 4: type inattendu
         assistantContent = "Type de réponse inattendu du cerveau IA.";
       }
 
@@ -225,6 +242,7 @@ Que puis-je faire pour vous aujourd'hui ?`,
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setLoading(false);
+      setIsTyping(false);
     }
   };
 
@@ -236,163 +254,316 @@ Que puis-je faire pour vous aujourd'hui ?`,
   };
 
   const quickActions = [
-    { label: "Analyser mes habitudes", action: "Peux-tu analyser mes patterns d'utilisation ?" },
-    { label: "Créer un événement", action: "Crée-moi un événement pour demain à 14h" },
-    { label: "Recommandations", action: "Quelles sont tes recommandations pour moi ?" },
-    { label: "Automatiser", action: "Que peux-tu automatiser pour moi ?" }
+    { label: "Analyser mes habitudes", action: "Peux-tu analyser mes patterns d'utilisation ?", icon: Activity },
+    { label: "Créer un événement", action: "Crée-moi un événement pour demain à 14h", icon: Calendar },
+    { label: "Recommandations", action: "Quelles sont tes recommandations pour moi ?", icon: Sparkles },
+    { label: "Automatiser", action: "Que peux-tu automatiser pour moi ?", icon: Zap }
   ];
 
+  const selectedPersonality = PERSONALITIES.find(p => p.key === personality);
+
   return (
-    <div className="space-y-4">
-      {/* Sélecteur de personnalité IA */}
-      <Card>
-        <CardHeader className="pb-1">
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-yellow-500" />
-            Personnalité de l'assistant IA
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          {PERSONALITIES.map(p => (
-            <Button
-              key={p.key}
-              size="sm"
-              variant={p.key === personality ? "default" : "outline"}
-              className={p.key === personality
-                ? "bg-purple-500 text-white shadow font-semibold"
-                : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"}
-              onClick={() => setPersonality(p.key)}
-            >
-              {p.label}
-            </Button>
-          ))}
-        </CardContent>
-      </Card>
-
-      {/* Insights du Cerveau */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-purple-500" />
-            Insights de votre Cerveau IA
-            <Sparkles className="h-4 w-4 text-yellow-500" />
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {insights.map((insight, index) => (
-              <div
-                key={index}
-                className="p-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border"
-              >
-                <div className="flex items-start gap-2">
-                  <div className="text-purple-500 mt-0.5">
-                    {insight.icon}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {insight.description}
-                    </p>
-                    <div className="mt-1 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                      <div
-                        className="bg-purple-500 h-1.5 rounded-full transition-all duration-500"
-                        style={{ width: `${insight.confidence * 100}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Confiance: {Math.round(insight.confidence * 100)}%
-                    </p>
-                  </div>
-                </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+      <div className="max-w-6xl mx-auto space-y-6">
+        
+        {/* Header avec branding moderne */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-8"
+        >
+          <div className="inline-flex items-center space-x-3 bg-white dark:bg-gray-800 px-6 py-4 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="relative">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl flex items-center justify-center">
+                <Brain className="w-7 h-7 text-white" />
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Chat Principal */}
-      <Card className="h-96">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-purple-500" />
-            LuvviX Brain Assistant
-            <div className="ml-auto flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              Apprentissage actif
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse" />
             </div>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ScrollArea className="h-48 pr-4">
-            <div className="space-y-3">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                      message.role === 'user'
-                        ? 'bg-purple-500 text-white'
-                        : 'bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/50 dark:to-blue-900/50 text-gray-900 dark:text-gray-100 border'
+            <div className="text-left">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                LuvviX Brain
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Assistant IA • Toujours en apprentissage</p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Sélecteur de personnalité redesigné */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-white" />
+                </div>
+                Personnalité de l'assistant IA
+                <Badge className="ml-auto bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                  {selectedPersonality?.emoji} {selectedPersonality?.label}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {PERSONALITIES.map(p => (
+                  <motion.button
+                    key={p.key}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setPersonality(p.key)}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                      p.key === personality
+                        ? `${p.color} text-white border-transparent shadow-lg`
+                        : "bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-purple-300 dark:hover:border-purple-600"
                     }`}
                   >
-                    {message.content}
+                    <div className="text-2xl mb-2">{p.emoji}</div>
+                    <div className="font-semibold text-sm">{p.label}</div>
+                    <div className={`text-xs mt-1 ${
+                      p.key === personality ? "text-white/90" : "text-gray-500 dark:text-gray-400"
+                    }`}>
+                      {p.description.split(',')[0]}
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Insights redesignés */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-xl">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                  <Cpu className="w-5 h-5 text-white" />
+                </div>
+                Insights de votre Cerveau IA
+                <div className="ml-auto flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-green-600 dark:text-green-400 font-medium">Analyse en cours</span>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {insights.map((insight, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 + index * 0.1 }}
+                    className="group p-4 bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 rounded-xl border border-gray-200 dark:border-gray-600 hover:shadow-lg transition-all duration-300"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                        {insight.icon}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                          {insight.description}
+                        </p>
+                        <div className="space-y-2">
+                          <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${insight.confidence * 100}%` }}
+                              transition={{ duration: 1, delay: 0.5 + index * 0.2 }}
+                              className="bg-gradient-to-r from-purple-500 to-blue-500 h-2 rounded-full"
+                            />
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
+                              Confiance
+                            </span>
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                              {Math.round(insight.confidence * 100)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Chat principal redesigné */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border-0 shadow-2xl h-[600px] overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 text-white pb-4">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                    <Brain className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">LuvviX Brain Assistant</h3>
+                    <p className="text-blue-100 text-sm">Mode: {selectedPersonality?.emoji} {selectedPersonality?.label}</p>
                   </div>
                 </div>
-              ))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="bg-gradient-to-r from-purple-100 to-blue-100 dark:from-purple-900/50 dark:to-blue-900/50 rounded-lg px-3 py-2 text-sm border">
-                    <div className="flex items-center gap-2">
-                      <Brain className="w-4 h-4 text-purple-500 animate-pulse" />
-                      <span>Cerveau en analyse...</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-blue-100">En ligne</span>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            
+            <CardContent className="p-0 h-full flex flex-col">
+              {/* Zone de messages */}
+              <ScrollArea className="flex-1 p-6">
+                <div className="space-y-4">
+                  <AnimatePresence>
+                    {messages.map((message) => (
+                      <motion.div
+                        key={message.id}
+                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                        className={`flex items-start gap-3 ${
+                          message.role === 'user' ? 'flex-row-reverse' : ''
+                        }`}
+                      >
+                        {/* Avatar */}
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                          message.role === 'user' 
+                            ? 'bg-gradient-to-br from-blue-500 to-purple-600' 
+                            : 'bg-gradient-to-br from-purple-500 to-pink-500'
+                        }`}>
+                          {message.role === 'user' ? (
+                            <User className="w-5 h-5 text-white" />
+                          ) : (
+                            <Bot className="w-5 h-5 text-white" />
+                          )}
+                        </div>
+
+                        {/* Bulle de message */}
+                        <div className={`max-w-[70%] ${
+                          message.role === 'user' ? 'text-right' : 'text-left'
+                        }`}>
+                          <div className={`px-4 py-3 rounded-2xl ${
+                            message.role === 'user'
+                              ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white ml-auto'
+                              : 'bg-gradient-to-r from-gray-50 to-white dark:from-gray-700 dark:to-gray-600 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-500'
+                          }`}>
+                            <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                              {message.content}
+                            </div>
+                          </div>
+                          <div className={`text-xs mt-1 ${
+                            message.role === 'user' ? 'text-gray-500' : 'text-gray-400'
+                          }`}>
+                            {message.timestamp.toLocaleTimeString('fr-FR', { 
+                              hour: '2-digit', 
+                              minute: '2-digit' 
+                            })}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+
+                  {/* Indicateur de frappe */}
+                  {isTyping && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-start gap-3"
+                    >
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                        <Bot className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="bg-gradient-to-r from-gray-50 to-white dark:from-gray-700 dark:to-gray-600 px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-500">
+                        <div className="flex items-center gap-1">
+                          <motion.div
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: 0 }}
+                            className="w-2 h-2 bg-purple-500 rounded-full"
+                          />
+                          <motion.div
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+                            className="w-2 h-2 bg-purple-500 rounded-full"
+                          />
+                          <motion.div
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+                            className="w-2 h-2 bg-purple-500 rounded-full"
+                          />
+                          <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Assistant en réflexion...</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
+
+              {/* Actions rapides */}
+              <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-600">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {quickActions.map((action, index) => (
+                    <motion.button
+                      key={index}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setInput(action.action)}
+                      className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-300 dark:hover:border-purple-600 transition-all"
+                    >
+                      <action.icon className="w-4 h-4" />
+                      {action.label}
+                    </motion.button>
+                  ))}
+                </div>
+                
+                {/* Zone de saisie */}
+                <div className="flex gap-3">
+                  <div className="flex-1 relative">
+                    <Input
+                      placeholder="Écrivez votre message..."
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      disabled={loading}
+                      className="pr-12 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                        <Sparkles className="w-3 h-3 text-white" />
+                      </div>
                     </div>
                   </div>
+                  
+                  <motion.div whileTap={{ scale: 0.95 }}>
+                    <Button 
+                      onClick={sendMessage}
+                      disabled={loading || !input.trim()}
+                      className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 text-white rounded-xl h-12 w-12 p-0 shadow-lg"
+                    >
+                      <Send className="w-5 h-5" />
+                    </Button>
+                  </motion.div>
                 </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </ScrollArea>
-
-          <div className="space-y-2">
-            <div className="flex flex-wrap gap-1">
-              {quickActions.slice(0, 2).map((action, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs h-7 bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/20"
-                  onClick={() => setInput(action.action)}
-                >
-                  {action.label}
-                </Button>
-              ))}
-            </div>
-            
-            <div className="flex gap-2">
-              <Input
-                placeholder="Parlez à votre cerveau IA..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={loading}
-                className="text-sm"
-              />
-              <Button 
-                onClick={sendMessage} 
-                disabled={loading || !input.trim()}
-                size="sm"
-                className="bg-purple-500 hover:bg-purple-600"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
     </div>
   );
 };

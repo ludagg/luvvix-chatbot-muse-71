@@ -49,7 +49,7 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
     console.log('StoryManager: Début du chargement des stories pour l\'utilisateur:', user.id);
 
     try {
-      // Récupérer les amis de l'utilisateur
+      // 1. Récupérer les amis de l'utilisateur
       console.log('StoryManager: Récupération des amitiés...');
       const { data: friendships, error: friendError } = await supabase
         .from('center_friendships')
@@ -66,46 +66,64 @@ const StoryManager = ({ onStoryView }: StoryManagerProps) => {
       const friendIds = (friendships || []).map(f => 
         f.requester_id === user.id ? f.addressee_id : f.requester_id
       );
-      
-      console.log('StoryManager: IDs des amis trouvés:', friendIds);
-      
-      // Ajouter l'utilisateur actuel pour toujours récupérer ses propres stories
+      // Ajouter l'utilisateur actuel
       const allowedUserIds = [...new Set([...friendIds, user.id])];
       console.log('StoryManager: IDs autorisés pour les stories:', allowedUserIds);
 
-      // Récupérer les stories des amis et de l'utilisateur seulement
-      console.log('StoryManager: Récupération des stories...');
+      // 2. Récupérer les stories des amis et utilisateur, sans join
       const { data: storiesData, error: storiesError } = await supabase
         .from('center_stories')
-        .select(`
-          *,
-          user_profiles(username, full_name, avatar_url)
-        `)
+        .select('*')
         .in('user_id', allowedUserIds)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
 
       if (storiesError) {
-        // Afficher un toast explicite avec le message d'erreur détaillé
         console.error('Erreur Supabase récupération des stories:', storiesError);
         toast.error(`Impossible de charger les stories: ${storiesError.message || storiesError.details || JSON.stringify(storiesError)}`);
         setLoading(false);
         return;
       }
+      if (!storiesData || storiesData.length === 0) {
+        setUserStories([]);
+        setStories([]);
+        setLoading(false);
+        return;
+      }
 
-      console.log('StoryManager: Stories récupérées:', storiesData?.length || 0, 'stories trouvées');
-      console.log('StoryManager: Détails des stories:', storiesData);
+      // 3. Récupérer tous les profils nécessaires (batch)
+      const uniqueUserIds = [
+        ...new Set(storiesData.map((story: any) => story.user_id))
+      ];
+
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('id, username, full_name, avatar_url')
+        .in('id', uniqueUserIds);
+
+      if (profilesError) {
+        console.error('Erreur chargement profils user_profiles pour stories:', profilesError);
+      }
+
+      // Créer un map rapide des profils
+      const profilesMap: { [key: string]: any } = {};
+      (profilesData || []).forEach((profile: any) => {
+        profilesMap[profile.id] = profile;
+      });
+
+      // 4. Associer chaque profil à chaque story
+      const storiesWithProfiles = (storiesData || []).map((story: any) => ({
+        ...story,
+        user_profiles: profilesMap[story.user_id] || undefined
+      }));
 
       // Séparer mes stories des autres
-      const myStories = (storiesData || []).filter(story => story.user_id === user.id);
-      const otherStories = (storiesData || []).filter(story => story.user_id !== user.id);
-
-      console.log('StoryManager: Mes stories:', myStories.length);
-      console.log('StoryManager: Stories des autres:', otherStories.length);
+      const myStories = storiesWithProfiles.filter(story => story.user_id === user.id);
+      const otherStories = storiesWithProfiles.filter(story => story.user_id !== user.id);
 
       setUserStories(myStories);
       setStories(otherStories);
-    } catch (error:any) {
+    } catch (error: any) {
       console.error('Erreur chargement stories (JS catch):', error);
       toast.error('Erreur inattendue lors du chargement des stories: ' + (error?.message || error));
     } finally {

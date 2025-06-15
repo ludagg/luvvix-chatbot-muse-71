@@ -24,7 +24,7 @@ import {
   Bell,
   Languages,
   FormInput,
-  News
+  Newspaper
 } from 'lucide-react';
 import { fetchLatestNews } from "@/services/news-service";
 import { NewsItem } from "@/types/news";
@@ -392,7 +392,7 @@ const MobileHome = () => {
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-gray-900 flex items-center">
-            <News className="w-5 h-5 mr-2 text-blue-500" />
+            <Newspaper className="w-5 h-5 mr-2 text-blue-500" />
             Actualités
           </h3>
           <button

@@ -21,6 +21,7 @@ import MobileForms from './MobileForms';
 import MobileTranslate from './MobileTranslate';
 import MobileWeather from './MobileWeather';
 import MobileCenter from './MobileCenter';
+import KoofrCloudPage from './AccountPages/KoofrCloudPage';
 
 type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search' | 'calendar' | 'forms' | 'translate' | 'weather' | 'center';
 

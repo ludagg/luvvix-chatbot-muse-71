@@ -1,36 +1,25 @@
 
 import React, { useState } from 'react';
 import { ArrowLeft, Cloud, CheckCircle, AlertCircle, Link as LinkIcon, Unlink, Shield } from 'lucide-react';
-import { useMegaConnections } from '@/hooks/use-mega-connections';
+import { useCloudConnections } from '@/hooks/use-cloud-connections';
 
-interface MegaCloudPageProps {
+interface KoofrCloudPageProps {
   onBack: () => void;
 }
 
-const MegaCloudPage = ({ onBack }: MegaCloudPageProps) => {
+const KoofrCloudPage = ({ onBack }: KoofrCloudPageProps) => {
   const { 
     connections, 
     loading, 
-    connectMega, 
+    connectKoofr, 
     disconnectCloud, 
-    isMegaConnected 
-  } = useMegaConnections();
+    isKoofrConnected 
+  } = useCloudConnections();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showForm, setShowForm] = useState(false);
-
-  const megaConnection = connections.find(conn => conn.provider === 'mega');
+  const koofrConnection = connections.find(conn => conn.provider === 'koofr');
 
   const handleConnect = async () => {
-    if (!email || !password) return;
-    
-    const result = await connectMega(email, password);
-    if (result.success) {
-      setEmail('');
-      setPassword('');
-      setShowForm(false);
-    }
+    await connectKoofr();
   };
 
   return (
@@ -45,30 +34,30 @@ const MegaCloudPage = ({ onBack }: MegaCloudPageProps) => {
       </div>
 
       <div className="flex-1 overflow-auto p-4">
-        {/* Mega */}
+        {/* Koofr */}
         <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-green-600 rounded-2xl flex items-center justify-center">
                 <svg viewBox="0 0 24 24" className="w-6 h-6 text-white">
                   <path fill="currentColor" d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6L15.5,10L12,14L8.5,10L12,6Z"/>
                 </svg>
               </div>
               <div>
                 <h3 className="font-semibold text-lg flex items-center gap-2">
-                  Mega
+                  Koofr
                   <Shield className="w-4 h-4 text-green-500" />
                 </h3>
                 <p className="text-sm text-gray-600">
-                  {isMegaConnected() 
-                    ? `Connecté comme ${megaConnection?.account_info?.email || 'Utilisateur'}`
-                    : '50GB gratuit - Chiffrement E2E'
+                  {isKoofrConnected() 
+                    ? `Connecté comme ${koofrConnection?.account_info?.email || 'Utilisateur'}`
+                    : '10GB gratuit - Sécurité slovène 🇸🇮'
                   }
                 </p>
               </div>
             </div>
             
-            {isMegaConnected() ? (
+            {isKoofrConnected() ? (
               <div className="flex items-center gap-2">
                 <CheckCircle className="w-5 h-5 text-green-500" />
                 <span className="text-sm font-medium text-green-700">Connecté</span>
@@ -81,79 +70,44 @@ const MegaCloudPage = ({ onBack }: MegaCloudPageProps) => {
             )}
           </div>
           
-          {isMegaConnected() ? (
+          {isKoofrConnected() ? (
             <button
-              onClick={() => megaConnection && disconnectCloud(megaConnection.id)}
+              onClick={() => koofrConnection && disconnectCloud(koofrConnection.id)}
               className="w-full bg-red-50 text-red-600 font-medium py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
             >
               <Unlink className="w-4 h-4" />
-              Déconnecter Mega
+              Déconnecter Koofr
             </button>
           ) : (
-            <div className="space-y-3">
-              {!showForm ? (
-                <button
-                  onClick={() => setShowForm(true)}
-                  className="w-full bg-red-600 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-red-700 transition-colors"
-                >
-                  <LinkIcon className="w-4 h-4" />
-                  Connecter Mega
-                </button>
-              ) : (
-                <div className="space-y-3">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email Mega"
-                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Mot de passe"
-                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleConnect}
-                      disabled={loading || !email || !password}
-                      className="flex-1 bg-red-600 text-white font-medium py-3 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50"
-                    >
-                      {loading ? 'Connexion...' : 'Connecter'}
-                    </button>
-                    <button
-                      onClick={() => setShowForm(false)}
-                      className="px-4 py-3 border rounded-xl text-gray-600 hover:bg-gray-50 transition-colors"
-                    >
-                      Annuler
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={handleConnect}
+              disabled={loading}
+              className="w-full bg-green-600 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              <LinkIcon className="w-4 h-4" />
+              {loading ? 'Connexion...' : 'Connecter Koofr'}
+            </button>
           )}
         </div>
 
         {/* Avantages */}
-        <div className="bg-red-50 rounded-2xl p-4 mb-4">
-          <h4 className="font-semibold text-red-900 mb-3 flex items-center gap-2">
+        <div className="bg-green-50 rounded-2xl p-4 mb-4">
+          <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
             <Shield className="w-5 h-5" />
-            Pourquoi connecter Mega ?
+            Pourquoi connecter Koofr ?
           </h4>
-          <ul className="text-sm text-red-800 space-y-2">
+          <ul className="text-sm text-green-800 space-y-2">
             <li className="flex items-start gap-2">
               <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              50GB de stockage gratuit
+              10GB de stockage gratuit
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              Chiffrement de bout en bout
+              Basé en Slovénie (Europe)
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              Confidentialité maximale
+              Respect de la vie privée
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -162,7 +116,7 @@ const MegaCloudPage = ({ onBack }: MegaCloudPageProps) => {
           </ul>
         </div>
 
-        {!isMegaConnected() && (
+        {!isKoofrConnected() && (
           <div className="bg-orange-50 rounded-2xl p-4 border border-orange-200">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
@@ -171,7 +125,7 @@ const MegaCloudPage = ({ onBack }: MegaCloudPageProps) => {
                   Connexion requise
                 </h4>
                 <p className="text-sm text-orange-800">
-                  Vous devez connecter votre Mega pour utiliser les fonctionnalités de stockage cloud de LuvviX.
+                  Vous devez connecter votre Koofr pour utiliser les fonctionnalités de stockage cloud de LuvviX.
                 </p>
               </div>
             </div>
@@ -182,4 +136,4 @@ const MegaCloudPage = ({ onBack }: MegaCloudPageProps) => {
   );
 };
 
-export default MegaCloudPage;
+export default KoofrCloudPage;

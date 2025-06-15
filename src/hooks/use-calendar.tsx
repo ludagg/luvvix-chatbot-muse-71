@@ -90,26 +90,40 @@ export const useCalendar = () => {
         end_date: eventData.end_time ? eventData.end_time.split('T')[0] : eventData.start_time.split('T')[0]
       };
 
+      // DEBUG: Affiche ce qu'on tente d'envoyer à Supabase
+      console.log('[createEvent] Event to insert:', newEvent);
+
       const { data, error } = await supabase
         .from('calendar_events')
         .insert([newEvent])
         .select()
         .single();
 
-      if (error) throw error;
-      
+      if (error) {
+        // Ajout d’un message toast détaillé et log de l’erreur
+        console.error('[createEvent] Supabase error:', error);
+        toast({
+          title: "Erreur création événement",
+          description: error.message || "Impossible de créer l'événement",
+          variant: "destructive"
+        });
+        return null;
+      }
+
+      console.log('[createEvent] Inserted event:', data);
+
       await fetchEvents();
       toast({
         title: "Événement créé",
         description: "L'événement a été ajouté à votre calendrier",
       });
-      
+
       return data;
-    } catch (error) {
-      console.error('Error creating event:', error);
+    } catch (error:any) {
+      console.error('[createEvent] JS error:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de créer l'événement",
+        description: error.message || "Impossible de créer l'événement",
         variant: "destructive"
       });
       return null;

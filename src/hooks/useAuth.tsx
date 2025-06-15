@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -157,7 +156,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
         options: {
-          data: metadata
+          data: metadata,
+          emailRedirectTo: `${window.location.origin}/`
         }
       });
 
@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       toast({
         title: "Compte créé avec succès",
-        description: "Veuillez vérifier votre email pour confirmer votre compte.",
+        description: "Bienvenue sur LuvviX ID !",
       });
       
       return true;

@@ -134,6 +134,16 @@ const CloudConnection: React.FC = () => {
   const koofrConnected = isKoofrConnected();
   const koofrEmail = koofrConn?.account_info?.email;
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem('dropbox_connected')) {
+      toast({
+        title: "Dropbox connecté avec succès",
+        description: "Vous pouvez maintenant accéder à vos fichiers Dropbox dans LuvviX Cloud.",
+      });
+      localStorage.removeItem('dropbox_connected');
+    }
+  }, []);
+
   return (
     <div className="space-y-6">
       <div className="text-center">

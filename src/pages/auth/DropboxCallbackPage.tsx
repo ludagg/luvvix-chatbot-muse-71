@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -69,6 +68,9 @@ const DropboxCallbackPage = () => {
           title: "Dropbox connecté avec succès !",
           description: "Vous pouvez maintenant utiliser LuvviX Cloud",
         });
+        
+        // ASTUCE : signaler à la page Cloud qu'on vient de finir l'auth avec succès (pour afficher un toast dans Cloud)
+        localStorage.setItem('dropbox_connected', '1');
         
         navigate('/cloud');
         

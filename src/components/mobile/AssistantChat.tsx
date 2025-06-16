@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Brain, Send, Sparkles, Calendar, Users, Zap } from 'lucide-react';
+import { Brain, Send, Sparkles, Calendar, Users, Zap, BookOpen, TrendingUp, Mic, Plus, MoreVertical } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { luvvixBrain } from '@/services/luvvix-brain';
 import { toast } from 'sonner';
@@ -10,6 +10,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  actions?: any[];
 }
 
 const AssistantChat = () => {
@@ -41,8 +42,20 @@ const AssistantChat = () => {
 • Analyser vos patterns d'usage
 • Créer des événements automatiquement  
 • Automatiser vos tâches répétitives
-• Vous donner des insights personnalisés`,
-      timestamp: new Date()
+• Vous donner des insights personnalisés
+• Gérer vos contacts et relations
+• Créer du contenu optimisé
+• Organiser votre calendrier
+• Créer des cours personnalisés
+
+Dites-moi simplement ce que vous voulez et je le ferai !`,
+      timestamp: new Date(),
+      actions: [
+        { type: 'analyze_data', label: '📊 Analyser mes données', icon: TrendingUp },
+        { type: 'create_event', label: '📅 Créer un événement', icon: Calendar },
+        { type: 'create_post', label: '✏️ Publier un post', icon: Plus },
+        { type: 'optimize_calendar', label: '⚡ Optimiser mon temps', icon: Zap }
+      ]
     };
 
     setMessages([welcomeMessage]);
@@ -53,23 +66,22 @@ const AssistantChat = () => {
 
     try {
       const userInsights = await luvvixBrain.getUserInsights(user.id);
-      setInsights([
-        { icon: <Zap className="w-4 h-4" />, text: "Pic de productivité détecté", confidence: 0.9 },
-        { icon: <Users className="w-4 h-4" />, text: "Interactions sociales actives", confidence: 0.8 },
-        { icon: <Calendar className="w-4 h-4" />, text: "Patterns calendrier identifiés", confidence: 0.7 }
-      ]);
+      setInsights(userInsights);
+      
+      console.log('Insights chargés automatiquement:', userInsights);
     } catch (error) {
       console.error('Erreur insights:', error);
     }
   };
 
-  const sendMessage = async () => {
-    if (!input.trim() || !user) return;
+  const sendMessage = async (messageContent?: string) => {
+    const content = messageContent || input.trim();
+    if (!content || !user) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content,
       timestamp: new Date()
     };
 
@@ -83,13 +95,13 @@ const AssistantChat = () => {
         user.id,
         'mobile_ai_chat',
         'MobileAssistant',
-        { message: input }
+        { message: content }
       );
 
       // Obtenir la réponse du cerveau
       const response = await luvvixBrain.processConversation(
         user.id,
-        input,
+        content,
         { 
           component: 'MobileAssistant',
           device: 'mobile',
@@ -97,11 +109,15 @@ const AssistantChat = () => {
         }
       );
 
+      // Détecter les actions possibles
+      const actions = await detectActions(content);
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: response,
-        timestamp: new Date()
+        timestamp: new Date(),
+        actions: actions
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -124,111 +140,270 @@ const AssistantChat = () => {
     }
   };
 
+  const detectActions = async (content: string): Promise<any[]> => {
+    const actions = [];
+    const lowerContent = content.toLowerCase();
+
+    if (lowerContent.includes('créer') && lowerContent.includes('événement')) {
+      actions.push({
+        type: 'create_event',
+        label: 'Créer l\'événement maintenant',
+        icon: '📅',
+        data: { title: 'Événement demandé', description: content }
+      });
+    }
+
+    if (lowerContent.includes('analyser') || lowerContent.includes('données')) {
+      actions.push({
+        type: 'analyze_data',
+        label: 'Lancer l\'analyse complète',
+        icon: '📊',
+        data: { analysisType: 'complete' }
+      });
+    }
+
+    if (lowerContent.includes('publier') || lowerContent.includes('post')) {
+      actions.push({
+        type: 'create_post',
+        label: 'Publier maintenant',
+        icon: '✏️',
+        data: { content: content }
+      });
+    }
+
+    if (lowerContent.includes('cours') && lowerContent.includes('créer')) {
+      actions.push({
+        type: 'create_course',
+        label: 'Créer le cours',
+        icon: '📚',
+        data: { title: 'Nouveau cours IA', description: content }
+      });
+    }
+
+    if (lowerContent.includes('contact') || lowerContent.includes('ami')) {
+      actions.push({
+        type: 'manage_contacts',
+        label: 'Gérer les contacts',
+        icon: '👥',
+        data: { operation: 'analyze_relationships' }
+      });
+    }
+
+    return actions;
+  };
+
+  const executeAction = async (action: any) => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      
+      const result = await luvvixBrain.executeAutomaticAction(user.id, {
+        type: action.type,
+        data: action.data,
+        context: 'mobile_user_request'
+      });
+
+      const actionMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `✅ ${action.label} - Action exécutée avec succès ! 
+
+${action.type === 'create_event' ? '📅 Événement créé dans votre calendrier' : ''}
+${action.type === 'create_post' ? '✏️ Post publié sur votre profil' : ''}
+${action.type === 'analyze_data' ? '📊 Analyse complète terminée - consultez vos insights' : ''}
+${action.type === 'create_course' ? '📚 Cours créé et disponible' : ''}
+${action.type === 'manage_contacts' ? '👥 Analyse des relations terminée' : ''}
+
+Résultat détaillé disponible dans l'interface correspondante.`,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, actionMessage]);
+
+      toast.success(`${action.icon} ${action.label} réalisé !`);
+
+    } catch (error) {
+      console.error('Erreur exécution action:', error);
+      toast.error("Impossible d'exécuter l'action");
+      
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `❌ Erreur lors de l'exécution de "${action.label}". Réessayons dans quelques instants.`,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const quickSuggestions = [
-    "Analyse mes habitudes",
-    "Crée un événement",
-    "Mes recommandations",
-    "Automatise mes tâches"
+    'Analyse mes habitudes et donne-moi des conseils',
+    'Crée un événement pour demain à 14h',
+    'Publie un post inspirant sur mon profil',
+    'Optimise mon calendrier pour la semaine',
+    'Crée un cours sur l\'IA pour débutants',
+    'Analyse mes relations sociales'
   ];
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex flex-col h-full bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Header avec insights */}
-      <div className="p-4 bg-gradient-to-r from-purple-500 to-blue-600 text-white">
-        <div className="flex items-center gap-2 mb-3">
-          <Brain className="w-6 h-6" />
-          <div>
-            <h3 className="font-semibold">Cerveau IA Central</h3>
-            <p className="text-xs opacity-90">Apprentissage actif • Connaît vos habitudes</p>
+      <div className="bg-white border-b border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+              <Brain className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-bold text-gray-900">Cerveau IA</h2>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-xs text-gray-500">Actif et analysant</span>
+              </div>
+            </div>
           </div>
-          <Sparkles className="w-5 h-5 ml-auto animate-pulse" />
+          <button className="p-2 hover:bg-gray-100 rounded-full">
+            <MoreVertical className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
-        
-        <div className="grid grid-cols-3 gap-2">
-          {insights.map((insight, index) => (
-            <div key={index} className="bg-white/20 rounded-lg p-2 text-center">
-              <div className="flex justify-center mb-1">{insight.icon}</div>
-              <p className="text-xs font-medium">{insight.text}</p>
-              <div className="w-full bg-white/30 rounded-full h-1 mt-1">
-                <div 
-                  className="bg-white h-1 rounded-full transition-all duration-500"
-                  style={{ width: `${insight.confidence * 100}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Messages */}
-      <div className="flex-1 p-4 overflow-y-auto">
-        <div className="space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[85%] p-3 rounded-lg ${
-                  message.role === 'user'
-                    ? 'bg-purple-500 text-white rounded-br-none'
-                    : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border rounded-bl-none shadow-sm'
-                }`}
-              >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                <p className="text-xs opacity-70 mt-1">
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            </div>
-          ))}
-          
-          {loading && (
-            <div className="flex justify-start">
-              <div className="bg-white dark:bg-gray-800 p-3 rounded-lg rounded-bl-none border shadow-sm">
-                <div className="flex items-center gap-2">
-                  <Brain className="w-4 h-4 text-purple-500 animate-pulse" />
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce delay-100"></div>
-                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce delay-200"></div>
+        {/* Insights en temps réel */}
+        {insights.length > 0 && (
+          <div className="grid grid-cols-1 gap-2">
+            {insights.slice(0, 2).map((insight, index) => (
+              <div key={index} className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg border border-blue-100">
+                <div className="flex items-start space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {insight.type === 'productivity' ? '⚡ Productivité' : 
+                       insight.type === 'social' ? '👥 Social' : '💡 Insight'}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      {insight.data?.suggestion || insight.data?.message}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Actions rapides */}
-      <div className="p-4 bg-white dark:bg-gray-800 border-t">
-        <div className="flex gap-2 mb-3 overflow-x-auto">
-          {quickSuggestions.map((suggestion, index) => (
-            <button
-              key={index}
-              onClick={() => setInput(suggestion)}
-              className="px-3 py-1 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-full text-xs whitespace-nowrap flex-shrink-0 hover:bg-purple-200 dark:hover:bg-purple-900/70 transition-colors"
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[85%] rounded-2xl p-3 ${
+                message.role === 'user'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white border border-gray-200 text-gray-900 shadow-sm'
+              }`}
             >
-              {suggestion}
-            </button>
-          ))}
-        </div>
+              <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                {message.content}
+              </div>
+              
+              {/* Actions mobiles */}
+              {message.actions && message.actions.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                  <div className="text-xs text-gray-500 font-medium">Actions rapides :</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {message.actions.map((action, index) => (
+                      <button
+                        key={index}
+                        onClick={() => executeAction(action)}
+                        className="bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium py-2 px-3 rounded-lg transition-colors text-left"
+                      >
+                        <div className="flex items-center space-x-1">
+                          <span>{action.icon}</span>
+                          <span className="truncate">{action.label}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="text-xs opacity-70 mt-2">
+                {message.timestamp.toLocaleTimeString()}
+              </div>
+            </div>
+          </div>
+        ))}
+        
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm">
+              <div className="flex items-center space-x-2">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-100"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-200"></div>
+                </div>
+                <span className="text-sm text-gray-600">Cerveau en action...</span>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div ref={messagesEndRef} />
+      </div>
 
-        <div className="flex gap-2">
+      {/* Suggestions rapides */}
+      {messages.length <= 1 && (
+        <div className="px-4 pb-2">
+          <div className="text-xs text-gray-500 mb-2">Suggestions rapides :</div>
+          <div className="flex overflow-x-auto space-x-2 pb-2">
+            {quickSuggestions.map((suggestion, index) => (
+              <button
+                key={index}
+                onClick={() => sendMessage(suggestion)}
+                className="flex-shrink-0 bg-white border border-gray-200 text-xs text-gray-700 px-3 py-2 rounded-full whitespace-nowrap hover:bg-gray-50"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Zone de saisie */}
+      <div className="bg-white border-t border-gray-200 p-4">
+        <div className="flex items-center space-x-2">
+          <button className="p-2 hover:bg-gray-100 rounded-full flex-shrink-0">
+            <Plus className="w-5 h-5 text-gray-500" />
+          </button>
+          <button className="p-2 hover:bg-gray-100 rounded-full flex-shrink-0">
+            <Mic className="w-5 h-5 text-gray-500" />
+          </button>
+          
           <input
-            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            placeholder="Parlez à votre cerveau IA..."
-            className="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+            placeholder="Demandez-moi n'importe quoi..."
+            className="flex-1 bg-gray-100 border-none rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
             disabled={loading}
           />
-          <button
-            onClick={sendMessage}
-            disabled={loading || !input.trim()}
-            className="px-4 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          
+          <button 
+            onClick={() => sendMessage()} 
+            disabled={!input.trim() || loading}
+            className="p-2 bg-blue-600 text-white rounded-full flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="w-5 h-5" />
           </button>

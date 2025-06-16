@@ -1,451 +1,595 @@
-import React, { useRef, useState, useEffect } from "react";
-import { Send, Menu, X, Brain, Bot, User, Sparkles, Calendar, TrendingUp, Zap } from "lucide-react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import ImageUploader from "./ImageUploader";
-import ConversationSidebar from "./ConversationSidebar";
-import { useAuth } from "@/hooks/useAuth";
-import { usePersistentConversations, Message } from "@/hooks/use-persistent-conversations";
-import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 
-const PERSONALITIES = [
-  { 
-    key: "expert", 
-    label: "🎯 Expert", 
-    description: "Précis et professionnel",
-    color: "bg-blue-50 text-blue-600 border-blue-200"
-  },
-  { 
-    key: "coach", 
-    label: "💪 Coach", 
-    description: "Motivant et encourageant",
-    color: "bg-green-50 text-green-600 border-green-200"
-  },
-  { 
-    key: "secretary", 
-    label: "📋 Assistant", 
-    description: "Organisé et efficace",
-    color: "bg-purple-50 text-purple-600 border-purple-200"
-  },
-  { 
-    key: "friend", 
-    label: "😊 Ami", 
-    description: "Décontracté et sympathique",
-    color: "bg-orange-50 text-orange-600 border-orange-200"
-  }
-];
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, Brain, Sparkles, Zap, Calendar, Users, BookOpen, Mail, TrendingUp, Settings, Mic, Image, Paperclip, MoreHorizontal, Trash2, Archive, Edit3 } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { luvvixBrain } from '@/services/luvvix-brain';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
-const QUICK_ACTIONS = [
-  { icon: Calendar, label: "Planifier", prompt: "Aide-moi à organiser ma journée" },
-  { icon: TrendingUp, label: "Analyser", prompt: "Analyse mes habitudes récentes" },
-  { icon: Zap, label: "Automatiser", prompt: "Que peux-tu automatiser pour moi ?" },
-  { icon: Brain, label: "Recommander", prompt: "Quelles sont tes recommandations ?" }
-];
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  actions?: any[];
+  insights?: any[];
+}
+
+interface Conversation {
+  id: string;
+  title: string;
+  messages: Message[];
+  lastMessage: Date;
+}
 
 const ModernAIChat = () => {
   const { user } = useAuth();
-  const {
-    conversations,
-    currentConversation,
-    loading: conversationsLoading,
-    createConversation,
-    saveMessage,
-    loadConversation,
-    deleteConversation,
-    startNewConversation
-  } = usePersistentConversations();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
+  const [input, setInput] = useState('');
+  const [isThinking, setIsThinking] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [insights, setInsights] = useState<any[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content: "Salut ! 👋 Je suis votre assistant IA personnel LuvviX Brain.\n\n🧠 **Je vous connais** et j'apprends de toutes vos interactions\n🎯 **Je peux vous aider** avec vos tâches quotidiennes\n⚡ **J'agis directement** sur vos applications LuvviX\n\nComment puis-je vous assister aujourd'hui ?",
-      createdAt: new Date(),
-    },
-  ]);
-  
-  const [input, setInput] = useState("");
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [personality, setPersonality] = useState(PERSONALITIES[0].key);
-
-  const chatBottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // Charger les messages de la conversation courante
   useEffect(() => {
-    if (currentConversation) {
-      setMessages(currentConversation.messages);
-      setCurrentConversationId(currentConversation.id);
-    } else {
-      setMessages([
-        {
-          id: "welcome",
-          role: "assistant",
-          content: "Salut ! 👋 Je suis votre assistant IA personnel LuvviX Brain.\n\n🧠 **Je vous connais** et j'apprends de toutes vos interactions\n🎯 **Je peux vous aider** avec vos tâches quotidiennes\n⚡ **J'agis directement** sur vos applications LuvviX\n\nComment puis-je vous assister aujourd'hui ?",
-          createdAt: new Date(),
-        },
-      ]);
-      setCurrentConversationId(null);
+    if (user) {
+      initializeBrain();
+      loadConversations();
+      loadInsights();
     }
-  }, [currentConversation]);
-
-  // Preview the image selected
-  useEffect(() => {
-    if (!selectedImage) return setPreviewUrl(null);
-    const reader = new FileReader();
-    reader.onload = (e) => setPreviewUrl(e.target?.result as string || null);
-    reader.readAsDataURL(selectedImage);
-    return () => reader.abort();
-  }, [selectedImage]);
+  }, [user]);
 
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [currentConversation?.messages]);
 
-  async function handleSend() {
-    if (!input.trim() && !selectedImage) return;
-    if (!user) return toast.error("Connectez-vous pour chatter !");
+  const initializeBrain = async () => {
+    if (!user) return;
+    
+    try {
+      // Analyser les patterns utilisateur au démarrage
+      await luvvixBrain.analyzeUserPatterns(user.id);
+      
+      // Charger les suggestions intelligentes
+      const smartSuggestions = await luvvixBrain.getUserInsights(user.id);
+      setSuggestions(smartSuggestions);
+      
+      console.log('🧠 Cerveau LuvviX initialisé');
+    } catch (error) {
+      console.error('Erreur initialisation cerveau:', error);
+    }
+  };
+
+  const loadInsights = async () => {
+    if (!user) return;
+    
+    try {
+      const userInsights = await luvvixBrain.getUserInsights(user.id);
+      setInsights(userInsights);
+      
+      console.log('Insights chargés automatiquement:', userInsights);
+    } catch (error) {
+      console.error('Erreur chargement insights:', error);
+    }
+  };
+
+  const loadConversations = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('ai_assistant_conversations')
+        .select(`
+          *,
+          ai_assistant_messages (*)
+        `)
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedConversations: Conversation[] = (data || []).map(conv => ({
+        id: conv.id,
+        title: conv.title,
+        lastMessage: new Date(conv.updated_at),
+        messages: (conv.ai_assistant_messages || []).map((msg: any) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date(msg.created_at)
+        }))
+      }));
+
+      setConversations(formattedConversations);
+      
+      if (formattedConversations.length > 0 && !currentConversation) {
+        setCurrentConversation(formattedConversations[0]);
+      }
+    } catch (error) {
+      console.error('Erreur chargement conversations:', error);
+    }
+  };
+
+  const sendMessage = async (messageContent?: string) => {
+    const content = messageContent || input.trim();
+    if (!content || !user) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      role: "user",
-      content: input,
-      imageUrl: previewUrl ?? undefined,
-      createdAt: new Date(),
+      role: 'user',
+      content,
+      timestamp: new Date()
     };
 
-    // Ajouter le message immédiatement à l'UI
-    setMessages(prev => [...prev, userMessage]);
-    
-    // Créer une conversation si nécessaire
-    let conversationId = currentConversationId;
-    if (!conversationId) {
-      conversationId = await createConversation(input.trim());
-      if (!conversationId) {
-        toast.error("Erreur lors de la création de la conversation");
-        return;
-      }
-      setCurrentConversationId(conversationId);
+    // Ajouter le message à la conversation courante
+    if (currentConversation) {
+      setCurrentConversation(prev => prev ? {
+        ...prev,
+        messages: [...prev.messages, userMessage]
+      } : null);
+    } else {
+      // Créer une nouvelle conversation
+      const newConversation: Conversation = {
+        id: Date.now().toString(),
+        title: content.slice(0, 50) + '...',
+        messages: [userMessage],
+        lastMessage: new Date()
+      };
+      setCurrentConversation(newConversation);
+      setConversations(prev => [newConversation, ...prev]);
     }
 
-    // Sauvegarder le message utilisateur
-    await saveMessage(conversationId, {
-      role: "user",
-      content: input,
-      imageUrl: previewUrl ?? undefined
-    });
-
-    setInput("");
-    setIsTyping(true);
-
-    // Envoi à l'edge function (multimodal)
-    const formData = new FormData();
-    const selectedPersonality = PERSONALITIES.find(p => p.key === personality);
-    const personalizedPrompt = `[Mode: ${selectedPersonality?.label}] ${input.trim()}`;
-    formData.append("message", personalizedPrompt);
-    if (selectedImage) formData.append("image", selectedImage);
-
-    setSelectedImage(null);
-    setPreviewUrl(null);
+    setInput('');
+    setIsThinking(true);
 
     try {
-      // Utiliser l'API Supabase directement au lieu de l'endpoint relatif
-      const { data, error } = await supabase.functions.invoke('gemini-chat-response', {
-        body: {
-          message: personalizedPrompt,
-          image: previewUrl || null
+      // Traquer l'interaction avec le cerveau
+      await luvvixBrain.trackInteraction(
+        user.id,
+        'ai_chat',
+        'ModernAIChat',
+        { message: content, timestamp: new Date() }
+      );
+
+      // Obtenir la réponse du cerveau
+      const response = await luvvixBrain.processConversation(
+        user.id,
+        content,
+        { 
+          conversation: currentConversation,
+          component: 'ModernAIChat',
+          capabilities: ['create_events', 'create_posts', 'manage_contacts', 'analyze_data', 'course_creation']
         }
-      });
+      );
 
-      if (error) {
-        throw new Error(error.message || "Erreur lors de la communication avec l'IA");
-      }
-
-      const assistantMessage: Message = {
-        id: Date.now().toString() + "ai",
-        role: "assistant",
-        content: data.response || "Je n'ai pas pu générer de réponse.",
-        imageUrl: data.responseImage || undefined,
-        createdAt: new Date(),
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-
-      // Sauvegarder la réponse de l'assistant
-      await saveMessage(conversationId, {
-        role: "assistant",
-        content: data.response || "Je n'ai pas pu générer de réponse.",
-        imageUrl: data.responseImage || undefined
-      });
-
-    } catch (e) {
-      console.error('Erreur lors de l\'envoi du message:', e);
+      // Obtenir des actions automatiques si applicables
+      const actions = await detectPossibleActions(content);
       
-      const errorMessage: Message = {
-        id: Date.now().toString() + "fail",
-        role: "assistant",
-        content: "Désolé, je n'ai pas pu obtenir de réponse 🤖💔. Veuillez réessayer.",
-        createdAt: new Date(),
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: response,
+        timestamp: new Date(),
+        actions: actions,
+        insights: await luvvixBrain.getUserInsights(user.id)
       };
 
-      setMessages(prev => [...prev, errorMessage]);
+      setCurrentConversation(prev => prev ? {
+        ...prev,
+        messages: [...prev.messages, assistantMessage]
+      } : null);
 
-      // Sauvegarder le message d'erreur
-      await saveMessage(conversationId, {
-        role: "assistant",
-        content: "Désolé, je n'ai pas pu obtenir de réponse 🤖💔. Veuillez réessayer."
+      // Sauvegarder en base
+      await saveConversation();
+      
+      // Recharger les insights
+      await loadInsights();
+
+    } catch (error) {
+      console.error('Erreur chat brain:', error);
+      toast({
+        title: "Erreur cerveau IA",
+        description: "Reconnexion des circuits neuronaux...",
+        variant: "destructive"
       });
     } finally {
-      setIsTyping(false);
+      setIsThinking(false);
     }
-  }
-
-  const handleSelectConversation = (conversationId: string) => {
-    loadConversation(conversationId);
-    setShowSidebar(false);
   };
 
-  const handleNewConversation = () => {
-    startNewConversation();
-    setShowSidebar(false);
+  const detectPossibleActions = async (content: string): Promise<any[]> => {
+    const actions = [];
+    const lowerContent = content.toLowerCase();
+
+    if (lowerContent.includes('créer') && (lowerContent.includes('événement') || lowerContent.includes('rdv'))) {
+      actions.push({
+        type: 'create_event',
+        label: 'Créer l\'événement',
+        icon: Calendar,
+        data: { title: 'Événement demandé', description: content }
+      });
+    }
+
+    if (lowerContent.includes('publier') || lowerContent.includes('poster')) {
+      actions.push({
+        type: 'create_post',
+        label: 'Publier le post',
+        icon: Edit3,
+        data: { content: content }
+      });
+    }
+
+    if (lowerContent.includes('cours') && lowerContent.includes('créer')) {
+      actions.push({
+        type: 'create_course',
+        label: 'Créer le cours',
+        icon: BookOpen,
+        data: { title: 'Nouveau cours', description: content }
+      });
+    }
+
+    if (lowerContent.includes('analyser') || lowerContent.includes('statistiques')) {
+      actions.push({
+        type: 'analyze_data',
+        label: 'Analyser les données',
+        icon: TrendingUp,
+        data: { analysisType: 'general' }
+      });
+    }
+
+    return actions;
   };
 
-  const handleDeleteConversation = async (conversationId: string) => {
-    await deleteConversation(conversationId);
+  const executeAction = async (action: any) => {
+    if (!user) return;
+
+    try {
+      setIsThinking(true);
+      
+      const result = await luvvixBrain.executeAutomaticAction(user.id, {
+        type: action.type,
+        data: action.data,
+        context: 'user_request'
+      });
+
+      const actionMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: `✅ Action exécutée avec succès ! ${action.label} a été réalisé. Voici les détails : ${JSON.stringify(result)}`,
+        timestamp: new Date()
+      };
+
+      setCurrentConversation(prev => prev ? {
+        ...prev,
+        messages: [...prev.messages, actionMessage]
+      } : null);
+
+      toast({
+        title: "🧠 Action exécutée",
+        description: `${action.label} réalisé avec succès !`
+      });
+
+    } catch (error) {
+      console.error('Erreur exécution action:', error);
+      toast({
+        title: "Erreur action",
+        description: "Impossible d'exécuter l'action demandée",
+        variant: "destructive"
+      });
+    } finally {
+      setIsThinking(false);
+    }
   };
 
-  const handleQuickAction = (prompt: string) => {
-    setInput(prompt);
-    inputRef.current?.focus();
+  const saveConversation = async () => {
+    if (!currentConversation || !user) return;
+
+    try {
+      // Sauvegarder ou mettre à jour la conversation
+      const { data: convData, error: convError } = await supabase
+        .from('ai_assistant_conversations')
+        .upsert({
+          id: currentConversation.id,
+          user_id: user.id,
+          title: currentConversation.title,
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (convError) throw convError;
+
+      // Sauvegarder les nouveaux messages
+      for (const message of currentConversation.messages) {
+        await supabase
+          .from('ai_assistant_messages')
+          .upsert({
+            id: message.id,
+            conversation_id: convData.id,
+            role: message.role,
+            content: message.content,
+            created_at: message.timestamp.toISOString()
+          });
+      }
+    } catch (error) {
+      console.error('Erreur sauvegarde conversation:', error);
+    }
   };
 
-  const selectedPersonality = PERSONALITIES.find(p => p.key === personality);
+  const quickActions = [
+    { label: 'Analyser mes données', icon: TrendingUp, action: () => sendMessage('Analyse mes données et donne moi des insights détaillés') },
+    { label: 'Créer un événement', icon: Calendar, action: () => sendMessage('Crée moi un événement pour demain à 14h') },
+    { label: 'Publier un post', icon: Edit3, action: () => sendMessage('Publie un post inspirant sur mon profil') },
+    { label: 'Gérer mes contacts', icon: Users, action: () => sendMessage('Analyse mes relations et suggère des améliorations') },
+    { label: 'Créer un cours', icon: BookOpen, action: () => sendMessage('Crée moi un cours sur l\'intelligence artificielle') },
+    { label: 'Optimiser mon temps', icon: Zap, action: () => sendMessage('Optimise mon calendrier et mes habitudes') }
+  ];
+
+  const createNewConversation = () => {
+    setCurrentConversation(null);
+    setInput('');
+  };
+
+  const deleteConversation = (convId: string) => {
+    setConversations(prev => prev.filter(c => c.id !== convId));
+    if (currentConversation?.id === convId) {
+      setCurrentConversation(null);
+    }
+  };
 
   return (
-    <div className="h-full max-w-4xl mx-auto bg-white dark:bg-gray-900 rounded-3xl md:shadow-lg overflow-hidden flex">
-      {/* Sidebar */}
-      <div className={`${showSidebar ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0`}>
-        <ConversationSidebar
-          conversations={conversations}
-          currentConversation={currentConversation}
-          onSelectConversation={handleSelectConversation}
-          onNewConversation={handleNewConversation}
-          onDeleteConversation={handleDeleteConversation}
-          loading={conversationsLoading}
-        />
-      </div>
-
-      {/* Overlay pour mobile */}
-      {showSidebar && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setShowSidebar(false)}
-        />
-      )}
-
-      {/* Chat principale */}
-      <div className="flex-1 flex flex-col">
-        {/* Header épuré */}
-        <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 p-3 md:p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 md:space-x-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowSidebar(!showSidebar)}
-                className="lg:hidden text-gray-600 hover:bg-gray-100 rounded-full p-1 md:p-2"
-              >
-                {showSidebar ? <X className="w-4 h-4 md:w-5 md:h-5" /> : <Menu className="w-4 h-4 md:w-5 md:h-5" />}
-              </Button>
-              <div className="relative">
-                <div className="w-8 h-8 md:w-12 md:h-12 bg-blue-50 rounded-xl md:rounded-2xl flex items-center justify-center">
-                  <Brain className="w-4 h-4 md:w-6 md:h-6 text-blue-600" />
-                </div>
-                <div className="absolute -bottom-0.5 -right-0.5 md:-bottom-1 md:-right-1 w-2 h-2 md:w-3 md:h-3 bg-green-400 rounded-full border border-white" />
+    <div className="flex h-full bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Sidebar des conversations */}
+      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
+                <Brain className="w-5 h-5 text-white" />
               </div>
-              <div>
-                <h1 className="text-sm md:text-xl font-semibold text-gray-900 dark:text-white">
-                  {currentConversation?.title || "LuvviX Brain"}
-                </h1>
-                <p className="text-xs md:text-sm text-gray-500">Assistant IA personnel</p>
-              </div>
+              <span className="font-bold text-gray-900">Cerveau LuvviX</span>
             </div>
-            
-            <Badge className="bg-green-50 text-green-700 border-green-200 text-xs">
-              <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-400 rounded-full mr-1 md:mr-2" />
-              En ligne
-            </Badge>
+            <Button onClick={createNewConversation} size="sm">
+              <Sparkles className="w-4 h-4" />
+            </Button>
           </div>
 
-          {/* Sélecteur de personnalité épuré - masqué sur mobile */}
-          <div className="mt-3 md:mt-6 hidden md:block">
-            <p className="text-sm text-gray-600 mb-3">Mode :</p>
-            <div className="flex flex-wrap gap-2">
-              {PERSONALITIES.map(p => (
-                <motion.button
-                  key={p.key}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setPersonality(p.key)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
-                    p.key === personality
-                      ? p.color
-                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
-                  }`}
+          {/* Insights en temps réel */}
+          {insights.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Insights IA</h4>
+              <div className="space-y-2">
+                {insights.slice(0, 2).map((insight, index) => (
+                  <div key={index} className="bg-gradient-to-r from-blue-50 to-purple-50 p-2 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="text-xs text-gray-700">{insight.data?.suggestion || insight.data?.message}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Liste des conversations */}
+        <div className="flex-1 overflow-y-auto">
+          {conversations.map((conv) => (
+            <div
+              key={conv.id}
+              onClick={() => setCurrentConversation(conv)}
+              className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
+                currentConversation?.id === conv.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-medium text-gray-900 truncate">{conv.title}</h4>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {conv.messages.length} messages • {conv.lastMessage.toLocaleDateString()}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteConversation(conv.id);
+                  }}
                 >
-                  {p.label}
-                </motion.button>
-              ))}
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Zone de chat principale */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Assistant IA Omnipotent</h2>
+              <p className="text-sm text-gray-500">
+                Capable de créer, gérer et optimiser tout votre écosystème LuvviX
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                🧠 Actif
+              </Badge>
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                Gemini 1.5 Flash
+              </Badge>
             </div>
           </div>
         </div>
 
-        {/* Zone de chat */}
-        <div className="flex-1 flex flex-col">
-          <ScrollArea className="flex-1 p-3 md:p-6">
-            <div className="space-y-4 md:space-y-6">
-              <AnimatePresence>
-                {messages.map((message) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {!currentConversation ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mb-4">
+                <Brain className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Bonjour ! Je suis votre cerveau IA</h3>
+              <p className="text-gray-600 mb-6 max-w-md">
+                Je peux créer des événements, publier des posts, gérer vos contacts, analyser vos données, créer des cours et bien plus encore. Que souhaitez-vous que je fasse ?
+              </p>
+              
+              {/* Actions rapides */}
+              <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
+                {quickActions.map((action, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    onClick={action.action}
+                    className="flex items-center space-x-2 p-4 h-auto"
                   >
-                    <div className={`flex items-end space-x-2 md:space-x-3 max-w-[85%] md:max-w-[80%] ${
-                      message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
-                    }`}>
-                      {/* Avatar */}
-                      <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        message.role === 'user' 
-                          ? 'bg-blue-50' 
-                          : 'bg-gray-50'
-                      }`}>
-                        {message.role === 'user' ? (
-                          <User className="w-3 h-3 md:w-4 md:h-4 text-blue-600" />
-                        ) : (
-                          <Bot className="w-3 h-3 md:w-4 md:h-4 text-gray-600" />
-                        )}
-                      </div>
-
-                      {/* Message bubble */}
-                      <div className={`px-3 py-2 md:px-4 md:py-3 rounded-xl md:rounded-2xl max-w-full ${
-                        message.role === 'user'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-50 text-gray-900 border border-gray-100'
-                      } ${message.role === 'user' ? 'rounded-br-sm' : 'rounded-bl-sm'}`}>
-                        {message.imageUrl && (
-                          <img
-                            src={message.imageUrl}
-                            alt="Image envoyée"
-                            className="rounded-lg md:rounded-xl shadow mb-2 md:mb-3 max-w-xs border"
-                          />
-                        )}
-                        <div className="whitespace-pre-wrap text-xs md:text-sm leading-relaxed">
-                          {message.content}
-                        </div>
-                        <div className={`text-xs mt-1 md:mt-2 ${
-                          message.role === 'user' ? 'text-blue-100' : 'text-gray-400'
-                        }`}>
-                          {message.createdAt.toLocaleTimeString('fr-FR', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
+                    <action.icon className="w-5 h-5" />
+                    <span className="text-sm">{action.label}</span>
+                  </Button>
                 ))}
-              </AnimatePresence>
-
-              {/* Indicateur de frappe */}
-              {isTyping && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex justify-start"
+              </div>
+            </div>
+          ) : (
+            <>
+              {currentConversation.messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className="flex items-end space-x-2 md:space-x-3">
-                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-50 flex items-center justify-center">
-                      <Bot className="w-3 h-3 md:w-4 md:h-4 text-gray-600" />
-                    </div>
-                    <div className="bg-gray-50 px-3 py-2 md:px-4 md:py-3 rounded-xl md:rounded-2xl rounded-bl-sm border border-gray-100">
-                      <div className="flex space-x-1">
-                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-gray-400 rounded-full animate-bounce" />
-                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                        <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                  <div
+                    className={`max-w-[80%] rounded-lg p-4 ${
+                      message.role === 'user'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white border border-gray-200 text-gray-900'
+                    }`}
+                  >
+                    <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+                    
+                    {/* Actions disponibles */}
+                    {message.actions && message.actions.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                        <div className="text-xs text-gray-500 font-medium">Actions disponibles :</div>
+                        {message.actions.map((action, index) => (
+                          <Button
+                            key={index}
+                            size="sm"
+                            onClick={() => executeAction(action)}
+                            className="mr-2"
+                          >
+                            <action.icon className="w-4 h-4 mr-1" />
+                            {action.label}
+                          </Button>
+                        ))}
                       </div>
+                    )}
+                    
+                    {/* Insights */}
+                    {message.insights && message.insights.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <div className="text-xs text-gray-500 font-medium mb-2">Insights générés :</div>
+                        {message.insights.slice(0, 2).map((insight, index) => (
+                          <div key={index} className="text-xs bg-blue-50 p-2 rounded mb-1">
+                            {insight.data?.suggestion || insight.data?.message}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="text-xs opacity-70 mt-2">
+                      {message.timestamp.toLocaleTimeString()}
                     </div>
                   </div>
-                </motion.div>
+                </div>
+              ))}
+              
+              {isThinking && (
+                <div className="flex justify-start">
+                  <div className="bg-white border border-gray-200 rounded-lg p-4 text-gray-900">
+                    <div className="flex items-center space-x-2">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-100"></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-200"></div>
+                      </div>
+                      <span className="text-sm">Cerveau en action...</span>
+                    </div>
+                  </div>
+                </div>
               )}
               
-              <div ref={chatBottomRef} />
-            </div>
-          </ScrollArea>
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
 
-          {/* Actions rapides - masquées sur mobile */}
-          <div className="p-3 md:p-4 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800">
-            <div className="hidden md:flex space-x-2 mb-4 overflow-x-auto">
-              {QUICK_ACTIONS.map((action, index) => (
-                <motion.button
+        {/* Zone de saisie */}
+        <div className="bg-white border-t border-gray-200 p-4">
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm">
+              <Paperclip className="w-5 h-5" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Image className="w-5 h-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setIsRecording(!isRecording)}
+              className={isRecording ? 'text-red-500' : ''}
+            >
+              <Mic className="w-5 h-5" />
+            </Button>
+            
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder="Demandez-moi de créer, gérer ou analyser n'importe quoi..."
+              className="flex-1"
+              disabled={isThinking}
+            />
+            
+            <Button 
+              onClick={() => sendMessage()} 
+              disabled={!input.trim() || isThinking}
+            >
+              <Send className="w-5 h-5" />
+            </Button>
+          </div>
+          
+          {/* Suggestions intelligentes */}
+          {suggestions.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {suggestions.slice(0, 3).map((suggestion, index) => (
+                <Button
                   key={index}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleQuickAction(action.prompt)}
-                  className="flex items-center space-x-2 px-3 py-2 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-200 hover:bg-gray-100 transition-all flex-shrink-0"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => sendMessage(suggestion.data?.suggestion || 'Analyse mes données')}
+                  className="text-xs"
                 >
-                  <action.icon className="w-4 h-4" />
-                  <span>{action.label}</span>
-                </motion.button>
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  {suggestion.data?.suggestion?.slice(0, 30) + '...' || 'Suggestion IA'}
+                </Button>
               ))}
             </div>
-
-            {/* Zone de saisie */}
-            <div className="flex items-center space-x-2 md:space-x-3">
-              <ImageUploader
-                previewUrl={previewUrl}
-                onImageSelected={setSelectedImage}
-                disabled={isTyping}
-              />
-              <div className="flex-1 relative">
-                <Input
-                  ref={inputRef}
-                  placeholder="Écrivez votre message..."
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  disabled={isTyping}
-                  className="bg-gray-50 border-gray-200 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm md:text-base h-10 md:h-auto"
-                />
-              </div>
-              
-              <motion.div whileTap={{ scale: 0.95 }}>
-                <Button 
-                  onClick={handleSend}
-                  disabled={isTyping || (!input.trim() && !selectedImage)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white rounded-full h-10 w-10 p-0 shadow-sm"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </motion.div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

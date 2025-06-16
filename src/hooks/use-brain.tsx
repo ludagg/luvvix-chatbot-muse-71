@@ -28,8 +28,8 @@ export const useBrain = () => {
     try {
       const insights = await luvvixBrain.getUserInsights(user.id);
       setState({
-        insights: Array.isArray(insights.behavioral_patterns) ? insights.behavioral_patterns : [],
-        predictions: Array.isArray(insights.predictions) ? insights.predictions : [],
+        insights: Array.isArray(insights) ? insights : [],
+        predictions: [],
         loading: false,
         lastUpdate: new Date()
       });

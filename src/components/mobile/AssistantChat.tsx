@@ -36,19 +36,29 @@ const AssistantChat = () => {
     const welcomeMessage: Message = {
       id: '1',
       role: 'assistant',
-      content: `🧠 Bonjour ! Je suis votre cerveau IA personnel. J'ai analysé vos habitudes et je suis prêt à vous assister intelligemment dans tout l'écosystème LuvviX.
+      content: `🧠 **Bonjour ! Je suis votre Assistant IA Omnipotent LuvviX !**
 
-💡 Que puis-je faire pour vous ?
-• Analyser vos patterns d'usage
-• Créer des événements automatiquement  
-• Automatiser vos tâches répétitives
-• Vous donner des insights personnalisés
-• Gérer vos contacts et relations
-• Créer du contenu optimisé
-• Organiser votre calendrier
-• Créer des cours personnalisés
+Je suis connecté à TOUT l'écosystème LuvviX et je peux :
 
-Dites-moi simplement ce que vous voulez et je le ferai !`,
+🎯 **CRÉER AUTOMATIQUEMENT :**
+• 📅 Événements optimisés dans votre calendrier
+• ✏️ Posts engageants sur votre profil Center
+• 📚 Cours personnalisés sur Learn
+• 💬 Messages et réponses intelligentes
+
+🔧 **GÉRER INTELLIGEMMENT :**
+• 👥 Vos contacts et relations sociales
+• 📊 Analyse complète de vos données
+• ⚡ Optimisation de votre temps et productivité
+• 🤖 Automation de vos tâches répétitives
+
+💡 **RÉPONDRE À TOUT :**
+• Questions sur LuvviX et ses fonctionnalités
+• Conseils personnalisés basés sur vos habitudes
+• Solutions techniques et créatives
+• Aide pour maximiser votre utilisation de LuvviX
+
+**Dites-moi simplement ce que vous voulez et je le fais AUTOMATIQUEMENT !** 🚀`,
       timestamp: new Date(),
       actions: [
         { type: 'analyze_data', label: '📊 Analyser mes données', icon: TrendingUp },
@@ -68,7 +78,7 @@ Dites-moi simplement ce que vous voulez et je le ferai !`,
       const userInsights = await luvvixBrain.getUserInsights(user.id);
       setInsights(userInsights);
       
-      console.log('Insights chargés automatiquement:', userInsights);
+      console.log('Suggestions chargées automatiquement:', userInsights);
     } catch (error) {
       console.error('Erreur insights:', error);
     }
@@ -98,14 +108,15 @@ Dites-moi simplement ce que vous voulez et je le ferai !`,
         { message: content }
       );
 
-      // Obtenir la réponse du cerveau
+      // Obtenir la réponse du cerveau omnipotent
       const response = await luvvixBrain.processConversation(
         user.id,
         content,
         { 
           component: 'MobileAssistant',
           device: 'mobile',
-          timestamp: new Date()
+          timestamp: new Date(),
+          capabilities: ['create_events', 'create_posts', 'manage_contacts', 'analyze_data', 'course_creation', 'automation']
         }
       );
 
@@ -125,12 +136,12 @@ Dites-moi simplement ce que vous voulez et je le ferai !`,
 
     } catch (error) {
       console.error('Erreur chat brain:', error);
-      toast.error('Connexion au cerveau interrompue');
+      toast.error('Reconnexion des circuits neuronaux...');
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: '🧠 Reconnexion des circuits neuronaux en cours...',
+        content: '🧠 Reconnexion en cours... Je reste à votre disposition pour créer, gérer et optimiser automatiquement tout votre écosystème LuvviX !',
         timestamp: new Date()
       };
       
@@ -207,15 +218,15 @@ Dites-moi simplement ce que vous voulez et je le ferai !`,
       const actionMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `✅ ${action.label} - Action exécutée avec succès ! 
+        content: `✅ **${action.label}** - Action exécutée avec succès ! 
 
-${action.type === 'create_event' ? '📅 Événement créé dans votre calendrier' : ''}
-${action.type === 'create_post' ? '✏️ Post publié sur votre profil' : ''}
-${action.type === 'analyze_data' ? '📊 Analyse complète terminée - consultez vos insights' : ''}
-${action.type === 'create_course' ? '📚 Cours créé et disponible' : ''}
-${action.type === 'manage_contacts' ? '👥 Analyse des relations terminée' : ''}
+${action.type === 'create_event' ? '📅 Événement créé dans votre calendrier au moment optimal' : ''}
+${action.type === 'create_post' ? '✏️ Post publié sur votre profil avec optimisation engagement' : ''}
+${action.type === 'analyze_data' ? '📊 Analyse complète terminée - consultez vos insights détaillés' : ''}
+${action.type === 'create_course' ? '📚 Cours créé et disponible sur LuvviX Learn' : ''}
+${action.type === 'manage_contacts' ? '👥 Analyse des relations terminée avec recommandations' : ''}
 
-Résultat détaillé disponible dans l'interface correspondante.`,
+🚀 Résultat disponible dans l'interface correspondante de LuvviX !`,
         timestamp: new Date()
       };
 
@@ -230,7 +241,7 @@ Résultat détaillé disponible dans l'interface correspondante.`,
       const errorMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: `❌ Erreur lors de l'exécution de "${action.label}". Réessayons dans quelques instants.`,
+        content: `❌ Erreur lors de l'exécution de "${action.label}". Je réessaie automatiquement dans quelques instants...`,
         timestamp: new Date()
       };
       
@@ -241,12 +252,12 @@ Résultat détaillé disponible dans l'interface correspondante.`,
   };
 
   const quickSuggestions = [
-    'Analyse mes habitudes et donne-moi des conseils',
-    'Crée un événement pour demain à 14h',
-    'Publie un post inspirant sur mon profil',
-    'Optimise mon calendrier pour la semaine',
-    'Crée un cours sur l\'IA pour débutants',
-    'Analyse mes relations sociales'
+    'Analyse mes habitudes et donne-moi des conseils personnalisés',
+    'Crée un événement optimisé pour demain à 14h',
+    'Publie un post inspirant sur mon profil automatiquement',
+    'Optimise mon calendrier pour maximiser ma productivité',
+    'Crée un cours sur l\'IA pour débutants avec quiz',
+    'Analyse mes relations sociales et suggère des améliorations'
   ];
 
   return (
@@ -259,10 +270,10 @@ Résultat détaillé disponible dans l'interface correspondante.`,
               <Brain className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="font-bold text-gray-900">Cerveau IA</h2>
+              <h2 className="font-bold text-gray-900">Assistant IA Omnipotent</h2>
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-xs text-gray-500">Actif et analysant</span>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-xs text-gray-500">Connecté à tout LuvviX</span>
               </div>
             </div>
           </div>
@@ -277,11 +288,11 @@ Résultat détaillé disponible dans l'interface correspondante.`,
             {insights.slice(0, 2).map((insight, index) => (
               <div key={index} className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg border border-blue-100">
                 <div className="flex items-start space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0 animate-pulse"></div>
                   <div>
                     <div className="text-sm font-medium text-gray-900">
                       {insight.type === 'productivity' ? '⚡ Productivité' : 
-                       insight.type === 'social' ? '👥 Social' : '💡 Insight'}
+                       insight.type === 'social' ? '👥 Social' : '💡 Insight IA'}
                     </div>
                     <div className="text-xs text-gray-600 mt-1">
                       {insight.data?.suggestion || insight.data?.message}
@@ -315,7 +326,7 @@ Résultat détaillé disponible dans l'interface correspondante.`,
               {/* Actions mobiles */}
               {message.actions && message.actions.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
-                  <div className="text-xs text-gray-500 font-medium">Actions rapides :</div>
+                  <div className="text-xs text-gray-500 font-medium">Actions automatiques :</div>
                   <div className="grid grid-cols-2 gap-2">
                     {message.actions.map((action, index) => (
                       <button
@@ -349,7 +360,7 @@ Résultat détaillé disponible dans l'interface correspondante.`,
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-100"></div>
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-200"></div>
                 </div>
-                <span className="text-sm text-gray-600">Cerveau en action...</span>
+                <span className="text-sm text-gray-600">Assistant omnipotent en action...</span>
               </div>
             </div>
           </div>
@@ -361,7 +372,7 @@ Résultat détaillé disponible dans l'interface correspondante.`,
       {/* Suggestions rapides */}
       {messages.length <= 1 && (
         <div className="px-4 pb-2">
-          <div className="text-xs text-gray-500 mb-2">Suggestions rapides :</div>
+          <div className="text-xs text-gray-500 mb-2">Suggestions omnipotentes :</div>
           <div className="flex overflow-x-auto space-x-2 pb-2">
             {quickSuggestions.map((suggestion, index) => (
               <button
@@ -395,7 +406,7 @@ Résultat détaillé disponible dans l'interface correspondante.`,
                 sendMessage();
               }
             }}
-            placeholder="Demandez-moi n'importe quoi..."
+            placeholder="Demandez-moi de créer, gérer ou optimiser n'importe quoi automatiquement..."
             className="flex-1 bg-gray-100 border-none rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
             disabled={loading}
           />

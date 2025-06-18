@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { Heart, MessageCircle, UserPlus, Repeat2, AtSign, Calendar, Gift } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from "@/integrations/supabase/client";
-// Ajout : Récupération auto des notifications table Supabase (type : mention)
+
 interface Notification {
   id: string;
   type: 'like' | 'comment' | 'follow' | 'retweet' | 'mention' | 'reminder' | 'achievement';
@@ -19,24 +20,74 @@ interface Notification {
   is_read: boolean;
 }
 
-interface NotificationCenterProps {
-  notifications: Notification[];
-  onMarkAsRead: (id: string) => void;
-  onMarkAllAsRead: () => void;
-}
 const NotificationCenter = () => {
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+
   React.useEffect(() => {
-    (async () => {
-      const { data } = await supabase
+    loadNotifications();
+  }, []);
+
+  const loadNotifications = async () => {
+    try {
+      const { data, error } = await supabase
         .from('center_notifications')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(25);
-      setNotifications(data ?? []);
-    })();
-  }, []);
-  const [filter, setFilter] = useState<'all' | 'unread'>('all');
+      
+      if (error) {
+        console.error('Erreur chargement notifications:', error);
+        setNotifications([]);
+      } else {
+        setNotifications(data ?? []);
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    try {
+      await supabase
+        .from('center_notifications')
+        .update({ is_read: true })
+        .eq('id', id);
+      
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === id ? { ...notif, is_read: true } : notif
+        )
+      );
+    } catch (error) {
+      console.error('Erreur marquage lecture:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      const unreadIds = notifications
+        .filter(n => !n.is_read)
+        .map(n => n.id);
+      
+      if (unreadIds.length === 0) return;
+      
+      await supabase
+        .from('center_notifications')
+        .update({ is_read: true })
+        .in('id', unreadIds);
+      
+      setNotifications(prev => 
+        prev.map(notif => ({ ...notif, is_read: true }))
+      );
+    } catch (error) {
+      console.error('Erreur marquage toutes lues:', error);
+    }
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -78,6 +129,14 @@ const NotificationCenter = () => {
 
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
+  if (loading) {
+    return (
+      <div className="bg-white min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white min-h-screen">
       {/* Header */}
@@ -86,8 +145,8 @@ const NotificationCenter = () => {
           <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
           {unreadCount > 0 && (
             <button 
-              onClick={() => {}}
-              className="text-blue-500 text-sm font-medium"
+              onClick={markAllAsRead}
+              className="text-blue-500 text-sm font-medium hover:text-blue-700"
             >
               Tout marquer comme lu
             </button>
@@ -145,7 +204,7 @@ const NotificationCenter = () => {
               className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                 !notification.is_read ? 'bg-blue-50 border-l-4 border-blue-500' : ''
               }`}
-              onClick={() => {}}
+              onClick={() => !notification.is_read && markAsRead(notification.id)}
             >
               <div className="flex items-start space-x-3">
                 <div className="flex-shrink-0">

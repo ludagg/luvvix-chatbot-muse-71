@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface NotificationPermission {
   granted: boolean;
@@ -11,6 +11,7 @@ interface NotificationPermission {
 export const useNotifications = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [notificationsSupported, setNotificationsSupported] = useState(false);
+  const [permissionRequested, setPermissionRequested] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>({
     granted: false,
     denied: false,
@@ -18,78 +19,137 @@ export const useNotifications = () => {
   });
 
   useEffect(() => {
-    const supported = 'Notification' in window;
-    setNotificationsSupported(supported);
+    // Vérifier la compatibilité (navigateur + Capacitor)
+    const isSupported = 'Notification' in window || (window as any).Capacitor;
+    setNotificationsSupported(isSupported);
     
-    if (supported) {
+    if (isSupported && 'Notification' in window) {
       const currentPermission = Notification.permission;
-      setPermission({
+      const permissionState = {
         granted: currentPermission === 'granted',
         denied: currentPermission === 'denied',
         default: currentPermission === 'default'
-      });
-      setNotificationsEnabled(currentPermission === 'granted');
+      };
+      
+      setPermission(permissionState);
+      setNotificationsEnabled(permissionState.granted);
+      
+      // Marquer comme demandé si déjà refusé ou accordé
+      if (currentPermission !== 'default') {
+        setPermissionRequested(true);
+      }
     }
   }, []);
 
   const requestPermission = async () => {
     if (!notificationsSupported) {
-      toast({
-        title: "Non supporté",
-        description: "Les notifications ne sont pas supportées sur ce navigateur",
-        variant: "destructive"
-      });
+      toast.error("Les notifications ne sont pas supportées sur cet appareil");
       return false;
     }
 
-    if (Notification.permission === 'granted') {
-      setNotificationsEnabled(true);
+    // Éviter les demandes répétées
+    if (permissionRequested && permission.denied) {
+      toast.error("Notifications refusées. Activez-les dans les paramètres de votre navigateur.");
+      return false;
+    }
+
+    if (permission.granted) {
+      toast.success("Les notifications sont déjà activées");
       return true;
     }
 
     try {
-      const permission = await Notification.requestPermission();
-      const granted = permission === 'granted';
+      setPermissionRequested(true);
       
-      setPermission({
-        granted,
-        denied: permission === 'denied',
-        default: permission === 'default'
-      });
-      setNotificationsEnabled(granted);
-
-      if (granted) {
-        toast({
-          title: "Notifications activées",
-          description: "Vous recevrez désormais les notifications importantes",
+      // Gestion Capacitor
+      if ((window as any).Capacitor) {
+        const { LocalNotifications } = await import('@capacitor/local-notifications');
+        const result = await LocalNotifications.requestPermissions();
+        const granted = result.display === 'granted';
+        
+        setPermission({
+          granted,
+          denied: !granted,
+          default: false
         });
-      } else {
-        toast({
-          title: "Notifications refusées",
-          description: "Vous pouvez les activer plus tard dans les paramètres du navigateur",
-          variant: "destructive"
-        });
+        setNotificationsEnabled(granted);
+        
+        if (granted) {
+          toast.success("Notifications activées avec succès");
+        } else {
+          toast.error("Notifications refusées");
+        }
+        
+        return granted;
       }
+      
+      // Gestion navigateur standard
+      if ('Notification' in window) {
+        const permission = await Notification.requestPermission();
+        const granted = permission === 'granted';
+        
+        setPermission({
+          granted,
+          denied: permission === 'denied',
+          default: permission === 'default'
+        });
+        setNotificationsEnabled(granted);
 
-      return granted;
+        if (granted) {
+          toast.success("Notifications activées avec succès");
+        } else {
+          toast.error("Notifications refusées");
+        }
+
+        return granted;
+      }
+      
+      return false;
     } catch (error) {
-      console.error('Error requesting notification permission:', error);
+      console.error('Erreur lors de la demande de permission:', error);
+      toast.error("Erreur lors de l'activation des notifications");
       return false;
     }
   };
 
-  const sendNotification = (title: string, options?: NotificationOptions) => {
-    if (!notificationsEnabled) return false;
+  const sendNotification = async (title: string, options?: NotificationOptions) => {
+    if (!notificationsEnabled) {
+      console.log('Notifications désactivées');
+      return false;
+    }
 
     try {
-      new Notification(title, {
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        ...options
-      });
-      return true;
+      // Gestion Capacitor
+      if ((window as any).Capacitor) {
+        const { LocalNotifications } = await import('@capacitor/local-notifications');
+        await LocalNotifications.schedule({
+          notifications: [{
+            title,
+            body: options?.body || '',
+            id: Date.now(),
+            schedule: { at: new Date(Date.now() + 1000) },
+            sound: undefined,
+            attachments: undefined,
+            actionTypeId: "",
+            extra: null
+          }]
+        });
+        return true;
+      }
+      
+      // Gestion navigateur standard
+      if ('Notification' in window) {
+        new Notification(title, {
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          ...options
+        });
+        return true;
+      }
+      
+      return false;
     } catch (error) {
-      console.error('Error sending notification:', error);
+      console.error('Erreur envoi notification:', error);
       return false;
     }
   };
@@ -104,6 +164,7 @@ export const useNotifications = () => {
         tag: 'weather-alert'
       });
     }
+    return isExtreme;
   };
 
   const sendCalendarReminder = (event: { title: string; time: string }) => {
@@ -113,20 +174,23 @@ export const useNotifications = () => {
       body: `Événement prévu à ${event.time}`,
       tag: 'calendar-reminder'
     });
+    return true;
   };
 
   const sendTranslationComplete = (sourceText: string, translatedText: string) => {
     if (!notificationsEnabled) return false;
 
     sendNotification('Traduction terminée', {
-      body: `"${sourceText}" → "${translatedText}"`,
+      body: `"${sourceText.substring(0, 30)}..." traduit`,
       tag: 'translation-complete'
     });
+    return true;
   };
 
   return {
     notificationsEnabled,
     notificationsSupported,
+    permissionRequested,
     permission,
     requestPermission,
     sendNotification,

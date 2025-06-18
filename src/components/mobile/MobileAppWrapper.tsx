@@ -3,6 +3,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/use-notifications';
 import { Bell } from 'lucide-react';
+import { toast } from 'sonner';
 import SplashScreen from './SplashScreen';
 import OnboardingFlow from './OnboardingFlow';
 import MobileAuthFlow from './MobileAuthFlow';
@@ -27,13 +28,14 @@ type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'set
 const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const { notificationsEnabled } = useNotifications();
+  const { notificationsEnabled, notificationsSupported, requestPermission, permission } = useNotifications();
   const [showSplash, setShowSplash] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const [activeView, setActiveView] = useState<MobileView>('home');
   const [showNotifications, setShowNotifications] = useState(false);
   const [hasUnreadNotifications, setHasUnreadNotifications] = useState(true);
+  const [notificationPromptShown, setNotificationPromptShown] = useState(false);
 
   // Vérifier si c'est la première visite
   useEffect(() => {
@@ -42,6 +44,25 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
       setShowOnboarding(true);
     }
   }, [isMobile]);
+
+  // Demander les permissions de notifications une seule fois
+  useEffect(() => {
+    if (user && notificationsSupported && !notificationPromptShown && permission.default) {
+      const timer = setTimeout(() => {
+        setNotificationPromptShown(true);
+        toast('Voulez-vous activer les notifications ?', {
+          action: {
+            label: 'Activer',
+            onClick: () => requestPermission()
+          },
+          duration: 10000,
+          onDismiss: () => console.log('Notifications: Demande ignorée')
+        });
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, notificationsSupported, permission.default, notificationPromptShown, requestPermission]);
 
   // Gérer la fin du splash screen
   const handleSplashComplete = () => {
@@ -218,7 +239,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
             </svg>
           </button>
 
-          {/* Bouton notifications avec icône Lucide */}
+          {/* Bouton notifications avec statut */}
           <button
             onClick={handleNotificationClick}
             className="relative p-2 hover:bg-gray-100 rounded-xl transition-colors"
@@ -226,7 +247,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
             {hasUnreadNotifications && (
               <div className="w-3 h-3 bg-red-500 rounded-full absolute -top-1 -right-1 border-2 border-white"></div>
             )}
-            <Bell className="w-6 h-6 text-gray-600" />
+            <Bell className={`w-6 h-6 ${notificationsEnabled ? 'text-blue-600' : 'text-gray-600'}`} />
           </button>
 
           {/* Bouton paramètres */}

@@ -20,7 +20,7 @@ export const useNotifications = () => {
 
   useEffect(() => {
     // Vérifier la compatibilité (navigateur + Capacitor)
-    const isSupported = 'Notification' in window || (window as any).Capacitor;
+    const isSupported = 'Notification' in window || !!(window as any).Capacitor;
     setNotificationsSupported(isSupported);
     
     if (isSupported && 'Notification' in window) {
@@ -63,24 +63,29 @@ export const useNotifications = () => {
       
       // Gestion Capacitor
       if ((window as any).Capacitor) {
-        const { LocalNotifications } = await import('@capacitor/local-notifications');
-        const result = await LocalNotifications.requestPermissions();
-        const granted = result.display === 'granted';
-        
-        setPermission({
-          granted,
-          denied: !granted,
-          default: false
-        });
-        setNotificationsEnabled(granted);
-        
-        if (granted) {
-          toast.success("Notifications activées avec succès");
-        } else {
-          toast.error("Notifications refusées");
+        try {
+          const { LocalNotifications } = await import('@capacitor/local-notifications');
+          const result = await LocalNotifications.requestPermissions();
+          const granted = result.display === 'granted';
+          
+          setPermission({
+            granted,
+            denied: !granted,
+            default: false
+          });
+          setNotificationsEnabled(granted);
+          
+          if (granted) {
+            toast.success("Notifications activées avec succès");
+          } else {
+            toast.error("Notifications refusées");
+          }
+          
+          return granted;
+        } catch (error) {
+          console.error('Erreur Capacitor notifications:', error);
+          // Fallback vers les notifications web si Capacitor échoue
         }
-        
-        return granted;
       }
       
       // Gestion navigateur standard
@@ -121,20 +126,25 @@ export const useNotifications = () => {
     try {
       // Gestion Capacitor
       if ((window as any).Capacitor) {
-        const { LocalNotifications } = await import('@capacitor/local-notifications');
-        await LocalNotifications.schedule({
-          notifications: [{
-            title,
-            body: options?.body || '',
-            id: Date.now(),
-            schedule: { at: new Date(Date.now() + 1000) },
-            sound: undefined,
-            attachments: undefined,
-            actionTypeId: "",
-            extra: null
-          }]
-        });
-        return true;
+        try {
+          const { LocalNotifications } = await import('@capacitor/local-notifications');
+          await LocalNotifications.schedule({
+            notifications: [{
+              title,
+              body: options?.body || '',
+              id: Date.now(),
+              schedule: { at: new Date(Date.now() + 1000) },
+              sound: undefined,
+              attachments: undefined,
+              actionTypeId: "",
+              extra: null
+            }]
+          });
+          return true;
+        } catch (error) {
+          console.error('Erreur Capacitor sendNotification:', error);
+          // Fallback vers les notifications web si Capacitor échoue
+        }
       }
       
       // Gestion navigateur standard

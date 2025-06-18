@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -18,32 +19,18 @@ export const useNotifications = () => {
   });
 
   useEffect(() => {
-    // Améliorer la détection de compatibilité
-    const checkSupport = () => {
-      // Vérifier les notifications web dans le navigateur
-      const browserSupport = 'Notification' in window;
-      
-      // Vérifier Capacitor (pour mobile)
-      const capacitorSupport = !!(window as any).Capacitor;
-      
-      // Support si l'un des deux est disponible
-      const isSupported = browserSupport || capacitorSupport;
-      
-      console.log('Détection support notifications:', {
-        browserSupport,
-        capacitorSupport,
-        isSupported,
-        userAgent: navigator.userAgent
-      });
-      
-      return isSupported;
-    };
-
-    const supported = checkSupport();
-    setNotificationsSupported(supported);
+    // Détection simple et fiable des notifications
+    const browserSupport = 'Notification' in window;
+    const capacitorSupport = !!(window as any).Capacitor;
+    const isSupported = browserSupport || capacitorSupport;
     
-    // Si supporté et que nous avons l'API Notification, vérifier les permissions
-    if (supported && 'Notification' in window) {
+    console.log('Support notifications:', { browserSupport, capacitorSupport, isSupported });
+    
+    // Toujours marquer comme supporté si au moins une méthode est disponible
+    setNotificationsSupported(isSupported);
+    
+    // Vérifier les permissions existantes seulement pour le navigateur
+    if (browserSupport) {
       const currentPermission = Notification.permission;
       const permissionState = {
         granted: currentPermission === 'granted',
@@ -54,26 +41,15 @@ export const useNotifications = () => {
       setPermission(permissionState);
       setNotificationsEnabled(permissionState.granted);
       
-      // Marquer comme demandé si déjà refusé ou accordé
       if (currentPermission !== 'default') {
         setPermissionRequested(true);
       }
-    } else if (supported && (window as any).Capacitor) {
-      // Pour Capacitor, on part du principe que c'est supporté
-      // Les permissions seront vérifiées lors de la demande
-      console.log('Capacitor détecté, notifications supportées');
     }
   }, []);
 
   const requestPermission = async () => {
-    console.log('Demande de permission - État actuel:', {
-      notificationsSupported,
-      permissionRequested,
-      permission
-    });
-
+    // Ne plus afficher d'erreur si les notifications sont supportées
     if (!notificationsSupported) {
-      console.error('Notifications non supportées détectées incorrectement');
       toast.error("Les notifications ne sont pas supportées sur cet appareil");
       return false;
     }
@@ -95,7 +71,6 @@ export const useNotifications = () => {
       // Gestion Capacitor avec vérification de disponibilité
       if ((window as any).Capacitor && (window as any).Capacitor.isNativePlatform) {
         try {
-          // Import dynamique seulement si on est sur une plateforme native
           const capacitorModule = await import('@capacitor/local-notifications');
           const { LocalNotifications } = capacitorModule;
           const result = await LocalNotifications.requestPermissions();
@@ -142,9 +117,6 @@ export const useNotifications = () => {
         return granted;
       }
       
-      // Si on arrive ici, il y a un problème de détection
-      console.error('Aucune méthode de notification disponible');
-      toast.error("Erreur: méthode de notification introuvable");
       return false;
     } catch (error) {
       console.error('Erreur lors de la demande de permission:', error);
@@ -163,7 +135,6 @@ export const useNotifications = () => {
       // Gestion Capacitor avec vérification de disponibilité
       if ((window as any).Capacitor && (window as any).Capacitor.isNativePlatform) {
         try {
-          // Import dynamique seulement si on est sur une plateforme native
           const capacitorModule = await import('@capacitor/local-notifications');
           const { LocalNotifications } = capacitorModule;
           await LocalNotifications.schedule({

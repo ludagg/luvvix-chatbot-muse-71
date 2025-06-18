@@ -5,6 +5,8 @@ import { luvvixBrain } from '@/services/luvvix-brain';
 import { toast } from 'sonner';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
+
+// Configuration Chart.js
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,8 +19,11 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
+
+// Import des composants de graphiques
 import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 
+// Enregistrement des composants Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -19,58 +18,84 @@ export const useNotifications = () => {
   });
 
   useEffect(() => {
-    // Détection simple et fiable des notifications
-    const browserSupport = 'Notification' in window;
-    const capacitorSupport = !!(window as any).Capacitor;
-    const isSupported = browserSupport || capacitorSupport;
+    // Détection robuste et fiable
+    const detectSupport = () => {
+      // Vérification navigateur standard
+      const browserNotifications = 'Notification' in window && typeof Notification !== 'undefined';
+      
+      // Vérification Capacitor
+      const capacitorAvailable = !!(window as any).Capacitor;
+      
+      // Support si au moins une méthode existe
+      const hasSupport = browserNotifications || capacitorAvailable;
+      
+      console.log('🔔 Détection notifications:', {
+        browser: browserNotifications,
+        capacitor: capacitorAvailable,
+        supported: hasSupport,
+        userAgent: navigator.userAgent.substring(0, 50)
+      });
+      
+      return hasSupport;
+    };
+
+    const isSupported = detectSupport();
     
-    console.log('Support notifications:', { browserSupport, capacitorSupport, isSupported });
-    
-    // Toujours marquer comme supporté si au moins une méthode est disponible
+    // Marquer TOUJOURS comme supporté si détection positive
     setNotificationsSupported(isSupported);
     
-    // Vérifier les permissions existantes seulement pour le navigateur
-    if (browserSupport) {
-      const currentPermission = Notification.permission;
-      const permissionState = {
-        granted: currentPermission === 'granted',
-        denied: currentPermission === 'denied',
-        default: currentPermission === 'default'
-      };
-      
-      setPermission(permissionState);
-      setNotificationsEnabled(permissionState.granted);
-      
-      if (currentPermission !== 'default') {
-        setPermissionRequested(true);
+    // Gérer les permissions uniquement si supporté
+    if (isSupported && 'Notification' in window) {
+      try {
+        const currentPermission = Notification.permission;
+        const permissionState = {
+          granted: currentPermission === 'granted',
+          denied: currentPermission === 'denied',
+          default: currentPermission === 'default'
+        };
+        
+        setPermission(permissionState);
+        setNotificationsEnabled(permissionState.granted);
+        
+        if (currentPermission !== 'default') {
+          setPermissionRequested(true);
+        }
+        
+        console.log('✅ Permissions configurées:', permissionState);
+      } catch (error) {
+        console.error('Erreur permissions:', error);
       }
     }
   }, []);
 
   const requestPermission = async () => {
-    // Ne plus afficher d'erreur si les notifications sont supportées
+    console.log('🚀 Demande permission - État:', { notificationsSupported, permission });
+    
+    // Vérification stricte du support
     if (!notificationsSupported) {
-      toast.error("Les notifications ne sont pas supportées sur cet appareil");
+      console.error('❌ Notifications réellement non supportées');
+      toast.error("Votre appareil ne supporte pas les notifications");
       return false;
     }
 
-    // Éviter les demandes répétées seulement si explicitement refusées
+    // Éviter les demandes répétées
     if (permissionRequested && permission.denied) {
-      toast.error("Notifications refusées. Activez-les dans les paramètres de votre navigateur.");
+      toast.error("Notifications refusées. Réactivez-les dans les paramètres.");
       return false;
     }
 
     if (permission.granted) {
-      toast.success("Les notifications sont déjà activées");
+      toast.success("Notifications déjà activées !");
       return true;
     }
 
     try {
       setPermissionRequested(true);
       
-      // Gestion Capacitor avec vérification de disponibilité
+      // Essayer Capacitor en premier sur mobile
       if ((window as any).Capacitor && (window as any).Capacitor.isNativePlatform) {
         try {
+          console.log('📱 Tentative Capacitor...');
           const capacitorModule = await import('@capacitor/local-notifications');
           const { LocalNotifications } = capacitorModule;
           const result = await LocalNotifications.requestPermissions();
@@ -83,21 +108,18 @@ export const useNotifications = () => {
           });
           setNotificationsEnabled(granted);
           
-          if (granted) {
-            toast.success("Notifications activées avec succès");
-          } else {
-            toast.error("Notifications refusées");
-          }
+          const message = granted ? "✅ Notifications mobiles activées" : "❌ Notifications refusées";
+          granted ? toast.success(message) : toast.error(message);
           
           return granted;
-        } catch (error) {
-          console.error('Erreur Capacitor notifications:', error);
-          // Fallback vers les notifications web si Capacitor échoue
+        } catch (capacitorError) {
+          console.warn('⚠️ Capacitor échec, fallback navigateur:', capacitorError);
         }
       }
       
-      // Gestion navigateur standard
+      // Fallback navigateur standard
       if ('Notification' in window) {
+        console.log('🌐 Tentative navigateur...');
         const permission = await Notification.requestPermission();
         const granted = permission === 'granted';
         
@@ -108,18 +130,19 @@ export const useNotifications = () => {
         });
         setNotificationsEnabled(granted);
 
-        if (granted) {
-          toast.success("Notifications activées avec succès");
-        } else {
-          toast.error("Notifications refusées");
-        }
+        const message = granted ? "✅ Notifications navigateur activées" : "❌ Notifications refusées";
+        granted ? toast.success(message) : toast.error(message);
 
         return granted;
       }
       
+      // Aucune méthode disponible
+      console.error('❌ Aucune méthode de notification trouvée');
+      toast.error("Impossible d'activer les notifications");
       return false;
+      
     } catch (error) {
-      console.error('Erreur lors de la demande de permission:', error);
+      console.error('💥 Erreur demande permission:', error);
       toast.error("Erreur lors de l'activation des notifications");
       return false;
     }
@@ -127,12 +150,12 @@ export const useNotifications = () => {
 
   const sendNotification = async (title: string, options?: NotificationOptions) => {
     if (!notificationsEnabled) {
-      console.log('Notifications désactivées');
+      console.log('🔕 Notifications désactivées');
       return false;
     }
 
     try {
-      // Gestion Capacitor avec vérification de disponibilité
+      // Méthode Capacitor en priorité
       if ((window as any).Capacitor && (window as any).Capacitor.isNativePlatform) {
         try {
           const capacitorModule = await import('@capacitor/local-notifications');
@@ -149,26 +172,27 @@ export const useNotifications = () => {
               extra: null
             }]
           });
+          console.log('📱 Notification Capacitor envoyée');
           return true;
         } catch (error) {
-          console.error('Erreur Capacitor sendNotification:', error);
-          // Fallback vers les notifications web si Capacitor échoue
+          console.warn('⚠️ Capacitor notification échec:', error);
         }
       }
       
-      // Gestion navigateur standard
+      // Fallback navigateur
       if ('Notification' in window) {
         new Notification(title, {
           icon: '/icon-192.png',
           badge: '/icon-192.png',
           ...options
         });
+        console.log('🌐 Notification navigateur envoyée');
         return true;
       }
       
       return false;
     } catch (error) {
-      console.error('Erreur envoi notification:', error);
+      console.error('💥 Erreur envoi notification:', error);
       return false;
     }
   };

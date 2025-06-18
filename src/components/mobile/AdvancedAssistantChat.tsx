@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Brain, Send, Sparkles, Calendar, Users, Zap, BookOpen, TrendingUp, Mic, Plus, MoreVertical, ChartBar, Calculator, Code, FileText, Lightbulb, Target, Cpu, Database, Globe, MessageSquare, Activity } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,7 +5,6 @@ import { luvvixBrain } from '@/services/luvvix-brain';
 import { toast } from 'sonner';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
-import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -19,6 +17,7 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
+import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
 
 ChartJS.register(
   CategoryScale,

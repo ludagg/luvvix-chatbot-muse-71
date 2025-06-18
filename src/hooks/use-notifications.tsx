@@ -61,10 +61,12 @@ export const useNotifications = () => {
     try {
       setPermissionRequested(true);
       
-      // Gestion Capacitor
-      if ((window as any).Capacitor) {
+      // Gestion Capacitor avec vérification de disponibilité
+      if ((window as any).Capacitor && (window as any).Capacitor.isNativePlatform) {
         try {
-          const { LocalNotifications } = await import('@capacitor/local-notifications');
+          // Import dynamique seulement si on est sur une plateforme native
+          const capacitorModule = await import('@capacitor/local-notifications');
+          const { LocalNotifications } = capacitorModule;
           const result = await LocalNotifications.requestPermissions();
           const granted = result.display === 'granted';
           
@@ -124,10 +126,12 @@ export const useNotifications = () => {
     }
 
     try {
-      // Gestion Capacitor
-      if ((window as any).Capacitor) {
+      // Gestion Capacitor avec vérification de disponibilité
+      if ((window as any).Capacitor && (window as any).Capacitor.isNativePlatform) {
         try {
-          const { LocalNotifications } = await import('@capacitor/local-notifications');
+          // Import dynamique seulement si on est sur une plateforme native
+          const capacitorModule = await import('@capacitor/local-notifications');
+          const { LocalNotifications } = capacitorModule;
           await LocalNotifications.schedule({
             notifications: [{
               title,

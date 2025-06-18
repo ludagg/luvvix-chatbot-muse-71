@@ -1,40 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Brain, Send, Sparkles, Calendar, Users, Zap, BookOpen, TrendingUp, Mic, Plus, MoreVertical, ChartBar, Calculator, Code, FileText, Lightbulb, Target, Cpu, Database, Globe, MessageSquare, Activity } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { luvvixBrain } from '@/services/luvvix-brain';
 import { toast } from 'sonner';
-import 'katex/dist/katex.min.css';
-import { InlineMath, BlockMath } from 'react-katex';
-
-// Configuration Chart.js
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from 'chart.js';
-
-// Import des composants de graphiques
-import { Line, Bar, Pie, Doughnut } from 'react-chartjs-2';
-
-// Enregistrement des composants Chart.js
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-);
 
 interface Message {
   id: string;
@@ -152,91 +121,35 @@ Je suis votre assistant IA de nouvelle génération avec des capacités étendue
     setTimeout(() => setShowReasoning(false), 2000);
   };
 
-  const generateChart = (type: string, data: any) => {
-    const chartConfig = {
-      responsive: true,
-      plugins: {
-        legend: { position: 'top' as const },
-        title: { display: true, text: data.title || 'Graphique Généré par IA' }
-      }
-    };
-
-    const chartData = {
-      labels: data.labels || ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'],
-      datasets: [{
-        label: data.label || 'Dataset 1',
-        data: data.values || [12, 19, 3, 5, 2, 3],
-        backgroundColor: [
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(16, 185, 129, 0.8)',
-          'rgba(245, 158, 11, 0.8)',
-          'rgba(239, 68, 68, 0.8)',
-          'rgba(139, 92, 246, 0.8)',
-          'rgba(236, 72, 153, 0.8)'
-        ],
-        borderColor: [
-          'rgba(59, 130, 246, 1)',
-          'rgba(16, 185, 129, 1)',
-          'rgba(245, 158, 11, 1)',
-          'rgba(239, 68, 68, 1)',
-          'rgba(139, 92, 246, 1)',
-          'rgba(236, 72, 153, 1)'
-        ],
-        borderWidth: 2
-      }]
-    };
-
-    switch (type) {
-      case 'line':
-        return <Line options={chartConfig} data={chartData} />;
-      case 'bar':
-        return <Bar options={chartConfig} data={chartData} />;
-      case 'pie':
-        return <Pie options={chartConfig} data={chartData} />;
-      case 'doughnut':
-        return <Doughnut options={chartConfig} data={chartData} />;
-      default:
-        return <Line options={chartConfig} data={chartData} />;
-    }
+  const generateSimpleChart = (type: string, data: any) => {
+    // Version simplifiée sans Chart.js pour éviter les erreurs
+    return (
+      <div className="h-64 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border-2 border-dashed border-blue-200 flex items-center justify-center">
+        <div className="text-center">
+          <ChartBar className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">{data.title || 'Graphique IA'}</h3>
+          <p className="text-sm text-gray-600">Type: {type}</p>
+          <p className="text-xs text-gray-500 mt-2">Données: {data.values?.join(', ') || 'Exemple'}</p>
+        </div>
+      </div>
+    );
   };
 
   const detectMathContent = (content: string) => {
-    const latexPatterns = [
-      /\$\$(.*?)\$\$/g,  // Block math
-      /\$(.*?)\$/g,      // Inline math
-      /\\frac\{.*?\}\{.*?\}/g,
-      /\\sqrt\{.*?\}/g,
-      /\\sum_\{.*?\}\^\{.*?\}/g,
-      /\\int_\{.*?\}\^\{.*?\}/g,
-      /\\lim_\{.*?\}/g
-    ];
-
-    return latexPatterns.some(pattern => pattern.test(content));
+    const mathKeywords = ['dérivée', 'intégrale', 'équation', 'fonction', 'calcul', '=', '+', '-', '*', '/', '^'];
+    return mathKeywords.some(keyword => content.toLowerCase().includes(keyword));
   };
 
-  const renderLatexContent = (content: string) => {
-    // Remplacer les blocs LaTeX
-    const blockMathRegex = /\$\$(.*?)\$\$/g;
-    const inlineMathRegex = /\$(.*?)\$/g;
-
-    let processedContent = content;
-    const latexBlocks: any[] = [];
-
-    // Traiter les blocs de math
-    processedContent = processedContent.replace(blockMathRegex, (match, latex) => {
-      const id = `block-${latexBlocks.length}`;
-      latexBlocks.push({ id, type: 'block', latex });
-      return `[LATEX_BLOCK_${id}]`;
-    });
-
-    // Traiter les math inline
-    processedContent = processedContent.replace(inlineMathRegex, (match, latex) => {
-      const id = `inline-${latexBlocks.length}`;
-      latexBlocks.push({ id, type: 'inline', latex });
-      return `[LATEX_INLINE_${id}]`;
-    });
-
-    return { processedContent, latexBlocks };
+  const renderMathContent = (content: string) => {
+    if (detectMathContent(content)) {
+      return (
+        <div className="p-3 bg-blue-50 rounded-xl border border-blue-200 my-2">
+          <div className="text-xs text-blue-700 font-medium mb-1">🧮 Contenu Mathématique Détecté</div>
+          <div className="font-mono text-sm text-blue-900">{content}</div>
+        </div>
+      );
+    }
+    return <div>{content}</div>;
   };
 
   const sendMessage = async (messageContent?: string) => {
@@ -389,13 +302,11 @@ Je suis votre assistant IA de nouvelle génération avec des capacités étendue
 Soit f(x) = x² + 3x - 5
 
 **Calcul de la dérivée :**
-$$f'(x) = \\frac{d}{dx}(x^2 + 3x - 5) = 2x + 3$$
+f'(x) = 2x + 3
 
 **Racines de l'équation :**
-$$x^2 + 3x - 5 = 0$$
-$$x = \\frac{-3 \\pm \\sqrt{9 + 20}}{2} = \\frac{-3 \\pm \\sqrt{29}}{2}$$
-
-Donc : $x_1 ≈ 1.19$ et $x_2 ≈ -4.19$`;
+x² + 3x - 5 = 0
+x ≈ 1.19 et x ≈ -4.19`;
           break;
           
         case 'chart_demo':
@@ -540,29 +451,9 @@ Voici un exemple de visualisation de données générée automatiquement par l'I
                   : 'bg-white border border-gray-100 text-gray-900'
               }`}
             >
-              {/* Contenu avec LaTeX */}
+              {/* Contenu avec détection mathématique */}
               <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                {detectMathContent(message.content) ? (
-                  <div dangerouslySetInnerHTML={{
-                    __html: message.content
-                      .replace(/\$\$(.*?)\$\$/g, (match, latex) => {
-                        try {
-                          return `<div class="my-3 text-center">${latex}</div>`;
-                        } catch (e) {
-                          return match;
-                        }
-                      })
-                      .replace(/\$(.*?)\$/g, (match, latex) => {
-                        try {
-                          return `<span class="mx-1">${latex}</span>`;
-                        } catch (e) {
-                          return match;
-                        }
-                      })
-                  }} />
-                ) : (
-                  message.content
-                )}
+                {renderMathContent(message.content)}
               </div>
 
               {/* Graphiques */}
@@ -571,7 +462,7 @@ Voici un exemple de visualisation de données générée automatiquement par l'I
                   <div className="text-xs text-gray-600 mb-2">📊 Visualisation Générée</div>
                   {message.charts.map((chart, index) => (
                     <div key={index} className="h-64">
-                      {generateChart(chart.type, chart.data)}
+                      {generateSimpleChart(chart.type, chart.data)}
                     </div>
                   ))}
                 </div>

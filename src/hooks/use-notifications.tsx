@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -19,11 +18,32 @@ export const useNotifications = () => {
   });
 
   useEffect(() => {
-    // Vérifier la compatibilité (navigateur + Capacitor)
-    const isSupported = 'Notification' in window || !!(window as any).Capacitor;
-    setNotificationsSupported(isSupported);
+    // Améliorer la détection de compatibilité
+    const checkSupport = () => {
+      // Vérifier les notifications web dans le navigateur
+      const browserSupport = 'Notification' in window;
+      
+      // Vérifier Capacitor (pour mobile)
+      const capacitorSupport = !!(window as any).Capacitor;
+      
+      // Support si l'un des deux est disponible
+      const isSupported = browserSupport || capacitorSupport;
+      
+      console.log('Détection support notifications:', {
+        browserSupport,
+        capacitorSupport,
+        isSupported,
+        userAgent: navigator.userAgent
+      });
+      
+      return isSupported;
+    };
+
+    const supported = checkSupport();
+    setNotificationsSupported(supported);
     
-    if (isSupported && 'Notification' in window) {
+    // Si supporté et que nous avons l'API Notification, vérifier les permissions
+    if (supported && 'Notification' in window) {
       const currentPermission = Notification.permission;
       const permissionState = {
         granted: currentPermission === 'granted',
@@ -38,16 +58,27 @@ export const useNotifications = () => {
       if (currentPermission !== 'default') {
         setPermissionRequested(true);
       }
+    } else if (supported && (window as any).Capacitor) {
+      // Pour Capacitor, on part du principe que c'est supporté
+      // Les permissions seront vérifiées lors de la demande
+      console.log('Capacitor détecté, notifications supportées');
     }
   }, []);
 
   const requestPermission = async () => {
+    console.log('Demande de permission - État actuel:', {
+      notificationsSupported,
+      permissionRequested,
+      permission
+    });
+
     if (!notificationsSupported) {
+      console.error('Notifications non supportées détectées incorrectement');
       toast.error("Les notifications ne sont pas supportées sur cet appareil");
       return false;
     }
 
-    // Éviter les demandes répétées
+    // Éviter les demandes répétées seulement si explicitement refusées
     if (permissionRequested && permission.denied) {
       toast.error("Notifications refusées. Activez-les dans les paramètres de votre navigateur.");
       return false;
@@ -111,6 +142,9 @@ export const useNotifications = () => {
         return granted;
       }
       
+      // Si on arrive ici, il y a un problème de détection
+      console.error('Aucune méthode de notification disponible');
+      toast.error("Erreur: méthode de notification introuvable");
       return false;
     } catch (error) {
       console.error('Erreur lors de la demande de permission:', error);

@@ -76,7 +76,10 @@ const MobileFlashlight = ({ onBack }: MobileFlashlightProps) => {
               max="100"
               value={brightness}
               onChange={(e) => setBrightness(parseInt(e.target.value))}
-              className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, #fbbf24 0%, #fbbf24 ${brightness}%, #d1d5db ${brightness}%, #d1d5db 100%)`
+              }}
             />
           </div>
         )}
@@ -118,28 +121,6 @@ const MobileFlashlight = ({ onBack }: MobileFlashlightProps) => {
           </p>
         </div>
       </div>
-      
-      <style jsx>{`
-        .slider::-webkit-slider-thumb {
-          appearance: none;
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: #fbbf24;
-          cursor: pointer;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        
-        .slider::-moz-range-thumb {
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: #fbbf24;
-          cursor: pointer;
-          border: none;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-      `}</style>
     </div>
   );
 };

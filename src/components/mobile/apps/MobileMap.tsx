@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ArrowLeft, Navigation, Search, MapPin, Car, Walking, Bike } from 'lucide-react';
+import { ArrowLeft, Navigation, Search, MapPin, Car, PersonStanding, Bike } from 'lucide-react';
 
 interface MobileMapProps {
   onBack: () => void;
@@ -78,7 +78,7 @@ const MobileMap = ({ onBack }: MobileMapProps) => {
                 travelMode === 'walking' ? 'bg-blue-100 text-blue-600' : 'text-gray-600'
               }`}
             >
-              <Walking className="w-6 h-6 mb-1" />
+              <PersonStanding className="w-6 h-6 mb-1" />
               <span className="text-xs">À pied</span>
             </button>
             <button

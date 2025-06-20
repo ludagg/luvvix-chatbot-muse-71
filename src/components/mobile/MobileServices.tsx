@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { 
@@ -20,12 +21,46 @@ import {
   Palette,
   Zap,
   Database,
-  Settings
+  Settings,
+  Calculator,
+  Music,
+  Phone,
+  Video,
+  Mic,
+  Clock,
+  Flashlight,
+  QrCode,
+  FolderOpen,
+  Map,
+  Edit,
+  Image
 } from 'lucide-react';
+
+// Import all mobile app components
+import MobileNotes from './apps/MobileNotes';
+import MobileCalculator from './apps/MobileCalculator';
+import MobilePhotos from './apps/MobilePhotos';
+import MobileTasks from './apps/MobileTasks';
+import MobileMusic from './apps/MobileMusic';
+import MobileContacts from './apps/MobileContacts';
+import MobileVideoCall from './apps/MobileVideoCall';
+import MobileVoiceRecorder from './apps/MobileVoiceRecorder';
+import MobileTimer from './apps/MobileTimer';
+import MobileFlashlight from './apps/MobileFlashlight';
+import MobileQRScanner from './apps/MobileQRScanner';
+import MobileFileManager from './apps/MobileFileManager';
+import MobileMap from './apps/MobileMap';
+import MobileBrowser from './apps/MobileBrowser';
+
+interface AppComponent {
+  component: React.ComponentType<{ onBack: () => void }>;
+  action?: () => void;
+}
 
 const MobileServices = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
+  const [activeApp, setActiveApp] = useState<string | null>(null);
 
   const services = [
     {
@@ -37,6 +72,132 @@ const MobileServices = () => {
       badge: 'Populaire',
       category: 'ai',
       action: () => window.dispatchEvent(new CustomEvent('navigate-to-assistant'))
+    },
+    {
+      id: 'notes',
+      name: 'Notes',
+      description: 'Prenez des notes rapidement',
+      icon: <Edit className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-yellow-500 to-orange-600',
+      category: 'productivity',
+      component: MobileNotes
+    },
+    {
+      id: 'calculator',
+      name: 'Calculatrice',
+      description: 'Calculatrice scientifique',
+      icon: <Calculator className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-gray-700 to-gray-900',
+      category: 'utility',
+      component: MobileCalculator
+    },
+    {
+      id: 'photos',
+      name: 'Photos',
+      description: 'Gérez vos photos',
+      icon: <Image className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-pink-500 to-rose-600',
+      category: 'media',
+      component: MobilePhotos
+    },
+    {
+      id: 'tasks',
+      name: 'Tâches',
+      description: 'Gestionnaire de tâches',
+      icon: <FileText className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-blue-500 to-cyan-600',
+      category: 'productivity',
+      component: MobileTasks
+    },
+    {
+      id: 'music',
+      name: 'Musique',
+      description: 'Lecteur de musique',
+      icon: <Music className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-purple-600 to-pink-600',
+      category: 'media',
+      component: MobileMusic
+    },
+    {
+      id: 'contacts',
+      name: 'Contacts',
+      description: 'Carnet d\'adresses',
+      icon: <Phone className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-green-500 to-emerald-600',
+      category: 'communication',
+      component: MobileContacts
+    },
+    {
+      id: 'video-call',
+      name: 'Appel Vidéo',
+      description: 'Visioconférence',
+      icon: <Video className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-blue-600 to-indigo-600',
+      category: 'communication',
+      component: MobileVideoCall
+    },
+    {
+      id: 'voice-recorder',
+      name: 'Enregistreur',
+      description: 'Enregistrements vocaux',
+      icon: <Mic className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-red-500 to-pink-600',
+      category: 'utility',
+      component: MobileVoiceRecorder
+    },
+    {
+      id: 'timer',
+      name: 'Minuteur',
+      description: 'Timer et chronomètre',
+      icon: <Clock className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-indigo-500 to-purple-600',
+      category: 'utility',
+      component: MobileTimer
+    },
+    {
+      id: 'flashlight',
+      name: 'Lampe de poche',
+      description: 'Lampe torche LED',
+      icon: <Flashlight className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-yellow-400 to-orange-500',
+      category: 'utility',
+      component: MobileFlashlight
+    },
+    {
+      id: 'qr-scanner',
+      name: 'Scanner QR',
+      description: 'Lecteur de codes QR',
+      icon: <QrCode className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-teal-500 to-cyan-600',
+      category: 'utility',
+      component: MobileQRScanner
+    },
+    {
+      id: 'file-manager',
+      name: 'Fichiers',
+      description: 'Gestionnaire de fichiers',
+      icon: <FolderOpen className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-blue-600 to-blue-800',
+      category: 'utility',
+      component: MobileFileManager
+    },
+    {
+      id: 'maps',
+      name: 'Cartes',
+      description: 'Navigation GPS',
+      icon: <Map className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-green-600 to-teal-600',
+      category: 'navigation',
+      component: MobileMap
+    },
+    {
+      id: 'browser',
+      name: 'Navigateur',
+      description: 'Navigateur web',
+      icon: <Globe className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-blue-500 to-purple-600',
+      category: 'internet',
+      component: MobileBrowser
     },
     {
       id: 'luvvix-center',
@@ -82,70 +243,6 @@ const MobileServices = () => {
       bgColor: 'bg-gradient-to-br from-violet-500 to-purple-600',
       category: 'productivity',
       action: () => window.dispatchEvent(new CustomEvent('navigate-to-calendar'))
-    },
-    {
-      id: 'luvvix-learn',
-      name: 'LuvviX Learn',
-      description: 'Plateforme d\'apprentissage IA',
-      icon: <BookOpen className="w-8 h-8" />,
-      bgColor: 'bg-gradient-to-br from-indigo-500 to-purple-600',
-      badge: 'Nouveau',
-      category: 'education',
-      url: '/learn'
-    },
-    {
-      id: 'luvvix-news',
-      name: 'LuvviX News',
-      description: 'Actualités personnalisées',
-      icon: <Newspaper className="w-8 h-8" />,
-      bgColor: 'bg-gradient-to-br from-red-500 to-pink-600',
-      category: 'information',
-      url: '/news'
-    },
-    {
-      id: 'luvvix-cloud',
-      name: 'LuvviX Cloud',
-      description: 'Stockage et partage sécurisé',
-      icon: <Database className="w-8 h-8" />,
-      bgColor: 'bg-gradient-to-br from-cyan-500 to-blue-600',
-      category: 'storage',
-      url: '/cloud'
-    },
-    {
-      id: 'luvvix-mail',
-      name: 'LuvviX Mail',
-      description: 'Messagerie intelligente',
-      icon: <Mail className="w-8 h-8" />,
-      bgColor: 'bg-gradient-to-br from-pink-500 to-rose-600',
-      category: 'communication',
-      url: '/mail'
-    },
-    {
-      id: 'luvvix-analytics',
-      name: 'LuvviX Analytics',
-      description: 'Analyse de données avancée',
-      icon: <BarChart3 className="w-8 h-8" />,
-      bgColor: 'bg-gradient-to-br from-emerald-500 to-teal-600',
-      category: 'analytics',
-      url: '/analytics'
-    },
-    {
-      id: 'code-studio',
-      name: 'Code Studio',
-      description: 'Environnement de développement',
-      icon: <Code className="w-8 h-8" />,
-      bgColor: 'bg-gradient-to-br from-yellow-500 to-orange-600',
-      category: 'development',
-      url: '/code-studio'
-    },
-    {
-      id: 'luvvix-security',
-      name: 'LuvviX Security',
-      description: 'Centre de sécurité',
-      icon: <Shield className="w-8 h-8" />,
-      bgColor: 'bg-gradient-to-br from-green-500 to-teal-600',
-      category: 'security',
-      url: '/security'
     }
   ];
 
@@ -154,9 +251,12 @@ const MobileServices = () => {
     { id: 'ai', label: 'IA', icon: <Bot className="w-4 h-4" /> },
     { id: 'productivity', label: 'Productivité', icon: <Zap className="w-4 h-4" /> },
     { id: 'communication', label: 'Communication', icon: <MessageCircle className="w-4 h-4" /> },
+    { id: 'media', label: 'Média', icon: <Camera className="w-4 h-4" /> },
+    { id: 'utility', label: 'Utilitaires', icon: <Settings className="w-4 h-4" /> },
     { id: 'social', label: 'Social', icon: <Users className="w-4 h-4" /> },
-    { id: 'education', label: 'Éducation', icon: <BookOpen className="w-4 h-4" /> },
-    { id: 'development', label: 'Développement', icon: <Code className="w-4 h-4" /> }
+    { id: 'navigation', label: 'Navigation', icon: <Map className="w-4 h-4" /> },
+    { id: 'internet', label: 'Internet', icon: <Globe className="w-4 h-4" /> },
+    { id: 'lifestyle', label: 'Style de vie', icon: <Palette className="w-4 h-4" /> }
   ];
 
   const filteredServices = services.filter(service => {
@@ -167,7 +267,9 @@ const MobileServices = () => {
   });
 
   const handleServiceClick = (service: typeof services[0]) => {
-    if (service.action) {
+    if (service.component) {
+      setActiveApp(service.id);
+    } else if (service.action) {
       service.action();
     } else {
       toast({
@@ -176,6 +278,19 @@ const MobileServices = () => {
       });
     }
   };
+
+  const handleBackFromApp = () => {
+    setActiveApp(null);
+  };
+
+  // Render active app
+  if (activeApp) {
+    const service = services.find(s => s.id === activeApp);
+    if (service?.component) {
+      const AppComponent = service.component as React.ComponentType<{ onBack: () => void }>;
+      return <AppComponent onBack={handleBackFromApp} />;
+    }
+  }
 
   return (
     <div className="flex-1 bg-gray-50 pb-20">
@@ -199,7 +314,7 @@ const MobileServices = () => {
           </div>
 
           {/* Onglets de catégories */}
-          <div className="flex space-x-2 overflow-x-auto">
+          <div className="flex space-x-2 overflow-x-auto pb-2">
             {categories.map((category) => (
               <button
                 key={category.id}
@@ -271,7 +386,7 @@ const MobileServices = () => {
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold">{services.length}</div>
-              <div className="text-sm text-purple-100">Services</div>
+              <div className="text-sm text-purple-100">Applications</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold">24/7</div>

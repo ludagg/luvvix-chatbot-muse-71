@@ -1,6 +1,11 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { Brain, Send, Sparkles, Calendar, Users, Zap, BookOpen, TrendingUp, Mic, Plus, MoreVertical, ChartBar, Calculator, Code, FileText, Lightbulb, Target, Cpu, Database, Globe, MessageSquare, Activity } from 'lucide-react';
+import { 
+  Brain, Send, Sparkles, Calendar, Users, Zap, BookOpen, TrendingUp, 
+  Mic, Plus, MoreVertical, ChartBar, Calculator, Code, FileText, 
+  Lightbulb, Target, Cpu, Database, Globe, MessageSquare, Activity,
+  MicIcon, Moon, Sun, Star, Share2, Clock, Bell, Download, Wifi,
+  WifiOff, Save, Trash2, Copy, Heart, Volume2
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { luvvixBrain } from '@/services/luvvix-brain';
 import { toast } from 'sonner';
@@ -18,6 +23,7 @@ interface Message {
     conclusion: string;
     confidence: number;
   };
+  isFavorite?: boolean;
 }
 
 interface ReasoningStep {
@@ -35,12 +41,38 @@ const AdvancedAssistantChat = () => {
   const [insights, setInsights] = useState<any[]>([]);
   const [reasoningSteps, setReasoningSteps] = useState<ReasoningStep[]>([]);
   const [showReasoning, setShowReasoning] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [favoriteMessages, setFavoriteMessages] = useState<string[]>([]);
+  const [conversationHistory, setConversationHistory] = useState<Message[][]>([]);
+  const [currentConversationIndex, setCurrentConversationIndex] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
 
+  // Détection de l'état de connexion
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Initialisation
   useEffect(() => {
     if (user) {
       initializeAdvancedChat();
       loadInsights();
+      loadFavorites();
+      loadConversationHistory();
     }
   }, [user]);
 
@@ -48,54 +80,196 @@ const AdvancedAssistantChat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Initialisation de la reconnaissance vocale
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'fr-FR';
+      
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        toast.success('Reconnaissance vocale terminée !');
+      };
+      
+      recognitionRef.current.onerror = () => {
+        toast.error('Erreur de reconnaissance vocale');
+        setIsRecording(false);
+      };
+      
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    }
+  }, []);
+
   const initializeAdvancedChat = () => {
     const welcomeMessage: Message = {
       id: '1',
       role: 'assistant',
-      content: `🧠 **LuvviX Assistant IA Omnipotent - Version Avancée**
+      content: `🧠 **LuvviX Assistant IA Omnipotent - Version Mobile Avancée**
 
-Je suis votre assistant IA de nouvelle génération avec des capacités étendues :
+🚀 **Nouvelles Fonctionnalités :**
+🎤 Reconnaissance vocale
+🌙 Mode sombre/clair
+⭐ Favoris intelligents
+📤 Partage rapide
+📚 Historique avancé
+🔔 Notifications push
+📄 Export de données
+📱 Mode offline
 
-🔬 **Raisonnement Avancé :**
-• Analyse multi-étapes avec visualisation du processus
+**Capacités étendues :**
+• Raisonnement multi-étapes avec visualisation
 • Calculs mathématiques complexes avec LaTeX
-• Graphiques dynamiques et visualisations de données
-• Logique déductive et inductive
+• Graphiques dynamiques et visualisations
+• Intégration totale LuvviX avec automation
 
-📊 **Visualisations Intelligentes :**
-• Génération automatique de graphiques
-• Formules mathématiques en LaTeX
-• Diagrammes et schémas explicatifs
-• Analyses de données en temps réel
-
-🚀 **Intégration Totale LuvviX :**
-• Création automatique d'événements optimisés
-• Gestion intelligente de vos données
-• Automation avancée de workflows
-• Prédictions basées sur vos habitudes
-
-**Exemple d'utilisation :** "Calcule la dérivée de x² + 3x - 5 et montre-moi un graphique"`,
+**Commandes vocales :** "Calcule", "Analyse", "Graphique", "Export"`,
       timestamp: new Date(),
       actions: [
-        { type: 'math_demo', label: '🧮 Démonstration mathématique', icon: Calculator },
-        { type: 'chart_demo', label: '📊 Créer un graphique', icon: ChartBar },
-        { type: 'reasoning_demo', label: '🔬 Raisonnement avancé', icon: Brain },
-        { type: 'analyze_data', label: '📈 Analyser mes données', icon: TrendingUp }
+        { type: 'math_demo', label: '🧮 Démonstration mathématique', iconName: 'Calculator' },
+        { type: 'chart_demo', label: '📊 Créer un graphique', iconName: 'ChartBar' },
+        { type: 'reasoning_demo', label: '🔬 Raisonnement avancé', iconName: 'Brain' },
+        { type: 'voice_demo', label: '🎤 Test reconnaissance vocale', iconName: 'Mic' }
       ]
     };
-
     setMessages([welcomeMessage]);
   };
 
   const loadInsights = async () => {
     if (!user) return;
-
     try {
       const userInsights = await luvvixBrain.getUserInsights(user.id);
       setInsights(userInsights);
-      console.log('Insights avancés chargés:', userInsights);
     } catch (error) {
       console.error('Erreur insights:', error);
+    }
+  };
+
+  const loadFavorites = () => {
+    const saved = localStorage.getItem('luvvix_favorites');
+    if (saved) {
+      setFavoriteMessages(JSON.parse(saved));
+    }
+  };
+
+  const loadConversationHistory = () => {
+    const saved = localStorage.getItem('luvvix_conversation_history');
+    if (saved) {
+      setConversationHistory(JSON.parse(saved));
+    }
+  };
+
+  const saveConversationHistory = () => {
+    const updatedHistory = [...conversationHistory];
+    updatedHistory[currentConversationIndex] = messages;
+    setConversationHistory(updatedHistory);
+    localStorage.setItem('luvvix_conversation_history', JSON.stringify(updatedHistory));
+  };
+
+  // Reconnaissance vocale
+  const toggleRecording = () => {
+    if (!recognitionRef.current) {
+      toast.error('Reconnaissance vocale non supportée');
+      return;
+    }
+
+    if (isRecording) {
+      recognitionRef.current.stop();
+      setIsRecording(false);
+    } else {
+      recognitionRef.current.start();
+      setIsRecording(true);
+      toast.info('Parlez maintenant...');
+    }
+  };
+
+  // Basculement du thème
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('luvvix_theme', (!isDarkMode).toString());
+  };
+
+  // Gestion des favoris
+  const toggleFavorite = (messageId: string) => {
+    const updated = favoriteMessages.includes(messageId)
+      ? favoriteMessages.filter(id => id !== messageId)
+      : [...favoriteMessages, messageId];
+    
+    setFavoriteMessages(updated);
+    localStorage.setItem('luvvix_favorites', JSON.stringify(updated));
+    
+    setMessages(prev => prev.map(msg => 
+      msg.id === messageId ? { ...msg, isFavorite: !msg.isFavorite } : msg
+    ));
+  };
+
+  // Partage
+  const shareMessage = async (message: Message) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'LuvviX Assistant IA',
+          text: message.content,
+          url: window.location.href
+        });
+        toast.success('Partagé avec succès !');
+      } catch (error) {
+        copyToClipboard(message.content);
+      }
+    } else {
+      copyToClipboard(message.content);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copié dans le presse-papiers !');
+  };
+
+  // Export des données
+  const exportConversation = (format: 'pdf' | 'csv' | 'json') => {
+    const data = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content,
+      timestamp: msg.timestamp,
+      isFavorite: msg.isFavorite
+    }));
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `luvvix-conversation-${new Date().toISOString().split('T')[0]}.${format}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast.success(`Conversation exportée en ${format.toUpperCase()} !`);
+  };
+
+  // Notifications
+  const toggleNotifications = async () => {
+    if (!('Notification' in window)) {
+      toast.error('Notifications non supportées');
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      setNotificationsEnabled(!notificationsEnabled);
+    } else if (Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission();
+      setNotificationsEnabled(permission === 'granted');
+    }
+  };
+
+  const showNotification = (title: string, body: string) => {
+    if (notificationsEnabled && Notification.permission === 'granted') {
+      new Notification(title, { body, icon: '/favicon.ico' });
     }
   };
 
@@ -122,7 +296,6 @@ Je suis votre assistant IA de nouvelle génération avec des capacités étendue
   };
 
   const generateSimpleChart = (type: string, data: any) => {
-    // Version simplifiée sans Chart.js pour éviter les erreurs
     return (
       <div className="h-64 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl border-2 border-dashed border-blue-200 flex items-center justify-center">
         <div className="text-center">
@@ -167,57 +340,59 @@ Je suis votre assistant IA de nouvelle génération avec des capacités étendue
     setInput('');
     setLoading(true);
 
-    // Simuler le raisonnement avancé
     await simulateReasoning(content);
 
     try {
-      await luvvixBrain.trackInteraction(
-        user.id,
-        'advanced_ai_chat',
-        'AdvancedMobileAssistant',
-        { message: content, features: ['latex', 'charts', 'reasoning'] }
-      );
+      if (!isOffline) {
+        await luvvixBrain.trackInteraction(
+          user.id,
+          'advanced_ai_chat',
+          'AdvancedMobileAssistant',
+          { message: content, features: ['voice', 'offline', 'favorites', 'export'] }
+        );
 
-      const response = await luvvixBrain.processConversation(
-        user.id,
-        content,
-        { 
-          component: 'AdvancedMobileAssistant',
-          device: 'mobile',
+        const response = await luvvixBrain.processConversation(
+          user.id,
+          content,
+          { 
+            component: 'AdvancedMobileAssistant',
+            device: 'mobile',
+            timestamp: new Date(),
+            capabilities: ['voice_recognition', 'offline_mode', 'favorites', 'export', 'notifications']
+          }
+        );
+
+        const actions = await detectAdvancedActions(content);
+        const charts = await generateChartsFromContent(content);
+        const reasoning = await generateReasoning(content);
+
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: response,
           timestamp: new Date(),
-          capabilities: ['latex_rendering', 'chart_generation', 'advanced_reasoning', 'data_visualization']
-        }
-      );
+          actions,
+          charts,
+          reasoning
+        };
 
-      // Détecter et générer du contenu avancé
-      const actions = await detectAdvancedActions(content);
-      const charts = await generateChartsFromContent(content);
-      const reasoning = await generateReasoning(content);
+        setMessages(prev => [...prev, assistantMessage]);
+        showNotification('LuvviX Assistant', 'Réponse prête !');
+      } else {
+        // Mode offline
+        const offlineResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: `📱 **Mode Offline Activé**\n\nVotre message "${content}" a été sauvegardé. Les fonctionnalités de base restent disponibles :\n\n• Calculs mathématiques simples\n• Historique local\n• Favoris\n• Export des données\n\nReconnectez-vous pour accéder aux fonctionnalités avancées.`,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, offlineResponse]);
+      }
 
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response,
-        timestamp: new Date(),
-        actions,
-        charts,
-        reasoning
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-
+      saveConversationHistory();
     } catch (error) {
       console.error('Erreur chat avancé:', error);
-      toast.error('Reconnexion des circuits neuronaux avancés...');
-      
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: '🧠 **Système de raisonnement en maintenance...**\n\nJe reste disponible pour toutes vos demandes avancées : calculs, graphiques, analyses et automatisations !',
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, errorMessage]);
+      toast.error('Reconnexion des circuits neuronaux...');
     } finally {
       setLoading(false);
     }
@@ -227,30 +402,19 @@ Je suis votre assistant IA de nouvelle génération avec des capacités étendue
     const actions = [];
     const lowerContent = content.toLowerCase();
 
-    if (lowerContent.includes('dérivée') || lowerContent.includes('intégrale') || lowerContent.includes('calcul')) {
+    if (lowerContent.includes('export') || lowerContent.includes('télécharge')) {
       actions.push({
-        type: 'math_calculation',
-        label: '🧮 Effectuer le calcul',
-        icon: '📐',
-        data: { mathType: 'calculation', expression: content }
+        type: 'export_data',
+        label: '📄 Exporter les données',
+        iconName: 'Download'
       });
     }
 
-    if (lowerContent.includes('graphique') || lowerContent.includes('chart') || lowerContent.includes('diagramme')) {
+    if (lowerContent.includes('partage') || lowerContent.includes('share')) {
       actions.push({
-        type: 'generate_chart',
-        label: '📊 Générer le graphique',
-        icon: '📈',
-        data: { chartType: 'auto', title: 'Graphique généré' }
-      });
-    }
-
-    if (lowerContent.includes('analyser') || lowerContent.includes('données')) {
-      actions.push({
-        type: 'deep_analysis',
-        label: '🔬 Analyse approfondie',
-        icon: '🧬',
-        data: { analysisType: 'deep_learning' }
+        type: 'share_result',
+        label: '📤 Partager le résultat',
+        iconName: 'Share2'
       });
     }
 
@@ -293,128 +457,109 @@ Je suis votre assistant IA de nouvelle génération avec des capacités étendue
     try {
       setLoading(true);
       
-      let resultMessage = '';
-      
       switch (action.type) {
-        case 'math_demo':
-          resultMessage = `🧮 **Démonstration Mathématique**
-
-Soit f(x) = x² + 3x - 5
-
-**Calcul de la dérivée :**
-f'(x) = 2x + 3
-
-**Racines de l'équation :**
-x² + 3x - 5 = 0
-x ≈ 1.19 et x ≈ -4.19`;
+        case 'export_data':
+          exportConversation('json');
           break;
-          
-        case 'chart_demo':
-          resultMessage = `📊 **Graphique de Démonstration Généré**
-
-Voici un exemple de visualisation de données générée automatiquement par l'IA.`;
-          break;
-          
-        case 'reasoning_demo':
-          resultMessage = `🔬 **Processus de Raisonnement Avancé**
-
-**Étape 1:** Collecte des données
-**Étape 2:** Analyse des patterns  
-**Étape 3:** Application des algorithmes
-**Étape 4:** Validation et optimisation
-
-**Conclusion:** Le système a traité votre requête avec 94% de confiance.`;
-          break;
-          
-        default:
-          resultMessage = `✅ Action "${action.label}" exécutée avec succès !`;
-      }
-
-      const actionMessage: Message = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: resultMessage,
-        timestamp: new Date(),
-        charts: action.type === 'chart_demo' ? [{
-          type: 'line',
-          data: {
-            title: 'Exemple de Données',
-            labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai'],
-            values: [12, 19, 3, 5, 2]
+        case 'share_result':
+          const lastMessage = messages[messages.length - 1];
+          if (lastMessage) {
+            await shareMessage(lastMessage);
           }
-        }] : undefined
-      };
-
-      setMessages(prev => [...prev, actionMessage]);
-      toast.success(`${action.icon} ${action.label} réalisé !`);
-
+          break;
+        case 'voice_demo':
+          toggleRecording();
+          break;
+        default:
+          toast.success(`Action "${action.label}" exécutée !`);
+      }
     } catch (error) {
-      console.error('Erreur action avancée:', error);
+      console.error('Erreur action:', error);
       toast.error("Erreur lors de l'exécution");
     } finally {
       setLoading(false);
     }
   };
 
+  const renderIcon = (iconName: string, className = "w-5 h-5") => {
+    const iconMap: { [key: string]: React.ReactNode } = {
+      Calculator: <Calculator className={className} />,
+      ChartBar: <ChartBar className={className} />,
+      Brain: <Brain className={className} />,
+      Mic: <Mic className={className} />,
+      Download: <Download className={className} />,
+      Share2: <Share2 className={className} />
+    };
+    return iconMap[iconName] || <Sparkles className={className} />;
+  };
+
   const advancedSuggestions = [
-    'Calcule la dérivée de x³ + 2x² - 5x + 1 et montre le graphique',
-    'Crée un graphique de mes données de productivité',
-    'Analyse mes habitudes avec raisonnement approfondi',
-    'Résous l\'équation différentielle dy/dx = 2y + x',
-    'Génère un diagramme de mes objectifs LuvviX',
-    'Optimise mon planning avec algorithme génétique'
+    'Calcule la dérivée de x³ + 2x² - 5x + 1',
+    'Crée un graphique de productivité',
+    'Active la reconnaissance vocale',
+    'Exporte cette conversation',
+    'Analyse mes données avec IA',
+    'Mode sombre pour économiser la batterie'
   ];
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div className={`flex flex-col h-full ${isDarkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-indigo-50 via-white to-purple-50'}`}>
       {/* Header Advanced */}
-      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 text-white p-4 shadow-lg">
+      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600'} text-white p-4 shadow-lg`}>
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+            <div className={`w-10 h-10 ${isDarkMode ? 'bg-gray-700' : 'bg-white/20'} rounded-xl flex items-center justify-center backdrop-blur-sm`}>
               <Brain className="w-6 h-6 text-white" />
             </div>
             <div>
               <h2 className="font-bold text-lg">Assistant IA Omnipotent</h2>
               <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-sm opacity-90">Raisonnement Avancé Actif</span>
+                <div className={`w-2 h-2 ${isOffline ? 'bg-red-400' : 'bg-green-400'} rounded-full animate-pulse`}></div>
+                <span className="text-sm opacity-90">{isOffline ? 'Mode Offline' : 'En ligne'}</span>
               </div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="bg-white/20 px-3 py-1 rounded-full text-xs backdrop-blur-sm">
-              LaTeX ✓
-            </div>
-            <div className="bg-white/20 px-3 py-1 rounded-full text-xs backdrop-blur-sm">
-              Charts ✓
-            </div>
+            <button onClick={toggleTheme} className="p-2 hover:bg-white/10 rounded-lg">
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            <button onClick={toggleNotifications} className="p-2 hover:bg-white/10 rounded-lg">
+              <Bell className={`w-5 h-5 ${notificationsEnabled ? 'text-yellow-300' : ''}`} />
+            </button>
+            <button onClick={() => setShowSettings(!showSettings)} className="p-2 hover:bg-white/10 rounded-lg">
+              <MoreVertical className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
-        {/* Capacités en temps réel */}
+        {/* Statistiques en temps réel */}
         <div className="grid grid-cols-4 gap-2">
-          {[
-            { icon: Calculator, label: 'Math', color: 'bg-blue-500/20' },
-            { icon: ChartBar, label: 'Charts', color: 'bg-green-500/20' },
-            { icon: Brain, label: 'AI', color: 'bg-purple-500/20' },
-            { icon: Zap, label: 'Auto', color: 'bg-yellow-500/20' }
-          ].map((cap, index) => (
-            <div key={index} className={`${cap.color} p-2 rounded-lg text-center backdrop-blur-sm`}>
-              <cap.icon className="w-4 h-4 mx-auto mb-1" />
-              <div className="text-xs font-medium">{cap.label}</div>
-            </div>
-          ))}
+          <div className={`${isDarkMode ? 'bg-gray-700/50' : 'bg-white/20'} p-2 rounded-lg text-center backdrop-blur-sm`}>
+            <Volume2 className="w-4 h-4 mx-auto mb-1" />
+            <div className="text-xs font-medium">Vocal</div>
+          </div>
+          <div className={`${isDarkMode ? 'bg-gray-700/50' : 'bg-white/20'} p-2 rounded-lg text-center backdrop-blur-sm`}>
+            <Star className="w-4 h-4 mx-auto mb-1" />
+            <div className="text-xs font-medium">{favoriteMessages.length}</div>
+          </div>
+          <div className={`${isDarkMode ? 'bg-gray-700/50' : 'bg-white/20'} p-2 rounded-lg text-center backdrop-blur-sm`}>
+            <Clock className="w-4 h-4 mx-auto mb-1" />
+            <div className="text-xs font-medium">Hist</div>
+          </div>
+          <div className={`${isDarkMode ? 'bg-gray-700/50' : 'bg-white/20'} p-2 rounded-lg text-center backdrop-blur-sm`}>
+            {isOffline ? <WifiOff className="w-4 h-4 mx-auto mb-1" /> : <Wifi className="w-4 h-4 mx-auto mb-1" />}
+            <div className="text-xs font-medium">{isOffline ? 'Off' : 'On'}</div>
+          </div>
         </div>
       </div>
 
       {/* Reasoning Overlay */}
       {showReasoning && (
         <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-6 m-4 max-w-sm w-full shadow-2xl">
+          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 m-4 max-w-sm w-full shadow-2xl`}>
             <div className="text-center mb-4">
               <Brain className="w-8 h-8 text-purple-600 mx-auto mb-2 animate-pulse" />
-              <h3 className="font-bold text-gray-900">Raisonnement en Cours</h3>
+              <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Raisonnement en Cours</h3>
             </div>
             <div className="space-y-3">
               {reasoningSteps.map((step) => (
@@ -427,8 +572,8 @@ Voici un exemple de visualisation de données générée automatiquement par l'I
                     {step.step}
                   </div>
                   <div className="flex-1">
-                    <div className="font-medium text-sm text-gray-900">{step.title}</div>
-                    <div className="text-xs text-gray-500">{step.content}</div>
+                    <div className={`font-medium text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{step.title}</div>
+                    <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>{step.content}</div>
                   </div>
                 </div>
               ))}
@@ -437,7 +582,7 @@ Voici un exemple de visualisation de données générée automatiquement par l'I
         </div>
       )}
 
-      {/* Messages avec formatage avancé */}
+      {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div
@@ -445,21 +590,51 @@ Voici un exemple de visualisation de données générée automatiquement par l'I
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[90%] rounded-2xl p-4 shadow-lg ${
+              className={`max-w-[90%] rounded-2xl p-4 shadow-lg relative ${
                 message.role === 'user'
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                  : 'bg-white border border-gray-100 text-gray-900'
+                  ? isDarkMode 
+                    ? 'bg-gray-700 text-white' 
+                    : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                  : isDarkMode
+                    ? 'bg-gray-800 border border-gray-700 text-white'
+                    : 'bg-white border border-gray-100 text-gray-900'
               }`}
             >
-              {/* Contenu avec détection mathématique */}
-              <div className="text-sm whitespace-pre-wrap leading-relaxed">
+              {/* Actions du message */}
+              {message.role === 'assistant' && (
+                <div className="absolute top-2 right-2 flex space-x-1">
+                  <button
+                    onClick={() => toggleFavorite(message.id)}
+                    className={`p-1 rounded hover:bg-black/10 ${
+                      favoriteMessages.includes(message.id) ? 'text-yellow-500' : 'text-gray-400'
+                    }`}
+                  >
+                    <Star className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => shareMessage(message)}
+                    className="p-1 rounded hover:bg-black/10 text-gray-400"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => copyToClipboard(message.content)}
+                    className="p-1 rounded hover:bg-black/10 text-gray-400"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Contenu */}
+              <div className="text-sm whitespace-pre-wrap leading-relaxed pr-16">
                 {renderMathContent(message.content)}
               </div>
 
               {/* Graphiques */}
               {message.charts && message.charts.length > 0 && (
-                <div className="mt-4 p-3 bg-gray-50 rounded-xl">
-                  <div className="text-xs text-gray-600 mb-2">📊 Visualisation Générée</div>
+                <div className={`mt-4 p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
+                  <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-2`}>📊 Visualisation Générée</div>
                   {message.charts.map((chart, index) => (
                     <div key={index} className="h-64">
                       {generateSimpleChart(chart.type, chart.data)}
@@ -468,37 +643,23 @@ Voici un exemple de visualisation de données générée automatiquement par l'I
                 </div>
               )}
 
-              {/* Raisonnement */}
-              {message.reasoning && (
-                <div className="mt-4 p-3 bg-purple-50 rounded-xl border border-purple-200">
-                  <div className="text-xs text-purple-700 font-medium mb-2">🔬 Processus de Raisonnement</div>
-                  <div className="space-y-1">
-                    {message.reasoning.steps.map((step, index) => (
-                      <div key={index} className="text-xs text-purple-600">• {step}</div>
-                    ))}
-                  </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-xs text-purple-700">{message.reasoning.conclusion}</span>
-                    <span className="text-xs bg-purple-200 px-2 py-1 rounded">
-                      {Math.round(message.reasoning.confidence * 100)}% confiance
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              {/* Actions avancées */}
+              {/* Actions */}
               {message.actions && message.actions.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-gray-200 space-y-2">
-                  <div className="text-xs text-gray-500 font-medium">Actions Intelligentes :</div>
+                <div className={`mt-4 pt-3 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'} space-y-2`}>
+                  <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-500'} font-medium`}>Actions Intelligentes :</div>
                   <div className="grid grid-cols-2 gap-2">
                     {message.actions.map((action, index) => (
                       <button
                         key={index}
                         onClick={() => executeAdvancedAction(action)}
-                        className="bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-700 text-xs font-medium py-3 px-3 rounded-xl transition-all border border-indigo-200 hover:border-indigo-300"
+                        className={`${
+                          isDarkMode 
+                            ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' 
+                            : 'bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 text-indigo-700 border-indigo-200 hover:border-indigo-300'
+                        } text-xs font-medium py-3 px-3 rounded-xl transition-all border`}
                       >
                         <div className="flex items-center space-x-2">
-                          <span>{action.icon}</span>
+                          {renderIcon(action.iconName, "w-4 h-4")}
                           <span className="truncate">{action.label}</span>
                         </div>
                       </button>
@@ -507,7 +668,7 @@ Voici un exemple de visualisation de données générée automatiquement par l'I
                 </div>
               )}
               
-              <div className="text-xs opacity-70 mt-3">
+              <div className={`text-xs opacity-70 mt-3 ${isDarkMode ? 'text-gray-400' : ''}`}>
                 {message.timestamp.toLocaleTimeString()}
               </div>
             </div>
@@ -516,14 +677,14 @@ Voici un exemple de visualisation de données générée automatiquement par l'I
         
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-lg">
+            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl p-4 shadow-lg`}>
               <div className="flex items-center space-x-3">
                 <div className="flex space-x-1">
                   <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce delay-100"></div>
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-200"></div>
                 </div>
-                <span className="text-sm text-gray-600">IA en raisonnement avancé...</span>
+                <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>IA en raisonnement avancé...</span>
               </div>
             </div>
           </div>
@@ -535,13 +696,17 @@ Voici un exemple de visualisation de données générée automatiquement par l'I
       {/* Suggestions avancées */}
       {messages.length <= 1 && (
         <div className="px-4 pb-2">
-          <div className="text-xs text-gray-500 mb-2">💡 Capacités Avancées :</div>
+          <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mb-2`}>💡 Nouvelles Capacités :</div>
           <div className="flex overflow-x-auto space-x-2 pb-2">
             {advancedSuggestions.map((suggestion, index) => (
               <button
                 key={index}
                 onClick={() => sendMessage(suggestion)}
-                className="flex-shrink-0 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 text-xs text-indigo-700 px-4 py-3 rounded-xl whitespace-nowrap hover:from-indigo-100 hover:to-purple-100 transition-all"
+                className={`flex-shrink-0 ${
+                  isDarkMode 
+                    ? 'bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700' 
+                    : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 text-indigo-700 hover:from-indigo-100 hover:to-purple-100'
+                } border text-xs px-4 py-3 rounded-xl whitespace-nowrap transition-all`}
               >
                 {suggestion}
               </button>
@@ -551,16 +716,24 @@ Voici un exemple de visualisation de données générée automatiquement par l'I
       )}
 
       {/* Zone de saisie avancée */}
-      <div className="bg-white border-t border-gray-200 p-4 shadow-lg">
+      <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t p-4 shadow-lg`}>
         <div className="flex items-center space-x-3">
-          <button className="p-2 hover:bg-gray-100 rounded-xl flex-shrink-0 transition-colors">
-            <Plus className="w-5 h-5 text-gray-500" />
+          <button 
+            onClick={() => exportConversation('json')}
+            className={`p-2 hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-xl flex-shrink-0 transition-colors`}
+          >
+            <Download className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
           </button>
-          <button className="p-2 hover:bg-gray-100 rounded-xl flex-shrink-0 transition-colors">
-            <Calculator className="w-5 h-5 text-gray-500" />
+          <button 
+            onClick={toggleRecording}
+            className={`p-2 hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-xl flex-shrink-0 transition-colors ${
+              isRecording ? 'bg-red-100 text-red-600' : ''
+            }`}
+          >
+            <Mic className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} ${isRecording ? 'animate-pulse' : ''}`} />
           </button>
-          <button className="p-2 hover:bg-gray-100 rounded-xl flex-shrink-0 transition-colors">
-            <ChartBar className="w-5 h-5 text-gray-500" />
+          <button className={`p-2 hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-xl flex-shrink-0 transition-colors`}>
+            <ChartBar className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
           </button>
           
           <input
@@ -572,15 +745,23 @@ Voici un exemple de visualisation de données générée automatiquement par l'I
                 sendMessage();
               }
             }}
-            placeholder="Demandez calculs, graphiques, analyses avancées..."
-            className="flex-1 bg-gray-100 border-none rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
-            disabled={loading}
+            placeholder={isRecording ? "🎤 Reconnaissance en cours..." : "Vocal, calculs, graphiques, export..."}
+            className={`flex-1 ${
+              isDarkMode 
+                ? 'bg-gray-700 text-white focus:bg-gray-600' 
+                : 'bg-gray-100 focus:bg-white'
+            } border-none rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all`}
+            disabled={loading || isRecording}
           />
           
           <button 
             onClick={() => sendMessage()} 
             disabled={!input.trim() || loading}
-            className="p-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
+            className={`p-3 ${
+              isDarkMode 
+                ? 'bg-gradient-to-r from-indigo-500 to-purple-500' 
+                : 'bg-gradient-to-r from-indigo-600 to-purple-600'
+            } text-white rounded-xl flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all`}
           >
             <Send className="w-5 h-5" />
           </button>

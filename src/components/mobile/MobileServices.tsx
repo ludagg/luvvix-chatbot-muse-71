@@ -45,7 +45,15 @@ import {
   Smile,
   MapPin,
   Languages,
-  Plane
+  Plane,
+  Key,
+  Send,
+  CheckCircle,
+  Sparkles,
+  Star,
+  PieChart,
+  FileUser,
+  TrendingUp
 } from 'lucide-react';
 
 // Import all mobile app components
@@ -64,7 +72,7 @@ import MobileFileManager from './apps/MobileFileManager';
 import MobileMap from './apps/MobileMap';
 import MobileBrowser from './apps/MobileBrowser';
 
-// Import new AI services
+// Import existing AI services
 import MobileAIDoctor from './apps/MobileAIDoctor';
 import MobileAILawyer from './apps/MobileAILawyer';
 import MobileAIFitness from './apps/MobileAIFitness';
@@ -79,6 +87,15 @@ import MobileAICareer from './apps/MobileAICareer';
 import MobileAIMentalHealth from './apps/MobileAIMentalHealth';
 import MobileAITravelPlanner from './apps/MobileAITravelPlanner';
 import MobileAILanguage from './apps/MobileAILanguage';
+
+// Import new AI services
+import MobileAITranscriber from './apps/MobileAITranscriber';
+import MobileAIPhotoEditor from './apps/MobileAIPhotoEditor';
+import MobileAIPasswordManager from './apps/MobileAIPasswordManager';
+import MobileAICodeReviewer from './apps/MobileAICodeReviewer';
+import MobileAIEmailAssistant from './apps/MobileAIEmailAssistant';
+import MobileAIResumeBuilder from './apps/MobileAIResumeBuilder';
+import MobileAIBudgetPlanner from './apps/MobileAIBudgetPlanner';
 
 interface AppComponent {
   component: React.ComponentType<{ onBack: () => void }>;
@@ -101,6 +118,78 @@ const MobileServices = () => {
       category: 'ai',
       action: () => window.dispatchEvent(new CustomEvent('navigate-to-assistant'))
     },
+    // New AI Services
+    {
+      id: 'ai-transcriber',
+      name: 'Transcripteur IA',
+      description: 'Conversion audio vers texte intelligente',
+      icon: <Mic className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-indigo-500 to-purple-600',
+      badge: 'Nouveau',
+      category: 'ai',
+      component: MobileAITranscriber
+    },
+    {
+      id: 'ai-photo-editor',
+      name: 'Éditeur Photo IA',
+      description: 'Édition d\'images avec intelligence artificielle',
+      icon: <Edit className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-pink-500 to-purple-600',
+      badge: 'Nouveau',
+      category: 'ai',
+      component: MobileAIPhotoEditor
+    },
+    {
+      id: 'ai-password-manager',
+      name: 'Gestionnaire Mots de Passe IA',
+      description: 'Génération de mots de passe sécurisés',
+      icon: <Key className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-green-500 to-blue-600',
+      badge: 'Nouveau',
+      category: 'ai',
+      component: MobileAIPasswordManager
+    },
+    {
+      id: 'ai-code-reviewer',
+      name: 'Réviseur Code IA',
+      description: 'Analyse et amélioration de code',
+      icon: <CheckCircle className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-slate-500 to-gray-700',
+      badge: 'Nouveau',
+      category: 'ai',
+      component: MobileAICodeReviewer
+    },
+    {
+      id: 'ai-email-assistant',
+      name: 'Assistant Email IA',
+      description: 'Rédaction d\'emails professionnels',
+      icon: <Send className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-blue-500 to-indigo-600',
+      badge: 'Nouveau',
+      category: 'ai',
+      component: MobileAIEmailAssistant
+    },
+    {
+      id: 'ai-resume-builder',
+      name: 'Créateur CV IA',
+      description: 'Génération de CV personnalisés',
+      icon: <FileUser className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-emerald-500 to-green-600',
+      badge: 'Nouveau',
+      category: 'ai',
+      component: MobileAIResumeBuilder
+    },
+    {
+      id: 'ai-budget-planner',
+      name: 'Planificateur Budget IA',
+      description: 'Gestion financière intelligente',
+      icon: <PieChart className="w-8 h-8" />,
+      bgColor: 'bg-gradient-to-br from-teal-500 to-cyan-600',
+      badge: 'Nouveau',
+      category: 'ai',
+      component: MobileAIBudgetPlanner
+    },
+    // ... keep existing code (all other services)
     {
       id: 'notes',
       name: 'Notes',
@@ -188,6 +277,7 @@ const MobileServices = () => {
       description: 'Lampe torche LED',
       icon: <Flashlight className="w-8 h-8" />,
       bgColor: 'bg-gradient-to-br from-yellow-400 to-orange-500',
+      badge: 'Nouveau',
       category: 'utility',
       component: MobileFlashlight
     },

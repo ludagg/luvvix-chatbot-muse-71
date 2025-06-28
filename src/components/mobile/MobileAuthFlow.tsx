@@ -27,23 +27,6 @@ const MobileAuthFlow = ({ onSuccess, onBack }: MobileAuthFlowProps) => {
     setAvatarPreview(preview);
   };
 
-  const uploadAvatar = async (userId: string): Promise<string | null> => {
-    if (!avatarFile) return null;
-
-    try {
-      // Create a unique filename
-      const fileExt = avatarFile.name.split('.').pop();
-      const fileName = `${userId}/avatar.${fileExt}`;
-
-      // For now, we'll return the preview URL
-      // In a real implementation, you'd upload to Supabase Storage or another service
-      return avatarPreview;
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      return null;
-    }
-  };
-
   const handleAuth = async () => {
     if (!email || !password) {
       toast({
@@ -70,10 +53,12 @@ const MobileAuthFlow = ({ onSuccess, onBack }: MobileAuthFlowProps) => {
       if (isLogin) {
         result = await signIn(email, password);
       } else {
-        // Upload avatar first if provided
-        const avatarUrl = avatarFile ? avatarPreview : null;
+        const metadata = {
+          full_name: fullName,
+          avatar_url: avatarPreview
+        };
         
-        result = await signUp(email, password, fullName, avatarUrl);
+        result = await signUp(email, password, metadata);
       }
 
       if (result && !result.error) {

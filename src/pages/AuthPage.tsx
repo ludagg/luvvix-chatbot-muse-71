@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,7 +43,7 @@ const AuthPage = () => {
         await signIn(email, password);
         navigate("/dashboard");
       } else {
-        await signUp(email, password, {});
+        await signUp(email, password);
         navigate("/dashboard");
       }
     } catch (e: any) {

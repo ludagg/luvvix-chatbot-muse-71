@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Brain, Zap, Users, TrendingUp, Activity, Eye, MessageCircle, Lightblb } from 'lucide-react';
+import { Brain, Zap, Users, TrendingUp, Activity, Eye, MessageCircle, Lightbulb } from 'lucide-react';
 import { cognitiveEngine, type CognitivePrediction, type ProactiveAssistance } from '@/services/luvvix-cognitive-engine';
 import { digitalTwin } from '@/services/luvvix-digital-twin';
 import { socialIntelligence, type SocialInsight } from '@/services/luvvix-social-intelligence';

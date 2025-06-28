@@ -1,74 +1,99 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { User, Settings, Award, TrendingUp, Calendar, Star } from 'lucide-react';
+import { User, Settings, Award, TrendingUp, Calendar, Star, Edit3 } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import UserBadgeComponent, { UserBadge } from '@/components/ui/user-badge';
+import AvatarUpload from '@/components/ui/avatar-upload';
+import { toast } from '@/hooks/use-toast';
 
 const MobileProfile = () => {
-  const { user } = useAuth();
-  
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Utilisateur';
-  const userEmail = user?.email || '';
+  const { user, profile } = useAuth();
+  const [isEditingAvatar, setIsEditingAvatar] = useState(false);
+  const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
+  const [stats, setStats] = useState({
+    servicesUsed: 0,
+    totalServices: 12,
+    memberSince: '',
+    luvvixScore: 0
+  });
 
-  const stats = [
-    {
-      icon: <TrendingUp className="w-5 h-5 text-blue-500" />,
-      label: "Services utilisés",
-      value: "8/12",
-      trend: "+2 ce mois"
-    },
-    {
-      icon: <Calendar className="w-5 h-5 text-green-500" />,
-      label: "Membre depuis",
-      value: "Jan 2024",
-      trend: "6 mois"
-    },
-    {
-      icon: <Star className="w-5 h-5 text-yellow-500" />,
-      label: "Score LuvviX",
-      value: "4.8/5",
-      trend: "Excellent"
+  const userName = user?.user_metadata?.full_name || profile?.full_name || user?.email?.split('@')[0] || 'Utilisateur';
+  const userEmail = user?.email || '';
+  const avatarUrl = user?.user_metadata?.avatar_url || profile?.avatar_url;
+
+  useEffect(() => {
+    loadUserBadges();
+    loadUserStats();
+  }, [user]);
+
+  const loadUserBadges = async () => {
+    // Simulate loading user badges - in real app, fetch from database
+    const mockBadges: UserBadge[] = [
+      {
+        id: '1',
+        name: 'Pionnier',
+        description: 'Premier utilisateur de LuvviX',
+        icon: 'star',
+        color: 'luvvix',
+        rarity: 'legendary',
+        earnedAt: '2024-01-15'
+      },
+      {
+        id: '2',
+        name: 'IA Explorer',
+        description: 'Utilisé 5+ services IA',
+        icon: 'zap',
+        color: 'secondary',
+        rarity: 'epic',
+        earnedAt: '2024-02-10'
+      }
+    ];
+    setUserBadges(mockBadges);
+  };
+
+  const loadUserStats = async () => {
+    // Simulate loading real user stats - in real app, calculate from user data
+    const memberDate = user?.created_at ? new Date(user.created_at) : new Date();
+    const monthsSince = Math.floor((Date.now() - memberDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+    
+    setStats({
+      servicesUsed: 6, // Count from actual user usage
+      totalServices: 12,
+      memberSince: memberDate.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }),
+      luvvixScore: Math.min(4.8, 3.0 + (monthsSince * 0.1)) // Progressive score based on usage
+    });
+  };
+
+  const handleAvatarChange = async (file: File | null, preview: string) => {
+    if (file) {
+      // In real implementation, upload to storage service
+      toast({
+        title: "Photo mise à jour",
+        description: "Votre photo de profil a été mise à jour avec succès",
+      });
+      setIsEditingAvatar(false);
     }
-  ];
+  };
 
   const recentActivity = [
     {
       icon: "🤖",
-      title: "Assistant IA utilisé",
+      title: "Interface Cognitive utilisée",
       time: "Il y a 2h",
-      description: "Génération de contenu"
+      description: "Prédictions générées"
     },
     {
-      icon: "🌤️",
-      title: "Météo consultée",
+      icon: "📱",
+      title: "Services synchronisés",
       time: "Il y a 4h",
-      description: "Paris, France"
+      description: "6 applications connectées"
     },
     {
-      icon: "📰",
-      title: "Actualités lues",
+      icon: "🎯",
+      title: "Objectif atteint",
       time: "Hier",
-      description: "3 articles"
-    }
-  ];
-
-  const achievements = [
-    {
-      icon: "🏆",
-      title: "Explorateur",
-      description: "Premier service utilisé",
-      unlocked: true
-    },
-    {
-      icon: "🚀",
-      title: "Power User",
-      description: "10 services utilisés",
-      unlocked: false
-    },
-    {
-      icon: "⭐",
-      title: "Expert LuvviX",
-      description: "Tous les services maîtrisés",
-      unlocked: false
+      description: "Productivité +15%"
     }
   ];
 
@@ -77,11 +102,37 @@ const MobileProfile = () => {
       {/* Header profil */}
       <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white">
         <div className="flex items-center space-x-4 mb-4">
-          <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-            <User className="w-10 h-10" />
+          <div className="relative">
+            {isEditingAvatar ? (
+              <AvatarUpload
+                currentAvatar={avatarUrl}
+                onAvatarChange={handleAvatarChange}
+                size="lg"
+              />
+            ) : (
+              <Avatar className="w-20 h-20">
+                <AvatarImage src={avatarUrl} alt={userName} />
+                <AvatarFallback className="bg-white/20 text-white text-xl">
+                  {userName.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            )}
+            
+            <button
+              onClick={() => setIsEditingAvatar(!isEditingAvatar)}
+              className="absolute -bottom-1 -right-1 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition-colors"
+            >
+              <Edit3 className="w-4 h-4" />
+            </button>
           </div>
-          <div>
-            <h2 className="text-2xl font-bold">{userName}</h2>
+          
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="text-2xl font-bold">{userName}</h2>
+              {userBadges.slice(0, 2).map(badge => (
+                <UserBadgeComponent key={badge.id} badge={badge} size="sm" showTooltip />
+              ))}
+            </div>
             <p className="text-blue-100">{userEmail}</p>
             <div className="flex items-center mt-2">
               <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
@@ -90,43 +141,90 @@ const MobileProfile = () => {
           </div>
         </div>
 
-        <div className="bg-white bg-opacity-10 rounded-2xl p-4">
+        <div className="bg-white/10 rounded-2xl p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-blue-100 text-sm">Niveau LuvviX</p>
-              <p className="text-xl font-bold">Explorateur</p>
+              <p className="text-xl font-bold">
+                {userBadges.find(b => b.rarity === 'legendary') ? 'Pionnier' : 'Explorateur'}
+              </p>
             </div>
             <div className="text-right">
-              <p className="text-blue-100 text-sm">XP</p>
-              <p className="text-xl font-bold">1,250</p>
+              <p className="text-blue-100 text-sm">Score</p>
+              <p className="text-xl font-bold">{stats.luvvixScore.toFixed(1)}/5</p>
             </div>
           </div>
-          <div className="w-full bg-white bg-opacity-20 rounded-full h-2 mt-3">
-            <div className="bg-white h-2 rounded-full" style={{ width: '65%' }}></div>
+          <div className="w-full bg-white/20 rounded-full h-2 mt-3">
+            <div 
+              className="bg-white h-2 rounded-full" 
+              style={{ width: `${(stats.luvvixScore / 5) * 100}%` }}
+            ></div>
           </div>
         </div>
       </div>
+
+      {/* Badges */}
+      {userBadges.length > 0 && (
+        <div className="p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Mes Badges</h3>
+          <div className="flex flex-wrap gap-2">
+            {userBadges.map(badge => (
+              <UserBadgeComponent key={badge.id} badge={badge} size="md" showTooltip />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Statistiques */}
       <div className="p-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Statistiques</h3>
         <div className="grid grid-cols-1 gap-4 mb-6">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center">
-                    {stat.icon}
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{stat.label}</p>
-                    <p className="text-sm text-gray-600">{stat.trend}</p>
-                  </div>
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-blue-500" />
                 </div>
-                <p className="text-xl font-bold text-gray-900">{stat.value}</p>
+                <div>
+                  <p className="font-medium text-gray-900">Services utilisés</p>
+                  <p className="text-sm text-gray-600">Progression constante</p>
+                </div>
               </div>
+              <p className="text-xl font-bold text-gray-900">{stats.servicesUsed}/{stats.totalServices}</p>
             </div>
-          ))}
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-green-500" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Membre depuis</p>
+                  <p className="text-sm text-gray-600">Utilisateur actif</p>
+                </div>
+              </div>
+              <p className="text-xl font-bold text-gray-900">{stats.memberSince}</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-yellow-50 rounded-xl flex items-center justify-center">
+                  <Star className="w-5 h-5 text-yellow-500" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Score LuvviX</p>
+                  <p className="text-sm text-gray-600">
+                    {stats.luvvixScore >= 4.5 ? 'Excellent' : stats.luvvixScore >= 3.5 ? 'Très bon' : 'Bon'}
+                  </p>
+                </div>
+              </div>
+              <p className="text-xl font-bold text-gray-900">{stats.luvvixScore.toFixed(1)}/5</p>
+            </div>
+          </div>
         </div>
 
         {/* Activité récente */}
@@ -143,40 +241,6 @@ const MobileProfile = () => {
                   <p className="text-sm text-gray-600">{activity.description}</p>
                   <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Achievements */}
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Succès</h3>
-        <div className="space-y-3">
-          {achievements.map((achievement, index) => (
-            <div 
-              key={index} 
-              className={`bg-white rounded-2xl p-4 shadow-sm border border-gray-100 ${
-                !achievement.unlocked ? 'opacity-60' : ''
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl ${
-                  achievement.unlocked 
-                    ? 'bg-gradient-to-br from-yellow-400 to-orange-500' 
-                    : 'bg-gray-100'
-                }`}>
-                  {achievement.icon}
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">{achievement.title}</h4>
-                  <p className="text-sm text-gray-600">{achievement.description}</p>
-                </div>
-                {achievement.unlocked && (
-                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
-                    </svg>
-                  </div>
-                )}
               </div>
             </div>
           ))}

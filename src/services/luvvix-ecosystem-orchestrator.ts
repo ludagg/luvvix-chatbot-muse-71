@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 interface UniversalWorkflow {
@@ -167,7 +168,7 @@ class LuvviXEcosystemOrchestrator {
       'LuvviX Learn': () => ({ success: true, data: { progressUpdated: true, skillsEarned: ['productivity'] } })
     };
 
-    const simulation = actionSimulations[action.app] || (() => ({ success: Math.random() > 0.2, data: undefined }));
+    const simulation = actionSimulations[action.app] || (() => ({ success: Math.random() > 0.2 }));
     const result = simulation();
 
     return {

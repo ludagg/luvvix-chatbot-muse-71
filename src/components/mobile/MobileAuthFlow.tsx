@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { ArrowLeft, Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import AvatarUpload from '@/components/ui/avatar-upload';
 
 interface MobileAuthFlowProps {
   onSuccess: () => void;
@@ -19,30 +18,6 @@ const MobileAuthFlow = ({ onSuccess, onBack }: MobileAuthFlowProps) => {
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string>('');
-
-  const handleAvatarChange = (file: File | null, preview: string) => {
-    setAvatarFile(file);
-    setAvatarPreview(preview);
-  };
-
-  const uploadAvatar = async (userId: string): Promise<string | null> => {
-    if (!avatarFile) return null;
-
-    try {
-      // Create a unique filename
-      const fileExt = avatarFile.name.split('.').pop();
-      const fileName = `${userId}/avatar.${fileExt}`;
-
-      // For now, we'll return the preview URL
-      // In a real implementation, you'd upload to Supabase Storage or another service
-      return avatarPreview;
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      return null;
-    }
-  };
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -70,10 +45,7 @@ const MobileAuthFlow = ({ onSuccess, onBack }: MobileAuthFlowProps) => {
       if (isLogin) {
         result = await signIn(email, password);
       } else {
-        // Upload avatar first if provided
-        const avatarUrl = avatarFile ? avatarPreview : null;
-        
-        result = await signUp(email, password, fullName, avatarUrl);
+        result = await signUp(email, password, fullName);
       }
 
       if (result && !result.error) {
@@ -130,30 +102,18 @@ const MobileAuthFlow = ({ onSuccess, onBack }: MobileAuthFlowProps) => {
       {/* Formulaire */}
       <div className="flex-1 px-6 space-y-4">
         {!isLogin && (
-          <>
-            {/* Avatar Upload */}
-            <div className="flex flex-col items-center mb-6">
-              <label className="text-sm font-medium text-gray-700 mb-3">Photo de profil (optionnel)</label>
-              <AvatarUpload
-                currentAvatar={avatarPreview}
-                onAvatarChange={handleAvatarChange}
-                size="lg"
-              />
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <User className="h-5 w-5 text-gray-400" />
             </div>
-
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                placeholder="Nom complet"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full pl-10 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-base"
-              />
-            </div>
-          </>
+            <input
+              type="text"
+              placeholder="Nom complet"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-full pl-10 pr-4 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-base"
+            />
+          </div>
         )}
 
         <div className="relative">

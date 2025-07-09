@@ -146,7 +146,7 @@ const EnhancedNewsInterface = () => {
                       {article.source}
                     </span>
                     {(article as any).aiEnhanced && (
-                      <Sparkles className="w-3 h-3 text-yellow-500" title="Amélioré par IA" />
+                      <Sparkles className="w-3 h-3 text-yellow-500" />
                     )}
                   </div>
                   <div className="flex items-center text-gray-500 text-xs">
@@ -177,7 +177,6 @@ const EnhancedNewsInterface = () => {
                   <button
                     onClick={() => handleSaveToggle(article)}
                     className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    title={isArticleSaved(article.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
                   >
                     {isArticleSaved(article.id) ? (
                       <BookmarkCheck className="w-4 h-4 text-blue-500" />

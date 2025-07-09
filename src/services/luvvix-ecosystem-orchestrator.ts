@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 interface UniversalWorkflow {
@@ -59,19 +60,6 @@ interface SmartSuggestion {
   roi_prediction: number;
   prerequisites: string[];
   success_probability: number;
-}
-
-interface UserAction {
-  id: string;
-  action: string;
-  data: any;
-  timestamp: string;
-}
-
-interface IntegrationResult {
-  success: boolean;
-  data?: any;
-  error?: string;
 }
 
 class LuvviXEcosystemOrchestrator {
@@ -462,30 +450,7 @@ class LuvviXEcosystemOrchestrator {
       console.error('Error updating cross-app memory:', error);
     }
   }
-
-  async integrateUserAction(action: UserAction): Promise<IntegrationResult> {
-    try {
-      // Simulation d'intégration réussie
-      const result: IntegrationResult = {
-        success: true,
-        data: {
-          actionId: action.id,
-          integrations: [],
-          recommendations: []
-        }
-      };
-
-      if (result.success && result.data) {
-        // Process the integration
-        console.log('Integration processed successfully', result.data);
-      }
-
-      return result;
-    } catch (error) {
-      console.error('Erreur intégration action:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
-    }
-  }
 }
 
-export default LuvviXEcosystemOrchestrator;
+export const ecosystemOrchestrator = LuvviXEcosystemOrchestrator.getInstance();
+export type { UniversalWorkflow, DataFusionInsight, EcosystemHealth, SmartSuggestion };

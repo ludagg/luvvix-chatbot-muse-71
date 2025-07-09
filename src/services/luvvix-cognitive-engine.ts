@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { digitalTwin } from './luvvix-digital-twin';
 
@@ -40,19 +41,6 @@ interface ProactiveAssistance {
     data: any;
   }>;
   expires_at: string;
-}
-
-interface CognitiveInsight {
-  type: 'productivity' | 'optimization' | 'warning';
-  confidence: number;
-  message: string;
-  suggestions: string[];
-  timestamp: string;
-}
-
-interface PredictiveInsight {
-  predictionId: string;
-  timing: 'immediate' | 'short_term' | 'long_term';
 }
 
 class LuvviXCognitiveEngine {
@@ -107,49 +95,6 @@ class LuvviXCognitiveEngine {
     return predictions.sort((a, b) => b.confidence * b.impact_score - a.confidence * a.impact_score);
   }
 
-  async analyzeUserBehavior(interactionData: any): Promise<CognitiveInsight[]> {
-    try {
-      const insights: CognitiveInsight[] = [];
-
-      // Analyse des patterns temporels
-      const timePatterns = this.analyzeTimePatterns(interactionData);
-      if (timePatterns && typeof timePatterns.averageSessionLength === 'number' && timePatterns.averageSessionLength > 30) {
-        insights.push({
-          type: 'productivity',
-          confidence: 0.8,
-          message: 'Sessions de travail prolongées détectées',
-          suggestions: ['Prenez des pauses régulières', 'Hydratez-vous'],
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      return insights;
-    } catch (error) {
-      console.error('Erreur analyse comportementale:', error);
-      return [];
-    }
-  }
-
-  private analyzeTimePatterns(interactionData: any): { averageSessionLength: number } | null {
-    try {
-      if (!interactionData || !Array.isArray(interactionData.sessions)) {
-        return null;
-      }
-      
-      const sessions = interactionData.sessions;
-      const totalDuration = sessions.reduce((sum: number, session: any) => {
-        const duration = session.duration;
-        return sum + (typeof duration === 'number' ? duration : 0);
-      }, 0);
-      const averageSessionLength = sessions.length > 0 ? totalDuration / sessions.length : 0;
-      
-      return { averageSessionLength };
-    } catch (error) {
-      console.error('Error analyzing time patterns:', error);
-      return null;
-    }
-  }
-
   private async predictImmediateActions(context: CognitiveContext, profile: any): Promise<CognitivePrediction[]> {
     const predictions: CognitivePrediction[] = [];
     const currentHour = new Date().getHours();
@@ -157,11 +102,11 @@ class LuvviXCognitiveEngine {
     // Pattern-based predictions
     const appPreferences = profile.behavioral_patterns.app_preferences;
     for (const [app, score] of Object.entries(appPreferences)) {
-      if (typeof score === 'number' && score > 3 && app !== context.current_app) {
+      if (score > 3 && app !== context.current_app) {
         predictions.push({
           id: `action-${app}-${Date.now()}`,
           type: 'action',
-          confidence: Math.min(0.9, score / 10),
+          confidence: Math.min(0.9, (score as number) / 10),
           predicted_action: `Basculer vers ${app}`,
           reasoning: `Vous utilisez souvent ${app} à cette heure`,
           suggested_timing: 'dans les 15 prochaines minutes',
@@ -413,7 +358,7 @@ class LuvviXCognitiveEngine {
       baseActions.unshift({
         label: 'Voir les détails',
         action: 'show_optimization_details',
-        data: { predictionId: prediction.id, timing: 'immediate' }
+        data: { predictionId: prediction.id }
       });
     }
 
@@ -421,7 +366,7 @@ class LuvviXCognitiveEngine {
       baseActions.unshift({
         label: 'Analyser le problème',
         action: 'analyze_issue',
-        data: { predictionId: prediction.id, timing: 'immediate' }
+        data: { predictionId: prediction.id }
       });
     }
 
@@ -440,31 +385,6 @@ class LuvviXCognitiveEngine {
         });
     } catch (error) {
       console.error('Error validating prediction:', error);
-    }
-  }
-
-  async generatePredictiveInsights(userId: string, context: any): Promise<PredictiveInsight[]> {
-    try {
-      const insights: PredictiveInsight[] = [];
-
-      if (Math.random() > 0.7) {
-        insights.push({
-          predictionId: `pred_${Date.now()}`,
-          timing: 'immediate'
-        });
-      }
-
-      if (Math.random() > 0.8) {
-        insights.push({
-          predictionId: `pred_${Date.now() + 1}`,
-          timing: 'short_term'
-        });
-      }
-
-      return insights;
-    } catch (error) {
-      console.error('Erreur génération insights:', error);
-      return [];
     }
   }
 
@@ -509,4 +429,5 @@ class LuvviXCognitiveEngine {
   }
 }
 
-export default LuvviXCognitiveEngine;
+export const cognitiveEngine = LuvviXCognitiveEngine.getInstance();
+export type { CognitiveContext, CognitivePrediction, ProactiveAssistance };

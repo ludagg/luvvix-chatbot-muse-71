@@ -22,9 +22,8 @@ import MobileForms from './MobileForms';
 import MobileTranslate from './MobileTranslate';
 import MobileWeather from './MobileWeather';
 import MobileCenter from './MobileCenter';
-import MobileNewsPage from './MobileNewsPage';
 
-type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search' | 'calendar' | 'forms' | 'translate' | 'weather' | 'center' | 'news';
+type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search' | 'calendar' | 'forms' | 'translate' | 'weather' | 'center';
 
 const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   const isMobile = useIsMobile();
@@ -185,14 +184,8 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
         return <MobileWeather onBack={() => setActiveView('home')} />;
       case 'center':
         return <MobileCenter onBack={() => setActiveView('home')} />;
-      case 'news':
-        return <MobileNewsPage onBack={() => setActiveView('home')} />;
       default:
-        return <MobileHome setActiveSection={(section) => {
-          if (section === 'news') {
-            setActiveView('news');
-          }
-        }} />;
+        return <MobileHome />;
     }
   };
 

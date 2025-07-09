@@ -206,19 +206,29 @@ const MobileHome = () => {
             </p>
           </div>
           
-          {weatherData && (
-            <div className="text-right">
-              <div className="flex items-center space-x-2 mb-1">
-                <Cloud className="w-6 h-6" />
-                <span className="text-2xl font-light">{weatherData.current.temperature}°C</span>
-              </div>
-              <p className="text-sm text-blue-100">{weatherData.current.condition}</p>
-              <p className="text-xs text-blue-200 flex items-center justify-end">
-                <MapPin className="w-3 h-3 mr-1" />
-                {weatherData.location.name}
-              </p>
-            </div>
-          )}
+       {weatherData ? (
+  <div className="text-right">
+    <div className="flex items-center space-x-2 mb-1">
+      <Cloud className="w-6 h-6" />
+      <span className="text-2xl font-light">{weatherData.current.temperature}°C</span>
+    </div>
+    <p className="text-sm text-blue-100">{weatherData.current.condition}</p>
+    <p className="text-xs text-blue-200 flex items-center justify-end">
+      <MapPin className="w-3 h-3 mr-1" />
+      {weatherData.location.name}
+    </p>
+  </div>
+) : (
+  <div className="text-right animate-pulse">
+    <div className="flex items-center space-x-2 mb-1">
+      <div className="w-6 h-6 bg-blue-300 rounded-full" />
+      <div className="w-12 h-6 bg-blue-300 rounded"></div>
+    </div>
+    <p className="text-sm bg-blue-300 w-24 h-4 rounded mb-1"></p>
+    <p className="text-xs bg-blue-300 w-20 h-3 rounded ml-auto"></p>
+  </div>
+)}
+//Fin
         </div>
         
         <p className="text-blue-100 text-center leading-relaxed">

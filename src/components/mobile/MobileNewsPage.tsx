@@ -1,20 +1,59 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Settings, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AINewsPreferences from '@/components/news/AINewsPreferences';
 import AINewsBriefing from '@/components/news/AINewsBriefing';
+import { hasUserConfiguredPreferences } from '@/services/news-service';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface MobileNewsPageProps {
   onBack: () => void;
 }
 
 const MobileNewsPage: React.FC<MobileNewsPageProps> = ({ onBack }) => {
+  const { user } = useAuth();
   const [showPreferences, setShowPreferences] = useState(false);
   const [newsPreferences, setNewsPreferences] = useState(null);
+  const [hasConfigured, setHasConfigured] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadUserPreferences();
+  }, [user]);
+
+  const loadUserPreferences = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const configured = await hasUserConfiguredPreferences();
+      setHasConfigured(configured);
+
+      if (configured) {
+        const { data } = await supabase
+          .from('user_preferences')
+          .select('news_preferences')
+          .eq('user_id', user.id)
+          .single();
+
+        if (data?.news_preferences) {
+          setNewsPreferences(data.news_preferences);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handlePreferencesSet = (preferences: any) => {
     setNewsPreferences(preferences);
+    setHasConfigured(true);
     setShowPreferences(false);
   };
 
@@ -47,34 +86,39 @@ const MobileNewsPage: React.FC<MobileNewsPageProps> = ({ onBack }) => {
       </div>
 
       {/* Content */}
-      <div className="flex-1">
+      <div className="flex-1 pt-4">
         {showPreferences ? (
           <AINewsPreferences
             onPreferencesSet={handlePreferencesSet}
             onSkip={() => setShowPreferences(false)}
           />
-        ) : newsPreferences ? (
-          <AINewsBriefing preferences={newsPreferences} />
-        ) : (
+        ) : loading ? (
           <div className="p-4">
-            <div className="text-center py-12">
-              <Sparkles className="w-16 h-16 text-purple-500 mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                Actualités IA Personnalisées
-              </h2>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Configurez vos préférences pour recevoir un briefing intelligent 
-                des actualités qui vous intéressent vraiment.
-              </p>
-              <Button
-                onClick={() => setShowPreferences(true)}
-                className="bg-purple-500 hover:bg-purple-600"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Commencer la configuration
-              </Button>
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="bg-white rounded-lg p-4 animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              ))}
             </div>
           </div>
+        ) : (
+          <AINewsBriefing 
+            preferences={newsPreferences}
+            showSetup={!hasConfigured}
+            onPreferencesSet={(categories) => {
+              const preferences = {
+                categories,
+                sources: [],
+                keywords: [],
+                frequency: 'realtime',
+                language: 'fr',
+                location: true
+              };
+              handlePreferencesSet(preferences);
+            }}
+          />
         )}
       </div>
     </div>

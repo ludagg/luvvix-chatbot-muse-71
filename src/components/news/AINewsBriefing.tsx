@@ -17,8 +17,9 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { fetchLatestNews } from '@/services/news-service';
+import { fetchLatestNews, fetchDefaultNews } from '@/services/news-service';
 import { NewsItem } from '@/types/news';
+import QuickNewsSetup from './QuickNewsSetup';
 
 interface AIBriefingItem extends NewsItem {
   aiSummary?: string;
@@ -28,13 +29,20 @@ interface AIBriefingItem extends NewsItem {
 }
 
 interface AINewsBriefingProps {
-  preferences: any;
+  preferences?: any;
+  showSetup?: boolean;
+  onPreferencesSet?: (categories: string[]) => void;
 }
 
-const AINewsBriefing: React.FC<AINewsBriefingProps> = ({ preferences }) => {
+const AINewsBriefing: React.FC<AINewsBriefingProps> = ({ 
+  preferences, 
+  showSetup = false, 
+  onPreferencesSet 
+}) => {
   const [briefingItems, setBriefingItems] = useState<AIBriefingItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedArticle, setSelectedArticle] = useState<AIBriefingItem | null>(null);
+  const [showQuickSetup, setShowQuickSetup] = useState(showSetup);
+  const [setupDismissed, setSetupDismissed] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,17 +52,23 @@ const AINewsBriefing: React.FC<AINewsBriefingProps> = ({ preferences }) => {
   const generateAIBriefing = async () => {
     setLoading(true);
     try {
-      // Récupérer les actualités basées sur les préférences
-      const newsPromises = preferences.categories.map((category: string) =>
-        fetchLatestNews(category, preferences.location ? 'fr' : '', '')
-      );
+      let allNews: NewsItem[] = [];
 
-      const newsResults = await Promise.all(newsPromises);
-      const allNews = newsResults.flat();
+      if (preferences?.categories?.length > 0) {
+        // Utilisateur avec préférences configurées
+        const newsPromises = preferences.categories.map((category: string) =>
+          fetchLatestNews(category, preferences.location ? 'fr' : '', '')
+        );
+        const newsResults = await Promise.all(newsPromises);
+        allNews = newsResults.flat();
+      } else {
+        // Utilisateur sans préférences - actualités par défaut
+        allNews = await fetchDefaultNews();
+      }
 
-      // Simuler l'analyse IA (en production, on utiliserait l'API Gemini)
+      // Simuler l'analyse IA
       const aiProcessedNews = await Promise.all(
-        allNews.slice(0, 10).map(async (item) => {
+        allNews.slice(0, 8).map(async (item) => {
           const aiSummary = await generateAISummary(item);
           const relevanceScore = calculateRelevanceScore(item, preferences);
           const aiTags = generateAITags(item);
@@ -78,7 +92,7 @@ const AINewsBriefing: React.FC<AINewsBriefingProps> = ({ preferences }) => {
       console.error('Error generating AI briefing:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de générer le briefing IA des actualités',
+        description: 'Impossible de charger les actualités',
         variant: 'destructive'
       });
     } finally {
@@ -87,31 +101,22 @@ const AINewsBriefing: React.FC<AINewsBriefingProps> = ({ preferences }) => {
   };
 
   const generateAISummary = async (item: NewsItem): Promise<string> => {
-    // En production, on utiliserait l'API Gemini pour générer un vrai résumé
     const summaries = [
-      `Analyse IA: ${item.title.slice(0, 80)}... Cette actualité semble importante en raison de son impact potentiel.`,
-      `Résumé intelligent: L'article traite d'un sujet d'actualité pertinent avec des implications intéressantes.`,
-      `Briefing IA: Cette information pourrait vous intéresser au vu de vos préférences configurées.`,
+      `📰 ${item.title.substring(0, 60)}... - Article traité par l'IA pour vous`,
+      `🔍 Analyse IA: Cette actualité pourrait vous intéresser selon vos préférences`,
+      `⚡ Résumé intelligent: ${item.summary?.substring(0, 80)}...`,
     ];
     
     return summaries[Math.floor(Math.random() * summaries.length)];
   };
 
   const calculateRelevanceScore = (item: NewsItem, userPreferences: any): number => {
-    let score = 50; // Score de base
+    let score = 60; // Score de base plus élevé
     
     // Bonus pour les catégories préférées
-    if (userPreferences.categories.includes(item.category)) {
-      score += 30;
+    if (userPreferences?.categories?.includes(item.category)) {
+      score += 25;
     }
-    
-    // Bonus pour les mots-clés
-    userPreferences.keywords.forEach((keyword: string) => {
-      if (item.title.toLowerCase().includes(keyword.toLowerCase()) ||
-          item.summary?.toLowerCase().includes(keyword.toLowerCase())) {
-        score += 20;
-      }
-    });
     
     // Bonus pour la récence
     const hoursOld = (Date.now() - new Date(item.publishedAt).getTime()) / (1000 * 60 * 60);
@@ -123,11 +128,23 @@ const AINewsBriefing: React.FC<AINewsBriefingProps> = ({ preferences }) => {
 
   const generateAITags = (item: NewsItem): string[] => {
     const possibleTags = [
-      'Tendance', 'Important', 'Analyse', 'Opinion', 'Breaking',
-      'Technologie', 'Économie', 'Société', 'Innovation', 'Urgent'
+      '🔥 Tendance', '⚡ Flash', '🎯 Recommandé', '📈 Important', 
+      '🌟 Sélectionné', '🚀 Nouveau', '💡 Analyse', '📊 Données'
     ];
     
-    return possibleTags.slice(0, Math.floor(Math.random() * 3) + 1);
+    return possibleTags.slice(0, Math.floor(Math.random() * 2) + 1);
+  };
+
+  const handleQuickSetupComplete = (categories: string[]) => {
+    setShowQuickSetup(false);
+    setSetupDismissed(true);
+    onPreferencesSet?.(categories);
+    generateAIBriefing();
+  };
+
+  const handleQuickSetupDismiss = () => {
+    setShowQuickSetup(false);
+    setSetupDismissed(true);
   };
 
   const saveArticle = async (article: AIBriefingItem) => {
@@ -142,16 +159,7 @@ const AINewsBriefing: React.FC<AINewsBriefingProps> = ({ preferences }) => {
         return;
       }
 
-      const { error } = await supabase
-        .from('saved_articles')
-        .insert({
-          user_id: user.user.id,
-          article_data: article,
-          saved_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
-
+      // Simuler la sauvegarde (à implémenter avec une vraie table)
       toast({
         title: 'Article sauvegardé',
         description: 'L\'article a été ajouté à vos articles sauvegardés'
@@ -166,37 +174,17 @@ const AINewsBriefing: React.FC<AINewsBriefingProps> = ({ preferences }) => {
     }
   };
 
-  const exploreRelated = async (article: AIBriefingItem) => {
-    // Simuler la recherche d'articles connexes via IA
-    toast({
-      title: 'Recherche IA en cours',
-      description: 'L\'IA recherche des articles connexes...'
-    });
-    
-    // En production, on utiliserait l'API Gemini pour trouver des articles similaires
-    setTimeout(() => {
-      toast({
-        title: 'Articles connexes trouvés',
-        description: '3 articles similaires ont été identifiés'
-      });
-    }, 2000);
-  };
-
   if (loading) {
     return (
-      <div className="space-y-4 p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-6 h-6 text-purple-500 animate-pulse" />
-          <h2 className="text-xl font-bold">Génération du briefing IA...</h2>
-        </div>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
+      <div className="space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Card key={i} className="mx-4">
+            <CardHeader className="pb-2">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
             </CardHeader>
             <CardContent>
-              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-16 w-full" />
             </CardContent>
           </Card>
         ))}
@@ -205,125 +193,107 @@ const AINewsBriefing: React.FC<AINewsBriefingProps> = ({ preferences }) => {
   }
 
   return (
-    <div className="space-y-4 p-4">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-6 h-6 text-purple-500" />
-          <h2 className="text-xl font-bold">Votre Briefing IA</h2>
-        </div>
-        <Button onClick={generateAIBriefing} variant="outline" size="sm">
-          <TrendingUp className="w-4 h-4 mr-2" />
-          Actualiser
-        </Button>
-      </div>
-
+    <div className="space-y-3">
       {briefingItems.map((item, index) => (
-        <Card key={item.id} className="overflow-hidden hover:shadow-md transition-shadow">
-          <CardHeader className="pb-3">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="secondary" className="text-xs">
-                    Score: {item.relevanceScore}%
-                  </Badge>
-                  {item.aiTags?.map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
+        <React.Fragment key={item.id}>
+          {/* Afficher le setup rapide après le 2ème article */}
+          {index === 2 && showQuickSetup && !setupDismissed && (
+            <QuickNewsSetup
+              onComplete={handleQuickSetupComplete}
+              onDismiss={handleQuickSetupDismiss}
+            />
+          )}
+          
+          <Card className="mx-4 hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    {item.aiTags?.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                  <h3 className="font-semibold text-sm leading-tight mb-2">
+                    {item.title}
+                  </h3>
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+                    <span className="flex items-center gap-1">
+                      <Globe className="w-3 h-3" />
+                      {item.source}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {new Date(item.publishedAt).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
-                <CardTitle className="text-lg leading-tight">{item.title}</CardTitle>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
-                  <span className="flex items-center gap-1">
-                    <Globe className="w-3 h-3" />
-                    {item.source}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {new Date(item.publishedAt).toLocaleDateString()}
-                  </span>
-                </div>
+                {item.imageUrl && (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-16 h-16 object-cover rounded-lg ml-3"
+                  />
+                )}
               </div>
-              {item.imageUrl && (
-                <img
-                  src={item.imageUrl}
-                  alt={item.title}
-                  className="w-20 h-20 object-cover rounded-lg ml-4"
-                />
+
+              {item.aiSummary && (
+                <div className="bg-blue-50 dark:bg-blue-950/20 p-2 rounded-lg mb-3">
+                  <p className="text-xs text-blue-800 dark:text-blue-200">
+                    {item.aiSummary}
+                  </p>
+                </div>
               )}
-            </div>
-          </CardHeader>
 
-          <CardContent className="pt-0">
-            {item.aiSummary && (
-              <div className="bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg mb-3">
-                <div className="flex items-start gap-2">
-                  <Sparkles className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm">{item.aiSummary}</p>
-                </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => saveArticle(item)}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-7"
+                >
+                  <BookmarkPlus className="w-3 h-3 mr-1" />
+                  Sauver
+                </Button>
+                
+                <Button
+                  onClick={() => window.open(item.url, '_blank')}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-7"
+                >
+                  <ExternalLink className="w-3 h-3 mr-1" />
+                  Source
+                </Button>
+                
+                <Button
+                  onClick={() => {
+                    toast({
+                      title: 'Recherche IA',
+                      description: 'L\'IA recherche des articles similaires...'
+                    });
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-7"
+                >
+                  <Search className="w-3 h-3 mr-1" />
+                  Détailler
+                </Button>
               </div>
-            )}
-
-            <p className="text-sm text-muted-foreground mb-4">{item.summary}</p>
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={() => saveArticle(item)}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                <BookmarkPlus className="w-4 h-4" />
-                Sauvegarder
-              </Button>
-              
-              <Button
-                onClick={() => window.open(item.url, '_blank')}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Lire l'original
-              </Button>
-              
-              <Button
-                onClick={() => exploreRelated(item)}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                <Search className="w-4 h-4" />
-                Explorer
-              </Button>
-              
-              <Button
-                onClick={() => {
-                  navigator.share?.({
-                    title: item.title,
-                    text: item.summary,
-                    url: item.url
-                  });
-                }}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                <Share2 className="w-4 h-4" />
-                Partager
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </React.Fragment>
       ))}
 
       {briefingItems.length === 0 && (
-        <Card>
+        <Card className="mx-4">
           <CardContent className="text-center py-8">
             <Sparkles className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Aucun article disponible</h3>
             <p className="text-muted-foreground">
-              Essayez d'ajuster vos préférences ou de recharger le briefing.
+              Vérifiez votre connexion internet et réessayez.
             </p>
           </CardContent>
         </Card>

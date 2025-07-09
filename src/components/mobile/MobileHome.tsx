@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
@@ -44,9 +43,9 @@ const MobileHome = () => {
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Alex';
 
   // États pour les actualités IA
-  const [showNewsPreferences, setShowNewsPreferences] = useState(false);
   const [newsPreferences, setNewsPreferences] = useState(null);
-  const [hasSetPreferences, setHasSetPreferences] = useState(false);
+  const [hasConfiguredNews, setHasConfiguredNews] = useState(false);
+  const [loadingPreferences, setLoadingPreferences] = useState(true);
 
   // Charger les données météo au démarrage
   useEffect(() => {
@@ -68,7 +67,10 @@ const MobileHome = () => {
   // Charger les préférences de l'utilisateur
   useEffect(() => {
     const loadUserPreferences = async () => {
-      if (!user) return;
+      if (!user) {
+        setLoadingPreferences(false);
+        return;
+      }
 
       try {
         const { data, error } = await supabase
@@ -77,17 +79,17 @@ const MobileHome = () => {
           .eq('user_id', user.id)
           .single();
 
-        if (data?.news_preferences) {
+        if (data?.news_preferences?.categories?.length > 0) {
           setNewsPreferences(data.news_preferences);
-          setHasSetPreferences(true);
+          setHasConfiguredNews(true);
         } else {
-          // Première visite - afficher les préférences après un délai
-          setTimeout(() => {
-            setShowNewsPreferences(true);
-          }, 3000);
+          setHasConfiguredNews(false);
         }
       } catch (error) {
         console.error('Error loading preferences:', error);
+        setHasConfiguredNews(false);
+      } finally {
+        setLoadingPreferences(false);
       }
     };
 
@@ -204,30 +206,24 @@ const MobileHome = () => {
     totalEvents: events?.length || 0
   };
 
-  const handlePreferencesSet = (preferences: any) => {
+  const handleNewsPreferencesSet = (categories: string[]) => {
+    const preferences = {
+      categories,
+      sources: [],
+      keywords: [],
+      frequency: 'realtime',
+      language: 'fr',
+      location: true
+    };
+    
     setNewsPreferences(preferences);
-    setHasSetPreferences(true);
-    setShowNewsPreferences(false);
+    setHasConfiguredNews(true);
+    
     toast({
-      title: 'Actualités IA configurées',
-      description: 'Votre briefing personnalisé est maintenant prêt'
+      title: 'Actualités configurées',
+      description: 'Votre fil personnalisé est maintenant prêt'
     });
   };
-
-  // Afficher les préférences si pas encore configurées
-  if (showNewsPreferences && !hasSetPreferences) {
-    return (
-      <div className="flex-1 overflow-auto pb-20">
-        <AINewsPreferences
-          onPreferencesSet={handlePreferencesSet}
-          onSkip={() => {
-            setShowNewsPreferences(false);
-            setHasSetPreferences(true);
-          }}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 overflow-auto p-4 pb-20">
@@ -426,48 +422,38 @@ const MobileHome = () => {
         )}
       </div>
 
-      {/* Section Actualités IA */}
+      {/* Section Actualités IA améliorée */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-900 flex items-center">
             <Sparkles className="w-5 h-5 mr-2 text-purple-500" />
             Actualités IA
           </h3>
-          <div className="flex items-center space-x-2">
-            {!hasSetPreferences && (
-              <button
-                onClick={() => setShowNewsPreferences(true)}
-                className="text-purple-500 text-sm font-medium hover:text-purple-600 transition-colors flex items-center"
-              >
-                <Settings className="w-4 h-4 mr-1" />
-                Configurer
-              </button>
-            )}
-            <button
-              onClick={() => setShowNewsPreferences(true)}
-              className="text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
-            >
-              Préférences
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              const event = new CustomEvent('navigate-to-news');
+              window.dispatchEvent(event);
+            }}
+            className="text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
+          >
+            Voir tout →
+          </button>
         </div>
 
-        {hasSetPreferences && newsPreferences ? (
-          <AINewsBriefing preferences={newsPreferences} />
+        {!loadingPreferences ? (
+          <AINewsBriefing 
+            preferences={newsPreferences}
+            showSetup={!hasConfiguredNews}
+            onPreferencesSet={handleNewsPreferencesSet}
+          />
         ) : (
-          <div className="text-center py-6">
-            <Newspaper className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <h4 className="font-medium text-gray-900 mb-2">Actualités personnalisées</h4>
-            <p className="text-sm text-gray-600 mb-4">
-              Configurez vos préférences pour recevoir un briefing IA personnalisé
-            </p>
-            <button
-              onClick={() => setShowNewsPreferences(true)}
-              className="bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors flex items-center mx-auto"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Configurer maintenant
-            </button>
+          <div className="space-y-3">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -10,13 +10,27 @@ export const getUserLocation = async () => {
     return await response.json();
   } catch (error) {
     console.error('Error getting user location:', error);
-    return null;
+    return { country_code: 'FR', country_name: 'France' }; // Valeur par défaut
+  }
+};
+
+// Fonction pour récupérer les actualités par défaut basées sur la localisation
+export const fetchDefaultNews = async (): Promise<NewsItem[]> => {
+  try {
+    const location = await getUserLocation();
+    const countryCode = location.country_code || 'FR';
+    
+    // Récupérer des actualités générales pour le pays
+    return await fetchLatestNews('general', countryCode.toLowerCase(), '');
+  } catch (error) {
+    console.error('Error fetching default news:', error);
+    return [];
   }
 };
 
 // Fonction pour récupérer les dernières actualités
 export const fetchLatestNews = async (
-  category: string = 'all',
+  category: string = 'general',
   country: string = '',
   query: string = ''
 ): Promise<NewsItem[]> => {
@@ -29,7 +43,7 @@ export const fetchLatestNews = async (
       feedUrl += `?gl=${country}`;
     }
     
-    if (category !== 'all') {
+    if (category !== 'general' && category !== 'all') {
       feedUrl += `&ceid=${countryCode}:${category}`;
     }
     
@@ -53,8 +67,8 @@ export const fetchLatestNews = async (
     const items: NewsItem[] = data.items.map((item: any, index: number) => ({
       id: item.guid || `news-${index}`,
       title: item.title,
-      summary: item.description.substring(0, 200) + '...',
-      content: item.content || item.description,
+      summary: item.description?.substring(0, 200) + '...' || '',
+      content: item.content || item.description || '',
       publishedAt: item.pubDate,
       source: item.author || data.feed.title,
       category: category,
@@ -63,55 +77,79 @@ export const fetchLatestNews = async (
       location: country ? { country: country } : undefined
     }));
     
-    return items;
+    return items.slice(0, 10); // Limiter à 10 articles
   } catch (error) {
-    console.error('Error in fetchLatestNews:', error.message || error);
-    // Si l'API externe échoue, essayons de passer par la fonction edge
-    try {
-      const { data, error: edgeError } = await supabase.functions.invoke('get-news', {
-        body: { category, country, query },
-      });
-
-      if (edgeError) {
-        console.error('Error fetching news from edge function:', edgeError);
-        throw new Error(edgeError.message);
-      }
-
-      const newsResponse = data as NewsApiResponse;
-
-      if (newsResponse.error) {
-        console.error('News API error:', newsResponse.error, newsResponse.details || '');
-        throw new Error(newsResponse.error);
-      }
-
-      if (!newsResponse.items || !Array.isArray(newsResponse.items)) {
-        console.warn('Invalid news data format:', newsResponse);
-        if (newsResponse.message) {
-          throw new Error(newsResponse.message);
-        }
-        throw new Error('Invalid news data received');
-      }
-
-      return newsResponse.items;
-    } catch (fallbackError) {
-      console.error('Both news sources failed:', fallbackError);
-      // Retournons des données statiques en dernier recours
-      return [{
-        id: 'fallback-1',
-        title: 'Impossible de charger les actualités',
-        summary: 'Veuillez réessayer ultérieurement.',
-        content: 'Le service d\'actualités est temporairement indisponible.',
-        publishedAt: new Date().toISOString(),
-        source: 'LuvviX News',
-        category: 'error',
-        url: '#',
-      }];
-    }
+    console.error('Error in fetchLatestNews:', error);
+    // Retourner des données statiques en dernier recours
+    return [{
+      id: 'fallback-1',
+      title: 'Actualités disponibles',
+      summary: 'Configurez vos préférences pour une expérience personnalisée.',
+      content: 'Personnalisez votre fil d\'actualités selon vos intérêts.',
+      publishedAt: new Date().toISOString(),
+      source: 'LuvviX News',
+      category: 'general',
+      url: '#',
+    }];
   }
 };
 
 // Add getNews as an alias for fetchLatestNews for backward compatibility
 export const getNews = fetchLatestNews;
+
+// Fonction pour vérifier si l'utilisateur a configuré ses préférences
+export const hasUserConfiguredPreferences = async (): Promise<boolean> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return false;
+
+    const { data, error } = await supabase
+      .from('user_preferences')
+      .select('news_preferences')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) return false;
+    
+    return data?.news_preferences && 
+           data.news_preferences.categories && 
+           data.news_preferences.categories.length > 0;
+  } catch (error) {
+    console.error('Error checking user preferences:', error);
+    return false;
+  }
+};
+
+// Fonction pour sauvegarder les préférences simplifiées
+export const saveSimplifiedPreferences = async (categories: string[]): Promise<boolean> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return false;
+
+    const preferences = {
+      categories,
+      sources: [],
+      keywords: [],
+      frequency: 'realtime',
+      language: 'fr',
+      location: true
+    };
+
+    const { error } = await supabase
+      .from('user_preferences')
+      .upsert({
+        user_id: user.id,
+        news_preferences: preferences
+      }, {
+        onConflict: 'user_id'
+      });
+
+    return !error;
+  } catch (error) {
+    console.error('Error saving preferences:', error);
+    return false;
+  }
+};
 
 // Fonction pour s'abonner aux sujets d'actualités
 export const subscribeToNewsTopics = async (

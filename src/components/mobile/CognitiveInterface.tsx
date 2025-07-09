@@ -1,39 +1,43 @@
 
 import React, { useState, useEffect } from 'react';
 import { Brain, Lightbulb, Activity, TrendingUp } from 'lucide-react';
-import { cognitiveEngine } from '@/services/luvvix-cognitive-engine';
+import { CognitiveEngine } from '@/services/luvvix-cognitive-engine';
 import { CognitiveContext, CognitiveInsight } from '@/services/luvvix-cognitive-engine';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CognitiveInterfaceProps {
-  userId: string;
-  currentContext: CognitiveContext;
   onBack?: () => void;
 }
 
-const CognitiveInterface = ({ userId, currentContext, onBack }: CognitiveInterfaceProps) => {
+const CognitiveInterface = ({ onBack }: CognitiveInterfaceProps) => {
+  const { user } = useAuth();
   const [insights, setInsights] = useState<CognitiveInsight[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeInsight, setActiveInsight] = useState<string | null>(null);
 
   useEffect(() => {
-    loadCognitiveInsights();
-  }, [userId, currentContext]);
+    if (user?.id) {
+      loadCognitiveInsights();
+    }
+  }, [user?.id]);
 
   const loadCognitiveInsights = async () => {
+    if (!user?.id) return;
+    
     try {
       setLoading(true);
-      const cognitiveInsights = await cognitiveEngine.processContext({
-        user_id: userId,
-        current_app: currentContext.current_app || 'mobile',
+      const currentContext: CognitiveContext = {
+        user_id: user.id,
+        current_app: 'mobile',
         time_of_day: new Date().getHours().toString(),
         device_info: {
           platform: 'mobile',
           screen_size: `${window.innerWidth}x${window.innerHeight}`
         },
-        location: currentContext.location || 'unknown',
-        recent_actions: currentContext.recent_actions || []
-      });
+        location: 'unknown',
+        recent_actions: []
+      };
       
+      const cognitiveInsights = await CognitiveEngine.processContext(currentContext);
       setInsights(cognitiveInsights);
     } catch (error) {
       console.error('Error loading cognitive insights:', error);
@@ -102,7 +106,6 @@ const CognitiveInterface = ({ userId, currentContext, onBack }: CognitiveInterfa
                         key={index}
                         className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium hover:bg-blue-100 transition-colors"
                         onClick={() => {
-                          // Implémentation des actions cognitives
                           console.log('Cognitive action:', action);
                         }}
                       >

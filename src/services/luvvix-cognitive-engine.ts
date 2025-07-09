@@ -1,3 +1,4 @@
+
 import { WebCrawlerService } from './web-crawler-service';
 
 export interface CognitiveContext {
@@ -195,3 +196,6 @@ export class CognitiveEngine {
     return predictions;
   }
 }
+
+// Créer une instance exportée pour la compatibilité
+export const cognitiveEngine = CognitiveEngine;

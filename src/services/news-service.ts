@@ -17,56 +17,49 @@ export const getUserLocation = async () => {
 // Fonction pour récupérer les dernières actualités
 export const fetchLatestNews = async (
   category: string = 'all',
-  country: string = '',
+  country: string = 'fr',
   query: string = ''
 ): Promise<NewsItem[]> => {
+  const apiKey = 'pub_e9e18325ddca4013bc0b60a1bdf8e008';
+
   try {
-    // Utilisation d'une API ouverte gratuite (Google News RSS)
-    const countryCode = country || 'fr'; // Par défaut France
-    let feedUrl = `https://news.google.com/rss`;
-    
-    if (country) {
-      feedUrl += `?gl=${country}`;
-    }
-    
-    if (category !== 'all') {
-      feedUrl += `&ceid=${countryCode}:${category}`;
-    }
-    
-    if (query) {
-      // Encodage de la requête pour l'URL
-      const encodedQuery = encodeURIComponent(query);
-      feedUrl = `https://news.google.com/rss/search?q=${encodedQuery}`;
-    }
-    
-    // Utilise le proxy RSS2JSON pour convertir le flux RSS en JSON
-    const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`;
-    
-    const response = await fetch(proxyUrl);
+    // Construction de l'URL NewsData.io
+    const baseUrl = 'https://newsdata.io/api/1/news';
+    const params = new URLSearchParams({
+      apikey: apiKey,
+      country,
+      language: 'fr',
+    });
+
+    if (category !== 'all') params.append('category', category);
+    if (query) params.append('q', query);
+
+    const response = await fetch(`${baseUrl}?${params.toString()}`);
     const data = await response.json();
-    
-    if (data.status !== 'ok') {
-      throw new Error(data.message || 'Failed to fetch news');
+
+    if (!data?.results || data.results.length === 0) {
+      throw new Error('Aucune actualité disponible');
     }
-    
-    // Transformation des données au format NewsItem
-    const items: NewsItem[] = data.items.map((item: any, index: number) => ({
-      id: item.guid || `news-${index}`,
+
+    // Mapping au format NewsItem[]
+    const items: NewsItem[] = data.results.map((item: any, index: number) => ({
+      id: item.link || `news-${index}`,
       title: item.title,
-      summary: item.description.substring(0, 200) + '...',
+      summary: item.description?.slice(0, 200) + '...' || '',
       content: item.content || item.description,
-      publishedAt: item.pubDate,
-      source: item.author || data.feed.title,
+      publishedAt: item.pubDate || new Date().toISOString(),
+      source: item.source_id || 'NewsData.io',
       category: category,
       url: item.link,
-      imageUrl: item.enclosure?.link || item.thumbnail || null,
-      location: country ? { country: country } : undefined
+      imageUrl: item.image_url || null,
+      location: country ? { country } : undefined,
     }));
-    
+
     return items;
-  } catch (error) {
-    console.error('Error in fetchLatestNews:', error.message || error);
-    // Si l'API externe échoue, essayons de passer par la fonction edge
+  } catch (error: any) {
+    console.error('Error in fetchLatestNews (NewsData.io):', error.message || error);
+
+    // Fallback : Supabase edge function
     try {
       const { data, error: edgeError } = await supabase.functions.invoke('get-news', {
         body: { category, country, query },
@@ -95,7 +88,7 @@ export const fetchLatestNews = async (
       return newsResponse.items;
     } catch (fallbackError) {
       console.error('Both news sources failed:', fallbackError);
-      // Retournons des données statiques en dernier recours
+      // Dernier fallback : données statiques
       return [{
         id: 'fallback-1',
         title: 'Impossible de charger les actualités',
@@ -110,7 +103,7 @@ export const fetchLatestNews = async (
   }
 };
 
-// Add getNews as an alias for fetchLatestNews for backward compatibility
+// Alias
 export const getNews = fetchLatestNews;
 
 // Fonction pour s'abonner aux sujets d'actualités

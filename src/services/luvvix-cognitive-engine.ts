@@ -137,7 +137,10 @@ class LuvviXCognitiveEngine {
       }
       
       const sessions = interactionData.sessions;
-      const totalDuration = sessions.reduce((sum: number, session: any) => sum + (session.duration || 0), 0);
+      const totalDuration = sessions.reduce((sum: number, session: any) => {
+        const duration = session.duration;
+        return sum + (typeof duration === 'number' ? duration : 0);
+      }, 0);
       const averageSessionLength = sessions.length > 0 ? totalDuration / sessions.length : 0;
       
       return { averageSessionLength };
@@ -154,11 +157,11 @@ class LuvviXCognitiveEngine {
     // Pattern-based predictions
     const appPreferences = profile.behavioral_patterns.app_preferences;
     for (const [app, score] of Object.entries(appPreferences)) {
-      if (score > 3 && app !== context.current_app) {
+      if (typeof score === 'number' && score > 3 && app !== context.current_app) {
         predictions.push({
           id: `action-${app}-${Date.now()}`,
           type: 'action',
-          confidence: Math.min(0.9, (score as number) / 10),
+          confidence: Math.min(0.9, score / 10),
           predicted_action: `Basculer vers ${app}`,
           reasoning: `Vous utilisez souvent ${app} à cette heure`,
           suggested_timing: 'dans les 15 prochaines minutes',

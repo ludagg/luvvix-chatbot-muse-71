@@ -9,6 +9,10 @@ export interface NewsItem {
   category: string;
   url: string;
   imageUrl?: string;
+  language?: string;
+  aiSummary?: string;
+  aiTags?: string[];
+  relevanceScore?: number;
   location?: {
     country?: string;
     region?: string;

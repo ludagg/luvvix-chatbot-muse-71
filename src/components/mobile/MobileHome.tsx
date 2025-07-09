@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,13 +15,19 @@ import { useNavigate } from 'react-router-dom';
 import ModernNewsBriefing from '@/components/news/ModernNewsBriefing';
 
 interface MobileHomeProps {
-  setActiveSection: (section: string) => void;
+  setActiveSection?: (section: string) => void;
 }
 
 const MobileHome: React.FC<MobileHomeProps> = ({ setActiveSection }) => {
   const { t } = useLanguage();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+
+  const handleNewsClick = () => {
+    if (setActiveSection) {
+      setActiveSection('news');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900">
@@ -71,7 +78,7 @@ const MobileHome: React.FC<MobileHomeProps> = ({ setActiveSection }) => {
             </div>
           </div>
           <Button
-            onClick={() => setActiveSection('news')}
+            onClick={handleNewsClick}
             variant="ghost"
             size="sm"
             className="text-blue-600 hover:text-blue-800"

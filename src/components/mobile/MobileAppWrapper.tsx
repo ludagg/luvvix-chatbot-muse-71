@@ -22,8 +22,9 @@ import MobileForms from './MobileForms';
 import MobileTranslate from './MobileTranslate';
 import MobileWeather from './MobileWeather';
 import MobileCenter from './MobileCenter';
+import MobileNewsPage from './MobileNewsPage';
 
-type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search' | 'calendar' | 'forms' | 'translate' | 'weather' | 'center';
+type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search' | 'calendar' | 'forms' | 'translate' | 'weather' | 'center' | 'news';
 
 const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   const isMobile = useIsMobile();
@@ -184,8 +185,10 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
         return <MobileWeather onBack={() => setActiveView('home')} />;
       case 'center':
         return <MobileCenter onBack={() => setActiveView('home')} />;
+      case 'news':
+        return <MobileNewsPage onBack={() => setActiveView('home')} />;
       default:
-        return <MobileHome />;
+        return <MobileHome setActiveSection={setActiveView} />;
     }
   };
 
@@ -203,7 +206,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Ne pas afficher le header et la navigation pour les vues en plein écran
-  const isFullScreenView = ['calendar', 'forms', 'translate', 'weather', 'center'].includes(activeView);
+  const isFullScreenView = ['calendar', 'forms', 'translate', 'weather', 'center', 'news'].includes(activeView);
 
   if (isFullScreenView) {
     return (

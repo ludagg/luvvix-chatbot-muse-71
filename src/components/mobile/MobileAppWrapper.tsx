@@ -162,6 +162,12 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   }
 
   const renderMobileView = () => {
+    const handleSectionNavigation = (section: string) => {
+      if (section === 'news' || section === 'services' || section === 'assistant' || section === 'cloud' || section === 'profile' || section === 'settings' || section === 'search' || section === 'calendar' || section === 'forms' || section === 'translate' || section === 'weather' || section === 'center') {
+        setActiveView(section as MobileView);
+      }
+    };
+
     switch (activeView) {
       case 'services':
         return <MobileServices />;
@@ -188,7 +194,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
       case 'news':
         return <MobileNewsPage onBack={() => setActiveView('home')} />;
       default:
-        return <MobileHome setActiveSection={setActiveView} />;
+        return <MobileHome setActiveSection={handleSectionNavigation} />;
     }
   };
 

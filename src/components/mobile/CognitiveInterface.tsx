@@ -20,11 +20,28 @@ const CognitiveInterface = ({ onBack }: CognitiveInterfaceProps) => {
     setLoading(true);
     setError(null);
     try {
-      // Mock context for now - in a real app this would come from user data
+      // Create proper CognitiveContext with all required fields
       const mockContext = {
-        userId: 'current-user',
-        currentActivity: 'browsing-news',
-        timestamp: new Date().toISOString()
+        user_id: 'current-user',
+        current_app: 'luvvix-cognitive',
+        time_of_day: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        device_info: {
+          type: 'mobile',
+          os: navigator.userAgent.includes('iPhone') ? 'iOS' : 'Android',
+          screen_size: `${window.screen.width}x${window.screen.height}`
+        },
+        recent_actions: [
+          {
+            action: 'open_cognitive_interface',
+            timestamp: new Date().toISOString(),
+            success: true
+          }
+        ],
+        environmental_factors: {
+          weather: 'unknown',
+          calendar_events: [],
+          notification_count: 0
+        }
       };
       
       const cognitivePredictions = await cognitiveEngine.processContext(mockContext);

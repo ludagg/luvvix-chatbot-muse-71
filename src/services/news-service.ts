@@ -30,10 +30,7 @@ export const fetchLatestNews = async (
       language: 'fr',
     });
 
-    if (category !== 'all') params.append('category', category);
-    if (query) params.append('q', query);
-
-    const response = await fetch(`${baseUrl}?${params.toString()}`);
+    const response = await fetch(`https://newsdata.io/api/1/latest?apikey=pub_e9e18325ddca4013bc0b60a1bdf8e008&language=fr`);
     const data = await response.json();
 
     if (!data?.results || data.results.length === 0) {

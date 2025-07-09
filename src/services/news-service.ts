@@ -14,7 +14,7 @@ const summarizeWithGemini = async (text: string): Promise<string> => {
       {
         parts: [
           {
-            text: `Résume clairement cet article en UNE phrase :\n\n${text}`,
+            text: `Résume clairement cet article en UNE phrase et en anglais :\n\n${text}`,
           },
         ],
       },
@@ -57,7 +57,7 @@ export const fetchLatestNews = async (
     if (query) params.append('q', query);
 
     // Appel à NewsData.io /latest
-    const response = await fetch(`https://newsdata.io/api/1/latest?apikey=pub_e9e18325ddca4013bc0b60a1bdf8e008&language=fr&country=fr`);
+    const response = await fetch(`https://newsdata.io/api/1/latest?apikey=pub_e9e18325ddca4013bc0b60a1bdf8e008&language=fr`);
     if (!response.ok) {
       throw new Error(`NewsData.io status ${response.status}`);
     }

@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, Share, Bookmark, ExternalLink, Filter } from 'lucide-react';
-import { fetchLatestNews } from '@/services/news-service';
+import { ArrowLeft, Clock, Share, Bookmark, BookmarkCheck, ExternalLink, Filter, Sparkles, RefreshCw } from 'lucide-react';
+import { enhancedNewsService } from '@/services/enhanced-news-service';
 import { NewsItem } from '@/types/news';
+import { useSavedArticles } from '@/hooks/useSavedArticles';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -15,15 +16,17 @@ const MobileNewsPage = ({ onBack }: MobileNewsPageProps) => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const { savedArticles, saveArticle, removeArticle, isArticleSaved } = useSavedArticles();
 
   const categories = [
     { id: 'all', label: 'Toutes', icon: '📰' },
+    { id: 'france', label: 'France', icon: '🇫🇷' },
+    { id: 'international', label: 'Monde', icon: '🌍' },
     { id: 'technology', label: 'Tech', icon: '💻' },
     { id: 'business', label: 'Business', icon: '💼' },
     { id: 'science', label: 'Science', icon: '🔬' },
-    { id: 'health', label: 'Santé', icon: '🏥' },
-    { id: 'sports', label: 'Sport', icon: '⚽' },
-    { id: 'entertainment', label: 'Culture', icon: '🎭' }
+    { id: 'sports', label: 'Sport', icon: '⚽' }
   ];
 
   useEffect(() => {
@@ -33,13 +36,19 @@ const MobileNewsPage = ({ onBack }: MobileNewsPageProps) => {
   const loadNews = async () => {
     try {
       setLoading(true);
-      const newsItems = await fetchLatestNews(selectedCategory, 'fr', '');
+      const newsItems = await enhancedNewsService.fetchFromMultipleSources(selectedCategory, 15);
       setNews(newsItems);
     } catch (error) {
       console.error('Erreur chargement actualités:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadNews();
+    setRefreshing(false);
   };
 
   const handleShare = (article: NewsItem) => {
@@ -51,6 +60,14 @@ const MobileNewsPage = ({ onBack }: MobileNewsPageProps) => {
       });
     } else {
       navigator.clipboard.writeText(article.url || '');
+    }
+  };
+
+  const handleSaveToggle = (article: NewsItem) => {
+    if (isArticleSaved(article.id)) {
+      removeArticle(article.id);
+    } else {
+      saveArticle(article);
     }
   };
 
@@ -71,13 +88,25 @@ const MobileNewsPage = ({ onBack }: MobileNewsPageProps) => {
         <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full">
           <ArrowLeft className="w-6 h-6 text-gray-600" />
         </button>
-        <h1 className="text-lg font-bold text-gray-900">LuvviX News</h1>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className="p-2 hover:bg-gray-100 rounded-full"
-        >
-          <Filter className="w-6 h-6 text-gray-600" />
-        </button>
+        <div className="flex items-center space-x-2">
+          <Sparkles className="w-5 h-5 text-blue-500" />
+          <h1 className="text-lg font-bold text-gray-900">Actualités IA</h1>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="p-2 hover:bg-gray-100 rounded-full"
+          >
+            <RefreshCw className={`w-5 h-5 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="p-2 hover:bg-gray-100 rounded-full"
+          >
+            <Filter className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
       </div>
 
       {/* Filtres */}
@@ -137,6 +166,9 @@ const MobileNewsPage = ({ onBack }: MobileNewsPageProps) => {
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         {article.source}
                       </span>
+                      {(article as any).aiEnhanced && (
+                        <Sparkles className="w-3 h-3 text-yellow-500" />
+                      )}
                       <div className="flex items-center text-gray-500 text-xs">
                         <Clock className="w-3 h-3 mr-1" />
                         {getTimeAgo(article.publishedAt)}
@@ -169,8 +201,15 @@ const MobileNewsPage = ({ onBack }: MobileNewsPageProps) => {
                         >
                           <Share className="w-4 h-4 text-gray-500" />
                         </button>
-                        <button className="p-2 hover:bg-gray-100 rounded-full">
-                          <Bookmark className="w-4 h-4 text-gray-500" />
+                        <button
+                          onClick={() => handleSaveToggle(article)}
+                          className="p-2 hover:bg-gray-100 rounded-full"
+                        >
+                          {isArticleSaved(article.id) ? (
+                            <BookmarkCheck className="w-4 h-4 text-blue-500" />
+                          ) : (
+                            <Bookmark className="w-4 h-4 text-gray-500" />
+                          )}
                         </button>
                       </div>
                     </div>

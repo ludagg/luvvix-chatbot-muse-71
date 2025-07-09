@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { digitalTwin } from './luvvix-digital-twin';
 
@@ -102,11 +101,11 @@ class LuvviXCognitiveEngine {
     // Pattern-based predictions
     const appPreferences = profile.behavioral_patterns.app_preferences;
     for (const [app, score] of Object.entries(appPreferences)) {
-      if (score > 3 && app !== context.current_app) {
+      if (typeof score === 'number' && score > 3 && app !== context.current_app) {
         predictions.push({
           id: `action-${app}-${Date.now()}`,
           type: 'action',
-          confidence: Math.min(0.9, (score as number) / 10),
+          confidence: Math.min(0.9, score / 10),
           predicted_action: `Basculer vers ${app}`,
           reasoning: `Vous utilisez souvent ${app} à cette heure`,
           suggested_timing: 'dans les 15 prochaines minutes',
@@ -358,7 +357,7 @@ class LuvviXCognitiveEngine {
       baseActions.unshift({
         label: 'Voir les détails',
         action: 'show_optimization_details',
-        data: { predictionId: prediction.id }
+        data: { predictionId: prediction.id, timing: 'now' }
       });
     }
 
@@ -366,7 +365,7 @@ class LuvviXCognitiveEngine {
       baseActions.unshift({
         label: 'Analyser le problème',
         action: 'analyze_issue',
-        data: { predictionId: prediction.id }
+        data: { predictionId: prediction.id, timing: 'now' }
       });
     }
 

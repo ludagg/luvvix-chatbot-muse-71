@@ -19,7 +19,7 @@ const summarizeWithGemini = async (text: string): Promise<string> => {
   const geminiApiKey = 'AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE'; // ← Ta clé Gemini
 
   const endpoint =
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
 
   const body = {
     contents: [

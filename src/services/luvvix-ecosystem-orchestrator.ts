@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 interface UniversalWorkflow {
@@ -450,7 +449,29 @@ class LuvviXEcosystemOrchestrator {
       console.error('Error updating cross-app memory:', error);
     }
   }
+
+  async integrateUserAction(action: UserAction): Promise<IntegrationResult> {
+    try {
+      // Simulation d'intégration réussie
+      const result = {
+        success: true,
+        data: {
+          actionId: action.id,
+          integrations: [],
+          recommendations: []
+        }
+      };
+
+      if (result.success && result.data) {
+        // ... keep existing code (processing logic)
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Erreur intégration action:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
-export const ecosystemOrchestrator = LuvviXEcosystemOrchestrator.getInstance();
-export type { UniversalWorkflow, DataFusionInsight, EcosystemHealth, SmartSuggestion };
+export default LuvviXEcosystemOrchestrator;

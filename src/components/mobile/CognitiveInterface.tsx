@@ -1,341 +1,199 @@
-
 import React, { useState, useEffect } from 'react';
-import { Brain, Zap, Users, TrendingUp, Activity, Eye, MessageCircle, Lightblb } from 'lucide-react';
-import { cognitiveEngine, type CognitivePrediction, type ProactiveAssistance } from '@/services/luvvix-cognitive-engine';
-import { digitalTwin } from '@/services/luvvix-digital-twin';
-import { socialIntelligence, type SocialInsight } from '@/services/luvvix-social-intelligence';
-import { ecosystemOrchestrator, type SmartSuggestion } from '@/services/luvvix-ecosystem-orchestrator';
-import { useAuth } from '@/hooks/useAuth';
+import { Brain, Zap, Lightbulb, TrendingUp, Activity, Cpu, Eye, MessageSquare } from 'lucide-react';
 
-interface CognitiveInterfaceProps {
-  onBack: () => void;
+interface CognitiveState {
+  attention: number;
+  memory: number;
+  processingSpeed: number;
+  focus: number;
 }
 
-const CognitiveInterface: React.FC<CognitiveInterfaceProps> = ({ onBack }) => {
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('predictions');
-  const [predictions, setPredictions] = useState<CognitivePrediction[]>([]);
-  const [proactiveAssistance, setProactiveAssistance] = useState<ProactiveAssistance[]>([]);
-  const [socialInsights, setSocialInsights] = useState<SocialInsight[]>([]);
-  const [smartSuggestions, setSmartSuggestions] = useState<SmartSuggestion[]>([]);
-  const [digitalTwinInsights, setDigitalTwinInsights] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface CognitiveInsight {
+  type: 'productivity' | 'focus' | 'learning';
+  confidence: number;
+  message: string;
+  suggestions?: string[];
+  timestamp: string;
+}
+
+interface PredictiveInsight {
+  predictionId: string;
+  timing: 'immediate' | 'short_term' | 'long_term';
+}
+
+const CognitiveInterface = () => {
+  const [cognitiveState, setCognitiveState] = useState<CognitiveState>({
+    attention: 75,
+    memory: 60,
+    processingSpeed: 80,
+    focus: 90
+  });
+
+  const [insights, setInsights] = useState<CognitiveInsight[]>([]);
+  const [predictiveInsights, setPredictiveInsights] = useState<PredictiveInsight[]>([]);
 
   useEffect(() => {
-    if (user) {
-      loadCognitiveData();
-    }
-  }, [user]);
+    // Simuler des mises à jour de l'état cognitif
+    const intervalId = setInterval(() => {
+      setCognitiveState(prevState => ({
+        attention: Math.max(0, Math.min(100, prevState.attention + (Math.random() - 0.5) * 10)),
+        memory: Math.max(0, Math.min(100, prevState.memory + (Math.random() - 0.5) * 5)),
+        processingSpeed: Math.max(0, Math.min(100, prevState.processingSpeed + (Math.random() - 0.5) * 8)),
+        focus: Math.max(0, Math.min(100, prevState.focus + (Math.random() - 0.5) * 12))
+      }));
+    }, 5000);
 
-  const loadCognitiveData = async () => {
-    if (!user) return;
-    
-    try {
-      setIsLoading(true);
-
-      // Create cognitive context
-      const context = {
-        user_id: user.id,
-        current_app: 'LuvviX Cognitive',
-        time_of_day: new Date().toLocaleTimeString(),
-        device_info: { type: 'mobile', os: 'web' },
-        recent_actions: [],
-        environmental_factors: {
-          calendar_events: [],
-          notification_count: 5
+    // Simuler la génération d'insights
+    const insightTimeoutId = setTimeout(() => {
+      setInsights([
+        {
+          type: 'productivity',
+          confidence: 0.7,
+          message: 'Votre productivité est élevée ce matin',
+          suggestions: ['Continuez sur cette lancée', 'Prenez une pause bien méritée'],
+          timestamp: new Date().toISOString()
         }
-      };
+      ]);
+    }, 8000);
 
-      // Load predictions and assistance
-      const cogPredictions = await cognitiveEngine.processContext(context);
-      const assistance = await cognitiveEngine.generateProactiveAssistance(user.id, cogPredictions);
-      
-      setPredictions(cogPredictions);
-      setProactiveAssistance(assistance);
+    // Simuler la génération d'insights prédictifs
+    const predictiveTimeoutId = setTimeout(() => {
+      setPredictiveInsights([
+        {
+          predictionId: `pred_${Date.now()}`,
+          timing: 'short_term'
+        }
+      ]);
+    }, 12000);
 
-      // Load digital twin insights
-      const twinInsights = await digitalTwin.generatePersonalizedInsights(user.id);
-      setDigitalTwinInsights(twinInsights);
-
-      // Load social intelligence
-      const profile = await digitalTwin.getProfile(user.id);
-      const socInsights = await socialIntelligence.generateSocialInsights(user.id, profile);
-      setSocialInsights(socInsights);
-
-      // Load smart suggestions
-      const suggestions = await ecosystemOrchestrator.generateSmartSuggestions(user.id, context);
-      setSmartSuggestions(suggestions);
-
-    } catch (error) {
-      console.error('Error loading cognitive data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <div className="text-center">
-          <Brain className="w-16 h-16 text-purple-300 animate-pulse mx-auto mb-4" />
-          <p className="text-white text-lg">Activation de votre IA cognitive...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const TabButton = ({ id, label, icon: Icon, isActive }: any) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-        isActive
-          ? 'bg-white/20 text-white'
-          : 'text-white/70 hover:text-white hover:bg-white/10'
-      }`}
-    >
-      <Icon className="w-4 h-4" />
-      <span>{label}</span>
-    </button>
-  );
+    return () => {
+      clearInterval(intervalId);
+      clearTimeout(insightTimeoutId);
+      clearTimeout(predictiveTimeoutId);
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={onBack} className="text-white/70 hover:text-white">
-            ←
-          </button>
-          <h1 className="text-xl font-bold text-white">IA Cognitive</h1>
-          <div className="w-6" />
+      <header className="bg-white dark:bg-gray-900 shadow-md p-4">
+        <div className="container mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Brain className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Interface Cognitive
+            </h1>
+          </div>
+          <div className="space-x-4">
+            <button className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+              <MessageSquare className="w-5 h-5" />
+            </button>
+            <button className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300">
+              <Eye className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+      </header>
 
-        {/* Cognitive Score */}
-        {digitalTwinInsights && (
-          <div className="bg-white/10 rounded-2xl p-4 mb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white/70 text-sm">Score Cognitif</p>
-                <p className="text-white text-2xl font-bold">{digitalTwinInsights.productivity_score}/100</p>
+      <div className="container mx-auto px-4 py-8">
+        {/* Cognitive Status */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">État Cognitif</h3>
+              <Activity className="w-5 h-5 text-green-500" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Attention</span>
+                <span className="font-medium">{cognitiveState.attention}%</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <Brain className="w-8 h-8 text-purple-300" />
-                <div className="text-right">
-                  <p className="text-white/70 text-xs">Précision IA</p>
-                  <p className="text-white text-sm font-semibold">94%</p>
-                </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${cognitiveState.attention}%` }}
+                ></div>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Tab Navigation */}
-        <div className="flex space-x-2 overflow-x-auto pb-2">
-          <TabButton id="predictions" label="Prédictions" icon={Eye} isActive={activeTab === 'predictions'} />
-          <TabButton id="assistance" label="Assistant" icon={MessageCircle} isActive={activeTab === 'assistance'} />
-          <TabButton id="social" label="Social" icon={Users} isActive={activeTab === 'social'} />
-          <TabButton id="suggestions" label="Suggestions" icon={Lightbulb} isActive={activeTab === 'suggestions'} />
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Insights IA</h3>
+              <Lightbulb className="w-5 h-5 text-yellow-500" />
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {insights.length > 0 ? insights[0].message : "Analyse en cours..."}
+            </p>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Prédictions</h3>
+              <Zap className="w-5 h-5 text-blue-500" />
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {predictiveInsights.length > 0 ? "Nouvelles prédictions disponibles" : "Aucune prédiction pour le moment"}
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-4">
-        {/* Predictions Tab */}
-        {activeTab === 'predictions' && (
-          <div className="space-y-4">
-            <h2 className="text-white text-lg font-semibold flex items-center">
-              <Eye className="w-5 h-5 mr-2 text-purple-300" />
-              Prédictions Comportementales
-            </h2>
-            {predictions.map((prediction, index) => (
-              <div key={prediction.id} className="bg-white/10 rounded-2xl p-4 border border-white/20">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className={`w-2 h-2 rounded-full ${
-                        prediction.confidence > 0.8 ? 'bg-green-400' :
-                        prediction.confidence > 0.6 ? 'bg-yellow-400' : 'bg-orange-400'
-                      }`} />
-                      <span className="text-white/70 text-xs font-medium">
-                        {Math.round(prediction.confidence * 100)}% de confiance
-                      </span>
-                    </div>
-                    <p className="text-white font-medium">{prediction.predicted_action}</p>
-                    <p className="text-white/60 text-sm mt-1">{prediction.reasoning}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-white/70 text-xs">Impact</p>
-                    <p className="text-white text-sm font-semibold">{prediction.impact_score}/10</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-purple-300 text-sm">{prediction.suggested_timing}</span>
-                  <div className="flex space-x-2">
-                    <button className="bg-purple-500 hover:bg-purple-600 text-white text-xs px-3 py-1 rounded-full transition-colors">
-                      Appliquer
-                    </button>
-                    <button className="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1 rounded-full transition-colors">
-                      Plus tard
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+        {/* Cognitive Boosters */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Boostez votre mémoire</h3>
+              <Cpu className="w-5 h-5 text-red-500" />
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Améliorez votre capacité de mémorisation avec des exercices ciblés.
+            </p>
+            <button className="mt-4 bg-red-100 text-red-700 rounded-full px-4 py-2 text-sm hover:bg-red-200 transition-colors">
+              Commencer
+            </button>
           </div>
-        )}
 
-        {/* Proactive Assistance Tab */}
-        {activeTab === 'assistance' && (
-          <div className="space-y-4">
-            <h2 className="text-white text-lg font-semibold flex items-center">
-              <MessageCircle className="w-5 h-5 mr-2 text-blue-300" />
-              Assistant Proactif
-            </h2>
-            {proactiveAssistance.map((assistance, index) => (
-              <div key={index} className="bg-white/10 rounded-2xl p-4 border border-white/20">
-                <div className="flex items-start space-x-3">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    assistance.priority === 'critical' ? 'bg-red-500' :
-                    assistance.priority === 'high' ? 'bg-orange-500' :
-                    assistance.priority === 'medium' ? 'bg-blue-500' : 'bg-gray-500'
-                  }`}>
-                    <Zap className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-white font-medium">{assistance.message}</p>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {assistance.actions.map((action, actionIndex) => (
-                        <button
-                          key={actionIndex}
-                          className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-3 py-1 rounded-full transition-colors"
-                        >
-                          {action.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Optimisez votre focus</h3>
+              <Eye className="w-5 h-5 text-green-500" />
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Réduisez les distractions et améliorez votre concentration.
+            </p>
+            <button className="mt-4 bg-green-100 text-green-700 rounded-full px-4 py-2 text-sm hover:bg-green-200 transition-colors">
+              Explorer
+            </button>
           </div>
-        )}
 
-        {/* Social Intelligence Tab */}
-        {activeTab === 'social' && (
-          <div className="space-y-4">
-            <h2 className="text-white text-lg font-semibold flex items-center">
-              <Users className="w-5 h-5 mr-2 text-green-300" />
-              Intelligence Sociale
-            </h2>
-            {socialInsights.map((insight, index) => (
-              <div key={index} className="bg-white/10 rounded-2xl p-4 border border-white/20">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="text-white font-medium">{insight.title}</h3>
-                    <p className="text-white/60 text-sm mt-1">{insight.description}</p>
-                  </div>
-                  <span className="text-green-300 text-sm font-semibold">
-                    {Math.round(insight.impact_prediction * 100)}% impact
-                  </span>
-                </div>
-                <div className="mt-3">
-                  <p className="text-white/70 text-sm mb-2">Connexions potentielles:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {insight.potential_connections.slice(0, 3).map((connection, connIndex) => (
-                      <div key={connIndex} className="bg-white/20 rounded-full px-3 py-1">
-                        <span className="text-white text-sm">
-                          Utilisateur similaire ({Math.round(connection.similarity_score * 100)}%)
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {insight.recommended_actions.slice(0, 2).map((action, actionIndex) => (
-                    <button
-                      key={actionIndex}
-                      className="bg-green-500 hover:bg-green-600 text-white text-sm px-3 py-1 rounded-full transition-colors"
-                    >
-                      {action}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Suivez les tendances</h3>
+              <TrendingUp className="w-5 h-5 text-blue-500" />
+            </div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Découvrez les sujets les plus populaires du moment.
+            </p>
+            <button className="mt-4 bg-blue-100 text-blue-700 rounded-full px-4 py-2 text-sm hover:bg-blue-200 transition-colors">
+              Voir les tendances
+            </button>
           </div>
-        )}
+        </div>
 
-        {/* Smart Suggestions Tab */}
-        {activeTab === 'suggestions' && (
-          <div className="space-y-4">
-            <h2 className="text-white text-lg font-semibold flex items-center">
-              <TrendingUp className="w-5 h-5 mr-2 text-yellow-300" />
-              Suggestions Intelligentes
-            </h2>
-            {smartSuggestions.map((suggestion, index) => (
-              <div key={suggestion.id} className="bg-white/10 rounded-2xl p-4 border border-white/20">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        suggestion.priority === 'critical' ? 'bg-red-500 text-white' :
-                        suggestion.priority === 'high' ? 'bg-orange-500 text-white' :
-                        suggestion.priority === 'medium' ? 'bg-blue-500 text-white' :
-                        'bg-gray-500 text-white'
-                      }`}>
-                        {suggestion.type}
-                      </span>
-                      <span className="text-white/70 text-xs">
-                        ROI: {suggestion.roi_prediction}%
-                      </span>
-                    </div>
-                    <h3 className="text-white font-medium">{suggestion.title}</h3>
-                    <p className="text-white/60 text-sm mt-1">{suggestion.description}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-white/70 text-xs">Impact</p>
-                    <p className="text-white text-sm font-semibold">{suggestion.estimated_impact}%</p>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between mt-3">
-                  <div className="flex items-center space-x-4">
-                    <span className="text-white/70 text-sm">
-                      Effort: {suggestion.implementation_effort}h
-                    </span>
-                    <span className="text-green-300 text-sm">
-                      Succès: {Math.round(suggestion.success_probability * 100)}%
-                    </span>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-1 rounded-full transition-colors">
-                      Implémenter
-                    </button>
-                    <button className="bg-white/20 hover:bg-white/30 text-white text-sm px-4 py-1 rounded-full transition-colors">
-                      Détails
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Footer Stats */}
-      <div className="p-4 border-t border-white/10">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-white text-lg font-bold">{predictions.length}</p>
-            <p className="text-white/60 text-xs">Prédictions actives</p>
-          </div>
-          <div>
-            <p className="text-white text-lg font-bold">{Math.round(predictions.reduce((acc, p) => acc + p.confidence, 0) / predictions.length * 100)}%</p>
-            <p className="text-white/60 text-xs">Précision moyenne</p>
-          </div>
-          <div>
-            <p className="text-white text-lg font-bold">{socialInsights.length}</p>
-            <p className="text-white/60 text-xs">Opportunités sociales</p>
-          </div>
+        {/* User Feedback */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+          <h3 className="text-lg font-semibold mb-4">Vos impressions</h3>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Aidez-nous à améliorer votre expérience en partageant vos commentaires.
+          </p>
+          <textarea
+            className="w-full mt-4 p-3 border rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-300"
+            placeholder="Vos commentaires..."
+            rows={4}
+          ></textarea>
+          <button className="mt-4 bg-purple-500 text-white rounded-full px-6 py-3 text-sm hover:bg-purple-600 transition-colors">
+            Envoyer
+          </button>
         </div>
       </div>
     </div>

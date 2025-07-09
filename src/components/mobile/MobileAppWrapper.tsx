@@ -22,9 +22,8 @@ import MobileForms from './MobileForms';
 import MobileTranslate from './MobileTranslate';
 import MobileWeather from './MobileWeather';
 import MobileCenter from './MobileCenter';
-import MobileNewsPage from './MobileNewsPage';
 
-type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search' | 'calendar' | 'forms' | 'translate' | 'weather' | 'center' | 'news';
+type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search' | 'calendar' | 'forms' | 'translate' | 'weather' | 'center';
 
 const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   const isMobile = useIsMobile();
@@ -162,12 +161,6 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   }
 
   const renderMobileView = () => {
-    const handleSectionNavigation = (section: string) => {
-      if (section === 'news' || section === 'services' || section === 'assistant' || section === 'cloud' || section === 'profile' || section === 'settings' || section === 'search' || section === 'calendar' || section === 'forms' || section === 'translate' || section === 'weather' || section === 'center') {
-        setActiveView(section as MobileView);
-      }
-    };
-
     switch (activeView) {
       case 'services':
         return <MobileServices />;
@@ -191,10 +184,8 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
         return <MobileWeather onBack={() => setActiveView('home')} />;
       case 'center':
         return <MobileCenter onBack={() => setActiveView('home')} />;
-      case 'news':
-        return <MobileNewsPage onBack={() => setActiveView('home')} />;
       default:
-        return <MobileHome setActiveSection={handleSectionNavigation} />;
+        return <MobileHome />;
     }
   };
 
@@ -212,7 +203,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Ne pas afficher le header et la navigation pour les vues en plein écran
-  const isFullScreenView = ['calendar', 'forms', 'translate', 'weather', 'center', 'news'].includes(activeView);
+  const isFullScreenView = ['calendar', 'forms', 'translate', 'weather', 'center'].includes(activeView);
 
   if (isFullScreenView) {
     return (

@@ -61,6 +61,19 @@ interface SmartSuggestion {
   success_probability: number;
 }
 
+interface UserAction {
+  id: string;
+  action: string;
+  data: any;
+  timestamp: string;
+}
+
+interface IntegrationResult {
+  success: boolean;
+  data?: any;
+  error?: string;
+}
+
 class LuvviXEcosystemOrchestrator {
   private static instance: LuvviXEcosystemOrchestrator;
   private workflowCache: Map<string, UniversalWorkflow[]> = new Map();
@@ -453,7 +466,7 @@ class LuvviXEcosystemOrchestrator {
   async integrateUserAction(action: UserAction): Promise<IntegrationResult> {
     try {
       // Simulation d'intégration réussie
-      const result = {
+      const result: IntegrationResult = {
         success: true,
         data: {
           actionId: action.id,
@@ -463,13 +476,14 @@ class LuvviXEcosystemOrchestrator {
       };
 
       if (result.success && result.data) {
-        // ... keep existing code (processing logic)
+        // Process the integration
+        console.log('Integration processed successfully', result.data);
       }
 
       return result;
     } catch (error) {
       console.error('Erreur intégration action:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
 }

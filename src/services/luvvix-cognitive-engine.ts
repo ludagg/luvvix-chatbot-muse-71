@@ -113,7 +113,7 @@ class LuvviXCognitiveEngine {
 
       // Analyse des patterns temporels
       const timePatterns = this.analyzeTimePatterns(interactionData);
-      if (typeof timePatterns.averageSessionLength === 'number' && timePatterns.averageSessionLength > 30) {
+      if (timePatterns && typeof timePatterns.averageSessionLength === 'number' && timePatterns.averageSessionLength > 30) {
         insights.push({
           type: 'productivity',
           confidence: 0.8,
@@ -127,6 +127,23 @@ class LuvviXCognitiveEngine {
     } catch (error) {
       console.error('Erreur analyse comportementale:', error);
       return [];
+    }
+  }
+
+  private analyzeTimePatterns(interactionData: any): { averageSessionLength: number } | null {
+    try {
+      if (!interactionData || !Array.isArray(interactionData.sessions)) {
+        return null;
+      }
+      
+      const sessions = interactionData.sessions;
+      const totalDuration = sessions.reduce((sum: number, session: any) => sum + (session.duration || 0), 0);
+      const averageSessionLength = sessions.length > 0 ? totalDuration / sessions.length : 0;
+      
+      return { averageSessionLength };
+    } catch (error) {
+      console.error('Error analyzing time patterns:', error);
+      return null;
     }
   }
 
@@ -393,7 +410,7 @@ class LuvviXCognitiveEngine {
       baseActions.unshift({
         label: 'Voir les détails',
         action: 'show_optimization_details',
-        data: { predictionId: prediction.id }
+        data: { predictionId: prediction.id, timing: 'immediate' }
       });
     }
 
@@ -401,7 +418,7 @@ class LuvviXCognitiveEngine {
       baseActions.unshift({
         label: 'Analyser le problème',
         action: 'analyze_issue',
-        data: { predictionId: prediction.id }
+        data: { predictionId: prediction.id, timing: 'immediate' }
       });
     }
 

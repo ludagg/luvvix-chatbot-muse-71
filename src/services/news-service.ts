@@ -15,21 +15,7 @@ export const getUserLocation = async () => {
 };
 
 // Fonction pour récupérer les dernières actualités
-// Typage
-export interface NewsItem {
-  id: string;
-  title: string;
-  summary: string;
-  content?: string;
-  publishedAt: string;
-  source: string;
-  category: string;
-  url: string;
-  imageUrl?: string;
-  location?: {
-    country?: string;
-  };
-}
+
 
 // Résumé via Gemini 1.5 Flash (HTTPs API)
 const summarizeWithGemini = async (text: string): Promise<string> => {

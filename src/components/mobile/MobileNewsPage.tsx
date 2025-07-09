@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, Share, Bookmark, ExternalLink, Filter } from 'lucide-react';
-import { fetchLatestNews } from '@/services/news-service';
+import { ArrowLeft, Clock, Share, Bookmark, ExternalLink, Filter, MessageCircle, BookmarkCheck } from 'lucide-react';
+import { EnhancedNewsService } from '@/services/enhanced-news-service';
 import { NewsItem } from '@/types/news';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface MobileNewsPageProps {
   onBack: () => void;
@@ -15,6 +16,8 @@ const MobileNewsPage = ({ onBack }: MobileNewsPageProps) => {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [aiExplaining, setAiExplaining] = useState<string>('');
+  const [savedArticles, setSavedArticles] = useState<string[]>([]);
 
   const categories = [
     { id: 'all', label: 'Toutes', icon: '📰' },
@@ -28,29 +31,79 @@ const MobileNewsPage = ({ onBack }: MobileNewsPageProps) => {
 
   useEffect(() => {
     loadNews();
+    loadSavedArticles();
   }, [selectedCategory]);
 
   const loadNews = async () => {
     try {
       setLoading(true);
-      const newsItems = await fetchLatestNews(selectedCategory, 'fr', '');
+      const newsItems = await EnhancedNewsService.fetchEnhancedNews(selectedCategory, 'fr');
       setNews(newsItems);
     } catch (error) {
       console.error('Erreur chargement actualités:', error);
+      toast.error('Erreur lors du chargement des actualités');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleShare = (article: NewsItem) => {
+  const loadSavedArticles = () => {
+    const saved = EnhancedNewsService.getSavedArticles();
+    setSavedArticles(saved.map(a => a.id));
+  };
+
+  const handleShare = async (article: NewsItem) => {
     if (navigator.share) {
-      navigator.share({
-        title: article.title,
-        text: article.summary,
-        url: article.url
-      });
+      try {
+        await navigator.share({
+          title: article.title,
+          text: article.summary,
+          url: article.url
+        });
+      } catch (error) {
+        // Fallback si partage annulé
+        handleCopyLink(article);
+      }
     } else {
+      handleCopyLink(article);
+    }
+  };
+
+  const handleCopyLink = (article: NewsItem) => {
+    if (navigator.clipboard) {
       navigator.clipboard.writeText(article.url || '');
+      toast.success('Lien copié !');
+    }
+  };
+
+  const handleSaveArticle = (article: NewsItem) => {
+    EnhancedNewsService.saveArticle(article);
+    loadSavedArticles();
+    toast.success('Article sauvegardé !');
+  };
+
+  const handleAIExplanation = async (article: NewsItem) => {
+    if (aiExplaining === article.id) return;
+    
+    setAiExplaining(article.id);
+    toast.loading('L\'IA analyse l\'article...');
+    
+    try {
+      const explanation = await EnhancedNewsService.getAIExplanation(article);
+      toast.dismiss();
+      toast.success('Explication générée !', {
+        description: explanation,
+        duration: 10000,
+        action: {
+          label: 'Fermer',
+          onClick: () => toast.dismiss()
+        }
+      });
+    } catch (error) {
+      toast.dismiss();
+      toast.error('Erreur lors de l\'explication IA');
+    } finally {
+      setAiExplaining('');
     }
   };
 
@@ -153,6 +206,7 @@ const MobileNewsPage = ({ onBack }: MobileNewsPageProps) => {
                       </p>
                     )}
                     
+                    {/* Boutons d'action minimalistes */}
                     <div className="flex items-center justify-between">
                       <button
                         onClick={() => article.url && window.open(article.url, '_blank')}
@@ -162,15 +216,37 @@ const MobileNewsPage = ({ onBack }: MobileNewsPageProps) => {
                         <ExternalLink className="w-3 h-3" />
                       </button>
                       
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-1">
+                        {/* Bouton IA */}
+                        <button
+                          onClick={() => handleAIExplanation(article)}
+                          disabled={aiExplaining === article.id}
+                          className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
+                          title="Demander à l'IA d'expliquer"
+                        >
+                          <MessageCircle className={`w-4 h-4 ${aiExplaining === article.id ? 'text-blue-500 animate-pulse' : 'text-gray-500'}`} />
+                        </button>
+                        
+                        {/* Bouton partage */}
                         <button
                           onClick={() => handleShare(article)}
-                          className="p-2 hover:bg-gray-100 rounded-full"
+                          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                          title="Partager"
                         >
                           <Share className="w-4 h-4 text-gray-500" />
                         </button>
-                        <button className="p-2 hover:bg-gray-100 rounded-full">
-                          <Bookmark className="w-4 h-4 text-gray-500" />
+                        
+                        {/* Bouton sauvegarde */}
+                        <button
+                          onClick={() => handleSaveArticle(article)}
+                          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                          title={savedArticles.includes(article.id) ? 'Déjà sauvegardé' : 'Sauvegarder'}
+                        >
+                          {savedArticles.includes(article.id) ? (
+                            <BookmarkCheck className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <Bookmark className="w-4 h-4 text-gray-500" />
+                          )}
                         </button>
                       </div>
                     </div>

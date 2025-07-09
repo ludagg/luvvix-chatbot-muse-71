@@ -228,7 +228,7 @@ const MobileHome = () => {
     <p className="text-xs bg-blue-300 w-20 h-3 rounded ml-auto"></p>
   </div>
 )}
-//Fin
+
         </div>
         
         <p className="text-blue-100 text-center leading-relaxed">

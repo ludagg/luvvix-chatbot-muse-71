@@ -24,12 +24,11 @@ import {
   Bell,
   Languages,
   FormInput,
-  Newspaper,
-  Settings
+  Newspaper
 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import AINewsPreferences from '@/components/news/AINewsPreferences';
-import AINewsBriefing from '@/components/news/AINewsBriefing';
+import { fetchLatestNews } from "@/services/news-service";
+import { NewsItem } from "@/types/news";
+import MobileNewsPage from "./MobileNewsPage";
 
 const MobileHome = () => {
   const { user } = useAuth();
@@ -41,11 +40,6 @@ const MobileHome = () => {
   const currentTime = new Date();
   
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Alex';
-
-  // États pour les actualités IA
-  const [newsPreferences, setNewsPreferences] = useState(null);
-  const [hasConfiguredNews, setHasConfiguredNews] = useState(false);
-  const [loadingPreferences, setLoadingPreferences] = useState(true);
 
   // Charger les données météo au démarrage
   useEffect(() => {
@@ -64,38 +58,6 @@ const MobileHome = () => {
     }
   }, []);
 
-  // Charger les préférences de l'utilisateur
-  useEffect(() => {
-    const loadUserPreferences = async () => {
-      if (!user) {
-        setLoadingPreferences(false);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('user_preferences')
-          .select('news_preferences')
-          .eq('user_id', user.id)
-          .single();
-
-        if (data?.news_preferences?.categories?.length > 0) {
-          setNewsPreferences(data.news_preferences);
-          setHasConfiguredNews(true);
-        } else {
-          setHasConfiguredNews(false);
-        }
-      } catch (error) {
-        console.error('Error loading preferences:', error);
-        setHasConfiguredNews(false);
-      } finally {
-        setLoadingPreferences(false);
-      }
-    };
-
-    loadUserPreferences();
-  }, [user]);
-
   // Demander les permissions de notification
   useEffect(() => {
     if (!notificationsEnabled && 'Notification' in window) {
@@ -104,6 +66,24 @@ const MobileHome = () => {
       }, 2000);
     }
   }, [notificationsEnabled, requestPermission]);
+
+  // -- Ajout de l'état local pour les news --
+  const [news, setNews] = React.useState<NewsItem[]>([]);
+  const [loadingNews, setLoadingNews] = React.useState(false);
+  const [newsError, setNewsError] = React.useState<string | null>(null);
+  const [showNewsPage, setShowNewsPage] = React.useState(false);
+
+  // Charger les actualités au montage, au tout dernier (afin de prioriser le reste)
+  React.useEffect(() => {
+    setLoadingNews(true);
+    fetchLatestNews("general", "fr")
+      .then((items) => {
+        setNews(items.slice(0, 5));
+        setNewsError(null);
+      })
+      .catch(() => setNewsError("Impossible de charger les actualités"))
+      .finally(() => setLoadingNews(false));
+  }, []);
 
   const quickActions = [
     {
@@ -206,24 +186,10 @@ const MobileHome = () => {
     totalEvents: events?.length || 0
   };
 
-  const handleNewsPreferencesSet = (categories: string[]) => {
-    const preferences = {
-      categories,
-      sources: [],
-      keywords: [],
-      frequency: 'realtime',
-      language: 'fr',
-      location: true
-    };
-    
-    setNewsPreferences(preferences);
-    setHasConfiguredNews(true);
-    
-    toast({
-      title: 'Actualités configurées',
-      description: 'Votre fil personnalisé est maintenant prêt'
-    });
-  };
+  // Redirige l'utilisateur vers la page MobileNewsPage au clic
+  if (showNewsPage) {
+    return <MobileNewsPage onBack={() => setShowNewsPage(false)} />;
+  }
 
   return (
     <div className="flex-1 overflow-auto p-4 pb-20">
@@ -422,39 +388,49 @@ const MobileHome = () => {
         )}
       </div>
 
-      {/* Section Actualités IA améliorée */}
+      {/* === Section Actualités === */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-gray-900 flex items-center">
-            <Sparkles className="w-5 h-5 mr-2 text-purple-500" />
-            Actualités IA
+            <Newspaper className="w-5 h-5 mr-2 text-blue-500" />
+            Actualités
           </h3>
           <button
-            onClick={() => {
-              const event = new CustomEvent('navigate-to-news');
-              window.dispatchEvent(event);
-            }}
-            className="text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
+            onClick={() => setShowNewsPage(true)}
+            className="text-blue-500 text-sm font-medium hover:text-blue-600 transition"
           >
             Voir tout →
           </button>
         </div>
-
-        {!loadingPreferences ? (
-          <AINewsBriefing 
-            preferences={newsPreferences}
-            showSetup={!hasConfiguredNews}
-            onPreferencesSet={handleNewsPreferencesSet}
-          />
+        {loadingNews ? (
+          <div className="text-center py-6 text-gray-400 text-sm">Chargement...</div>
+        ) : newsError ? (
+          <div className="text-center py-6 text-red-500 text-sm">{newsError}</div>
         ) : (
-          <div className="space-y-3">
-            {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </div>
+          <ul className="divide-y divide-gray-100">
+            {news.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-start py-3 cursor-pointer hover:bg-blue-50 rounded-xl transition-all"
+                onClick={() => window.open(item.url, "_blank")}
+              >
+                {/* Image optionnelle */}
+                {item.imageUrl && (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="w-12 h-12 object-cover rounded-lg mr-3 flex-shrink-0 bg-gray-100"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-blue-600 font-medium truncate">{item.source}</p>
+                  <p className="text-sm font-semibold text-gray-900 line-clamp-2">{item.title}</p>
+                  <p className="text-xs text-gray-500 truncate">{item.summary}</p>
+                </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
     </div>

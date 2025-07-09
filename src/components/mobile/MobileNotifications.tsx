@@ -1,20 +1,28 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNotifications } from '@/hooks/use-notifications';
-import { Bell, X, Check, AlertCircle, Info, MessageSquare, Calendar } from 'lucide-react';
+import { Bell, X, Check, AlertCircle, Info, MessageSquare, Calendar, Newspaper } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Notification {
   id: string;
-  type: 'info' | 'warning' | 'success' | 'message' | 'event';
+  type: 'info' | 'warning' | 'success' | 'message' | 'event' | 'news';
   title: string;
   message: string;
   timestamp: Date;
   read: boolean;
   actionUrl?: string;
+  headlines?: Array<{
+    title: string;
+    summary?: string;
+    source: string;
+  }>;
 }
 
 const MobileNotifications = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
   const { notificationsEnabled, requestPermission } = useNotifications();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([
     {
       id: '1',
@@ -50,6 +58,50 @@ const MobileNotifications = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     }
   ]);
 
+  // Charger les notifications d'actualités quotidiennes
+  useEffect(() => {
+    if (user) {
+      loadDailyNewsNotifications();
+    }
+  }, [user]);
+
+  const loadDailyNewsNotifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('daily_news_notifications')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('sent_at', { ascending: false })
+        .limit(3);
+
+      if (error) {
+        console.error('Erreur chargement notifications actualités:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const newsNotifications: Notification[] = data.map(newsNotif => ({
+          id: `news_${newsNotif.id}`,
+          type: 'news' as const,
+          title: '📰 Actualités du jour',
+          message: `${newsNotif.headlines?.length || 0} grands titres vous attendent`,
+          timestamp: new Date(newsNotif.sent_at),
+          read: false,
+          headlines: newsNotif.headlines
+        }));
+
+        setNotifications(prev => {
+          // Éviter les doublons
+          const existingNewsIds = prev.filter(n => n.type === 'news').map(n => n.id);
+          const newNotifications = newsNotifications.filter(n => !existingNewsIds.includes(n.id));
+          return [...newNotifications, ...prev.filter(n => n.type !== 'news')];
+        });
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'warning':
@@ -60,6 +112,8 @@ const MobileNotifications = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         return <MessageSquare className="w-5 h-5 text-blue-500" />;
       case 'event':
         return <Calendar className="w-5 h-5 text-purple-500" />;
+      case 'news':
+        return <Newspaper className="w-5 h-5 text-blue-600" />;
       default:
         return <Info className="w-5 h-5 text-gray-500" />;
     }
@@ -75,6 +129,8 @@ const MobileNotifications = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         return 'bg-blue-50 border-blue-200';
       case 'event':
         return 'bg-purple-50 border-purple-200';
+      case 'news':
+        return 'bg-blue-50 border-blue-200';
       default:
         return 'bg-gray-50 border-gray-200';
     }
@@ -204,6 +260,27 @@ const MobileNotifications = ({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                           <p className="text-xs text-gray-500 mt-2">
                             {formatTime(notification.timestamp)}
                           </p>
+                          
+                          {/* Affichage des actualités si c'est une notification news */}
+                          {notification.type === 'news' && notification.headlines && (
+                            <div className="mt-3 space-y-2">
+                              {notification.headlines.slice(0, 3).map((headline, index) => (
+                                <div key={index} className="p-2 bg-white rounded border border-gray-200">
+                                  <h5 className="text-xs font-medium text-gray-900 mb-1">
+                                    {headline.title}
+                                  </h5>
+                                  {headline.summary && (
+                                    <p className="text-xs text-gray-600 line-clamp-2">
+                                      {headline.summary}
+                                    </p>
+                                  )}
+                                  <p className="text-xs text-blue-600 mt-1">
+                                    {headline.source}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         
                         <div className="flex items-center space-x-2 ml-2">

@@ -2305,6 +2305,33 @@ export type Database = {
           },
         ]
       }
+      daily_news_notifications: {
+        Row: {
+          created_at: string
+          headlines: Json
+          id: string
+          news_date: string
+          sent_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          headlines?: Json
+          id?: string
+          news_date?: string
+          sent_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          headlines?: Json
+          id?: string
+          news_date?: string
+          sent_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       diploma_mentions: {
         Row: {
           description: string | null

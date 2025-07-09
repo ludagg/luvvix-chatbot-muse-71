@@ -2,6 +2,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { NewsApiResponse, NewsItem, NewsSubscription } from '@/types/news';
 import { getCurrentUser } from '@/services/auth-utils';
 
+// Fonction pour obtenir la localisation de l'utilisateur via IP
+export const getUserLocation = async () => {
+  try {
+    const response = await fetch('https://ipapi.co/json/');
+    if (!response.ok) throw new Error('Failed to fetch location data');
+    return await response.json(); // contient { city, region, country, latitude, longitude, etc. }
+  } catch (error) {
+    console.error('Error getting user location:', error);
+    return null;
+  }
+};
+
 // === Gemini 1.5 Flash résumé via HTTPS direct ===
 const summarizeWithGemini = async (text: string): Promise<string> => {
   const geminiApiKey = 'AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE'; // ← Ta clé Gemini

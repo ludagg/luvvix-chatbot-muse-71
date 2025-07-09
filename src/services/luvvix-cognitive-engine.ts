@@ -1,433 +1,199 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { digitalTwin } from './luvvix-digital-twin';
 
-interface CognitiveContext {
-  user_id: string;
-  current_app: string;
-  time_of_day: string;
-  device_info: any;
-  recent_actions: Array<{
-    action: string;
-    timestamp: string;
-    success: boolean;
-  }>;
-  environmental_factors: {
-    weather?: string;
-    calendar_events: any[];
-    notification_count: number;
-  };
+interface UserBehaviorPattern {
+  action: string;
+  frequency: number;
+  timestamp: Date;
+  context: Record<string, any>;
 }
 
-interface CognitivePrediction {
-  id: string;
-  type: 'action' | 'need' | 'optimization' | 'warning';
+interface CognitiveInsight {
+  type: 'recommendation' | 'automation' | 'optimization' | 'prediction';
+  content: string;
   confidence: number;
-  predicted_action: string;
-  reasoning: string;
-  suggested_timing: string;
-  potential_blockers: string[];
-  success_probability: number;
-  impact_score: number;
+  actionable: boolean;
+  metadata: Record<string, any>;
 }
 
-interface ProactiveAssistance {
-  type: 'preparation' | 'suggestion' | 'automation' | 'intervention';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  message: string;
-  actions: Array<{
-    label: string;
-    action: string;
-    data: any;
-  }>;
-  expires_at: string;
+interface PredictionResult {
+  predictionId: string;
+  timing: string;
+  confidence: number;
+  recommendation: string;
 }
 
-class LuvviXCognitiveEngine {
-  private static instance: LuvviXCognitiveEngine;
-  private predictionCache: Map<string, CognitivePrediction[]> = new Map();
-  private contextHistory: Map<string, CognitiveContext[]> = new Map();
+class LuvvixCognitiveEngine {
+  private patterns: UserBehaviorPattern[] = [];
+  private insights: CognitiveInsight[] = [];
+  private isProcessing: boolean = false;
 
-  static getInstance(): LuvviXCognitiveEngine {
-    if (!LuvviXCognitiveEngine.instance) {
-      LuvviXCognitiveEngine.instance = new LuvviXCognitiveEngine();
-    }
-    return LuvviXCognitiveEngine.instance;
+  constructor() {
+    this.loadUserPatterns();
   }
 
-  async processContext(context: CognitiveContext): Promise<CognitivePrediction[]> {
-    const userId = context.user_id;
-    
-    // Store context in history
-    const history = this.contextHistory.get(userId) || [];
-    history.push(context);
-    if (history.length > 100) history.shift(); // Keep last 100 contexts
-    this.contextHistory.set(userId, history);
+  async loadUserPatterns(): Promise<void> {
+    try {
+      const { data, error } = await supabase
+        .from('brain_interactions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
 
-    // Get user's digital twin profile
-    const profile = await digitalTwin.getProfile(userId);
+      if (error) throw error;
 
-    // Generate multi-layered predictions
-    const predictions: CognitivePrediction[] = [];
-
-    // 1. Immediate action predictions (next 5-30 minutes)
-    const immediatePredictions = await this.predictImmediateActions(context, profile);
-    predictions.push(...immediatePredictions);
-
-    // 2. Need anticipation (things user will need)
-    const needPredictions = await this.predictFutureNeeds(context, profile);
-    predictions.push(...needPredictions);
-
-    // 3. Optimization opportunities
-    const optimizationPredictions = await this.detectOptimizationOpportunities(context, profile);
-    predictions.push(...optimizationPredictions);
-
-    // 4. Potential issues/warnings
-    const warningPredictions = await this.detectPotentialIssues(context, profile);
-    predictions.push(...warningPredictions);
-
-    // Cache predictions
-    this.predictionCache.set(userId, predictions);
-
-    // Learn from context
-    await this.learnFromContext(context);
-
-    return predictions.sort((a, b) => b.confidence * b.impact_score - a.confidence * a.impact_score);
-  }
-
-  private async predictImmediateActions(context: CognitiveContext, profile: any): Promise<CognitivePrediction[]> {
-    const predictions: CognitivePrediction[] = [];
-    const currentHour = new Date().getHours();
-
-    // Pattern-based predictions
-    const appPreferences = profile.behavioral_patterns.app_preferences;
-    for (const [app, score] of Object.entries(appPreferences)) {
-      if (score > 3 && app !== context.current_app) {
-        predictions.push({
-          id: `action-${app}-${Date.now()}`,
-          type: 'action',
-          confidence: Math.min(0.9, (score as number) / 10),
-          predicted_action: `Basculer vers ${app}`,
-          reasoning: `Vous utilisez souvent ${app} à cette heure`,
-          suggested_timing: 'dans les 15 prochaines minutes',
-          potential_blockers: [],
-          success_probability: 0.8,
-          impact_score: 7
-        });
-      }
-    }
-
-    // Time-based predictions
-    if (profile.behavioral_patterns.peak_hours.includes(`${currentHour}:00`)) {
-      predictions.push({
-        id: `peak-time-${Date.now()}`,
-        type: 'optimization',
-        confidence: 0.95,
-        predicted_action: 'Travailler sur les tâches importantes',
-        reasoning: 'Vous êtes dans votre heure de productivité optimale',
-        suggested_timing: 'maintenant',
-        potential_blockers: ['notifications', 'interruptions'],
-        success_probability: 0.9,
-        impact_score: 9
-      });
-    }
-
-    // Context-based predictions
-    if (context.environmental_factors.notification_count > 10) {
-      predictions.push({
-        id: `notification-cleanup-${Date.now()}`,
-        type: 'optimization',
-        confidence: 0.8,
-        predicted_action: 'Nettoyer les notifications',
-        reasoning: 'Vous avez beaucoup de notifications non lues',
-        suggested_timing: 'maintenant',
-        potential_blockers: [],
-        success_probability: 0.9,
-        impact_score: 6
-      });
-    }
-
-    return predictions;
-  }
-
-  private async predictFutureNeeds(context: CognitiveContext, profile: any): Promise<CognitivePrediction[]> {
-    const predictions: CognitivePrediction[] = [];
-
-    // Calendar-based needs
-    for (const event of context.environmental_factors.calendar_events) {
-      const eventTime = new Date(event.start_date);
-      const timeDiff = eventTime.getTime() - Date.now();
-      const minutesUntil = timeDiff / (1000 * 60);
-
-      if (minutesUntil > 0 && minutesUntil <= 60) {
-        predictions.push({
-          id: `prep-event-${event.id}`,
-          type: 'need',
-          confidence: 0.9,
-          predicted_action: `Préparer pour: ${event.title}`,
-          reasoning: `Événement dans ${Math.round(minutesUntil)} minutes`,
-          suggested_timing: minutesUntil > 30 ? 'dans 15 minutes' : 'maintenant',
-          potential_blockers: ['autres_taches', 'distractions'],
-          success_probability: 0.8,
-          impact_score: 8
-        });
-      }
-    }
-
-    // Goal-based needs
-    if (profile.goals_evolution.short_term.length > 0) {
-      const activeGoal = profile.goals_evolution.short_term[0];
-      if (activeGoal.progress < 1.0) {
-        predictions.push({
-          id: `goal-progress-${Date.now()}`,
-          type: 'need',
-          confidence: 0.7,
-          predicted_action: `Avancer sur: ${activeGoal.goal}`,
-          reasoning: 'Progression nécessaire sur votre objectif actuel',
-          suggested_timing: 'quand vous aurez du temps libre',
-          potential_blockers: ['manque_de_temps', 'autres_priorites'],
-          success_probability: 0.7,
-          impact_score: 8
-        });
-      }
-    }
-
-    return predictions;
-  }
-
-  private async detectOptimizationOpportunities(context: CognitiveContext, profile: any): Promise<CognitivePrediction[]> {
-    const predictions: CognitivePrediction[] = [];
-
-    // Workflow optimization
-    const history = this.contextHistory.get(context.user_id) || [];
-    if (history.length > 10) {
-      const recentApps = history.slice(-10).map(h => h.current_app);
-      const appSwitches = new Set(recentApps).size;
-      
-      if (appSwitches > 6) {
-        predictions.push({
-          id: `workflow-opt-${Date.now()}`,
-          type: 'optimization',
-          confidence: 0.8,
-          predicted_action: 'Optimiser votre workflow',
-          reasoning: 'Vous basculez beaucoup entre applications',
-          suggested_timing: 'à la fin de cette session',
-          potential_blockers: [],
-          success_probability: 0.8,
-          impact_score: 7
-        });
-      }
-    }
-
-    // Stress level optimization
-    if (profile.emotional_intelligence.stress_level > 0.7) {
-      predictions.push({
-        id: `stress-management-${Date.now()}`,
-        type: 'optimization',
-        confidence: 0.9,
-        predicted_action: 'Prendre une pause relaxante',
-        reasoning: 'Votre niveau de stress est élevé',
-        suggested_timing: 'maintenant',
-        potential_blockers: ['deadlines', 'urgences'],
-        success_probability: 0.9,
-        impact_score: 9
-      });
-    }
-
-    return predictions;
-  }
-
-  private async detectPotentialIssues(context: CognitiveContext, profile: any): Promise<CognitivePrediction[]> {
-    const predictions: CognitivePrediction[] = [];
-
-    // Fatigue detection
-    if (profile.emotional_intelligence.energy_level < 0.3) {
-      predictions.push({
-        id: `fatigue-warning-${Date.now()}`,
-        type: 'warning',
-        confidence: 0.85,
-        predicted_action: 'Risque de baisse de performance',
-        reasoning: 'Votre niveau d\'énergie est très bas',
-        suggested_timing: 'surveillez dans les prochaines heures',
-        potential_blockers: [],
-        success_probability: 0.9,
-        impact_score: 8
-      });
-    }
-
-    // Overwork detection
-    const recentActions = context.recent_actions.length;
-    if (recentActions > 50) {
-      predictions.push({
-        id: `overwork-warning-${Date.now()}`,
-        type: 'warning',
-        confidence: 0.8,
-        predicted_action: 'Risque de surmenage',
-        reasoning: 'Activité intense détectée',
-        suggested_timing: 'planifiez une pause',
-        potential_blockers: ['charge_de_travail'],
-        success_probability: 0.7,
-        impact_score: 9
-      });
-    }
-
-    return predictions;
-  }
-
-  private async learnFromContext(context: CognitiveContext): Promise<void> {
-    // Update digital twin based on context
-    await digitalTwin.learnFromInteraction(context.user_id, {
-      app: context.current_app,
-      action: 'context_usage',
-      duration: 60, // Assuming 1 minute context
-      success: true,
-      context: context,
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  async generateProactiveAssistance(userId: string, predictions: CognitivePrediction[]): Promise<ProactiveAssistance[]> {
-    const assistance: ProactiveAssistance[] = [];
-
-    for (const prediction of predictions.slice(0, 5)) { // Top 5 predictions
-      if (prediction.confidence > 0.7) {
-        let priority: 'low' | 'medium' | 'high' | 'critical' = 'medium';
-        
-        if (prediction.type === 'warning' && prediction.confidence > 0.8) {
-          priority = 'critical';
-        } else if (prediction.impact_score > 8) {
-          priority = 'high';
-        } else if (prediction.confidence < 0.75) {
-          priority = 'low';
-        }
-
-        const assistanceItem: ProactiveAssistance = {
-          type: this.mapPredictionToAssistanceType(prediction.type),
-          priority,
-          message: this.generateAssistanceMessage(prediction),
-          actions: this.generateSuggestedActions(prediction),
-          expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutes
-        };
-
-        assistance.push(assistanceItem);
-      }
-    }
-
-    return assistance.sort((a, b) => {
-      const priorityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
-      return priorityOrder[b.priority] - priorityOrder[a.priority];
-    });
-  }
-
-  private mapPredictionToAssistanceType(predictionType: string): 'preparation' | 'suggestion' | 'automation' | 'intervention' {
-    switch (predictionType) {
-      case 'need': return 'preparation';
-      case 'optimization': return 'suggestion';
-      case 'action': return 'automation';
-      case 'warning': return 'intervention';
-      default: return 'suggestion';
+      this.patterns = data?.map(item => ({
+        action: item.interaction_type,
+        frequency: 1,
+        timestamp: new Date(item.created_at),
+        context: item.data || {}
+      })) || [];
+    } catch (error) {
+      console.error('Error loading user patterns:', error);
     }
   }
 
-  private generateAssistanceMessage(prediction: CognitivePrediction): string {
-    const messages = {
-      action: `💡 Je pense que vous allez bientôt vouloir ${prediction.predicted_action.toLowerCase()}`,
-      need: `🎯 Vous pourriez avoir besoin de ${prediction.predicted_action.toLowerCase()}`,
-      optimization: `⚡ Opportunité d'optimisation: ${prediction.predicted_action}`,
-      warning: `⚠️ Attention: ${prediction.predicted_action}`
+  async recordUserInteraction(action: string, context: Record<string, any> = {}): Promise<void> {
+    const pattern: UserBehaviorPattern = {
+      action,
+      frequency: 1,
+      timestamp: new Date(),
+      context
     };
 
-    return messages[prediction.type] || `🤖 ${prediction.predicted_action}`;
+    this.patterns.push(pattern);
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+
+      await supabase
+        .from('brain_interactions')
+        .insert({
+          user_id: userData.user.id,
+          source_app: 'luvvix_os',
+          interaction_type: action,
+          data: context,
+          brain_analysis: await this.analyzePattern(pattern),
+          confidence_score: 0.8
+        });
+    } catch (error) {
+      console.error('Error recording interaction:', error);
+    }
   }
 
-  private generateSuggestedActions(prediction: CognitivePrediction): Array<{ label: string; action: string; data: any }> {
-    const baseActions = [
+  private async analyzePattern(pattern: UserBehaviorPattern): Promise<Record<string, any>> {
+    const similarPatterns = this.patterns.filter(p => 
+      p.action === pattern.action && 
+      Math.abs(p.timestamp.getTime() - pattern.timestamp.getTime()) < 3600000 // 1 heure
+    );
+
+    return {
+      frequency: similarPatterns.length,
+      timeOfDay: pattern.timestamp.getHours(),
+      dayOfWeek: pattern.timestamp.getDay(),
+      context: pattern.context,
+      trend: similarPatterns.length > 5 ? 'increasing' : 'stable'
+    };
+  }
+
+  async generateInsight(): Promise<string> {
+    if (this.patterns.length === 0) {
+      return "Continuez à utiliser LuvviX pour que je puisse apprendre vos habitudes et vous proposer des suggestions personnalisées.";
+    }
+
+    const recentPatterns = this.patterns.slice(-10);
+    const mostFrequentAction = this.getMostFrequentAction(recentPatterns);
+    
+    const insights = [
+      `Vous utilisez souvent ${mostFrequentAction}. Voulez-vous que je crée un raccourci ?`,
+      `J'ai remarqué que vous êtes plus actif le ${this.getMostActiveDay()}. Voulez-vous des rappels ?`,
+      `Votre productivité semble optimale vers ${this.getMostActiveHour()}h. Planifions vos tâches importantes !`,
+      `Vous pourriez économiser du temps en automatisant certaines actions répétitives.`,
+    ];
+
+    return insights[Math.floor(Math.random() * insights.length)];
+  }
+
+  private getMostFrequentAction(patterns: UserBehaviorPattern[]): string {
+    const actionCounts = patterns.reduce((acc, pattern) => {
+      acc[pattern.action] = (acc[pattern.action] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.keys(actionCounts).reduce((a, b) => 
+      actionCounts[a] > actionCounts[b] ? a : b
+    ) || 'navigation';
+  }
+
+  private getMostActiveDay(): string {
+    const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    const dayCounts = this.patterns.reduce((acc, pattern) => {
+      const day = pattern.timestamp.getDay();
+      acc[day] = (acc[day] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>);
+
+    const mostActiveDay = Object.keys(dayCounts).reduce((a, b) => 
+      dayCounts[Number(a)] > dayCounts[Number(b)] ? a : b
+    );
+
+    return days[Number(mostActiveDay)] || 'Lundi';
+  }
+
+  private getMostActiveHour(): number {
+    const hourCounts = this.patterns.reduce((acc, pattern) => {
+      const hour = pattern.timestamp.getHours();
+      acc[hour] = (acc[hour] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>);
+
+    const mostActiveHour = Object.keys(hourCounts).reduce((a, b) => 
+      hourCounts[Number(a)] > hourCounts[Number(b)] ? a : b
+    );
+
+    return Number(mostActiveHour) || 14;
+  }
+
+  async analyzeUserBehavior(): Promise<string> {
+    await this.loadUserPatterns();
+    return this.generateInsight();
+  }
+
+  async predictUserNeeds(): Promise<PredictionResult> {
+    const currentHour = new Date().getHours();
+    const predictions = [
       {
-        label: 'Appliquer maintenant',
-        action: 'apply_suggestion',
-        data: { predictionId: prediction.id, timing: 'now' }
+        predictionId: 'morning_routine',
+        timing: 'morning',
+        confidence: 0.8,
+        recommendation: 'Il est temps de consulter vos actualités personnalisées'
       },
       {
-        label: 'Plus tard',
-        action: 'schedule_suggestion',
-        data: { predictionId: prediction.id, timing: 'later' }
+        predictionId: 'work_break',
+        timing: 'afternoon',
+        confidence: 0.7,
+        recommendation: 'Prenez une pause et consultez votre centre social'
       }
     ];
 
-    if (prediction.type === 'optimization') {
-      baseActions.unshift({
-        label: 'Voir les détails',
-        action: 'show_optimization_details',
-        data: { predictionId: prediction.id }
-      });
-    }
-
-    if (prediction.type === 'warning') {
-      baseActions.unshift({
-        label: 'Analyser le problème',
-        action: 'analyze_issue',
-        data: { predictionId: prediction.id }
-      });
-    }
-
-    return baseActions;
+    return predictions[currentHour < 12 ? 0 : 1];
   }
 
-  async validatePrediction(predictionId: string, actualOutcome: boolean): Promise<void> {
-    // Store prediction accuracy for learning
-    try {
-      await supabase
-        .from('cognitive_prediction_validation')
-        .insert({
-          prediction_id: predictionId,
-          actual_outcome: actualOutcome,
-          timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-      console.error('Error validating prediction:', error);
-    }
-  }
-
-  async getCognitiveInsights(userId: string): Promise<{
-    prediction_accuracy: number;
-    learning_progress: number;
-    cognitive_score: number;
-    recommendations: string[];
-  }> {
-    try {
-      const { data: validations } = await supabase
-        .from('cognitive_prediction_validation')
-        .select('*')
-        .limit(100);
-
-      const accuracy = validations ? 
-        validations.filter(v => v.actual_outcome).length / validations.length : 
-        0.75; // Default accuracy
-
-      const profile = await digitalTwin.getProfile(userId);
-      const insights = await digitalTwin.generatePersonalizedInsights(userId);
-
-      return {
-        prediction_accuracy: Math.round(accuracy * 100),
-        learning_progress: insights.productivity_score,
-        cognitive_score: Math.round((accuracy + insights.productivity_score / 100) * 50),
-        recommendations: [
-          'Continuez à utiliser l\'IA pour optimiser votre productivité',
-          'Explorez de nouveaux patterns de travail',
-          'Partagez vos insights avec la communauté LuvviX'
-        ]
-      };
-    } catch (error) {
-      console.error('Error getting cognitive insights:', error);
-      return {
-        prediction_accuracy: 75,
-        learning_progress: 65,
-        cognitive_score: 70,
-        recommendations: ['Utilisez davantage LuvviX pour améliorer les prédictions']
-      };
-    }
+  getProcessingStatus(): boolean {
+    return this.isProcessing;
   }
 }
 
-export const cognitiveEngine = LuvviXCognitiveEngine.getInstance();
-export type { CognitiveContext, CognitivePrediction, ProactiveAssistance };
+export const cognitiveEngine = new LuvvixCognitiveEngine();
+
+export const useLuvvixCognitiveEngine = () => {
+  return {
+    generateInsight: () => cognitiveEngine.generateInsight(),
+    analyzeUserBehavior: () => cognitiveEngine.analyzeUserBehavior(),
+    predictUserNeeds: () => cognitiveEngine.predictUserNeeds(),
+    recordInteraction: (action: string, context?: Record<string, any>) => 
+      cognitiveEngine.recordUserInteraction(action, context),
+    isProcessing: cognitiveEngine.getProcessingStatus()
+  };
+};

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
@@ -24,11 +25,12 @@ import {
   Bell,
   Languages,
   FormInput,
-  Newspaper
+  Newspaper,
+  Settings
 } from 'lucide-react';
-import { fetchLatestNews } from "@/services/news-service";
-import { NewsItem } from "@/types/news";
-import MobileNewsPage from "./MobileNewsPage";
+import { supabase } from '@/integrations/supabase/client';
+import AINewsPreferences from '@/components/news/AINewsPreferences';
+import AINewsBriefing from '@/components/news/AINewsBriefing';
 
 const MobileHome = () => {
   const { user } = useAuth();
@@ -40,6 +42,11 @@ const MobileHome = () => {
   const currentTime = new Date();
   
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Alex';
+
+  // États pour les actualités IA
+  const [showNewsPreferences, setShowNewsPreferences] = useState(false);
+  const [newsPreferences, setNewsPreferences] = useState(null);
+  const [hasSetPreferences, setHasSetPreferences] = useState(false);
 
   // Charger les données météo au démarrage
   useEffect(() => {
@@ -58,6 +65,35 @@ const MobileHome = () => {
     }
   }, []);
 
+  // Charger les préférences de l'utilisateur
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      if (!user) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('user_preferences')
+          .select('news_preferences')
+          .eq('user_id', user.id)
+          .single();
+
+        if (data?.news_preferences) {
+          setNewsPreferences(data.news_preferences);
+          setHasSetPreferences(true);
+        } else {
+          // Première visite - afficher les préférences après un délai
+          setTimeout(() => {
+            setShowNewsPreferences(true);
+          }, 3000);
+        }
+      } catch (error) {
+        console.error('Error loading preferences:', error);
+      }
+    };
+
+    loadUserPreferences();
+  }, [user]);
+
   // Demander les permissions de notification
   useEffect(() => {
     if (!notificationsEnabled && 'Notification' in window) {
@@ -66,24 +102,6 @@ const MobileHome = () => {
       }, 2000);
     }
   }, [notificationsEnabled, requestPermission]);
-
-  // -- Ajout de l'état local pour les news --
-  const [news, setNews] = React.useState<NewsItem[]>([]);
-  const [loadingNews, setLoadingNews] = React.useState(false);
-  const [newsError, setNewsError] = React.useState<string | null>(null);
-  const [showNewsPage, setShowNewsPage] = React.useState(false);
-
-  // Charger les actualités au montage, au tout dernier (afin de prioriser le reste)
-  React.useEffect(() => {
-    setLoadingNews(true);
-    fetchLatestNews("general", "fr")
-      .then((items) => {
-        setNews(items.slice(0, 5));
-        setNewsError(null);
-      })
-      .catch(() => setNewsError("Impossible de charger les actualités"))
-      .finally(() => setLoadingNews(false));
-  }, []);
 
   const quickActions = [
     {
@@ -186,9 +204,29 @@ const MobileHome = () => {
     totalEvents: events?.length || 0
   };
 
-  // Redirige l'utilisateur vers la page MobileNewsPage au clic
-  if (showNewsPage) {
-    return <MobileNewsPage onBack={() => setShowNewsPage(false)} />;
+  const handlePreferencesSet = (preferences: any) => {
+    setNewsPreferences(preferences);
+    setHasSetPreferences(true);
+    setShowNewsPreferences(false);
+    toast({
+      title: 'Actualités IA configurées',
+      description: 'Votre briefing personnalisé est maintenant prêt'
+    });
+  };
+
+  // Afficher les préférences si pas encore configurées
+  if (showNewsPreferences && !hasSetPreferences) {
+    return (
+      <div className="flex-1 overflow-auto pb-20">
+        <AINewsPreferences
+          onPreferencesSet={handlePreferencesSet}
+          onSkip={() => {
+            setShowNewsPreferences(false);
+            setHasSetPreferences(true);
+          }}
+        />
+      </div>
+    );
   }
 
   return (
@@ -388,49 +426,49 @@ const MobileHome = () => {
         )}
       </div>
 
-      {/* === Section Actualités === */}
+      {/* Section Actualités IA */}
       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-6">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-900 flex items-center">
-            <Newspaper className="w-5 h-5 mr-2 text-blue-500" />
-            Actualités
+            <Sparkles className="w-5 h-5 mr-2 text-purple-500" />
+            Actualités IA
           </h3>
-          <button
-            onClick={() => setShowNewsPage(true)}
-            className="text-blue-500 text-sm font-medium hover:text-blue-600 transition"
-          >
-            Voir tout →
-          </button>
-        </div>
-        {loadingNews ? (
-          <div className="text-center py-6 text-gray-400 text-sm">Chargement...</div>
-        ) : newsError ? (
-          <div className="text-center py-6 text-red-500 text-sm">{newsError}</div>
-        ) : (
-          <ul className="divide-y divide-gray-100">
-            {news.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-start py-3 cursor-pointer hover:bg-blue-50 rounded-xl transition-all"
-                onClick={() => window.open(item.url, "_blank")}
+          <div className="flex items-center space-x-2">
+            {!hasSetPreferences && (
+              <button
+                onClick={() => setShowNewsPreferences(true)}
+                className="text-purple-500 text-sm font-medium hover:text-purple-600 transition-colors flex items-center"
               >
-                {/* Image optionnelle */}
-                {item.imageUrl && (
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="w-12 h-12 object-cover rounded-lg mr-3 flex-shrink-0 bg-gray-100"
-                    onError={(e) => { e.currentTarget.style.display = "none"; }}
-                  />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-blue-600 font-medium truncate">{item.source}</p>
-                  <p className="text-sm font-semibold text-gray-900 line-clamp-2">{item.title}</p>
-                  <p className="text-xs text-gray-500 truncate">{item.summary}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+                <Settings className="w-4 h-4 mr-1" />
+                Configurer
+              </button>
+            )}
+            <button
+              onClick={() => setShowNewsPreferences(true)}
+              className="text-blue-500 text-sm font-medium hover:text-blue-600 transition-colors"
+            >
+              Préférences
+            </button>
+          </div>
+        </div>
+
+        {hasSetPreferences && newsPreferences ? (
+          <AINewsBriefing preferences={newsPreferences} />
+        ) : (
+          <div className="text-center py-6">
+            <Newspaper className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <h4 className="font-medium text-gray-900 mb-2">Actualités personnalisées</h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Configurez vos préférences pour recevoir un briefing IA personnalisé
+            </p>
+            <button
+              onClick={() => setShowNewsPreferences(true)}
+              className="bg-purple-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-600 transition-colors flex items-center mx-auto"
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Configurer maintenant
+            </button>
+          </div>
         )}
       </div>
     </div>

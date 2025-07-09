@@ -24,10 +24,9 @@ export const fetchLatestNews = async (
 
   try {
     // Construction de l'URL NewsData.io
-    const baseUrl = 'https://newsdata.io/api/1/news';
+    const baseUrl = 'https://newsdata.io/api/1/latest';
     const params = new URLSearchParams({
       apikey: apiKey,
-      country,
       language: 'fr',
     });
 

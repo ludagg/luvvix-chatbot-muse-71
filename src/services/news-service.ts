@@ -26,7 +26,7 @@ const summarizeWithGemini = async (text: string): Promise<string> => {
       {
         parts: [
           {
-            text: `Résume clairement cet article en UNE phrase :\n\n${text}`,
+            text: `Résume clairement cet article en UNE phrase en anglais :\n\n${text}`,
           },
         ],
       },
@@ -42,11 +42,11 @@ const summarizeWithGemini = async (text: string): Promise<string> => {
     const result = await res.json();
     return (
       result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-      text.slice(0, 200) + '...'
+      text.slice(0, 500) + '...'
     );
   } catch (err) {
     console.error('Erreur résumé Gemini :', err);
-    return text.slice(0, 200) + '...';
+    return text.slice(0, 500) + '...';
   }
 };
 

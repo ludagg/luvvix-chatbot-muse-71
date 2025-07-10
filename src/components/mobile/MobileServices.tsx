@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -18,11 +17,11 @@ const MobileServices = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [activeApp, setActiveApp] = useState<string | null>(null);
 
-  // Combine all services
+  // Combine all services including new LuvviX services
   const allServices: Service[] = [
     ...aiServices,
     ...coreServices,
-    ...luvvixServices
+    ...luvvixServices // Ajouter les nouveaux services LuvviX
   ];
 
   const filteredServices = allServices.filter(service => {

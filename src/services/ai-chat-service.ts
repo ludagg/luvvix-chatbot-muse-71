@@ -64,9 +64,8 @@ class AIChatService {
       const conversationText = messages
         .reverse()
         .map(msg => {
-          const userName = msg.user_profiles && Array.isArray(msg.user_profiles) 
-            ? msg.user_profiles[0]?.full_name 
-            : msg.user_profiles?.full_name || 'Utilisateur';
+          const userProfile = msg.user_profiles as any;
+          const userName = userProfile?.full_name || 'Utilisateur';
           return `${userName}: ${msg.content}`;
         })
         .join('\n');
@@ -110,9 +109,8 @@ class AIChatService {
       const conversationText = messages
         .reverse()
         .map(msg => {
-          const userName = msg.user_profiles && Array.isArray(msg.user_profiles) 
-            ? msg.user_profiles[0]?.full_name 
-            : msg.user_profiles?.full_name || 'Utilisateur';
+          const userProfile = msg.user_profiles as any;
+          const userName = userProfile?.full_name || 'Utilisateur';
           return `${userName}: ${msg.content}`;
         })
         .join('\n');

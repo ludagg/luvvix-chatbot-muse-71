@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
@@ -437,7 +436,7 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
     );
   }
 
-  // Vue Contacts - changement de la logique de comparaison
+  // Vue Contacts
   if (currentView === 'contacts') {
     return (
       <div className={`flex flex-col h-screen bg-background ${showBottomNav ? 'pb-16' : ''}`}>

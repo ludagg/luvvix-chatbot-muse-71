@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
@@ -168,7 +167,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
       case 'assistant':
         return <MobileAssistant onBack={() => setActiveView('home')} />;
       case 'chat':
-        return <MobileChat showBottomNav={false} />;
+        return <MobileChat />;
       case 'profile':
         return <MobileProfile />;
       case 'settings':

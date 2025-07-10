@@ -881,41 +881,6 @@ export type Database = {
         }
         Relationships: []
       }
-      call_participants: {
-        Row: {
-          call_id: string | null
-          id: string
-          joined_at: string | null
-          left_at: string | null
-          status: string | null
-          user_id: string | null
-        }
-        Insert: {
-          call_id?: string | null
-          id?: string
-          joined_at?: string | null
-          left_at?: string | null
-          status?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          call_id?: string | null
-          id?: string
-          joined_at?: string | null
-          left_at?: string | null
-          status?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "call_participants_call_id_fkey"
-            columns: ["call_id"]
-            isOneToOne: false
-            referencedRelation: "chat_calls"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       center_chat_messages: {
         Row: {
           content: string | null
@@ -1852,139 +1817,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      chat_calls: {
-        Row: {
-          call_type: string
-          caller_id: string | null
-          conversation_id: string | null
-          duration: number | null
-          ended_at: string | null
-          id: string
-          started_at: string | null
-          status: string | null
-        }
-        Insert: {
-          call_type: string
-          caller_id?: string | null
-          conversation_id?: string | null
-          duration?: number | null
-          ended_at?: string | null
-          id?: string
-          started_at?: string | null
-          status?: string | null
-        }
-        Update: {
-          call_type?: string
-          caller_id?: string | null
-          conversation_id?: string | null
-          duration?: number | null
-          ended_at?: string | null
-          id?: string
-          started_at?: string | null
-          status?: string | null
-        }
-        Relationships: []
-      }
-      chat_conversations: {
-        Row: {
-          conversation_type: string
-          created_at: string | null
-          created_by: string | null
-          encrypted_name: string | null
-          id: string
-          updated_at: string | null
-        }
-        Insert: {
-          conversation_type?: string
-          created_at?: string | null
-          created_by?: string | null
-          encrypted_name?: string | null
-          id?: string
-          updated_at?: string | null
-        }
-        Update: {
-          conversation_type?: string
-          created_at?: string | null
-          created_by?: string | null
-          encrypted_name?: string | null
-          id?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      chat_messages: {
-        Row: {
-          conversation_id: string | null
-          encrypted_content: string
-          encrypted_metadata: string | null
-          id: string
-          message_type: string | null
-          sender_id: string | null
-          sent_at: string | null
-        }
-        Insert: {
-          conversation_id?: string | null
-          encrypted_content: string
-          encrypted_metadata?: string | null
-          id?: string
-          message_type?: string | null
-          sender_id?: string | null
-          sent_at?: string | null
-        }
-        Update: {
-          conversation_id?: string | null
-          encrypted_content?: string
-          encrypted_metadata?: string | null
-          id?: string
-          message_type?: string | null
-          sender_id?: string | null
-          sent_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chat_messages_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "chat_conversations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      chat_participants: {
-        Row: {
-          conversation_id: string | null
-          encrypted_public_key: string
-          id: string
-          joined_at: string | null
-          role: string | null
-          user_id: string | null
-        }
-        Insert: {
-          conversation_id?: string | null
-          encrypted_public_key: string
-          id?: string
-          joined_at?: string | null
-          role?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          conversation_id?: string | null
-          encrypted_public_key?: string
-          id?: string
-          joined_at?: string | null
-          role?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chat_participants_conversation_id_fkey"
-            columns: ["conversation_id"]
-            isOneToOne: false
-            referencedRelation: "chat_conversations"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       cloud_connections: {
         Row: {
@@ -3613,33 +3445,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_contacts: {
-        Row: {
-          added_at: string | null
-          contact_user_id: string | null
-          encrypted_contact_name: string | null
-          encrypted_public_key: string
-          id: string
-          user_id: string | null
-        }
-        Insert: {
-          added_at?: string | null
-          contact_user_id?: string | null
-          encrypted_contact_name?: string | null
-          encrypted_public_key: string
-          id?: string
-          user_id?: string | null
-        }
-        Update: {
-          added_at?: string | null
-          contact_user_id?: string | null
-          encrypted_contact_name?: string | null
-          encrypted_public_key?: string
-          id?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       user_notes: {
         Row: {
           book_id: string
@@ -3772,27 +3577,6 @@ export type Database = {
           id?: string
           updated_at?: string | null
           username?: string | null
-        }
-        Relationships: []
-      }
-      user_public_keys: {
-        Row: {
-          created_at: string | null
-          public_key: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          public_key: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          public_key?: string
-          updated_at?: string | null
-          user_id?: string
         }
         Relationships: []
       }

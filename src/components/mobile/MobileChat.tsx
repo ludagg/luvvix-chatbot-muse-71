@@ -168,7 +168,7 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
   // Vue Chat (conversation active)
   if (currentView === 'chat' && currentConversation) {
     return (
-      <div className={`flex flex-col h-screen bg-background ${showBottomNav ? 'pb-16' : ''}`}>
+      <div className="flex flex-col h-full bg-background pb-16">
         {/* Header de conversation */}
         <div className="bg-card border-b border-border px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -403,7 +403,7 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
   // Vue Recherche
   if (currentView === 'search') {
     return (
-      <div className={`flex flex-col h-screen bg-background ${showBottomNav ? 'pb-16' : ''}`}>
+      <div className="flex flex-col h-full bg-background pb-16">
         <div className="bg-card border-b border-border px-4 py-4">
           <div className="flex items-center space-x-3 mb-4">
             <button 
@@ -453,7 +453,7 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
   // Vue Contacts
   if (currentView === 'contacts') {
     return (
-      <div className={`flex flex-col h-screen bg-background ${showBottomNav ? 'pb-16' : ''}`}>
+      <div className="flex flex-col h-full bg-background pb-16">
         <div className="bg-card border-b border-border px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
@@ -633,7 +633,7 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
   // Vue Nouveau Groupe
   if (currentView === 'new-group') {
     return (
-      <div className={`flex flex-col h-screen bg-background ${showBottomNav ? 'pb-16' : ''}`}>
+      <div className="flex flex-col h-full bg-background pb-16">
         <div className="bg-card border-b border-border px-4 py-4">
           <div className="flex items-center space-x-3">
             <button 
@@ -657,7 +657,7 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
 
   // Vue principale - Liste des conversations
   return (
-    <div className={`flex flex-col h-screen bg-background ${showBottomNav ? 'pb-16' : ''}`}>
+    <div className="flex flex-col h-full bg-background pb-16">
       {/* Header */}
       <div className="bg-card border-b border-border px-4 py-4">
         <div className="flex items-center justify-between mb-4">

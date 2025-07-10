@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -315,6 +314,69 @@ export const useChat = () => {
     }
   }, [user, loadConversations]);
 
+  // Créer un groupe
+  const createGroup = useCallback(async (name: string, description?: string, participantIds: string[] = []) => {
+    if (!user) return null;
+
+    try {
+      console.log('Creating group:', { name, description, participantIds });
+      
+      // Créer une nouvelle conversation de groupe
+      const { data: conversation, error: convError } = await supabase
+        .from('chat_conversations')
+        .insert({
+          type: 'group',
+          created_by: user.id,
+          name: name,
+          description: description
+        })
+        .select()
+        .single();
+
+      if (convError) {
+        console.error('Error creating group conversation:', convError);
+        throw convError;
+      }
+
+      // Ajouter le créateur comme admin
+      const participantsToAdd = [
+        { conversation_id: conversation.id, user_id: user.id, role: 'admin' },
+        ...participantIds.map(id => ({ 
+          conversation_id: conversation.id, 
+          user_id: id, 
+          role: 'member' as const 
+        }))
+      ];
+
+      const { error: participantsError } = await supabase
+        .from('chat_participants')
+        .insert(participantsToAdd);
+
+      if (participantsError) {
+        console.error('Error adding group participants:', participantsError);
+        throw participantsError;
+      }
+
+      console.log('Group created:', conversation);
+      await loadConversations();
+      
+      toast({
+        title: "Groupe créé",
+        description: `Le groupe "${name}" a été créé avec succès`
+      });
+
+      return conversation.id;
+    } catch (error) {
+      console.error('Error creating group:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer le groupe",
+        variant: "destructive"
+      });
+      return null;
+    }
+  }, [user, loadConversations]);
+
   // Ajouter un contact
   const addContact = useCallback(async (contactUserId: string, contactName?: string) => {
     if (!user) return;
@@ -429,6 +491,7 @@ export const useChat = () => {
     loadMessages,
     sendMessage,
     createPrivateConversation,
+    createGroup,
     addContact,
     searchUsers,
     loadConversations,

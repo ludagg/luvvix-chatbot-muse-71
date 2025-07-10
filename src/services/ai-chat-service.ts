@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 interface AISuggestion {
@@ -87,6 +86,28 @@ class AIChatService {
       }
     } catch (error) {
       console.error('Error enhancing message:', error);
+      return message;
+    }
+  }
+
+  // Nouvelle méthode pour les réponses rapides
+  async getQuickReplies(message: string): Promise<string[]> {
+    try {
+      // Génération de réponses rapides basées sur le message
+      const suggestions = await this.generateContextualSuggestions(message);
+      return suggestions.map(s => s.text).slice(0, 3);
+    } catch (error) {
+      console.error('Error getting quick replies:', error);
+      return ['OK', 'Merci', 'D\'accord'];
+    }
+  }
+
+  // Nouvelle méthode pour la correction automatique
+  async autoCorrect(message: string): Promise<string> {
+    try {
+      return this.correctMessage(message);
+    } catch (error) {
+      console.error('Error auto-correcting message:', error);
       return message;
     }
   }

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
@@ -167,7 +168,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
       case 'assistant':
         return <MobileAssistant onBack={() => setActiveView('home')} />;
       case 'chat':
-        return <MobileChat showBottomNav={true} />;
+        return <MobileChat showBottomNav={false} />;
       case 'profile':
         return <MobileProfile />;
       case 'settings':
@@ -202,8 +203,8 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
     setActiveView('search');
   };
 
-  // Ne pas afficher le header et la navigation pour les vues en plein écran (sauf chat)
-  const isFullScreenView = ['calendar', 'forms', 'translate', 'weather', 'center'].includes(activeView);
+  // Ne pas afficher le header et la navigation pour les vues en plein écran
+  const isFullScreenView = ['calendar', 'forms', 'translate', 'weather', 'center', 'chat'].includes(activeView);
 
   if (isFullScreenView) {
     return (

@@ -24,11 +24,13 @@ import {
   Bell,
   Languages,
   FormInput,
-  Newspaper
+  Newspaper,
+  Badge
 } from 'lucide-react';
 import { fetchLatestNews } from "@/services/news-service";
 import { NewsItem } from "@/types/news";
 import MobileNewsPage from "./MobileNewsPage";
+import { useLanguagePreferences } from '@/hooks/use-language-preferences';
 
 const MobileHome = () => {
   const { user } = useAuth();
@@ -37,6 +39,7 @@ const MobileHome = () => {
   const { weatherData, fetchWeather } = useWeather();
   const { forms } = useForms();
   const { history } = useTranslations();
+  const { language } = useLanguagePreferences();
   const currentTime = new Date();
   
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Alex';
@@ -67,23 +70,23 @@ const MobileHome = () => {
     }
   }, [notificationsEnabled, requestPermission]);
 
-  // -- Ajout de l'état local pour les news --
+  // -- État local pour les news avec support multilingue --
   const [news, setNews] = React.useState<NewsItem[]>([]);
   const [loadingNews, setLoadingNews] = React.useState(false);
   const [newsError, setNewsError] = React.useState<string | null>(null);
   const [showNewsPage, setShowNewsPage] = React.useState(false);
 
-  // Charger les actualités au montage, au tout dernier (afin de prioriser le reste)
+  // Charger les actualités avec la langue préférée
   React.useEffect(() => {
     setLoadingNews(true);
-    fetchLatestNews("general", "fr")
+    fetchLatestNews("general", "fr", "", language)
       .then((items) => {
         setNews(items.slice(0, 5));
         setNewsError(null);
       })
       .catch(() => setNewsError("Impossible de charger les actualités"))
       .finally(() => setLoadingNews(false));
-  }, []);
+  }, [language]); // Recharger quand la langue change
 
   const quickActions = [
     {
@@ -404,6 +407,9 @@ const MobileHome = () => {
           <h3 className="font-semibold text-gray-900 flex items-center">
             <Newspaper className="w-5 h-5 mr-2 text-blue-500" />
             Actualités
+            <Badge variant="secondary" className="ml-2 text-xs bg-blue-100 text-blue-700">
+              {language.toUpperCase()}
+            </Badge>
           </h3>
           <button
             onClick={() => setShowNewsPage(true)}
@@ -413,7 +419,12 @@ const MobileHome = () => {
           </button>
         </div>
         {loadingNews ? (
-          <div className="text-center py-6 text-gray-400 text-sm">Chargement...</div>
+          <div className="text-center py-6">
+            <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
+              <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+              Chargement des actualités...
+            </div>
+          </div>
         ) : newsError ? (
           <div className="text-center py-6 text-red-500 text-sm">{newsError}</div>
         ) : (
@@ -429,14 +440,26 @@ const MobileHome = () => {
                   <img
                     src={item.imageUrl}
                     alt={item.title}
-                    className="w-12 h-12 object-cover rounded-lg mr-3 flex-shrink-0 bg-gray-100"
+                    className="w-16 h-16 object-cover rounded-lg mr-3 flex-shrink-0 bg-gray-100"
                     onError={(e) => { e.currentTarget.style.display = "none"; }}
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-blue-600 font-medium truncate">{item.source}</p>
-                  <p className="text-sm font-semibold text-gray-900 line-clamp-2">{item.title}</p>
-                  <p className="text-xs text-gray-500 truncate">{item.summary}</p>
+                  <p className="text-xs text-blue-600 font-medium truncate mb-1">{item.source}</p>
+                  <p className="text-sm font-semibold text-gray-900 line-clamp-2 leading-tight mb-1">
+                    {item.title}
+                  </p>
+                  <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">
+                    {item.summary}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {new Date(item.publishedAt).toLocaleDateString('fr-FR', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
                 </div>
               </li>
             ))}

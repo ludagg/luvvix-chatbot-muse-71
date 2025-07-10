@@ -1,194 +1,182 @@
 import React, { useState } from 'react';
-import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Globe, Palette, Database, Cloud } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
-import ProfilePage from './AccountPages/ProfilePage';
-import SecurityPage from './AccountPages/SecurityPage';
-import NotificationsPage from './AccountPages/NotificationsPage';
-import PrivacyPage from './AccountPages/PrivacyPage';
-import CloudConnectionsPage from './AccountPages/CloudConnectionsPage';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
+import { Settings, User, Key, Moon, Sun } from 'lucide-react';
+import LanguageSettings from './LanguageSettings';
 
 const MobileSettings = () => {
-  const { user, signOut } = useAuth();
-  const [currentPage, setCurrentPage] = useState<string | null>(null);
+  const { user, signOut, updateUser } = useAuth();
+  const router = useRouter();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+  const [profileData, setProfileData] = useState({
+    fullName: user?.user_metadata?.full_name || '',
+    email: user?.email || '',
+  });
 
   const handleSignOut = async () => {
+    await signOut();
+    router.push('/login');
+    toast({
+      title: "Déconnexion réussie",
+      description: "Vous avez été déconnecté de votre compte.",
+    })
+  };
+
+  const handleProfileUpdate = async () => {
+    setUpdatingProfile(true);
     try {
-      await signOut();
-      toast({
-        title: "Déconnexion",
-        description: "À bientôt !",
+      await updateUser({
+        data: { full_name: profileData.fullName },
       });
-    } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible de se déconnecter",
+        title: "Profil mis à jour",
+        description: "Votre profil a été mis à jour avec succès.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur de mise à jour",
+        description: error.message || "Impossible de mettre à jour le profil.",
         variant: "destructive",
       });
+    } finally {
+      setUpdatingProfile(false);
     }
   };
 
-  const settingsGroups = [
-    {
-      title: "Compte",
-      items: [
-        {
-          icon: <User className="w-5 h-5" />,
-          label: "Profil utilisateur",
-          description: "Gérer vos informations personnelles",
-          action: () => setCurrentPage('profile')
-        },
-        {
-          icon: <Shield className="w-5 h-5" />,
-          label: "Sécurité",
-          description: "Mot de passe et authentification",
-          action: () => setCurrentPage('security')
-        },
-        {
-          icon: <Cloud className="w-5 h-5" />,
-          label: "Connexions Cloud",
-          description: "Gérer vos services de stockage",
-          action: () => setCurrentPage('cloud')
-        }
-      ]
-    },
-    {
-      title: "Préférences",
-      items: [
-        {
-          icon: <Bell className="w-5 h-5" />,
-          label: "Notifications",
-          description: "Gérer vos alertes",
-          action: () => setCurrentPage('notifications')
-        },
-        {
-          icon: <Database className="w-5 h-5" />,
-          label: "Confidentialité",
-          description: "Contrôle de vos données",
-          action: () => setCurrentPage('privacy')
-        },
-        {
-          icon: <Globe className="w-5 h-5" />,
-          label: "Langue et région",
-          description: "Paramètres de localisation",
-          action: () => toast({ title: "Bientôt disponible", description: "Cette fonctionnalité arrive prochainement" })
-        },
-        {
-          icon: <Palette className="w-5 h-5" />,
-          label: "Apparence",
-          description: "Thème et personnalisation",
-          action: () => toast({ title: "Bientôt disponible", description: "Cette fonctionnalité arrive prochainement" })
-        }
-      ]
-    },
-    {
-      title: "Support",
-      items: [
-        {
-          icon: <HelpCircle className="w-5 h-5" />,
-          label: "Aide et support",
-          description: "FAQ et assistance",
-          action: () => toast({ title: "Aide", description: "Redirection vers le centre d'aide" })
-        },
-        {
-          icon: <Settings className="w-5 h-5" />,
-          label: "À propos de LuvviX OS",
-          description: "Version et informations",
-          action: () => toast({ title: "LuvviX OS", description: "Version 1.0.0 - Conçu par Ludovic Aggaï" })
-        }
-      ]
-    }
-  ];
-
-  // Rendu conditionnel des pages
-  if (currentPage === 'profile') {
-    return <ProfilePage onBack={() => setCurrentPage(null)} />;
-  }
-  
-  if (currentPage === 'security') {
-    return <SecurityPage onBack={() => setCurrentPage(null)} />;
-  }
-  
-  if (currentPage === 'cloud') {
-    return <CloudConnectionsPage onBack={() => setCurrentPage(null)} />;
-  }
-  
-  if (currentPage === 'notifications') {
-    return <NotificationsPage onBack={() => setCurrentPage(null)} />;
-  }
-  
-  if (currentPage === 'privacy') {
-    return <PrivacyPage onBack={() => setCurrentPage(null)} />;
-  }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setProfileData({ ...profileData, [e.target.name]: e.target.value });
+  };
 
   return (
-    <div className="flex-1 overflow-auto pb-20">
-      {/* Profil utilisateur */}
-      <div className="bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white">
-        <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-            <User className="w-8 h-8" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold">
-              {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Utilisateur'}
-            </h2>
-            <p className="text-blue-100">{user?.email}</p>
-            <p className="text-blue-200 text-sm">Membre LuvviX ID</p>
-          </div>
-        </div>
+    <div className="flex-1 overflow-auto p-4 pb-20">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <Settings className="w-6 h-6 text-gray-500" />
+          Paramètres
+        </h1>
+        <p className="text-gray-600">Gérez votre compte et vos préférences</p>
       </div>
 
-      {/* Groupes de paramètres */}
-      <div className="p-4 space-y-6">
-        {settingsGroups.map((group, groupIndex) => (
-          <div key={groupIndex}>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">
-              {group.title}
-            </h3>
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-              {group.items.map((item, itemIndex) => (
-                <button
-                  key={itemIndex}
-                  onClick={item.action}
-                  className="w-full p-4 flex items-center space-x-4 hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-b-0"
-                >
-                  <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600">
-                    {item.icon}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <h4 className="font-medium text-gray-900">{item.label}</h4>
-                    <p className="text-sm text-gray-600">{item.description}</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+      <div className="space-y-6">
+        {/* Paramètres de langue */}
+        <LanguageSettings />
 
-        {/* Déconnexion */}
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <button
-            onClick={handleSignOut}
-            className="w-full p-4 flex items-center space-x-4 hover:bg-red-50 transition-colors text-red-600"
-          >
-            <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-              <LogOut className="w-5 h-5" />
+        {/* Section Profil */}
+        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <User className="w-5 h-5 text-blue-600" />
+              Profil
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Gérez vos informations personnelles
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nom complet</Label>
+              <Input
+                id="name"
+                name="fullName"
+                type="text"
+                value={profileData.fullName}
+                onChange={handleChange}
+                placeholder="Votre nom complet"
+              />
             </div>
-            <div className="flex-1 text-left">
-              <h4 className="font-medium">Se déconnecter</h4>
-              <p className="text-sm text-red-500">Fermer votre session LuvviX</p>
+            <div className="space-y-2">
+              <Label htmlFor="email">Adresse e-mail</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={profileData.email}
+                onChange={handleChange}
+                placeholder="votre@email.com"
+                disabled
+              />
             </div>
-          </button>
-        </div>
-      </div>
+            <Button onClick={handleProfileUpdate} disabled={updatingProfile}>
+              {updatingProfile ? "Mise à jour..." : "Mettre à jour le profil"}
+            </Button>
+          </CardContent>
+        </Card>
 
-      {/* Version et informations */}
-      <div className="p-4 text-center">
-        <p className="text-sm text-gray-500 mb-2">LuvviX OS v1.0.0</p>
-        <p className="text-xs text-gray-400">© 2024 LuvviX. Tous droits réservés.</p>
-        <p className="text-xs text-gray-400 mt-1">Conçu par Ludovic Aggaï</p>
+        {/* Section Sécurité */}
+        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <Key className="w-5 h-5 text-orange-600" />
+              Sécurité
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Gérez votre mot de passe et la sécurité de votre compte
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-gray-700">
+              Vous serez bientôt en mesure de modifier votre mot de passe ici.
+            </p>
+            <Button variant="outline" disabled>
+              Modifier le mot de passe (bientôt disponible)
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Section Apparence */}
+        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <Moon className="w-5 h-5 text-purple-600" />
+              Apparence
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Choisissez votre mode d'apparence préféré
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="dark-mode">Mode sombre</Label>
+              <Switch
+                id="dark-mode"
+                checked={isDarkMode}
+                onCheckedChange={(checked) => setIsDarkMode(checked)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section Déconnexion */}
+        <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+              <Sun className="w-5 h-5 text-yellow-600" />
+              Déconnexion
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Déconnectez-vous de votre compte
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="destructive" onClick={handleSignOut}>
+              Se déconnecter
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Brain, Send, Sparkles, Calendar, Users, Zap, BookOpen, TrendingUp, 
@@ -114,35 +113,26 @@ const AdvancedAssistantChat = () => {
     const welcomeMessage: Message = {
       id: '1',
       role: 'assistant',
-      content: `🤖 **LuvviX Assistant IA - Powered by Gemini 1.5 Flash**
+      content: `🤖 **LuvviX AI Assistant**
 
-🚀 **Fonctionnalités Avancées :**
-📸 **Vision IA** - Analysez vos images
-🎤 **Reconnaissance vocale** avancée
-🌙 **Mode sombre/clair** adaptatif
-⭐ **Favoris intelligents** avec sync
-📤 **Partage instantané** multi-plateforme
-📚 **Historique persistant** avec recherche
-🔔 **Notifications push** contextuelles
-📄 **Export multi-format** (PDF, JSON, CSV)
-📱 **Mode hors-ligne** avec cache local
+Salut ! Je suis votre assistant IA personnel, conçu pour vous aider dans tous vos projets.
 
-**Nouvelles capacités Gemini :**
-• Raisonnement multimodal avancé (texte + image)
-• Compréhension contextuelle approfondie
-• Génération de code optimisée
-• Analyse de données complexes
-• Créativité et brainstorming
-• Support multilingue natif
+🚀 **Mes capacités :**
+• 💬 Conversation naturelle et contextuelle
+• 📸 Analyse d'images et vision IA
+• 💻 Génération et révision de code
+• 📝 Rédaction créative et professionnelle
+• 🧮 Calculs et analyses de données
+• 🌍 Traduction multilingue
+• 🎨 Brainstorming et créativité
 
-**Commandes spéciales :**
-"Analyse cette image", "Code moi ça", "Explique-moi", "Créatif mode", "Export données"`,
+**Comment puis-je vous aider aujourd'hui ?**`,
       timestamp: new Date(),
       actions: [
-        { type: 'image_demo', label: '📸 Test Vision IA', iconName: 'Camera' },
-        { type: 'voice_demo', label: '🎤 Test vocal', iconName: 'Mic' },
+        { type: 'image_demo', label: '📸 Analyser une image', iconName: 'Camera' },
+        { type: 'voice_demo', label: '🎤 Commande vocale', iconName: 'Mic' },
         { type: 'creative_demo', label: '🎨 Mode créatif', iconName: 'Sparkles' },
-        { type: 'code_demo', label: '💻 Génération code', iconName: 'Code' }
+        { type: 'code_demo', label: '💻 Aide au code', iconName: 'Code' }
       ]
     };
     setMessages([welcomeMessage]);
@@ -300,10 +290,10 @@ const AdvancedAssistantChat = () => {
 
   const simulateReasoning = async (query: string) => {
     const steps: ReasoningStep[] = [
-      { step: 1, title: "Analyse Gemini", content: `Traitement multimodal: "${query}"`, status: 'processing' },
-      { step: 2, title: "Contexte & Mémoire", content: "Consultation historique et préférences", status: 'pending' },
-      { step: 3, title: "Génération IA", content: "Synthèse intelligente Gemini 1.5", status: 'pending' },
-      { step: 4, title: "Optimisation", content: "Validation qualité et pertinence", status: 'pending' }
+      { step: 1, title: "Analyse de la requête", content: `Traitement: "${query}"`, status: 'processing' },
+      { step: 2, title: "Recherche contextuelle", content: "Consultation de la base de connaissances", status: 'pending' },
+      { step: 3, title: "Génération IA", content: "Synthèse intelligente LuvviX AI", status: 'pending' },
+      { step: 4, title: "Validation", content: "Vérification qualité et pertinence", status: 'pending' }
     ];
 
     setReasoningSteps(steps);
@@ -343,7 +333,7 @@ const AdvancedAssistantChat = () => {
 
     try {
       if (!isOffline) {
-        // Préparation des données pour Gemini
+        // Préparation des données pour LuvviX AI
         const formData = new FormData();
         formData.append('message', content || 'Analyse cette image');
         
@@ -351,7 +341,7 @@ const AdvancedAssistantChat = () => {
           formData.append('image', selectedImage);
         }
 
-        // Appel à l'API Gemini via notre edge function
+        // Appel à l'API LuvviX AI via notre edge function
         const response = await supabase.functions.invoke('gemini-chat-response', {
           body: formData
         });
@@ -373,7 +363,7 @@ const AdvancedAssistantChat = () => {
         };
 
         setMessages(prev => [...prev, assistantMessage]);
-        showNotification('🤖 Gemini Assistant', 'Réponse prête !');
+        showNotification('🤖 LuvviX AI', 'Réponse prête !');
         
         // Clear image après envoi
         clearImage();
@@ -382,7 +372,7 @@ const AdvancedAssistantChat = () => {
         const offlineResponse: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: `📱 **Mode Hors-ligne Activé**\n\nVotre ${selectedImage ? 'image et ' : ''}message "${content}" ont été sauvegardés localement.\n\n**Fonctionnalités disponibles :**\n• Historique et favoris\n• Export de données\n• Recherche locale\n• Calculatrice basique\n\n🌐 Reconnectez-vous pour accéder aux capacités complètes de Gemini !`,
+          content: `📱 **Mode Hors-ligne**\n\nVotre ${selectedImage ? 'image et ' : ''}message "${content}" ont été sauvegardés.\n\n**Fonctionnalités disponibles :**\n• Historique et favoris\n• Export de données\n• Recherche locale\n\n🌐 Reconnectez-vous pour utiliser LuvviX AI !`,
           timestamp: new Date()
         };
         setMessages(prev => [...prev, offlineResponse]);
@@ -391,17 +381,17 @@ const AdvancedAssistantChat = () => {
 
       saveConversationHistory();
     } catch (error) {
-      console.error('Erreur Gemini chat:', error);
+      console.error('Erreur LuvviX AI:', error);
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: `⚠️ **Erreur de connexion Gemini**\n\nImpossible de traiter votre demande pour le moment.\n\n**Solutions :**\n• Vérifiez votre connexion\n• Réessayez dans quelques instants\n• Utilisez le mode hors-ligne\n\nVos données sont sauvegardées localement.`,
+        content: `⚠️ **Connexion interrompue**\n\nImpossible de traiter votre demande.\n\n**Solutions :**\n• Vérifiez votre connexion\n• Réessayez dans un moment\n\nVos données sont sauvegardées.`,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, errorMessage]);
-      toast.error('🔄 Reconnexion des circuits Gemini...');
+      toast.error('🔄 Reconnexion de LuvviX AI...');
     } finally {
       setLoading(false);
     }
@@ -468,12 +458,12 @@ const AdvancedAssistantChat = () => {
   const generateReasoning = async (content: string): Promise<any> => {
     return {
       steps: [
-        'Analyse sémantique Gemini',
+        'Analyse sémantique LuvviX AI',
         'Contextualisation multimodale',
         'Génération de réponse optimisée',
         'Validation qualité et cohérence'
       ],
-      conclusion: 'Traitement Gemini 1.5 Flash complété avec succès',
+      conclusion: 'Traitement LuvviX AI complété avec succès',
       confidence: 0.94
     };
   };
@@ -536,16 +526,16 @@ const AdvancedAssistantChat = () => {
 
   const generateSimpleChart = (type: string, data: any) => {
     return (
-      <div className="h-64 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-dashed border-purple-200 flex items-center justify-center">
+      <div className="h-48 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 flex items-center justify-center">
         <div className="text-center">
-          <Brain className="w-16 h-16 text-purple-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{data.title || 'Analyse Gemini'}</h3>
-          <p className="text-sm text-purple-700 font-medium">Source: {data.source || 'Gemini 1.5 Flash'}</p>
-          <p className="text-xs text-gray-600 mt-2">
+          <Brain className="w-12 h-12 text-blue-600 mx-auto mb-3" />
+          <h3 className="text-base font-semibold text-gray-900 mb-1">{data.title || 'Analyse LuvviX AI'}</h3>
+          <p className="text-sm text-blue-700 font-medium">Source: {data.source || 'LuvviX AI'}</p>
+          <p className="text-xs text-gray-600 mt-1">
             {data.description || 'Visualisation générée par IA'}
           </p>
           {data.values && (
-            <div className="mt-3 text-xs text-gray-500">
+            <div className="mt-2 text-xs text-gray-500">
               Données: {data.values.join('%, ')}%
             </div>
           )}
@@ -572,86 +562,67 @@ const AdvancedAssistantChat = () => {
   };
 
   const advancedSuggestions = [
-    'Analyse cette image avec Gemini',
-    'Code-moi une application React',
-    'Explique-moi la physique quantique',
-    'Crée un poème sur l\'IA',
-    'Résous cette équation complexe',
-    'Mode créatif : brainstorming'
+    'Explique-moi un concept complexe',
+    'Aide-moi à coder quelque chose',
+    'Analyse cette image pour moi',
+    'Écris-moi un texte créatif',
+    'Résous ce problème mathématique',
+    'Donne-moi des idées innovantes'
   ];
 
   return (
-    <div className={`flex flex-col h-full ${isDarkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-purple-50 via-white to-blue-50'}`}>
-      {/* Header Advanced */}
-      <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600'} text-white p-4 shadow-lg`}>
-        <div className="flex items-center justify-between mb-3">
+    <div className={`flex flex-col h-full ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+      {/* Header épuré */}
+      <div className={`${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border-b px-4 py-3 shadow-sm`}>
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className={`w-10 h-10 ${isDarkMode ? 'bg-gray-700' : 'bg-white/20'} rounded-xl flex items-center justify-center backdrop-blur-sm`}>
-              <Brain className="w-6 h-6 text-white" />
+            <div className={`w-8 h-8 ${isDarkMode ? 'bg-blue-600' : 'bg-blue-500'} rounded-full flex items-center justify-center`}>
+              <Brain className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="font-bold text-lg">Gemini Assistant</h2>
-              <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 ${isOffline ? 'bg-red-400' : 'bg-green-400'} rounded-full animate-pulse`}></div>
-                <span className="text-sm opacity-90">{isOffline ? 'Mode Offline' : 'Gemini 1.5 Flash'}</span>
+              <h2 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>LuvviX AI</h2>
+              <div className="flex items-center space-x-1">
+                <div className={`w-1.5 h-1.5 ${isOffline ? 'bg-red-400' : 'bg-green-400'} rounded-full`}></div>
+                <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {isOffline ? 'Hors ligne' : 'En ligne'}
+                </span>
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <button onClick={toggleTheme} className="p-2 hover:bg-white/10 rounded-lg">
-              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          <div className="flex items-center space-x-1">
+            <button onClick={toggleTheme} className={`p-2 hover:${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'} rounded-lg transition-colors`}>
+              {isDarkMode ? <Sun className="w-4 h-4 text-gray-400" /> : <Moon className="w-4 h-4 text-gray-600" />}
             </button>
-            <button onClick={toggleNotifications} className="p-2 hover:bg-white/10 rounded-lg">
-              <Bell className={`w-5 h-5 ${notificationsEnabled ? 'text-yellow-300' : ''}`} />
+            <button onClick={() => setShowSettings(!showSettings)} className={`p-2 hover:${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'} rounded-lg transition-colors`}>
+              <MoreVertical className={`w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
             </button>
-            <button onClick={() => setShowSettings(!showSettings)} className="p-2 hover:bg-white/10 rounded-lg">
-              <MoreVertical className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Statistiques en temps réel */}
-        <div className="grid grid-cols-4 gap-2">
-          <div className={`${isDarkMode ? 'bg-gray-700/50' : 'bg-white/20'} p-2 rounded-lg text-center backdrop-blur-sm`}>
-            <Volume2 className="w-4 h-4 mx-auto mb-1" />
-            <div className="text-xs font-medium">Vocal</div>
-          </div>
-          <div className={`${isDarkMode ? 'bg-gray-700/50' : 'bg-white/20'} p-2 rounded-lg text-center backdrop-blur-sm`}>
-            <Camera className="w-4 h-4 mx-auto mb-1" />
-            <div className="text-xs font-medium">Vision</div>
-          </div>
-          <div className={`${isDarkMode ? 'bg-gray-700/50' : 'bg-white/20'} p-2 rounded-lg text-center backdrop-blur-sm`}>
-            <Star className="w-4 h-4 mx-auto mb-1" />
-            <div className="text-xs font-medium">{favoriteMessages.length}</div>
-          </div>
-          <div className={`${isDarkMode ? 'bg-gray-700/50' : 'bg-white/20'} p-2 rounded-lg text-center backdrop-blur-sm`}>
-            {isOffline ? <WifiOff className="w-4 h-4 mx-auto mb-1" /> : <Wifi className="w-4 h-4 mx-auto mb-1" />}
-            <div className="text-xs font-medium">{isOffline ? 'Off' : 'On'}</div>
           </div>
         </div>
       </div>
 
-      {/* Reasoning Overlay */}
+      {/* Overlay de raisonnement */}
       {showReasoning && (
-        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 m-4 max-w-sm w-full shadow-2xl`}>
+        <div className="absolute inset-0 bg-black/40 z-50 flex items-center justify-center backdrop-blur-sm">
+          <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-3xl p-6 m-4 max-w-sm w-full shadow-2xl border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
             <div className="text-center mb-4">
-              <Brain className="w-8 h-8 text-purple-600 mx-auto mb-2 animate-pulse" />
-              <h3 className={`font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Gemini en Action</h3>
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Brain className="w-6 h-6 text-blue-600 animate-pulse" />
+              </div>
+              <h3 className={`font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>LuvviX AI réfléchit...</h3>
             </div>
             <div className="space-y-3">
               {reasoningSteps.map((step) => (
                 <div key={step.step} className="flex items-center space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    step.status === 'completed' ? 'bg-green-500 text-white' :
-                    step.status === 'processing' ? 'bg-purple-500 text-white animate-pulse' :
-                    'bg-gray-200 text-gray-600'
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                    step.status === 'completed' ? 'bg-green-100 text-green-600' :
+                    step.status === 'processing' ? 'bg-blue-100 text-blue-600 animate-pulse' :
+                    'bg-gray-100 text-gray-400'
                   }`}>
                     {step.step}
                   </div>
                   <div className="flex-1">
                     <div className={`font-medium text-sm ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{step.title}</div>
-                    <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-500'}`}>{step.content}</div>
+                    <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{step.content}</div>
                   </div>
                 </div>
               ))}
@@ -661,21 +632,21 @@ const AdvancedAssistantChat = () => {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[90%] rounded-2xl p-4 shadow-lg relative ${
+              className={`max-w-[85%] rounded-3xl px-4 py-3 relative ${
                 message.role === 'user'
                   ? isDarkMode 
-                    ? 'bg-gray-700 text-white' 
-                    : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-blue-500 text-white'
                   : isDarkMode
                     ? 'bg-gray-800 border border-gray-700 text-white'
-                    : 'bg-white border border-gray-100 text-gray-900'
+                    : 'bg-white border border-gray-200 text-gray-900 shadow-sm'
               }`}
             >
               {/* Actions du message */}
@@ -683,23 +654,23 @@ const AdvancedAssistantChat = () => {
                 <div className="absolute top-2 right-2 flex space-x-1">
                   <button
                     onClick={() => toggleFavorite(message.id)}
-                    className={`p-1 rounded hover:bg-black/10 ${
+                    className={`p-1 rounded-full hover:bg-black/10 transition-colors ${
                       favoriteMessages.includes(message.id) ? 'text-yellow-500' : 'text-gray-400'
                     }`}
                   >
-                    <Star className="w-4 h-4" />
+                    <Star className="w-3 h-3" />
                   </button>
                   <button
                     onClick={() => shareMessage(message)}
-                    className="p-1 rounded hover:bg-black/10 text-gray-400"
+                    className="p-1 rounded-full hover:bg-black/10 text-gray-400 transition-colors"
                   >
-                    <Share2 className="w-4 h-4" />
+                    <Share2 className="w-3 h-3" />
                   </button>
                   <button
                     onClick={() => copyToClipboard(message.content)}
-                    className="p-1 rounded hover:bg-black/10 text-gray-400"
+                    className="p-1 rounded-full hover:bg-black/10 text-gray-400 transition-colors"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-3 h-3" />
                   </button>
                 </div>
               )}
@@ -710,23 +681,23 @@ const AdvancedAssistantChat = () => {
                   <img 
                     src={message.image} 
                     alt="Image envoyée" 
-                    className="max-w-full h-auto rounded-lg border"
+                    className="max-w-full h-auto rounded-2xl"
                     style={{ maxHeight: '200px' }} 
                   />
                 </div>
               )}
 
               {/* Contenu */}
-              <div className="text-sm leading-relaxed pr-16">
+              <div className="text sm leading-relaxed pr-12">
                 {renderMathContent(message.content)}
               </div>
 
               {/* Graphiques */}
               {message.charts && message.charts.length > 0 && (
-                <div className={`mt-4 p-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} rounded-xl`}>
-                  <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-2`}>📊 Visualisation Gemini</div>
+                <div className={`mt-4 p-3 ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'} rounded-2xl`}>
+                  <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} mb-2`}>📊 Visualisation</div>
                   {message.charts.map((chart, index) => (
-                    <div key={index} className="h-64">
+                    <div key={index}>
                       {generateSimpleChart(chart.type, chart.data)}
                     </div>
                   ))}
@@ -736,7 +707,7 @@ const AdvancedAssistantChat = () => {
               {/* Actions */}
               {message.actions && message.actions.length > 0 && (
                 <div className={`mt-4 pt-3 border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'} space-y-2`}>
-                  <div className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-500'} font-medium`}>⚡ Actions Gemini :</div>
+                  <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>Actions suggérées :</div>
                   <div className="grid grid-cols-2 gap-2">
                     {message.actions.map((action, index) => (
                       <button
@@ -745,11 +716,11 @@ const AdvancedAssistantChat = () => {
                         className={`${
                           isDarkMode 
                             ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border-gray-600' 
-                            : 'bg-gradient-to-r from-purple-50 to-blue-50 hover:from-purple-100 hover:to-blue-100 text-purple-700 border-purple-200 hover:border-purple-300'
-                        } text-xs font-medium py-3 px-3 rounded-xl transition-all border`}
+                            : 'bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200'
+                        } text-xs font-medium py-2 px-3 rounded-xl transition-all border`}
                       >
                         <div className="flex items-center space-x-2">
-                          {renderIcon(action.iconName, "w-4 h-4")}
+                          {renderIcon(action.iconName, "w-3 h-3")}
                           <span className="truncate">{action.label}</span>
                         </div>
                       </button>
@@ -758,7 +729,7 @@ const AdvancedAssistantChat = () => {
                 </div>
               )}
               
-              <div className={`text-xs opacity-70 mt-3 ${isDarkMode ? 'text-gray-400' : ''}`}>
+              <div className={`text-xs opacity-60 mt-2 ${message.role === 'user' ? 'text-right' : ''}`}>
                 {message.timestamp.toLocaleTimeString()}
               </div>
             </div>
@@ -767,14 +738,14 @@ const AdvancedAssistantChat = () => {
         
         {loading && (
           <div className="flex justify-start">
-            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-2xl p-4 shadow-lg`}>
+            <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200 shadow-sm'} rounded-3xl px-4 py-3 border`}>
               <div className="flex items-center space-x-3">
                 <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-100"></div>
-                  <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce delay-200"></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce delay-200"></div>
                 </div>
-                <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>🤖 Gemini réfléchit...</span>
+                <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>LuvviX AI écrit...</span>
               </div>
             </div>
           </div>
@@ -786,7 +757,7 @@ const AdvancedAssistantChat = () => {
       {/* Preview d'image */}
       {imagePreview && (
         <div className="px-4 pb-2">
-          <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-xl p-3 relative`}>
+          <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-2xl p-3 relative`}>
             <button
               onClick={clearImage}
               className="absolute top-1 right-1 p-1 hover:bg-gray-100 rounded-full"
@@ -794,20 +765,20 @@ const AdvancedAssistantChat = () => {
               <Trash2 className="w-4 h-4 text-gray-500" />
             </button>
             <div className="flex items-center space-x-3">
-              <img src={imagePreview} alt="Preview" className="w-12 h-12 rounded-lg object-cover" />
+              <img src={imagePreview} alt="Preview" className="w-12 h-12 rounded-xl object-cover" />
               <div>
                 <div className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Image sélectionnée</div>
-                <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Prête pour analyse Gemini</div>
+                <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Prête pour analyse</div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Suggestions avancées */}
+      {/* Suggestions */}
       {messages.length <= 1 && (
         <div className="px-4 pb-2">
-          <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mb-2`}>✨ Testez Gemini :</div>
+          <div className={`text-xs font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mb-3`}>Essayez ces suggestions :</div>
           <div className="flex overflow-x-auto space-x-2 pb-2">
             {advancedSuggestions.map((suggestion, index) => (
               <button
@@ -816,8 +787,8 @@ const AdvancedAssistantChat = () => {
                 className={`flex-shrink-0 ${
                   isDarkMode 
                     ? 'bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700' 
-                    : 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 text-purple-700 hover:from-purple-100 hover:to-blue-100'
-                } border text-xs px-4 py-3 rounded-xl whitespace-nowrap transition-all`}
+                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                } border text-xs px-4 py-2 rounded-2xl whitespace-nowrap transition-all shadow-sm`}
               >
                 {suggestion}
               </button>
@@ -826,8 +797,8 @@ const AdvancedAssistantChat = () => {
         </div>
       )}
 
-      {/* Zone de saisie avancée */}
-      <div className={`${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-t p-4 shadow-lg`}>
+      {/* Zone de saisie */}
+      <div className={`${isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} border-t p-4`}>
         <div className="flex items-center space-x-3">
           <input
             type="file"
@@ -839,8 +810,8 @@ const AdvancedAssistantChat = () => {
           
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className={`p-2 hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-xl flex-shrink-0 transition-colors ${
-              selectedImage ? 'bg-purple-100 text-purple-600' : ''
+            className={`p-2 hover:${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'} rounded-xl flex-shrink-0 transition-colors ${
+              selectedImage ? 'bg-blue-100 text-blue-600' : ''
             }`}
           >
             <Camera className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
@@ -848,18 +819,11 @@ const AdvancedAssistantChat = () => {
           
           <button 
             onClick={toggleRecording}
-            className={`p-2 hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-xl flex-shrink-0 transition-colors ${
+            className={`p-2 hover:${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'} rounded-xl flex-shrink-0 transition-colors ${
               isRecording ? 'bg-red-100 text-red-600' : ''
             }`}
           >
             <Mic className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} ${isRecording ? 'animate-pulse' : ''}`} />
-          </button>
-          
-          <button 
-            onClick={() => exportConversation('json')}
-            className={`p-2 hover:${isDarkMode ? 'bg-gray-700' : 'bg-gray-100'} rounded-xl flex-shrink-0 transition-colors`}
-          >
-            <Download className={`w-5 h-5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
           </button>
           
           <input
@@ -872,15 +836,15 @@ const AdvancedAssistantChat = () => {
               }
             }}
             placeholder={
-              isRecording ? "🎤 Écoute en cours..." : 
+              isRecording ? "🎤 Écoute..." : 
               selectedImage ? "Décrivez votre image..." : 
-              "Message pour Gemini..."
+              "Message à LuvviX AI..."
             }
             className={`flex-1 ${
               isDarkMode 
-                ? 'bg-gray-700 text-white focus:bg-gray-600' 
-                : 'bg-gray-100 focus:bg-white'
-            } border-none rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all`}
+                ? 'bg-gray-800 text-white placeholder-gray-400' 
+                : 'bg-gray-100 text-gray-900 placeholder-gray-500'
+            } border-none rounded-2xl px-4 py-3 text-sm focus:outline-none transition-all`}
             disabled={loading || isRecording}
           />
           
@@ -889,16 +853,16 @@ const AdvancedAssistantChat = () => {
             disabled={(!input.trim() && !selectedImage) || loading}
             className={`p-3 ${
               isDarkMode 
-                ? 'bg-gradient-to-r from-purple-500 to-blue-500' 
-                : 'bg-gradient-to-r from-purple-600 to-blue-600'
-            } text-white rounded-xl flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all`}
+                ? 'bg-blue-600 hover:bg-blue-700' 
+                : 'bg-blue-500 hover:bg-blue-600'
+            } text-white rounded-2xl flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm`}
           >
             <Send className="w-5 h-5" />
           </button>
         </div>
         
-        <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-2 text-center`}>
-          🤖 Powered by Gemini 1.5 Flash • Vision IA • Multimodal
+        <div className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'} mt-2 text-center`}>
+          🤖 Propulsé par LuvviX AI • Vision • Multimodal
         </div>
       </div>
     </div>

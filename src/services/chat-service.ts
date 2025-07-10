@@ -159,7 +159,7 @@ class ChatService {
           user_id,
           role,
           last_read_at,
-          user_profiles(username, full_name, avatar_url)
+          user_profiles!chat_participants_user_id_fkey(username, full_name, avatar_url)
         )
       `)
       .eq('chat_participants.user_id', user.id)

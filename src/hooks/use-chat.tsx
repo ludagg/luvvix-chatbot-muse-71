@@ -178,7 +178,7 @@ export const useChat = () => {
 
     // Écouter les nouveaux messages
     const messagesChannel = supabase
-      .channel('chat_messages')
+      .channel('chat_messages_' + user.id)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -194,7 +194,7 @@ export const useChat = () => {
 
     // Écouter les changements de conversations
     const conversationsChannel = supabase
-      .channel('chat_conversations')
+      .channel('chat_conversations_' + user.id)
       .on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',

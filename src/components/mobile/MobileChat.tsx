@@ -51,16 +51,21 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
     loadMessages,
     sendMessage,
     createPrivateConversation,
+    createGroup,
+    addContact,
     searchUsers
   } = useChat();
 
-  const [currentView, setCurrentView] = useState<'conversations' | 'contacts' | 'search' | 'chat'>('conversations');
+  const [currentView, setCurrentView] = useState<'conversations' | 'contacts' | 'search' | 'chat' | 'new-group'>('conversations');
   const [searchQuery, setSearchQuery] = useState('');
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [showAIFeatures, setShowAIFeatures] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<any[]>([]);
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactUsername, setNewContactUsername] = useState('');
+  const [showAddContact, setShowAddContact] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const currentConversation = conversations.find(c => c.id === activeConversation);
@@ -73,6 +78,24 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
   useEffect(() => {
     scrollToBottom();
   }, [currentMessages]);
+
+  // Fonction pour démarrer une conversation avec un contact
+  const startConversation = async (contactUserId: string) => {
+    try {
+      const conversationId = await createPrivateConversation(contactUserId);
+      if (conversationId) {
+        setActiveConversation(conversationId);
+        setCurrentView('chat');
+      }
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer la conversation",
+        variant: "destructive"
+      });
+    }
+  };
 
   useEffect(() => {
     if (activeConversation) {
@@ -88,15 +111,6 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
       setSearchResults(results);
     } else {
       setSearchResults([]);
-    }
-  };
-
-  // Démarrer une conversation avec un utilisateur
-  const startConversation = async (userId: string) => {
-    const conversationId = await createPrivateConversation(userId);
-    if (conversationId) {
-      setActiveConversation(conversationId);
-      setCurrentView('chat');
     }
   };
 
@@ -452,7 +466,7 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
               <h1 className="text-xl font-bold text-foreground">Contacts</h1>
             </div>
             <button 
-              onClick={() => setCurrentView('search')}
+              onClick={() => setShowAddContact(true)}
               className="p-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors"
             >
               <UserPlus className="w-5 h-5" />
@@ -461,27 +475,181 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          {contacts.map((contact) => (
+          {/* Options principales comme WhatsApp */}
+          <div className="border-b border-border">
             <button
-              key={contact.id}
-              onClick={() => startConversation(contact.contact_user_id)}
-              className="w-full flex items-center px-4 py-4 hover:bg-accent border-b border-border transition-colors"
+              onClick={() => setCurrentView('new-group')}
+              className="w-full flex items-center px-4 py-4 hover:bg-accent transition-colors"
             >
-              <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center mr-3">
-                <span className="text-primary-foreground font-semibold">
-                  {contact.user_profiles?.full_name?.[0] || 'U'}
-                </span>
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                <Users className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1 text-left">
-                <h4 className="font-semibold text-foreground">
-                  {contact.contact_name || contact.user_profiles?.full_name}
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  @{contact.user_profiles?.username}
-                </p>
+                <h4 className="font-semibold text-foreground">Nouveau groupe</h4>
+                <p className="text-sm text-muted-foreground">Créer un groupe avec vos contacts</p>
               </div>
             </button>
-          ))}
+            
+            <button
+              onClick={() => setShowAddContact(true)}
+              className="w-full flex items-center px-4 py-4 hover:bg-accent transition-colors"
+            >
+              <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mr-3">
+                <UserPlus className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 text-left">
+                <h4 className="font-semibold text-foreground">Nouveau contact</h4>
+                <p className="text-sm text-muted-foreground">Ajouter un contact LuvviX</p>
+              </div>
+            </button>
+          </div>
+
+          {/* Liste des contacts */}
+          {contacts.length > 0 && (
+            <div className="mt-4">
+              <h3 className="px-4 py-2 text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                Mes contacts ({contacts.length})
+              </h3>
+              {contacts.map((contact) => (
+                <button
+                  key={contact.id}
+                  onClick={() => startConversation(contact.contact_user_id)}
+                  className="w-full flex items-center px-4 py-4 hover:bg-accent border-b border-border transition-colors"
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-primary-foreground font-semibold">
+                      {contact.user_profiles?.full_name?.[0] || contact.contact_name?.[0] || 'U'}
+                    </span>
+                  </div>
+                  <div className="flex-1 text-left">
+                    <h4 className="font-semibold text-foreground">
+                      {contact.contact_name || contact.user_profiles?.full_name}
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      @{contact.user_profiles?.username}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {contacts.length === 0 && (
+            <div className="text-center py-12 px-4">
+              <div className="w-20 h-20 bg-accent rounded-full mx-auto mb-4 flex items-center justify-center">
+                <UserPlus className="w-10 h-10 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">Aucun contact</h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                Ajoutez vos premiers contacts LuvviX pour commencer à discuter
+              </p>
+              <button
+                onClick={() => setShowAddContact(true)}
+                className="px-6 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90 transition-colors"
+              >
+                Ajouter un contact
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Modal d'ajout de contact */}
+        {showAddContact && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-card rounded-lg w-full max-w-md p-6">
+              <h3 className="text-lg font-bold text-foreground mb-4">Ajouter un contact</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Nom d'utilisateur LuvviX
+                  </label>
+                  <input
+                    type="text"
+                    value={newContactUsername}
+                    onChange={(e) => setNewContactUsername(e.target.value)}
+                    placeholder="@username"
+                    className="w-full px-3 py-2 bg-accent rounded-lg outline-none focus:ring-2 focus:ring-primary text-foreground placeholder-muted-foreground"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Nom d'affichage (optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    value={newContactName}
+                    onChange={(e) => setNewContactName(e.target.value)}
+                    placeholder="Nom personnalisé"
+                    className="w-full px-3 py-2 bg-accent rounded-lg outline-none focus:ring-2 focus:ring-primary text-foreground placeholder-muted-foreground"
+                  />
+                </div>
+              </div>
+
+              <div className="flex space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowAddContact(false);
+                    setNewContactName('');
+                    setNewContactUsername('');
+                  }}
+                  className="flex-1 px-4 py-2 bg-accent text-foreground rounded-lg hover:bg-accent/80 transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={async () => {
+                    if (newContactUsername.trim()) {
+                      // Chercher l'utilisateur par username
+                      const users = await searchUsers(newContactUsername.replace('@', ''));
+                      if (users.length > 0) {
+                        await addContact(users[0].id, newContactName || undefined);
+                        setShowAddContact(false);
+                        setNewContactName('');
+                        setNewContactUsername('');
+                      } else {
+                        toast({
+                          title: "Erreur",
+                          description: "Utilisateur non trouvé",
+                          variant: "destructive"
+                        });
+                      }
+                    }
+                  }}
+                  disabled={!newContactUsername.trim()}
+                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  Ajouter
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Vue Nouveau Groupe
+  if (currentView === 'new-group') {
+    return (
+      <div className={`flex flex-col h-screen bg-background ${showBottomNav ? 'pb-16' : ''}`}>
+        <div className="bg-card border-b border-border px-4 py-4">
+          <div className="flex items-center space-x-3">
+            <button 
+              onClick={() => setCurrentView('contacts')}
+              className="p-2 hover:bg-accent rounded-full transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-foreground" />
+            </button>
+            <h1 className="text-xl font-bold text-foreground">Nouveau groupe</h1>
+          </div>
+        </div>
+
+        <div className="p-4">
+          <p className="text-muted-foreground text-center">
+            Fonctionnalité en cours de développement
+          </p>
         </div>
       </div>
     );
@@ -518,7 +686,7 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
           <button
             onClick={() => setCurrentView('contacts')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              currentView === 'contacts' 
+              (currentView as string) === 'contacts' 
                 ? 'bg-primary text-primary-foreground' 
                 : 'bg-accent text-muted-foreground'
             }`}

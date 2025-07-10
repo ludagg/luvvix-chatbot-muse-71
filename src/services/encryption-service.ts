@@ -143,6 +143,91 @@ class EncryptionService {
     return decoder.decode(decrypted);
   }
 
+  // NOUVELLES MÉTHODES POUR LE CHIFFREMENT DE FICHIERS
+
+  // Chiffrer un fichier et retourner le blob chiffré avec la clé
+  async encryptFile(file: Blob): Promise<{ encryptedBlob: Blob; key: string }> {
+    // Générer une clé AES pour ce fichier
+    const key = await window.crypto.subtle.generateKey(
+      {
+        name: 'AES-GCM',
+        length: 256,
+      },
+      true,
+      ['encrypt', 'decrypt']
+    );
+
+    // Lire le contenu du fichier
+    const fileBuffer = await file.arrayBuffer();
+    
+    // Générer un IV aléatoire
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    
+    // Chiffrer le contenu
+    const encrypted = await window.crypto.subtle.encrypt(
+      {
+        name: 'AES-GCM',
+        iv: iv,
+      },
+      key,
+      fileBuffer
+    );
+    
+    // Combiner IV et données chiffrées
+    const combined = new Uint8Array(iv.length + encrypted.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(encrypted), iv.length);
+    
+    // Créer le blob chiffré
+    const encryptedBlob = new Blob([combined], { type: 'application/octet-stream' });
+    
+    // Exporter la clé en base64
+    const exportedKey = await window.crypto.subtle.exportKey('raw', key);
+    const keyString = this.arrayBufferToBase64(exportedKey);
+    
+    return {
+      encryptedBlob,
+      key: keyString
+    };
+  }
+
+  // Déchiffrer un fichier avec sa clé
+  async decryptFile(encryptedBlob: Blob, keyString: string): Promise<Blob> {
+    // Importer la clé
+    const keyData = this.base64ToArrayBuffer(keyString);
+    const key = await window.crypto.subtle.importKey(
+      'raw',
+      keyData,
+      {
+        name: 'AES-GCM',
+        length: 256,
+      },
+      false,
+      ['decrypt']
+    );
+
+    // Lire le blob chiffré
+    const encryptedBuffer = await encryptedBlob.arrayBuffer();
+    const combined = new Uint8Array(encryptedBuffer);
+    
+    // Séparer IV et données
+    const iv = combined.slice(0, 12);
+    const data = combined.slice(12);
+    
+    // Déchiffrer
+    const decrypted = await window.crypto.subtle.decrypt(
+      {
+        name: 'AES-GCM',
+        iv: iv,
+      },
+      key,
+      data
+    );
+    
+    // Retourner le blob déchiffré
+    return new Blob([decrypted]);
+  }
+
   // Utilitaires de conversion
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer);

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { NewsApiResponse, NewsItem, NewsSubscription } from '@/types/news';
 import { getCurrentUser } from '@/services/auth-utils';
@@ -14,62 +15,66 @@ export const getUserLocation = async () => {
   }
 };
 
-// === Gemini 1.5 Flash résumé via HTTPS direct ===
-const summarizeWithGemini = async (text: string): Promise<string> => {
-  const geminiApiKey = 'AIzaSyAwoG5ldTXX8tEwdN-Df3lzWWT4ZCfOQPE'; // ← Ta clé Gemini
+// Cache temporaire pour éviter les appels répétés
+const newsCache = new Map<string, { data: NewsItem[], timestamp: number }>();
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
-  const endpoint =
-    `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
-
-  const body = {
-    contents: [
-      {
-        parts: [
-          {
-            text: `Résume clairement cet article en UNE phrase en anglais :\n\n${text}`,
-          },
-        ],
-      },
-    ],
-  };
-
+// Fonction pour obtenir les préférences utilisateur depuis les cookies
+const getUserPreferences = () => {
   try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const result = await res.json();
-    return (
-      result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-      text.slice(0, 500) + '...'
-    );
-  } catch (err) {
-    console.error('Erreur résumé Gemini :', err);
-    return text.slice(0, 500) + '...';
+    const savedPrefs = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('news_preferences='));
+    
+    if (savedPrefs) {
+      return JSON.parse(decodeURIComponent(savedPrefs.split('=')[1]));
+    }
+  } catch (error) {
+    console.error('Erreur lors du chargement des préférences:', error);
   }
+  
+  return {
+    language: 'fr',
+    categories: ['general', 'technology', 'business']
+  };
 };
 
-// === Récupération et résumé des dernières actualités ===
+// === Récupération des dernières actualités avec préférences utilisateur ===
 export const fetchLatestNews = async (
-  category: string = 'all',
-  country: string = 'fr',
-  query: string = ''
+  category?: string,
+  country?: string,
+  query?: string
 ): Promise<NewsItem[]> => {
+  const preferences = getUserPreferences();
+  
+  // Utiliser les préférences si les paramètres ne sont pas spécifiés
+  const finalLanguage = country || (preferences.language === 'en' ? 'us' : preferences.language);
+  const finalCategory = category || preferences.categories[0] || 'general';
+  
+  // Clé de cache
+  const cacheKey = `${finalCategory}-${finalLanguage}-${query || ''}`;
+  
+  // Vérifier le cache
+  const cached = newsCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+
   const newsApiKey = 'pub_e9e18325ddca4013bc0b60a1bdf8e008';
 
   try {
     // Construction des paramètres
     const params = new URLSearchParams({
       apikey: newsApiKey,
-      language: 'fr',
-      country,
+      language: preferences.language,
+      country: finalLanguage,
     });
-    if (category !== 'all') params.append('category', category);
+    
+    if (finalCategory !== 'all') params.append('category', finalCategory);
     if (query) params.append('q', query);
 
     // Appel à NewsData.io /latest
-    const response = await fetch(`https://newsdata.io/api/1/latest?apikey=pub_e9e18325ddca4013bc0b60a1bdf8e008&language=fr&country=fr`);
+    const response = await fetch(`https://newsdata.io/api/1/latest?apikey=pub_e9e18325ddca4013bc0b60a1bdf8e008&language=${preferences.language}&country=${finalLanguage}`);
     if (!response.ok) {
       throw new Error(`NewsData.io status ${response.status}`);
     }
@@ -79,26 +84,48 @@ export const fetchLatestNews = async (
       throw new Error('Aucune actualité disponible');
     }
 
-    // Résumer chaque article avec Gemini en parallèle
-    const items: NewsItem[] = await Promise.all(
-      data.results.map(async (item: any, idx: number) => {
-        const baseText = item.description || item.content || item.title;
-        const aiSummary = await summarizeWithGemini(baseText);
+    // Transformer les données avec des descriptions plus longues
+    const items: NewsItem[] = data.results.map((item: any, idx: number) => {
+      // Créer une description plus longue en combinant plusieurs champs
+      let longDescription = '';
+      
+      if (item.description) {
+        longDescription += item.description;
+      }
+      
+      if (item.content && item.content !== item.description) {
+        if (longDescription) longDescription += ' ';
+        longDescription += item.content.substring(0, 200);
+      }
+      
+      // Si toujours pas assez long, utiliser le titre étendu
+      if (longDescription.length < 100 && item.title) {
+        longDescription = item.title + '. ' + (longDescription || 'Article détaillé disponible.');
+      }
+      
+      // Limiter à 300 caractères pour la description
+      if (longDescription.length > 300) {
+        longDescription = longDescription.substring(0, 297) + '...';
+      } else if (!longDescription.endsWith('.') && !longDescription.endsWith('...')) {
+        longDescription += '.';
+      }
 
-        return {
-          id: item.link || `news-${idx}`,
-          title: item.title,
-          summary: aiSummary,
-          content: item.content || item.description,
-          publishedAt: item.pubDate || new Date().toISOString(),
-          source: item.source_id || 'NewsData.io',
-          category,
-          url: item.link,
-          imageUrl: item.image_url || null,
-          location: country ? { country } : undefined,
-        };
-      })
-    );
+      return {
+        id: item.link || `news-${idx}`,
+        title: item.title,
+        summary: longDescription,
+        content: item.content || item.description || longDescription,
+        publishedAt: item.pubDate || new Date().toISOString(),
+        source: item.source_id || 'NewsData.io',
+        category: finalCategory,
+        url: item.link,
+        imageUrl: item.image_url || null,
+        location: finalLanguage ? { country: finalLanguage } : undefined,
+      };
+    });
+
+    // Mettre en cache
+    newsCache.set(cacheKey, { data: items, timestamp: Date.now() });
 
     return items;
   } catch (error: any) {
@@ -107,7 +134,7 @@ export const fetchLatestNews = async (
     // Fallback : Supabase Edge Function
     try {
       const { data, error: edgeError } = await supabase.functions.invoke('get-news', {
-        body: { category, country, query },
+        body: { category: finalCategory, country: finalLanguage, query },
       });
       if (edgeError) throw edgeError;
 
@@ -124,7 +151,7 @@ export const fetchLatestNews = async (
         {
           id: 'fallback-1',
           title: 'Impossible de charger les actualités',
-          summary: 'Veuillez réessayer ultérieurement.',
+          summary: 'Veuillez réessayer ultérieurement ou vérifier votre connexion internet.',
           content: '',
           publishedAt: new Date().toISOString(),
           source: 'LuvviX News',
@@ -138,6 +165,26 @@ export const fetchLatestNews = async (
 
 // Alias
 export const getNews = fetchLatestNews;
+
+// === Fonction pour obtenir les actualités basées sur les catégories préférées ===
+export const fetchPreferredNews = async (): Promise<NewsItem[]> => {
+  const preferences = getUserPreferences();
+  const allNews: NewsItem[] = [];
+  
+  // Récupérer les actualités pour chaque catégorie préférée
+  for (const category of preferences.categories) {
+    try {
+      const categoryNews = await fetchLatestNews(category);
+      allNews.push(...categoryNews.slice(0, 3)); // 3 articles par catégorie
+    } catch (error) {
+      console.error(`Erreur pour la catégorie ${category}:`, error);
+    }
+  }
+  
+  // Mélanger et limiter à 8 articles
+  const shuffled = allNews.sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, 8);
+};
 
 // === Abonnement aux sujets ===
 export const subscribeToNewsTopics = async (

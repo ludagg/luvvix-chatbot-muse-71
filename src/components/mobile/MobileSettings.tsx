@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User, Settings, Bell, Shield, HelpCircle, LogOut, ChevronRight, Globe, Palette, Database, Cloud } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,6 +8,8 @@ import SecurityPage from './AccountPages/SecurityPage';
 import NotificationsPage from './AccountPages/NotificationsPage';
 import PrivacyPage from './AccountPages/PrivacyPage';
 import CloudConnectionsPage from './AccountPages/CloudConnectionsPage';
+import NewsLanguageSettings from './NewsLanguageSettings';
+import NewsCategoriesSettings from './NewsCategoriesSettings';
 
 const MobileSettings = () => {
   const { user, signOut } = useAuth();
@@ -139,8 +142,17 @@ const MobileSettings = () => {
         </div>
       </div>
 
-      {/* Groupes de paramètres */}
       <div className="p-4 space-y-6">
+        {/* Paramètres des actualités */}
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            Préférences des actualités
+          </h3>
+          <NewsLanguageSettings />
+          <NewsCategoriesSettings />
+        </div>
+
+        {/* Groupes de paramètres */}
         {settingsGroups.map((group, groupIndex) => (
           <div key={groupIndex}>
             <h3 className="text-lg font-semibold text-gray-900 mb-3">

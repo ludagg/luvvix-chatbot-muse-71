@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
@@ -26,7 +27,7 @@ import {
   FormInput,
   Newspaper
 } from 'lucide-react';
-import { fetchLatestNews } from "@/services/news-service";
+import { fetchPreferredNews } from "@/services/news-service";
 import { NewsItem } from "@/types/news";
 import MobileNewsPage from "./MobileNewsPage";
 
@@ -73,10 +74,10 @@ const MobileHome = () => {
   const [newsError, setNewsError] = React.useState<string | null>(null);
   const [showNewsPage, setShowNewsPage] = React.useState(false);
 
-  // Charger les actualités au montage, au tout dernier (afin de prioriser le reste)
+  // Charger les actualités préférées au montage
   React.useEffect(() => {
     setLoadingNews(true);
-    fetchLatestNews("general", "fr")
+    fetchPreferredNews()
       .then((items) => {
         setNews(items.slice(0, 5));
         setNewsError(null);
@@ -206,29 +207,28 @@ const MobileHome = () => {
             </p>
           </div>
           
-       {weatherData ? (
-  <div className="text-right">
-    <div className="flex items-center space-x-2 mb-1">
-      <Cloud className="w-6 h-6" />
-      <span className="text-2xl font-light">{weatherData.current.temperature}°C</span>
-    </div>
-    <p className="text-sm text-blue-100">{weatherData.current.condition}</p>
-    <p className="text-xs text-blue-200 flex items-center justify-end">
-      <MapPin className="w-3 h-3 mr-1" />
-      {weatherData.location.name}
-    </p>
-  </div>
-) : (
-  <div className="text-right animate-pulse">
-    <div className="flex items-center space-x-2 mb-1">
-      <div className="w-6 h-6 bg-blue-300 rounded-full" />
-      <div className="w-12 h-6 bg-blue-300 rounded"></div>
-    </div>
-    <p className="text-sm bg-blue-300 w-24 h-4 rounded mb-1"></p>
-    <p className="text-xs bg-blue-300 w-20 h-3 rounded ml-auto"></p>
-  </div>
-)}
-
+          {weatherData ? (
+            <div className="text-right">
+              <div className="flex items-center space-x-2 mb-1">
+                <Cloud className="w-6 h-6" />
+                <span className="text-2xl font-light">{weatherData.current.temperature}°C</span>
+              </div>
+              <p className="text-sm text-blue-100">{weatherData.current.condition}</p>
+              <p className="text-xs text-blue-200 flex items-center justify-end">
+                <MapPin className="w-3 h-3 mr-1" />
+                {weatherData.location.name}
+              </p>
+            </div>
+          ) : (
+            <div className="text-right animate-pulse">
+              <div className="flex items-center space-x-2 mb-1">
+                <div className="w-6 h-6 bg-blue-300 rounded-full" />
+                <div className="w-12 h-6 bg-blue-300 rounded"></div>
+              </div>
+              <p className="text-sm bg-blue-300 w-24 h-4 rounded mb-1"></p>
+              <p className="text-xs bg-blue-300 w-20 h-3 rounded ml-auto"></p>
+            </div>
+          )}
         </div>
         
         <p className="text-blue-100 text-center leading-relaxed">
@@ -403,7 +403,7 @@ const MobileHome = () => {
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-gray-900 flex items-center">
             <Newspaper className="w-5 h-5 mr-2 text-blue-500" />
-            Actualités
+            Actualités personnalisées
           </h3>
           <button
             onClick={() => setShowNewsPage(true)}
@@ -421,7 +421,7 @@ const MobileHome = () => {
             {news.map((item) => (
               <li
                 key={item.id}
-                className="flex items-start py-3 cursor-pointer hover:bg-blue-50 rounded-xl transition-all"
+                className="flex items-start py-4 cursor-pointer hover:bg-blue-50 rounded-xl transition-all px-2"
                 onClick={() => window.open(item.url, "_blank")}
               >
                 {/* Image optionnelle */}
@@ -429,14 +429,20 @@ const MobileHome = () => {
                   <img
                     src={item.imageUrl}
                     alt={item.title}
-                    className="w-12 h-12 object-cover rounded-lg mr-3 flex-shrink-0 bg-gray-100"
+                    className="w-16 h-16 object-cover rounded-lg mr-3 flex-shrink-0 bg-gray-100"
                     onError={(e) => { e.currentTarget.style.display = "none"; }}
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-blue-600 font-medium truncate">{item.source}</p>
-                  <p className="text-sm font-semibold text-gray-900 line-clamp-2">{item.title}</p>
-                  <p className="text-xs text-gray-500 truncate">{item.summary}</p>
+                  <div className="flex items-center space-x-2 mb-1">
+                    <p className="text-xs text-blue-600 font-medium truncate">{item.source}</p>
+                    <span className="text-xs text-gray-400">•</span>
+                    <p className="text-xs text-gray-500">
+                      {format(new Date(item.publishedAt), 'HH:mm')}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900 line-clamp-2 mb-2">{item.title}</p>
+                  <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed">{item.summary}</p>
                 </div>
               </li>
             ))}

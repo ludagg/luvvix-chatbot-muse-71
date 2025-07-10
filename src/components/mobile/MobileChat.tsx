@@ -437,7 +437,7 @@ const MobileChat = ({ showBottomNav = true }: MobileChatProps) => {
     );
   }
 
-  // Vue Contacts
+  // Vue Contacts - changement de la logique de comparaison
   if (currentView === 'contacts') {
     return (
       <div className={`flex flex-col h-screen bg-background ${showBottomNav ? 'pb-16' : ''}`}>

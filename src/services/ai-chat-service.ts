@@ -63,7 +63,12 @@ class AIChatService {
       // Préparer le texte pour le résumé
       const conversationText = messages
         .reverse()
-        .map(msg => `${msg.user_profiles?.full_name}: ${msg.content}`)
+        .map(msg => {
+          const userName = msg.user_profiles && Array.isArray(msg.user_profiles) 
+            ? msg.user_profiles[0]?.full_name 
+            : msg.user_profiles?.full_name || 'Utilisateur';
+          return `${userName}: ${msg.content}`;
+        })
         .join('\n');
 
       const { data, error: summaryError } = await supabase.functions.invoke('gemini-chat-response', {
@@ -104,7 +109,12 @@ class AIChatService {
 
       const conversationText = messages
         .reverse()
-        .map(msg => `${msg.user_profiles?.full_name}: ${msg.content}`)
+        .map(msg => {
+          const userName = msg.user_profiles && Array.isArray(msg.user_profiles) 
+            ? msg.user_profiles[0]?.full_name 
+            : msg.user_profiles?.full_name || 'Utilisateur';
+          return `${userName}: ${msg.content}`;
+        })
         .join('\n');
 
       const { data, error: suggestionError } = await supabase.functions.invoke('gemini-chat-response', {

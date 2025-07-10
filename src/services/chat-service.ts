@@ -190,24 +190,20 @@ class ChatService {
     if (!user) throw new Error('User not authenticated');
 
     // Vérifier si une conversation privée existe déjà
-    const { data: existing } = await supabase
-      .from('chat_conversations')
-      .select('id')
-      .eq('type', 'private')
-      .in('id', 
-        supabase
-          .from('chat_participants')
-          .select('conversation_id')
-          .eq('user_id', user.id)
-      );
+    const { data: existingConversations, error: existingError } = await supabase
+      .from('chat_participants')
+      .select('conversation_id')
+      .eq('user_id', user.id);
 
-    if (existing && existing.length > 0) {
-      // Vérifier si l'autre participant est dans cette conversation
+    if (existingError) throw existingError;
+
+    if (existingConversations) {
+      // Vérifier si l'autre participant est dans l'une de ces conversations
       const { data: otherParticipant } = await supabase
         .from('chat_participants')
         .select('conversation_id')
         .eq('user_id', participantId)
-        .in('conversation_id', existing.map(c => c.id));
+        .in('conversation_id', existingConversations.map(c => c.conversation_id));
 
       if (otherParticipant && otherParticipant.length > 0) {
         return otherParticipant[0].conversation_id;

@@ -1888,51 +1888,54 @@ export type Database = {
       }
       chat_conversations: {
         Row: {
+          conversation_type: string
           created_at: string | null
           created_by: string | null
+          encrypted_name: string | null
           id: string
-          name: string | null
-          type: string
           updated_at: string | null
         }
         Insert: {
+          conversation_type?: string
           created_at?: string | null
           created_by?: string | null
+          encrypted_name?: string | null
           id?: string
-          name?: string | null
-          type?: string
           updated_at?: string | null
         }
         Update: {
+          conversation_type?: string
           created_at?: string | null
           created_by?: string | null
+          encrypted_name?: string | null
           id?: string
-          name?: string | null
-          type?: string
           updated_at?: string | null
         }
         Relationships: []
       }
       chat_messages: {
         Row: {
-          content: string
           conversation_id: string | null
+          encrypted_content: string
+          encrypted_metadata: string | null
           id: string
           message_type: string | null
           sender_id: string | null
           sent_at: string | null
         }
         Insert: {
-          content: string
           conversation_id?: string | null
+          encrypted_content: string
+          encrypted_metadata?: string | null
           id?: string
           message_type?: string | null
           sender_id?: string | null
           sent_at?: string | null
         }
         Update: {
-          content?: string
           conversation_id?: string | null
+          encrypted_content?: string
+          encrypted_metadata?: string | null
           id?: string
           message_type?: string | null
           sender_id?: string | null
@@ -1951,6 +1954,7 @@ export type Database = {
       chat_participants: {
         Row: {
           conversation_id: string | null
+          encrypted_public_key: string
           id: string
           joined_at: string | null
           role: string | null
@@ -1958,6 +1962,7 @@ export type Database = {
         }
         Insert: {
           conversation_id?: string | null
+          encrypted_public_key: string
           id?: string
           joined_at?: string | null
           role?: string | null
@@ -1965,6 +1970,7 @@ export type Database = {
         }
         Update: {
           conversation_id?: string | null
+          encrypted_public_key?: string
           id?: string
           joined_at?: string | null
           role?: string | null
@@ -3610,22 +3616,25 @@ export type Database = {
       user_contacts: {
         Row: {
           added_at: string | null
-          contact_name: string | null
           contact_user_id: string | null
+          encrypted_contact_name: string | null
+          encrypted_public_key: string
           id: string
           user_id: string | null
         }
         Insert: {
           added_at?: string | null
-          contact_name?: string | null
           contact_user_id?: string | null
+          encrypted_contact_name?: string | null
+          encrypted_public_key: string
           id?: string
           user_id?: string | null
         }
         Update: {
           added_at?: string | null
-          contact_name?: string | null
           contact_user_id?: string | null
+          encrypted_contact_name?: string | null
+          encrypted_public_key?: string
           id?: string
           user_id?: string | null
         }
@@ -3763,6 +3772,27 @@ export type Database = {
           id?: string
           updated_at?: string | null
           username?: string | null
+        }
+        Relationships: []
+      }
+      user_public_keys: {
+        Row: {
+          created_at: string | null
+          public_key: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          public_key: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          public_key?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

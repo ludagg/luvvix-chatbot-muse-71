@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import DecentralizedChat from './chat/DecentralizedChat';
-import DecentralizedContacts from './chat/DecentralizedContacts';
-import { MessageCircle, Users, Wifi } from 'lucide-react';
+import SecureChat from './chat/SecureChat';
+import SecureContacts from './chat/SecureContacts';
+import { MessageCircle, Users, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const UnifiedAIAssistant = () => {
@@ -12,10 +12,13 @@ const UnifiedAIAssistant = () => {
       <Tabs defaultValue="chat" className="h-full">
         <div className="border-b border-border p-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold">Chat Décentralisé</h1>
+            <div className="flex items-center space-x-3">
+              <Shield className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-bold">Messagerie Sécurisée</h1>
+            </div>
             <Badge variant="outline" className="flex items-center space-x-1">
-              <Wifi className="h-3 w-3 text-green-500" />
-              <span>P2P Network</span>
+              <Shield className="h-3 w-3 text-green-500" />
+              <span>Chiffrement E2E</span>
             </Badge>
           </div>
           
@@ -32,11 +35,11 @@ const UnifiedAIAssistant = () => {
         </div>
         
         <TabsContent value="chat" className="h-[calc(100vh-120px)] m-0">
-          <DecentralizedChat />
+          <SecureChat />
         </TabsContent>
         
-        <TabsContent value="contacts" className="h-[calc(100vh-120px)] m-0 p-4">
-          <DecentralizedContacts />
+        <TabsContent value="contacts" className="h-[calc(100vh-120px)] m-0 p-0">
+          <SecureContacts />
         </TabsContent>
       </Tabs>
     </div>

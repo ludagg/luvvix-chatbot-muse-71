@@ -1,46 +1,149 @@
 
-// Service for handling file encryption and decryption
-
-export interface EncryptionResult {
-  encryptedBlob: Blob;
-  key: string;
-}
-
+// Service de chiffrement pour la messagerie sécurisée
 class EncryptionService {
-  // Generate a random encryption key
-  private async generateKey(): Promise<CryptoKey> {
+  private keyPair: CryptoKeyPair | null = null;
+
+  // Générer une paire de clés pour l'utilisateur
+  async generateKeyPair(): Promise<CryptoKeyPair> {
+    const keyPair = await window.crypto.subtle.generateKey(
+      {
+        name: 'RSA-OAEP',
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash: 'SHA-256',
+      },
+      true,
+      ['encrypt', 'decrypt']
+    );
+    
+    this.keyPair = keyPair;
+    return keyPair;
+  }
+
+  // Exporter la clé publique en format string
+  async exportPublicKey(publicKey: CryptoKey): Promise<string> {
+    const exported = await window.crypto.subtle.exportKey('spki', publicKey);
+    return this.arrayBufferToBase64(exported);
+  }
+
+  // Importer une clé publique depuis un string
+  async importPublicKey(publicKeyString: string): Promise<CryptoKey> {
+    const keyData = this.base64ToArrayBuffer(publicKeyString);
+    return await window.crypto.subtle.importKey(
+      'spki',
+      keyData,
+      {
+        name: 'RSA-OAEP',
+        hash: 'SHA-256',
+      },
+      false,
+      ['encrypt']
+    );
+  }
+
+  // Exporter la clé privée en format string
+  async exportPrivateKey(privateKey: CryptoKey): Promise<string> {
+    const exported = await window.crypto.subtle.exportKey('pkcs8', privateKey);
+    return this.arrayBufferToBase64(exported);
+  }
+
+  // Importer une clé privée depuis un string
+  async importPrivateKey(privateKeyString: string): Promise<CryptoKey> {
+    const keyData = this.base64ToArrayBuffer(privateKeyString);
+    return await window.crypto.subtle.importKey(
+      'pkcs8',
+      keyData,
+      {
+        name: 'RSA-OAEP',
+        hash: 'SHA-256',
+      },
+      false,
+      ['decrypt']
+    );
+  }
+
+  // Chiffrer un message avec une clé publique
+  async encryptMessage(message: string, publicKey: CryptoKey): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+    
+    const encrypted = await window.crypto.subtle.encrypt(
+      { name: 'RSA-OAEP' },
+      publicKey,
+      data
+    );
+    
+    return this.arrayBufferToBase64(encrypted);
+  }
+
+  // Déchiffrer un message avec la clé privée
+  async decryptMessage(encryptedMessage: string, privateKey: CryptoKey): Promise<string> {
+    const encryptedData = this.base64ToArrayBuffer(encryptedMessage);
+    
+    const decrypted = await window.crypto.subtle.decrypt(
+      { name: 'RSA-OAEP' },
+      privateKey,
+      encryptedData
+    );
+    
+    const decoder = new TextDecoder();
+    return decoder.decode(decrypted);
+  }
+
+  // Générer une clé symétrique pour les conversations de groupe
+  async generateSymmetricKey(): Promise<CryptoKey> {
     return await window.crypto.subtle.generateKey(
       {
         name: 'AES-GCM',
-        length: 256
+        length: 256,
       },
       true,
       ['encrypt', 'decrypt']
     );
   }
-  
-  // Convert CryptoKey to string for storage
-  private async exportKey(key: CryptoKey): Promise<string> {
-    const exported = await window.crypto.subtle.exportKey('raw', key);
-    return this.arrayBufferToBase64(exported);
-  }
-  
-  // Convert string back to CryptoKey
-  private async importKey(keyString: string): Promise<CryptoKey> {
-    const keyData = this.base64ToArrayBuffer(keyString);
-    return await window.crypto.subtle.importKey(
-      'raw',
-      keyData,
+
+  // Chiffrer avec une clé symétrique
+  async encryptSymmetric(message: string, key: CryptoKey): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    
+    const encrypted = await window.crypto.subtle.encrypt(
       {
         name: 'AES-GCM',
-        length: 256
+        iv: iv,
       },
-      false,
-      ['encrypt', 'decrypt']
+      key,
+      data
     );
+    
+    const combined = new Uint8Array(iv.length + encrypted.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(encrypted), iv.length);
+    
+    return this.arrayBufferToBase64(combined);
   }
-  
-  // Convert ArrayBuffer to Base64 string
+
+  // Déchiffrer avec une clé symétrique
+  async decryptSymmetric(encryptedMessage: string, key: CryptoKey): Promise<string> {
+    const combined = this.base64ToArrayBuffer(encryptedMessage);
+    const iv = combined.slice(0, 12);
+    const data = combined.slice(12);
+    
+    const decrypted = await window.crypto.subtle.decrypt(
+      {
+        name: 'AES-GCM',
+        iv: iv,
+      },
+      key,
+      data
+    );
+    
+    const decoder = new TextDecoder();
+    return decoder.decode(decrypted);
+  }
+
+  // Utilitaires de conversion
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer);
     let binary = '';
@@ -49,8 +152,7 @@ class EncryptionService {
     }
     return window.btoa(binary);
   }
-  
-  // Convert Base64 string to ArrayBuffer
+
   private base64ToArrayBuffer(base64: string): ArrayBuffer {
     const binaryString = window.atob(base64);
     const bytes = new Uint8Array(binaryString.length);
@@ -60,78 +162,19 @@ class EncryptionService {
     return bytes.buffer;
   }
 
-  // Encrypt a file
-  public async encryptFile(file: File | Blob): Promise<EncryptionResult> {
-    try {
-      // Generate encryption key
-      const key = await this.generateKey();
-      const keyString = await this.exportKey(key);
-      
-      // Generate a random IV (Initialization Vector)
-      const iv = window.crypto.getRandomValues(new Uint8Array(12));
-      
-      // Read file as ArrayBuffer
-      const fileContent = await file.arrayBuffer();
-      
-      // Encrypt the file content
-      const encryptedContent = await window.crypto.subtle.encrypt(
-        {
-          name: 'AES-GCM',
-          iv
-        },
-        key,
-        fileContent
-      );
-      
-      // Combine IV and encrypted content
-      const encryptedData = new Uint8Array(iv.length + encryptedContent.byteLength);
-      encryptedData.set(iv, 0);
-      encryptedData.set(new Uint8Array(encryptedContent), iv.length);
-      
-      // Return encrypted blob and key
-      return {
-        encryptedBlob: new Blob([encryptedData]),
-        key: keyString
-      };
-    } catch (error) {
-      console.error('Error encrypting file:', error);
-      throw error;
-    }
+  // Sauvegarder les clés dans le localStorage (à améliorer avec un stockage plus sécurisé)
+  saveKeysToStorage(publicKey: string, privateKey: string) {
+    localStorage.setItem('chat_public_key', publicKey);
+    localStorage.setItem('chat_private_key', privateKey);
   }
 
-  // Decrypt a file
-  public async decryptFile(encryptedBlob: Blob, keyString: string): Promise<Blob> {
-    try {
-      // Import the key
-      const key = await this.importKey(keyString);
-      
-      // Read encrypted data
-      const encryptedData = new Uint8Array(await encryptedBlob.arrayBuffer());
-      
-      // Extract IV (first 12 bytes)
-      const iv = encryptedData.slice(0, 12);
-      
-      // Extract encrypted content
-      const encryptedContent = encryptedData.slice(12);
-      
-      // Decrypt the content
-      const decryptedContent = await window.crypto.subtle.decrypt(
-        {
-          name: 'AES-GCM',
-          iv
-        },
-        key,
-        encryptedContent
-      );
-      
-      // Return decrypted blob
-      return new Blob([decryptedContent]);
-    } catch (error) {
-      console.error('Error decrypting file:', error);
-      throw error;
-    }
+  // Récupérer les clés du localStorage
+  getKeysFromStorage(): { publicKey: string | null; privateKey: string | null } {
+    return {
+      publicKey: localStorage.getItem('chat_public_key'),
+      privateKey: localStorage.getItem('chat_private_key'),
+    };
   }
 }
 
 export const encryptionService = new EncryptionService();
-export default encryptionService;

@@ -1,138 +1,185 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export interface AIChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
+interface AISuggestion {
+  text: string;
+  confidence: number;
+  type: 'reply' | 'question' | 'action';
 }
 
-export interface AIChatConversation {
-  id: string;
-  title: string;
-  messages: AIChatMessage[];
-  created_at: string;
-  updated_at: string;
+interface TranslationResult {
+  text: string;
+  from: string;
+  to: string;
+  confidence: number;
 }
 
 class AIChatService {
-  // Suggestions de réponse IA
-  async suggestReply(conversationId: string): Promise<{ text: string; confidence: number }[]> {
-    // Simulation de suggestions IA
+  // Suggestions de réponses basées sur l'IA
+  async suggestReply(conversationId: string): Promise<AISuggestion[]> {
+    try {
+      // Récupérer les derniers messages de la conversation
+      const { data: messages } = await supabase
+        .from('chat_messages')
+        .select('content, message_type')
+        .eq('conversation_id', conversationId)
+        .order('sent_at', { ascending: false })
+        .limit(5);
+
+      if (!messages || messages.length === 0) {
+        return this.getDefaultSuggestions();
+      }
+
+      // Analyser le contexte pour générer des suggestions
+      const lastMessage = messages[0];
+      return this.generateContextualSuggestions(lastMessage.content);
+    } catch (error) {
+      console.error('Error generating AI suggestions:', error);
+      return this.getDefaultSuggestions();
+    }
+  }
+
+  // Traduction de messages
+  async translateMessage(text: string, targetLanguage: string): Promise<string> {
+    try {
+      // Simulation de traduction (en production, utiliser une vraie API de traduction)
+      const translations: { [key: string]: { [key: string]: string } } = {
+        'en': {
+          'Bonjour': 'Hello',
+          'Comment allez-vous?': 'How are you?',
+          'Merci': 'Thank you',
+          'Au revoir': 'Goodbye'
+        },
+        'es': {
+          'Bonjour': 'Hola',
+          'Comment allez-vous?': '¿Cómo estás?',
+          'Merci': 'Gracias',
+          'Au revoir': 'Adiós'
+        }
+      };
+
+      const languageTranslations = translations[targetLanguage];
+      if (languageTranslations && languageTranslations[text]) {
+        return languageTranslations[text];
+      }
+
+      return `[Traduit en ${targetLanguage}] ${text}`;
+    } catch (error) {
+      console.error('Error translating message:', error);
+      return text;
+    }
+  }
+
+  // Amélioration de messages
+  async enhanceMessage(message: string, enhancement: 'formal' | 'casual' | 'emoji' | 'correct'): Promise<string> {
+    try {
+      switch (enhancement) {
+        case 'formal':
+          return this.makeFormal(message);
+        case 'casual':
+          return this.makeCasual(message);
+        case 'emoji':
+          return this.addEmojis(message);
+        case 'correct':
+          return this.correctMessage(message);
+        default:
+          return message;
+      }
+    } catch (error) {
+      console.error('Error enhancing message:', error);
+      return message;
+    }
+  }
+
+  // Génération de suggestions contextuelles
+  private generateContextualSuggestions(lastMessage: string): AISuggestion[] {
+    const suggestions: AISuggestion[] = [];
+    
+    if (lastMessage?.toLowerCase().includes('bonjour') || lastMessage?.toLowerCase().includes('salut')) {
+      suggestions.push({
+        text: "Bonjour ! Comment allez-vous ?",
+        confidence: 0.9,
+        type: 'reply'
+      });
+    }
+    
+    if (lastMessage?.toLowerCase().includes('merci')) {
+      suggestions.push({
+        text: "De rien, c'est avec plaisir !",
+        confidence: 0.8,
+        type: 'reply'
+      });
+    }
+    
+    if (lastMessage?.includes('?')) {
+      suggestions.push({
+        text: "Bonne question ! Laissez-moi y réfléchir.",
+        confidence: 0.7,
+        type: 'reply'
+      });
+    }
+
+    // Ajouter des suggestions génériques si pas assez spécifiques
+    if (suggestions.length < 3) {
+      suggestions.push(...this.getDefaultSuggestions().slice(0, 3 - suggestions.length));
+    }
+
+    return suggestions;
+  }
+
+  // Suggestions par défaut
+  private getDefaultSuggestions(): AISuggestion[] {
     return [
-      { text: "C'est une excellente idée !", confidence: 0.9 },
-      { text: "Peux-tu m'en dire plus ?", confidence: 0.8 },
-      { text: "Je comprends ton point de vue.", confidence: 0.7 }
+      {
+        text: "D'accord !",
+        confidence: 0.8,
+        type: 'reply'
+      },
+      {
+        text: "Merci pour l'information",
+        confidence: 0.7,
+        type: 'reply'
+      },
+      {
+        text: "Pouvez-vous m'en dire plus ?",
+        confidence: 0.6,
+        type: 'question'
+      }
     ];
   }
 
-  // Traduction de message
-  async translateMessage(text: string, targetLang: string): Promise<string> {
-    // Simulation de traduction (en production, utiliser un service de traduction)
-    const translations: { [key: string]: string } = {
-      'en': `[EN] ${text}`,
-      'es': `[ES] ${text}`,
-      'de': `[DE] ${text}`,
-      'it': `[IT] ${text}`
-    };
-    
-    return translations[targetLang] || text;
+  // Rendre un message plus formel
+  private makeFormal(message: string): string {
+    return message
+      .replace(/salut/gi, 'Bonjour')
+      .replace(/ok/gi, 'D\'accord')
+      .replace(/ouais/gi, 'Oui')
+      .replace(/non/gi, 'Non, merci');
   }
 
-  // Amélioration de message
-  async enhanceMessage(text: string, style: 'formal' | 'casual' | 'emoji' | 'correct'): Promise<string> {
-    switch (style) {
-      case 'formal':
-        return `Je vous prie de bien vouloir noter que ${text.toLowerCase()}`;
-      case 'casual':
-        return `Hey ! ${text} 😊`;
-      case 'emoji':
-        return `${text} ✨😊👍`;
-      case 'correct':
-        return text.replace(/\b\w+\b/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
-      default:
-        return text;
-    }
+  // Rendre un message plus décontracté
+  private makeCasual(message: string): string {
+    return message
+      .replace(/Bonjour/gi, 'Salut')
+      .replace(/D\'accord/gi, 'OK')
+      .replace(/Oui/gi, 'Ouais');
   }
 
-  // Résumé automatique de conversation
-  async summarizeConversation(messages: AIChatMessage[]): Promise<string> {
-    if (messages.length === 0) return "Aucun message";
-    if (messages.length === 1) return messages[0].content.substring(0, 50) + "...";
-    
-    return `Conversation avec ${messages.length} messages. Dernier: ${messages[messages.length - 1].content.substring(0, 30)}...`;
+  // Ajouter des emojis
+  private addEmojis(message: string): string {
+    return message
+      .replace(/bonjour/gi, 'Bonjour 👋')
+      .replace(/merci/gi, 'Merci 🙏')
+      .replace(/super/gi, 'Super 🎉')
+      .replace(/génial/gi, 'Génial 🚀');
   }
 
-  // Détection de sentiment
-  async analyzeSentiment(text: string): Promise<{ sentiment: 'positive' | 'negative' | 'neutral'; confidence: number }> {
-    // Simulation simple de détection de sentiment
-    const positiveWords = ['super', 'génial', 'excellent', 'parfait', 'merci', '😊', '👍', '❤️'];
-    const negativeWords = ['problème', 'erreur', 'bug', 'cassé', 'nul', '😞', '👎', '❌'];
-    
-    const lowerText = text.toLowerCase();
-    const positiveCount = positiveWords.filter(word => lowerText.includes(word)).length;
-    const negativeCount = negativeWords.filter(word => lowerText.includes(word)).length;
-    
-    if (positiveCount > negativeCount) {
-      return { sentiment: 'positive', confidence: 0.8 };
-    } else if (negativeCount > positiveCount) {
-      return { sentiment: 'negative', confidence: 0.8 };
-    } else {
-      return { sentiment: 'neutral', confidence: 0.6 };
-    }
-  }
-
-  // Suggestions de réponse rapide
-  async getQuickReplies(context: string): Promise<string[]> {
-    const contextLower = context.toLowerCase();
-    
-    if (contextLower.includes('salut') || contextLower.includes('bonjour')) {
-      return ['Salut ! 👋', 'Bonjour ! Comment ça va ?', 'Hey ! Quoi de neuf ?'];
-    }
-    
-    if (contextLower.includes('merci')) {
-      return ['De rien ! 😊', 'Avec plaisir !', 'Pas de souci !'];
-    }
-    
-    if (contextLower.includes('comment') || contextLower.includes('?')) {
-      return ['Bonne question !', 'Laisse-moi réfléchir...', 'Peux-tu préciser ?'];
-    }
-    
-    return ['👍', '😊', 'Intéressant !', 'Je vois', 'D\'accord'];
-  }
-
-  // Correction automatique
-  async autoCorrect(text: string): Promise<string> {
-    // Corrections simples
-    const corrections: { [key: string]: string } = {
-      'sa va': 'ça va',
-      'est ce que': 'est-ce que',
-      'avc': 'avec',
-      'pr': 'pour',
-      'ds': 'dans',
-      'ts': 'tous',
-      'tj': 'toujours',
-      'pk': 'pourquoi',
-      'qd': 'quand',
-      'qq': 'quelque',
-      'qqn': 'quelqu\'un',
-      'qqch': 'quelque chose'
-    };
-    
-    let corrected = text;
-    Object.entries(corrections).forEach(([wrong, right]) => {
-      const regex = new RegExp(`\\b${wrong}\\b`, 'gi');
-      corrected = corrected.replace(regex, right);
-    });
-    
-    return corrected;
-  }
-
-  // Génération de titre automatique
-  async generateTitle(firstMessage: string): Promise<string> {
-    const words = firstMessage.split(' ').slice(0, 4);
-    return words.join(' ') + (firstMessage.split(' ').length > 4 ? '...' : '');
+  // Corriger un message (simulation)
+  private correctMessage(message: string): string {
+    return message
+      .replace(/sa va/gi, 'ça va')
+      .replace(/ct/gi, 'c\'était')
+      .replace(/pr/gi, 'pour');
   }
 }
 

@@ -384,7 +384,7 @@ Je suis votre assistant IA personnel, prêt à vous aider dans tous vos projets.
         <div className={`text-center mt-3 text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
           🚀 Propulsé par LuvviX AI • Intelligence • Vision • Multimodal
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

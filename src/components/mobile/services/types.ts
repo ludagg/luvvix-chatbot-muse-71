@@ -11,8 +11,6 @@ export interface Service {
   category: string;
   component?: React.ComponentType<{ onBack: () => void }>;
   action?: () => void;
-  featured?: boolean;
-  tags?: string[];
 }
 
 export interface Category {

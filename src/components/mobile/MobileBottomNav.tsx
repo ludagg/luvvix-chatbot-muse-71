@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Home, Grid3X3, Sparkles, MessageCircle, User } from 'lucide-react';
+import { Home, Grid3X3, Sparkles, Cloud, User } from 'lucide-react';
 
 interface MobileBottomNavProps {
   activeView: string;
@@ -26,9 +26,9 @@ const MobileBottomNav = ({ activeView, setActiveView }: MobileBottomNavProps) =>
       isSpecial: true
     },
     {
-      id: 'chat',
-      label: 'Chat',
-      icon: MessageCircle
+      id: 'cloud',
+      label: 'Cloud',
+      icon: Cloud
     },
     {
       id: 'profile',

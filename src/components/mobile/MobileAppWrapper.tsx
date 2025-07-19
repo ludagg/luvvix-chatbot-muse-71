@@ -10,7 +10,7 @@ import MobileAuthFlow from './MobileAuthFlow';
 import MobileHome from './MobileHome';
 import MobileServices from './MobileServices';
 import MobileAssistant from './MobileAssistant';
-import MobileChat from './MobileChat';
+import MobileCloud from './MobileCloud';
 import MobileProfile from './MobileProfile';
 import MobileSettings from './MobileSettings';
 import MobileSearch from './MobileSearch';
@@ -23,7 +23,7 @@ import MobileTranslate from './MobileTranslate';
 import MobileWeather from './MobileWeather';
 import MobileCenter from './MobileCenter';
 
-type MobileView = 'home' | 'services' | 'assistant' | 'chat' | 'profile' | 'settings' | 'search' | 'calendar' | 'forms' | 'translate' | 'weather' | 'center';
+type MobileView = 'home' | 'services' | 'assistant' | 'cloud' | 'profile' | 'settings' | 'search' | 'calendar' | 'forms' | 'translate' | 'weather' | 'center';
 
 const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   const isMobile = useIsMobile();
@@ -166,8 +166,8 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
         return <MobileServices />;
       case 'assistant':
         return <MobileAssistant onBack={() => setActiveView('home')} />;
-      case 'chat':
-        return <MobileChat />;
+      case 'cloud':
+        return <MobileCloud />;
       case 'profile':
         return <MobileProfile />;
       case 'settings':
@@ -203,7 +203,7 @@ const MobileAppWrapper = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Ne pas afficher le header et la navigation pour les vues en plein écran
-  const isFullScreenView = ['calendar', 'forms', 'translate', 'weather', 'center', 'chat'].includes(activeView);
+  const isFullScreenView = ['calendar', 'forms', 'translate', 'weather', 'center'].includes(activeView);
 
   if (isFullScreenView) {
     return (

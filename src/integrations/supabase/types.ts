@@ -881,6 +881,41 @@ export type Database = {
         }
         Relationships: []
       }
+      call_participants: {
+        Row: {
+          call_id: string | null
+          id: string
+          joined_at: string | null
+          left_at: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          call_id?: string | null
+          id?: string
+          joined_at?: string | null
+          left_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          call_id?: string | null
+          id?: string
+          joined_at?: string | null
+          left_at?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_participants_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "chat_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       center_chat_messages: {
         Row: {
           content: string | null
@@ -1550,6 +1585,41 @@ export type Database = {
         }
         Relationships: []
       }
+      center_post_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "center_post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "center_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       center_post_hashtags: {
         Row: {
           created_at: string | null
@@ -1818,6 +1888,139 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_calls: {
+        Row: {
+          call_type: string
+          caller_id: string | null
+          conversation_id: string | null
+          duration: number | null
+          ended_at: string | null
+          id: string
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          call_type: string
+          caller_id?: string | null
+          conversation_id?: string | null
+          duration?: number | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          call_type?: string
+          caller_id?: string | null
+          conversation_id?: string | null
+          duration?: number | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      chat_conversations: {
+        Row: {
+          conversation_type: string
+          created_at: string | null
+          created_by: string | null
+          encrypted_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          conversation_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          encrypted_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          conversation_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          encrypted_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          conversation_id: string | null
+          encrypted_content: string
+          encrypted_metadata: string | null
+          id: string
+          message_type: string | null
+          sender_id: string | null
+          sent_at: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          encrypted_content: string
+          encrypted_metadata?: string | null
+          id?: string
+          message_type?: string | null
+          sender_id?: string | null
+          sent_at?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          encrypted_content?: string
+          encrypted_metadata?: string | null
+          id?: string
+          message_type?: string | null
+          sender_id?: string | null
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_participants: {
+        Row: {
+          conversation_id: string | null
+          encrypted_public_key: string
+          id: string
+          joined_at: string | null
+          role: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          encrypted_public_key: string
+          id?: string
+          joined_at?: string | null
+          role?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          encrypted_public_key?: string
+          id?: string
+          joined_at?: string | null
+          role?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cloud_connections: {
         Row: {
           access_token: string
@@ -2055,6 +2258,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      contacts: {
+        Row: {
+          contact_luvvix_id: string
+          contact_name: string
+          contact_user_id: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contact_luvvix_id: string
+          contact_name: string
+          contact_user_id?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contact_luvvix_id?: string
+          contact_name?: string
+          contact_user_id?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       conversations: {
         Row: {
@@ -3014,6 +3247,27 @@ export type Database = {
           },
         ]
       }
+      luvvix_identifiers: {
+        Row: {
+          created_at: string
+          id: string
+          luvvix_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          luvvix_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          luvvix_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mail_accounts: {
         Row: {
           access_token: string
@@ -3090,6 +3344,329 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      messenger_luvvix_blocked_users: {
+        Row: {
+          blocked_at: string | null
+          blocked_id: string
+          blocker_id: string
+          id: string
+        }
+        Insert: {
+          blocked_at?: string | null
+          blocked_id: string
+          blocker_id: string
+          id?: string
+        }
+        Update: {
+          blocked_at?: string | null
+          blocked_id?: string
+          blocker_id?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      messenger_luvvix_calls: {
+        Row: {
+          call_type: string
+          caller_id: string
+          conversation_id: string
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          participants: Json | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          call_type: string
+          caller_id: string
+          conversation_id: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          participants?: Json | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          call_type?: string
+          caller_id?: string
+          conversation_id?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          participants?: Json | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_luvvix_calls_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_luvvix_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messenger_luvvix_conversations: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string | null
+          settings: Json | null
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string | null
+          settings?: Json | null
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string | null
+          settings?: Json | null
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      messenger_luvvix_message_reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_luvvix_message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_luvvix_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messenger_luvvix_messages: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          created_at: string | null
+          delivery_status: string | null
+          id: string
+          is_deleted: boolean | null
+          is_edited: boolean | null
+          media_metadata: Json | null
+          media_url: string | null
+          message_type: string
+          reply_to_message_id: string | null
+          sender_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          created_at?: string | null
+          delivery_status?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_edited?: boolean | null
+          media_metadata?: Json | null
+          media_url?: string | null
+          message_type?: string
+          reply_to_message_id?: string | null
+          sender_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          created_at?: string | null
+          delivery_status?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_edited?: boolean | null
+          media_metadata?: Json | null
+          media_url?: string | null
+          message_type?: string
+          reply_to_message_id?: string | null
+          sender_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_luvvix_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_luvvix_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messenger_luvvix_messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_luvvix_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messenger_luvvix_participants: {
+        Row: {
+          conversation_id: string
+          id: string
+          is_muted: boolean | null
+          is_pinned: boolean | null
+          joined_at: string | null
+          last_read_at: string | null
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          is_muted?: boolean | null
+          is_pinned?: boolean | null
+          joined_at?: string | null
+          last_read_at?: string | null
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          is_muted?: boolean | null
+          is_pinned?: boolean | null
+          joined_at?: string | null
+          last_read_at?: string | null
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_luvvix_participants_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_luvvix_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messenger_luvvix_shared_files: {
+        Row: {
+          created_at: string | null
+          file_name: string
+          file_size: number | null
+          file_type: string | null
+          file_url: string
+          id: string
+          message_id: string
+          thumbnail_url: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string | null
+          file_name: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url: string
+          id?: string
+          message_id: string
+          thumbnail_url?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string
+          id?: string
+          message_id?: string
+          thumbnail_url?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messenger_luvvix_shared_files_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messenger_luvvix_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messenger_luvvix_users: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          is_blocked: boolean | null
+          last_seen: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          is_blocked?: boolean | null
+          last_seen?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          is_blocked?: boolean | null
+          last_seen?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
       }
       news_subscriptions: {
         Row: {
@@ -3445,6 +4022,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_contacts: {
+        Row: {
+          added_at: string | null
+          contact_user_id: string | null
+          encrypted_contact_name: string | null
+          encrypted_public_key: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          contact_user_id?: string | null
+          encrypted_contact_name?: string | null
+          encrypted_public_key: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          contact_user_id?: string | null
+          encrypted_contact_name?: string | null
+          encrypted_public_key?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_notes: {
         Row: {
           book_id: string
@@ -3580,6 +4184,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_public_keys: {
+        Row: {
+          created_at: string | null
+          public_key: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          public_key: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          public_key?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_sessions: {
         Row: {
           created_at: string | null
@@ -3670,6 +4295,135 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_accounts: {
+        Row: {
+          access_token: string | null
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          phone_number: string
+          updated_at: string | null
+          user_id: string
+          webhook_url: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          phone_number: string
+          updated_at?: string | null
+          user_id: string
+          webhook_url?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          phone_number?: string
+          updated_at?: string | null
+          user_id?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_group: boolean | null
+          last_message_at: string | null
+          participant_avatar_url: string | null
+          participant_name: string | null
+          participant_phone: string
+          unread_count: number | null
+          updated_at: string | null
+          whatsapp_account_id: string
+          whatsapp_chat_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_group?: boolean | null
+          last_message_at?: string | null
+          participant_avatar_url?: string | null
+          participant_name?: string | null
+          participant_phone: string
+          unread_count?: number | null
+          updated_at?: string | null
+          whatsapp_account_id: string
+          whatsapp_chat_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_group?: boolean | null
+          last_message_at?: string | null
+          participant_avatar_url?: string | null
+          participant_name?: string | null
+          participant_phone?: string
+          unread_count?: number | null
+          updated_at?: string | null
+          whatsapp_account_id?: string
+          whatsapp_chat_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          is_from_me: boolean | null
+          media_url: string | null
+          message_type: string | null
+          sender_name: string | null
+          sender_phone: string
+          status: string | null
+          timestamp: string
+          whatsapp_message_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          is_from_me?: boolean | null
+          media_url?: string | null
+          message_type?: string | null
+          sender_name?: string | null
+          sender_phone: string
+          status?: string | null
+          timestamp: string
+          whatsapp_message_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          is_from_me?: boolean | null
+          media_url?: string | null
+          message_type?: string | null
+          sender_name?: string | null
+          sender_phone?: string
+          status?: string | null
+          timestamp?: string
+          whatsapp_message_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -3687,6 +4441,10 @@ export type Database = {
         Args: { user_uuid: string; course_uuid: string }
         Returns: boolean
       }
+      generate_luvvix_id: {
+        Args: { user_name: string }
+        Returns: string
+      }
       generate_user_recommendations: {
         Args: { target_user_id: string }
         Returns: undefined
@@ -3697,6 +4455,24 @@ export type Database = {
       }
       get_diploma_mention: {
         Args: { score: number }
+        Returns: string
+      }
+      increment_hashtag_count: {
+        Args: { hashtag_name: string }
+        Returns: undefined
+      }
+      messenger_luvvix_get_or_create_direct_conversation: {
+        Args: { target_user_id: string }
+        Returns: string
+      }
+      messenger_luvvix_send_message: {
+        Args: {
+          p_conversation_id: string
+          p_content: string
+          p_message_type?: string
+          p_media_url?: string
+          p_media_metadata?: Json
+        }
         Returns: string
       }
       record_assessment_attempt: {
